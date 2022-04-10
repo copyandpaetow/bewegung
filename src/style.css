@@ -1,0 +1,7 @@
+@import url("https://fonts.googleapis.com/css?family=Poppins:300,400,700&display=swap");
+@import "./styles/resets.css";
+@import "./styles/sizing-scale.css";
+@import "./styles/colors.css";
+@import "./styles/globals.css";
+@import "./styles/cards.css";
+@import "./styles/filter.css";

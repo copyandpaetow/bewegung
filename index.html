@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Bewegung JS</title>
+		<meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="stylesheet" type="text/css" href="/src/style.css" />
+	</head>
+	<body>
+		<nav>
+			<ul class="nav nav__top">
+				<li>
+					<a href="#">home</a>
+				</li>
+				<li>
+					<a href="#cards">cards</a>
+				</li>
+				<li>
+					<a href="#filter">filter</a>
+				</li>
+			</ul>
+		</nav>
+		<!-- bewegung-stop-traversing -->
+		<main>
+			<section id="cards">
+				<h1 class="cards__headline">Cards</h1>
+				<p class="cards__copy">navigate card via buttons</p>
+				<div class="cards__navigation">
+					<button class="cards__button cards__button--prev">prev</button>
+					<button class="cards__button cards__button--next">next</button>
+				</div>
+				<ul class="cards_wrapper">
+					<li class="card card--1">
+						<div class="card__image">
+							<img class="card__img" src="/src/assets/blue.jpeg" alt="blue landscape shapes by Nicole Giampietro" />
+						</div>
+						<h2 class="card__headline">blue</h2>
+						<p class="card__date">2021</p>
+					</li>
+					<li class="card card--2">
+						<div class="card__image">
+							<img class="card__img" src="/src/assets/red.jpeg" alt="flowers and a coffee mug on a red background by Liana Mikah"/>
+						</div>
+						<h2 class="card__headline">red</h2>
+						<p class="card__date">2021</p>
+					</li>
+					<li class="card card--3">
+						<div class="card__image">
+							<img class="card__img" src="/src/assets/green.jpeg" alt="green leafs before a green wall by Runze Shi"/>
+						</div>
+						<h2 class="card__headline">green</h2>
+						<p class="card__date">2021</p>
+					</li>
+					<li class="card card--4">
+						<div class="card__image">
+							<img class="card__img" src="/src/assets/yellow.jpeg" alt="flowers before a yellow wall by Mona Eendra"/>
+						</div>
+						<h2 class="card__headline">yellow</h2>
+						<p class="card__date">2021</p>
+					</li>
+					<li class="card card--5">
+						<div class="card__image">
+							<img class="card__img" src="/src/assets/pink.jpeg" alt="waves on a beach by Hal Gatewood"/>
+						</div>
+						<h2 class="card__headline">pink</h2>
+						<p class="card__date">2021</p>
+					</li>
+				</ul>
+			</section>
+			<section id="filter">
+				<h1 class="filter__headline">filter</h1>
+				<aside class="filter__controls">
+					<h2 class="controll__headline">filter by color</h2>
+					<label for="cb-red">
+						<input type="checkbox" name="cb-red" id="cb-red" value="red" checked>
+						cb-red
+					</label>
+					<label for="cb-blue">
+						<input type="checkbox" name="cb-blue" id="cb-blue" value="blue" checked>
+						cb-blue
+					</label>
+					<label for="cb-yellow">
+						<input type="checkbox" name="cb-yellow" id="cb-yellow" value="yellow" checked>
+						cb-yellow
+					</label>
+					<label for="cb-green">
+						<input type="checkbox" name="cb-green" id="cb-green" value="green" checked>
+						cb-green
+					</label>
+					<label for="cb-orange">
+						<input type="checkbox" name="cb-orange" id="cb-orange" value="orange" checked>
+						cb-orange
+					</label>
+					<label for="cb-pink">
+						<input type="checkbox" name="cb-pink" id="cb-pink" value="pink" checked>
+						cb-pink
+					</label>
+				</aside>
+				<ul class="filter__colors">
+
+					<li class="color">
+							<img class="color__img" src="/src/assets/blue.jpeg" alt="blue landscape shapes by Nicole Giampietro" data-color="blue"/>
+					</li>
+					<li class="color">
+							<img class="color__img" src="/src/assets/red.jpeg" alt="flowers and a coffee mug on a red background by Liana Mikah" data-color="red"/>
+					</li>
+					<li class="color">
+							<img class="color__img" src="/src/assets/green.jpeg" alt="green leafs before a green wall by Runze Shi" data-color="green"/>
+					</li>
+					<li class="color">
+							<img class="color__img" src="/src/assets/yellow.jpeg" alt="flowers before a yellow wall by Mona Eendra" data-color="yellow"/>
+					</li>
+					<li class="color">
+							<img class="color__img" src="/src/assets/pink.jpeg" alt="waves on a beach by Hal Gatewood" data-color="pink"/>
+					</li>
+					<li class="color">
+						<img class="color__img" src="/src/assets/orange.jpeg" alt="a person walking in the desert by Rubén Bagüés" data-color="orange"/>
+
+					</li>
+					<li class="color">
+						<img class="color__img" src="/src/assets/blue.jpeg" alt="blue landscape shapes by Nicole Giampietro" data-color="blue"/>
+				</li>
+				<li class="color">
+						<img class="color__img" src="/src/assets/red.jpeg" alt="flowers and a coffee mug on a red background by Liana Mikah" data-color="red"/>
+				</li>
+				<li class="color">
+						<img class="color__img" src="/src/assets/green.jpeg" alt="green leafs before a green wall by Runze Shi" data-color="green"/>
+				</li>
+				<li class="color">
+						<img class="color__img" src="/src/assets/yellow.jpeg" alt="flowers before a yellow wall by Mona Eendra" data-color="yellow"/>
+				</li>
+				<li class="color">
+						<img class="color__img" src="/src/assets/pink.jpeg" alt="waves on a beach by Hal Gatewood" data-color="pink"/>
+				</li>
+				<li class="color">
+					<img class="color__img" src="/src/assets/orange.jpeg" alt="a person walking in the desert by Rubén Bagüés" data-color="orange"/>
+
+				</li>
+				<li class="color">
+					<img class="color__img" src="/src/assets/blue.jpeg" alt="blue landscape shapes by Nicole Giampietro" data-color="blue"/>
+			</li>
+			<li class="color">
+					<img class="color__img" src="/src/assets/red.jpeg" alt="flowers and a coffee mug on a red background by Liana Mikah" data-color="red"/>
+			</li>
+			<li class="color">
+					<img class="color__img" src="/src/assets/green.jpeg" alt="green leafs before a green wall by Runze Shi" data-color="green"/>
+			</li>
+			<li class="color">
+					<img class="color__img" src="/src/assets/yellow.jpeg" alt="flowers before a yellow wall by Mona Eendra" data-color="yellow"/>
+			</li>
+			<li class="color">
+					<img class="color__img" src="/src/assets/pink.jpeg" alt="waves on a beach by Hal Gatewood" data-color="pink"/>
+			</li>
+			<li class="color">
+				<img class="color__img" src="/src/assets/orange.jpeg" alt="a person walking in the desert by Rubén Bagüés" data-color="orange"/>
+
+			</li>
+				</ul>
+			</section>
+		</main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

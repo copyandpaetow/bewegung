@@ -1,0 +1,19 @@
+:root {
+	--multiplier: 1.25;
+	--base-1x: 1rem;
+	--base-2x: calc(var(--base-1x) * var(--multiplier));
+	--base-3x: calc(var(--base-2x) * var(--multiplier));
+	--base-4x: calc(var(--base-3x) * var(--multiplier));
+	--base-5x: calc(var(--base-4x) * var(--multiplier));
+	--base-6x: calc(var(--base-5x) * var(--multiplier));
+	--base-7x: calc(var(--base-6x) * var(--multiplier));
+	--base-8x: calc(var(--base-7x) * var(--multiplier));
+	--base-9x: calc(var(--base-8x) * var(--multiplier));
+	--base-10x: calc(var(--base-9x) * var(--multiplier));
+	--base-fr2: calc((var(--base-1x) / var(--multiplier)));
+	--base-fr3: calc((var(--base-fr2) / var(--multiplier)));
+	--base-fr4: calc((var(--base-fr3) / var(--multiplier)));
+	--base-fr5: calc((var(--base-fr4) / var(--multiplier)));
+
+	--site-padding: var(--base-10x);
+}

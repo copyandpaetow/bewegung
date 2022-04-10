@@ -1,0 +1,27 @@
+{
+  "name": "bewegung",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && tsc",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.23",
+    "typescript": "^4.5.4",
+    "vite": "^2.9.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/bewegung.umd.js",
+  "module": "./dist/bewegung.es.js",
+  "types": "./dist/bewegung.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/bewegung.es.js",
+      "require": "./dist/bewegung.umd.js"
+    }
+  }
+}

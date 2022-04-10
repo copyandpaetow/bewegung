@@ -1,0 +1,59 @@
+*,
+::after,
+::before {
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	text-decoration: none;
+}
+
+body,
+html,
+#app {
+	height: 100%;
+	font-family: "Poppins", sans-serif;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+p,
+a,
+i,
+li,
+textarea,
+select,
+button,
+label {
+	font-size: var(--base-1x);
+	line-height: 150%;
+}
+
+a {
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+ul {
+	list-style: none;
+}
+
+input:focus,
+button:focus {
+	outline: 2px solid blue;
+	outline-offset: 0.25em;
+}
+
+input:focus-visible {
+	outline: 2px solid transparent;
+	border-color: blue;
+}
+
+button:focus:not(:focus-visible) {
+	outline: none;
+}
+
+button:focus-visible {
+	outline: 2px solid transparent;
+	box-shadow: 0 0 0 2px #fff, 0 0 0 4px blue;
+}

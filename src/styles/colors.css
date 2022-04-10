@@ -1,0 +1,16 @@
+:root {
+	/* greys */
+	--grey-100: hsla(0, 0%, 80%, 1);
+	--grey-400: hsla(0, 0%, 28%, 1);
+	--grey-500: hsla(0, 0%, 20%, 1);
+	--grey-600: hsla(0, 0%, 13%, 1);
+	--grey-700: hsla(0, 0%, 8%, 1);
+	--grey-800: hsla(0, 0%, 3%, 1);
+	--grey-900: hsla(0, 0%, 1%, 1);
+	--white: hsla(0, 0%, 90%, 1);
+	/* signaling */
+	--red-700: #c53030;
+	--green-700: #2f855a;
+
+	--background: #f5f5f7;
+}
