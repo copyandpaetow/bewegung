@@ -2,6 +2,7 @@ import path from "path";
 import { defineConfig } from "vite";
 
 module.exports = defineConfig({
+	base: "/bewegung/",
 	build: {
 		lib: {
 			entry: path.resolve(__dirname, "src/lib/bewegung.ts"),
