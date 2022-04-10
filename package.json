@@ -4,8 +4,10 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && tsc",
-    "preview": "vite preview"
+    "build": "tsc && vite build --config vite.config.ts",
+    "build:lib": "vite build --config vite-lib.config.ts && tsc",
+    "preview": "vite preview",
+    "deploy": "sh deploy.sh"
   },
   "devDependencies": {
     "@types/node": "^17.0.23",
