@@ -5,7 +5,8 @@
     "dev": "vite",
     "build": "tsc && vite build --config vite.config.ts",
     "build:lib": "vite build --config vite-lib.config.ts && tsc",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "sh deploy.sh"
   },
   "devDependencies": {
     "@types/node": "^17.0.23",
