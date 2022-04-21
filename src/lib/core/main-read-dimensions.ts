@@ -69,6 +69,14 @@ export interface ReadDimensions extends IncludeAffectedElements {
 	calculatedProperties: CalculatedProperties[];
 }
 
+const isTextNode = (element: HTMLElement) =>
+	Array.from(element.childNodes).some((node: Node) => {
+		if (node.nodeType !== 3) {
+			return false;
+		}
+		return Boolean(node.nodeValue?.replaceAll("\t", "").replaceAll("\n", ""));
+	});
+
 export const readDimensions =
 	(globalContext: Context) =>
 	(
@@ -76,6 +84,8 @@ export const readDimensions =
 	): Map<HTMLElement, ReadDimensions> =>
 		globalContext.changeTimings.reduce((accumulator, current, index, array) => {
 			accumulator = iterateMap((value, key) => {
+				let styleChange = {};
+
 				if (value.newStyle && value.newStyle.length > 0) {
 					const currentStyleChange = value.newStyle?.find(
 						(timing) => timing.offset === current
@@ -89,9 +99,21 @@ export const readDimensions =
 							transform,
 							...changedStyles
 						} = currentStyleChange;
-						Object.assign(key.style, changedStyles);
+
+						styleChange = { ...styleChange, ...changedStyles };
 					}
 				}
+				if (isTextNode(key)) {
+					key.style.height = "max-content";
+					key.style.width = "max-content";
+					styleChange = {
+						...styleChange,
+						height: "max-content",
+						width: "max-content",
+					};
+				}
+				Object.keys(styleChange).length > 0 &&
+					Object.assign(key.style, styleChange);
 				return value;
 			}, accumulator);
 
@@ -112,8 +134,13 @@ export const readDimensions =
 			if (index === array.length - 1) {
 				accumulator = iterateMap((value, key) => {
 					key.style.cssText = value.originalStyle;
+					if (isTextNode(key)) {
+						key.style.height = "max-content";
+						key.style.width = "max-content";
+					}
+
 					return value;
-				}, accumulator);
+				}, accumulator as Map<HTMLElement, ReadDimensions>);
 			}
 
 			return accumulator;

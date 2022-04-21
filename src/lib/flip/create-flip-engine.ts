@@ -75,16 +75,11 @@ export const createFlipEngine = (
 	];
 
 	mainAnimation.onfinish = () => {
-		flipMode !== FlipMode.applyStyleBeforeAnimation &&
-			applyStyles(key, {
-				display: "",
-				position: "",
-				height: "",
-				width: "",
-				left: "",
-				top: "",
-				...extractStylesRules(value.newStyle),
-			});
+		key.style.cssText = value.originalStyle;
+		applyStyles(key, {
+			...extractStylesRules(value.newStyle),
+		});
+
 		value.extraOptions?.onAnimationEnd?.();
 	};
 
