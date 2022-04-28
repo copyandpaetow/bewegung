@@ -44,6 +44,8 @@ bewegung.play()
   -- the text element can be cloned and measured in a canvas or a rendered decoy element
   -- especially for images, the overflow needs to be hidden
   -- span elements could work for this (wrapping the element in it) but only if they have `display: inline-block`
+  -- border-radius for scaled images is off and needs to be adjusted by the height/width scale factors
+  -- ideally they would be replaced by clipPath like `clipPath: inset(0 round [corrected border-Radius])`
 
 ## License
 

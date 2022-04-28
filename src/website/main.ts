@@ -1,4 +1,4 @@
-import { bewegung, CustomKeyframeEffect } from "./lib/bewegung";
+import { bewegung, CustomKeyframeEffect } from "../lib/bewegung";
 
 const initCards = () => {
 	const cardsPrevButton = document.querySelector(".cards__button--prev");
@@ -18,7 +18,7 @@ const initCards = () => {
 				width: "100%",
 				order: "-1",
 			},
-			{ duration: 800, easing: "ease-in" },
+			{ duration: 8000, easing: "ease-in" },
 		];
 
 		const hideOthers: CustomKeyframeEffect = [
@@ -28,12 +28,15 @@ const initCards = () => {
 				order: "",
 			},
 			{
-				duration: 800,
+				duration: 8000,
 				easing: "ease-in-out",
 			},
 		];
 		const animation = bewegung(highlightCard, hideOthers);
 		animation.play();
+		setTimeout(() => {
+			animation.pause();
+		});
 	};
 
 	cardsNextButton?.addEventListener("click", () => {

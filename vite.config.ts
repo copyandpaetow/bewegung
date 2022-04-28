@@ -1,9 +1,20 @@
-import path from "path";
+import { resolve } from "path";
 import { defineConfig } from "vite";
 
+const root = resolve(__dirname, "src/website/");
+const outDir = resolve(__dirname, "dist");
+
 module.exports = defineConfig({
-	base: "/bewegung/",
+	root,
+	base: "/bewegung/website/",
 	build: {
-		rollupOptions: {},
+		outDir,
+		rollupOptions: {
+			input: {
+				main: resolve(root, "/index.html"),
+				cards: resolve(root, "/cards/index.html"),
+				filter: resolve(root, "/filter/index.html"),
+			},
+		},
 	},
 });
