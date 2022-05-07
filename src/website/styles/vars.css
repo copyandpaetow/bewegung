@@ -1,0 +1,33 @@
+:root {
+	--multiplier: 1.5;
+	--space-100: 1rem;
+	--space-200: calc(var(--space-100) * var(--multiplier)); /* 1.5rem */
+	--space-300: calc(var(--space-200) * var(--multiplier)); /* 2.25rem */
+	--space-400: calc(var(--space-300) * var(--multiplier)); /* 3.375rem */
+	--space-500: calc(var(--space-400) * var(--multiplier)); /* 5.063rem */
+	--space-600: calc(var(--space-500) * var(--multiplier)); /* 7.594rem */
+	--space-700: calc(var(--space-600) * var(--multiplier)); /* 11.391rem */
+
+	--space-90: calc(var(--space-100) / var(--multiplier)); /* 0.667rem */
+	--space-80: calc(var(--space-90) / var(--multiplier)); /* 0.444rem */
+	--space-70: calc(var(--space-80) / var(--multiplier)); /* 0.296rem */
+	--space-60: calc(var(--space-70) / var(--multiplier)); /* 0.198rem */
+	--space-50: calc(var(--space-60) / var(--multiplier)); /* 0.132rem */
+	--space-40: calc(var(--space-50) / var(--multiplier)); /* 0.088rem */
+	--space-30: calc(var(--space-40) / var(--multiplier)); /* 0.059rem */
+	
+	--main-row-gap: var(--space-500);
+
+	--border-radius: var(--space-70);
+	--border-size: var(--space-30);
+	--border-color: grey;
+
+	--color-main: white;
+	--color-main-inverted: hsla(0,0%, 3%, 1);
+	--color-secondary: hsla(0,0%, 3%, 1);
+	--color-secondary-inverted: white;
+
+	--glass-background-color: rgba(255, 255, 255, 0.125);
+	--glass-border-color: rgba(17, 25, 40, 0.26);
+
+}

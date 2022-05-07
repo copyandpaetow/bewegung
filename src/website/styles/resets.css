@@ -5,16 +5,18 @@
 	box-sizing: border-box;
 	margin: 0;
 	padding: 0;
-	text-decoration: none;
+	scroll-margin-top: 4rem;
 }
 
 body,
 html,
-#app {
-	height: 100%;
+#app,
+main {
+	min-height: 100%;
 	font-family: "Poppins", sans-serif;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
+	scroll-behavior: smooth;
 }
 
 p,
@@ -25,7 +27,7 @@ textarea,
 select,
 button,
 label {
-	font-size: var(--base-1x);
+	font-size: var(--space-100);
 	line-height: 150%;
 }
 
@@ -34,14 +36,14 @@ a {
 	cursor: pointer;
 }
 
-ul {
+ul, ol {
 	list-style: none;
 }
 
 input:focus,
 button:focus {
 	outline: 2px solid blue;
-	outline-offset: 0.25em;
+	outline-offset: var(--space-70);
 }
 
 input:focus-visible {
