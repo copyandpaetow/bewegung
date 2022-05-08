@@ -40,6 +40,7 @@ bewegung.play()
   -- span elements could work for this (wrapping the element in it) but only if they have `display: inline-block`
   -- border-radius for scaled images is off and needs to be adjusted by the height/width scale factors
   -- ideally they would be replaced by clipPath like `clipPath: inset(0 round [corrected border-Radius])`
+- the stop-traversing-class element should be included in the element list
 
 ## License
 

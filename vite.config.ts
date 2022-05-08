@@ -6,7 +6,7 @@ const outDir = resolve(__dirname, "dist");
 
 module.exports = defineConfig({
 	root,
-	base: "/bewegung/website/",
+	base: "/bewegung/",
 	build: {
 		outDir,
 		rollupOptions: {
