@@ -16,7 +16,7 @@
 				contains some bugs.
 			</p>
 			<nav>
-				<ol class="ol-list highlight-li">
+				<ul>
 					<li>
 						<a href="#examples">Examples</a>
 					</li>
@@ -26,7 +26,7 @@
 					<li>
 						<a href="#documentation">Documentation</a>
 					</li>
-				</ol>
+				</ul>
 			</nav>
 			<aside class="background-animation">
 				<div class="shape1"></div>
@@ -41,15 +41,15 @@
 					<h2>Examples</h2>
 					<p>See for yourself what you can do with this library</p>
 				</header>
-				<article>
+				<article flow>
 					<ul class="example__list">
-						<li>
-							<a href="/bewegung/website/cards/" data-icon="↗"
+						<li data-icon="↗" class="nowrap">
+							<a href="/bewegung/website/cards/" 
 								>highlighting cards</a
 							>
 						</li>
-						<li>
-							<a href="/bewegung/website/filter/" data-icon="↗"
+						<li data-icon="↗"  class="nowrap">
+							<a href="/bewegung/website/filter/" 
 								>filter colors</a
 							>
 						</li>
@@ -89,7 +89,7 @@ bewegung.play()
 				</article>
 			</section>
 			<br />
-			<section id="documentation" class="layout-1-2">
+			<section id="documentation" class="layout-1-2 flow">
 				<header>
 					<h2>API</h2>
 					<p>See for yourself what you can do with this library</p>
@@ -112,6 +112,12 @@ bewegung.play()
 				</header>
 				<article>
 					<h3 id="syntax">Syntax</h3>
+					<code class="glass"> HTMLElement | Element
+						| HTMLElement[]
+						| Element[]
+						| NodeListOf&ltElement&gt
+						| HTMLCollection
+						| string;</code>
 
 					<h4>For one entry</h4>
 					<pre class="glass">
@@ -139,7 +145,13 @@ bewegung([keyframeEffect, keyframeEffect, ...])
 					</pre>
 					<h3 id="parameters">Parameters</h3>
 						<h4>Target</h4>
-						<p>Can be one or multiple elements or their selector.</p>
+						<code class="glass"> HTMLElement | Element
+							| HTMLElement[]
+							| Element[]
+							| NodeListOf&ltElement&gt
+							| HTMLCollection
+							| string;</code>
+						<p>Can be one or multiple elements or any valid css selector.</p>
 						<h4>keyframes</h4>
 						<p>Takes in an object of css-styles or an array of these css-style objects. In addition to css styles, an offset can be included to indicate the starting time of that style to take effect (the original css property offset is renamed to cssOffset). Another additon is the callback, which executes a function at its offset-time. If no offset is supplied, it will assume 1 (for one entry), 0 and 1 (for two entries) and for more it will be 0 and 1 for the first and last and all other will get distributed evenly.</p>
 					<pre class="glass">
@@ -187,23 +199,23 @@ bewegung({
 						</code>
 					</pre>
 					<p>The option object can include these optional fields:</p>
-					<ul class="text__list">
-						<li><strong>duration</strong>: The animation runtime in ms. Defaults to 400.</li>
-						<li><strong>delay</strong>: The time the animation waits before running. Defaults to 0.
+					<ol class="padding-y">
+						<li><strong>duration</strong> <code class="glass">number</code>: The animation runtime in ms. Defaults to 400.</li>
+						<li><strong>delay</strong> <code class="glass">number</code>: The time the animation waits before running. Defaults to 0.
 						</li>
-						<li><strong>endDelay</strong>: The time the animation waits after running before actually completing. Defaults to 0.
+						<li><strong>endDelay</strong> <code class="glass">number</code>: The time the animation waits after running before actually completing. Defaults to 0.
 						</li>
-						<li><strong>easing</strong>: The animation curve / timing function of the animation. Defaults to ease.
+						<li><strong>easing</strong> <code class="glass">string</code>: The animation curve / timing function of the animation. Defaults to ease.
 						</li>
-						<li><strong>onAnimationStart</strong>: a callback on animation start.
+						<li><strong>onAnimationStart</strong> <code class="glass">() => void)</code>: a callback on animation start.
 						</li>
-						<li><strong>onAnimationEnd</strong>: a callback on animation end.
+						<li><strong>onAnimationEnd</strong> <code class="glass">() => void</code>: a callback on animation end.
 						</li>
-						<li><strong>onAnimationPause</strong>: a callback on animation pause.
+						<li><strong>onAnimationPause</strong> <code class="glass">() => void</code>: a callback on animation pause.
 						</li>
-						<li><strong>onAnimationCancel</strong>: a callback on animation cancel.
+						<li><strong>onAnimationCancel</strong> <code class="glass">() => void</code>: a callback on animation cancel.
 						</li>
-					</ul>
+					</ol>
 					<p>Other options like direction, fill, and iteration are possible to add, but might cause issues when combined with multiple animations.
 					</p>
 					<h4>Keyframe Effect</h4>
@@ -212,6 +224,10 @@ bewegung({
 
 					<h3 id="methods">Methods</h3>
 					<h4>Play, Pause, Reverse</h4>
+					<code class="glass">.play() => void</code>
+					<code class="glass">.pause() => void</code>
+					<code class="glass">.resume() => void</code>
+					<p>These are the basic controlls for the animation</p>
 					<pre class="glass">
 						<code>
 import { bewegung } from "bewegung";
@@ -226,7 +242,7 @@ const animation = bewegung({
 
 bewegung.play()
 
-//something happens
+//something happens so the animation should pause
 
 bewegung.pause()
 
@@ -236,7 +252,7 @@ bewegung.reverse()
 						</code>
 					</pre>
 					<h4>Scroll</h4>
-					<code class="glass">.scroll(progress:number, done: boolean)</code>
+					<code class="glass">.scroll(progress:number, done: boolean) => void</code>
 					<p>The animation can be controlled with a progress input (a number between 0 and 1) like the amount of page scrolled down. An optional second parameter is used to finish the animation.
 					</p>
 					<pre class="glass">
@@ -259,6 +275,7 @@ window.addEventListener("scroll", ()=>{
 						</code>
 					</pre>
 					<h4>Refresh</h4>
+					<code class="glass">.refresh() => void</code>
 					<p>the animation calculates the needed keyframes from the elements position. If these change between calling the animation function and it's <code>.play()</code> method, the animation could look off / be wrong. in that case the calculation can be redone.
 					</p>
 					<pre class="glass">
@@ -280,21 +297,24 @@ animation.play()
 						</code>
 					</pre>
 					<h4>Finish, Cancel, CommitStyles</h4>
-					<p>The animation can be ended in several ways. <code>.finish()</code> completes the animation regardless of how much time it had left to play, <code>.cancel()</code> cancels the animation and removed its effects on elements, and .commitStyles() adds the wanted styles directly (could be useful if you cant do the animation, but want the results anyways)
+					<code class="glass">.finish() => void</code>
+					<code class="glass">.cancel() => void</code>
+					<code class="glass">.commitStyles() => void</code>
+					<p>The animation can be ended in several ways. <code class="glass">.finish()</code> completes the animation regardless of how much time it had left to play, <code class="glass">.cancel()</code> cancels the animation and removed its effects on elements, and .commitStyles() adds the wanted styles directly (could be useful if you cant do the animation, but want the results anyways)
 					</p>
 					<h4>UpdatePlaybackRate</h4>
-					<code>.updatePlaybackRate(speed:number)</code>
-					<p>With <code> .updatePlaybackRate(2)</code> the speed of the animation can be increased, in this case doubled with 2
+					<code class="glass">.updatePlaybackRate(speed:number)</code>
+					<p>With <code class="glass">.updatePlaybackRate(2)</code> the speed of the animation can be increased, in this case it was doubled.
 					</p>
 
 					<h3 id="#properties">Status Properties</h3>
-					<ul class="text__list">
+					<ol>
 						<li><strong>Ready</strong>: A promise indicating if the calculations are done</li>
 						<li><strong>Finished</strong>: A promise indicating if all animations have been run
 						</li>
 						<li><strong>Pending</strong>:  a boolean indicating if the animation is waiting or paused,
 						</li>
-					</ul>
+					</ol>
 				</article>
 			</section>
 		</main>
