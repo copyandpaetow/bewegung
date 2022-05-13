@@ -62,7 +62,8 @@ export const generateDifferences =
 
 				const difference = calculateDimensionDifferences(
 					[currentData, referenceData],
-					[currentParentData, referenceParentData]
+					[currentParentData, referenceParentData],
+					key
 				);
 
 				return [...accumulator, { ...difference, offset: currentOffset }];

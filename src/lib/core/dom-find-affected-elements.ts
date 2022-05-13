@@ -20,31 +20,18 @@ const traverseDomUp = (
 	const elements = elementMap || [];
 	const parent = getParent(element);
 
-	if (
-		element.tagName === "BODY" ||
-		element.classList.contains(STOP_TRAVERSING_CLASS)
-	) {
+	if (element.tagName === "BODY") {
 		return [...elements];
 	}
+	if (element.classList.contains(STOP_TRAVERSING_CLASS)) {
+		return [element, ...elements];
+	}
+
 	return traverseDomUp(parent, [...elements, element]);
 };
 
 const traverseDomDown = (element: HTMLElement): HTMLElement[] => {
-	const treeWalker = document.createTreeWalker(
-		element,
-		NodeFilter.SHOW_ELEMENT,
-		() => NodeFilter.FILTER_ACCEPT
-	);
-	const childElements: HTMLElement[] = [];
-	while (
-		treeWalker.nextNode() &&
-		!(treeWalker.currentNode as HTMLElement).classList.contains(
-			STOP_TRAVERSING_CLASS
-		)
-	) {
-		childElements.push(treeWalker.currentNode as HTMLElement);
-	}
-	return childElements;
+	return Array.from(element.querySelectorAll("*"));
 };
 
 export const findAffectedDOMElements = (

@@ -56,6 +56,8 @@ export const getChangeProperties = (animationOption: NormalizedInput[]) => {
 		"transformOrigin",
 		"position",
 		"display",
+		"borderRadius",
+		"font",
 	]);
 	animationOption.forEach(
 		({ keyframeInstance: keyframe, unAnimatableStyles }) => {

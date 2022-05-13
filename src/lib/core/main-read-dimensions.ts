@@ -9,42 +9,17 @@ export const getComputedStylings = (
 ): CustomKeyframe => {
 	const style = element
 		? window.getComputedStyle(element)
-		: window.getComputedStyle(document.head);
+		: window.getComputedStyle(document.head); //an empty element that is mounted in the DOM
 
 	const transformedProperties = changeProperties.reduce(
 		(accumulator, current) => {
-			if (typeof style[current as keyof CSSStyleDeclaration] !== "string") {
-				return {
-					...accumulator,
-					...{ [current]: style[current as keyof CSSStyleDeclaration] },
-				};
+			if (!style[current as keyof CSSStyleDeclaration]) {
+				return accumulator;
 			}
 
-			if (current === "transformOrigin") {
-				return {
-					...accumulator,
-					...{
-						[current]: style[current]
-							.split(" ")
-							.map((value) =>
-								value.includes("px")
-									? parseFloat(value)
-									: parseFloat(value) / 100
-							),
-					},
-				};
-			}
-
-			const parsed = parseFloat(
-				style[current as keyof CSSStyleDeclaration] as string
-			);
 			return {
 				...accumulator,
-				...{
-					[current]: isNaN(parsed)
-						? style[current as keyof CSSStyleDeclaration]
-						: parsed,
-				},
+				...{ [current]: style[current as keyof CSSStyleDeclaration] },
 			};
 		},
 		{}
@@ -69,13 +44,35 @@ export interface ReadDimensions extends IncludeAffectedElements {
 	calculatedProperties: CalculatedProperties[];
 }
 
-const isTextNode = (element: HTMLElement) =>
-	Array.from(element.childNodes).some((node: Node) => {
-		if (node.nodeType !== 3) {
-			return false;
-		}
-		return Boolean(node.nodeValue?.replaceAll("\t", "").replaceAll("\n", ""));
-	});
+const isTextNode = (element: HTMLElement) => {
+	const childNodes = Array.from(element.childNodes);
+
+	if (
+		childNodes.length === 0 ||
+		childNodes.every((node) => node.nodeType !== 3)
+	) {
+		return false;
+	}
+
+	return childNodes.every((node) =>
+		Boolean(
+			((node as Text).wholeText || (node as HTMLElement).innerText)
+				?.replaceAll("\t", "")
+				.replaceAll("\n", "")
+		)
+	);
+};
+
+const measureText = (element: HTMLElement, font: string) => {
+	const text = Array.from(
+		element.childNodes,
+		(node) => (node as Text).wholeText || (node as HTMLElement).innerText
+	).join("");
+	const canvas = document.createElement("canvas");
+	const context = canvas.getContext("2d");
+	context!.font = font;
+	return context!.measureText(text).width;
+};
 
 export const readDimensions =
 	(globalContext: Context) =>
@@ -103,28 +100,70 @@ export const readDimensions =
 						styleChange = { ...styleChange, ...changedStyles };
 					}
 				}
-				if (isTextNode(key)) {
-					key.style.height = "max-content";
-					key.style.width = "max-content";
-					styleChange = {
-						...styleChange,
-						height: "max-content",
-						width: "max-content",
-					};
-				}
+
 				Object.keys(styleChange).length > 0 &&
 					Object.assign(key.style, styleChange);
 				return value;
 			}, accumulator);
 
 			accumulator = iterateMap((value, key) => {
+				const textNode = isTextNode(key);
+				const computedStyle = getComputedStylings(
+					globalContext.changeProperties,
+					key
+				);
+				const domRect = getDomRect(key);
+
+				if (false) {
+					const textWidth = measureText(key, computedStyle.font as string);
+
+					const transformOrigin = (computedStyle.transformOrigin as string)
+						.split(" ")
+						.map((value, index) => {
+							if (index > 0 || value.includes("%") || value.includes("0px")) {
+								return value;
+							}
+							return `${(parseFloat(value) / domRect.width) * textWidth}px`;
+						})
+						.join(" ");
+					if (key.classList.contains("log")) {
+						console.log({
+							TO: computedStyle.transformOrigin,
+							transformOrigin,
+							key,
+							textWidth,
+							originalWidth: domRect.width,
+						});
+					}
+
+					return {
+						...value,
+						calculatedProperties: [
+							...value.calculatedProperties,
+							{
+								dimensions: {
+									...domRect,
+									width: textWidth,
+									right: domRect.left + textWidth,
+								},
+								styles: {
+									...computedStyle,
+									transformOrigin,
+									width: `${textWidth}px`,
+								},
+								offset: current,
+							},
+						],
+					};
+				}
+
 				return {
 					...value,
 					calculatedProperties: [
 						...value.calculatedProperties,
 						{
-							dimensions: getDomRect(key),
-							styles: getComputedStylings(globalContext.changeProperties, key),
+							dimensions: domRect,
+							styles: computedStyle,
 							offset: current,
 						},
 					],
@@ -134,11 +173,6 @@ export const readDimensions =
 			if (index === array.length - 1) {
 				accumulator = iterateMap((value, key) => {
 					key.style.cssText = value.originalStyle;
-					if (isTextNode(key)) {
-						key.style.height = "max-content";
-						key.style.width = "max-content";
-					}
-
 					return value;
 				}, accumulator as Map<HTMLElement, ReadDimensions>);
 			}

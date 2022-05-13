@@ -39,8 +39,7 @@ body > * {
 }
 
 .site-naviagtion ul li:first-child{
-	flex-grow: 1;
-	max-width: unset;
+	margin-inline-end: auto;
 }
 
 
@@ -241,4 +240,8 @@ pre::-webkit-scrollbar {
 
 .nowrap {
 	white-space: nowrap;
+}
+
+.max-content {
+	width: max-content;
 }

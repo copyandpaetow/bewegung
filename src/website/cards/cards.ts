@@ -18,7 +18,7 @@ const initCards = () => {
 				width: "100%",
 				order: "-1",
 			},
-			{ duration: 8000, easing: "ease-in" },
+			{ duration: 800, easing: "ease-in" },
 		];
 
 		const hideOthers: CustomKeyframeEffect = [
@@ -28,12 +28,13 @@ const initCards = () => {
 				order: "",
 			},
 			{
-				duration: 8000,
+				duration: 800,
 				easing: "ease-in-out",
 			},
 		];
 		const animation = bewegung(highlightCard, hideOthers);
 		animation.play();
+		animation.pause();
 	};
 
 	cardsNextButton?.addEventListener("click", () => {

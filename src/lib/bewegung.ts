@@ -84,6 +84,8 @@ export const bewegung = (
 	const context = createContext(normalizedInputs);
 
 	let animations = createAnimations(context, normalizedInputs);
+
+	console.log({ animations });
 	const readyPromise = Promise.all(
 		Array.from(animations.values()).map((anim) => anim._animationInstance.ready)
 	);

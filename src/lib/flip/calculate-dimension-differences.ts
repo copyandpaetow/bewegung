@@ -10,9 +10,29 @@ export interface DimensionalDifferences {
 
 type Entry = Omit<CalculatedProperties, "offset">;
 
+const parseTransformOrigin = (entry: Entry) => {
+	const transformOriginString = entry.styles.transformOrigin;
+
+	const calculated = transformOriginString
+		.split(" ")
+		.map((value: string, index: number) => {
+			if (value.includes("px")) {
+				return parseFloat(value);
+			}
+			const heightOrWidth = index
+				? entry.dimensions.height
+				: entry.dimensions.width;
+
+			return (parseFloat(value) / 100) * heightOrWidth;
+		});
+
+	return calculated;
+};
+
 export const calculateDimensionDifferences = (
 	child: [Entry, Entry],
-	parent: [Entry, Entry]
+	parent: [Entry, Entry],
+	target: HTMLElement
 ): DimensionalDifferences => {
 	const [currentEntry, referenceEntry] = child;
 	const [parentCurrentEntry, parentReferenceEntry] = parent;
@@ -23,38 +43,54 @@ export const calculateDimensionDifferences = (
 	const parentReference = parentReferenceEntry.dimensions;
 
 	const [originReferenceX, originReferenceY] =
-		referenceEntry.styles.transformOrigin;
+		parseTransformOrigin(referenceEntry);
 	const [originParentReferenceX, originParentReferenceY] =
-		parentReferenceEntry.styles.transformOrigin;
+		parseTransformOrigin(parentReferenceEntry);
 
-	const [originCurrentX, originCurrentY] = currentEntry.styles.transformOrigin;
+	const [originCurrentX, originCurrentY] = parseTransformOrigin(currentEntry);
 	const [originParentCurrentX, originParentCurrentY] =
-		parentCurrentEntry.styles.transformOrigin;
+		parseTransformOrigin(parentCurrentEntry);
 
-	const childHeightDifference = current.height / reference.height;
-	const childWidthDifference = current.width / reference.width;
-	const parentHeightDifference = parentCurrent.height / parentReference.height;
-	const parentWidthDifference = parentCurrent.width / parentReference.width;
+	const currentHeightDifference = current.height / parentCurrent.height;
+	const currentWidthDifference = current.width / parentCurrent.width;
+	const referenceHeightDifference = reference.height / parentReference.height;
+	const referenceWidthDifference = reference.width / parentReference.width;
 
-	const heightDifference = childHeightDifference / parentHeightDifference;
-	const widthDifference = childWidthDifference / parentWidthDifference;
+	const heightDifference = currentHeightDifference / referenceHeightDifference;
+	const widthDifference = currentWidthDifference / referenceWidthDifference;
 
 	const currentXDifference =
-		current.x + originCurrentX - parentCurrent.x + originParentCurrentX;
+		current.x + originCurrentX - (parentCurrent.x + originParentCurrentX);
 	const referenceXDifference =
-		reference.x + originReferenceX - parentReference.x + originParentReferenceX;
+		reference.x +
+		originReferenceX -
+		(parentReference.x + originParentReferenceX);
 
 	const currentYDifference =
-		current.y + originCurrentY - parentCurrent.y + originParentCurrentY;
+		current.y + originCurrentY - (parentCurrent.y + originParentCurrentY);
 	const referenceYDifference =
-		reference.y + originReferenceY - parentReference.y + originParentReferenceY;
+		reference.y +
+		originReferenceY -
+		(parentReference.y + originParentReferenceY);
 
-	const xDifference =
-		(currentXDifference - referenceXDifference * parentWidthDifference) /
-		parentWidthDifference;
-	const yDifference =
-		(currentYDifference - referenceYDifference * parentHeightDifference) /
-		parentHeightDifference;
+	const xDifference = currentXDifference - referenceXDifference;
+	const yDifference = currentYDifference - referenceYDifference;
+
+	if (target.classList.contains("log")) {
+		console.log({
+			currentXDifference,
+			xDifference,
+			referenceXDifference,
+			target,
+			widthDifference,
+		});
+		console.log({
+			referenceWidthDifference,
+			currentWidthDifference,
+			widthDifference,
+			target,
+		});
+	}
 
 	return {
 		heightDifference: save(heightDifference, 1),
