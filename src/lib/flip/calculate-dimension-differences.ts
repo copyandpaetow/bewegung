@@ -51,13 +51,13 @@ export const calculateDimensionDifferences = (
 	const [originParentCurrentX, originParentCurrentY] =
 		parseTransformOrigin(parentCurrentEntry);
 
-	const currentHeightDifference = current.height / parentCurrent.height;
-	const currentWidthDifference = current.width / parentCurrent.width;
-	const referenceHeightDifference = reference.height / parentReference.height;
-	const referenceWidthDifference = reference.width / parentReference.width;
+	const parentWidthDifference = parentCurrent.width / parentReference.width;
+	const childWidthDifference = current.width / reference.width;
+	const parentHeightDifference = parentCurrent.height / parentReference.height;
+	const childHeightDifference = current.height / reference.height;
 
-	const heightDifference = currentHeightDifference / referenceHeightDifference;
-	const widthDifference = currentWidthDifference / referenceWidthDifference;
+	const heightDifference = childHeightDifference / parentHeightDifference;
+	const widthDifference = childWidthDifference / parentWidthDifference;
 
 	const currentXDifference =
 		current.x + originCurrentX - (parentCurrent.x + originParentCurrentX);
@@ -73,24 +73,16 @@ export const calculateDimensionDifferences = (
 		originReferenceY -
 		(parentReference.y + originParentReferenceY);
 
-	const xDifference = currentXDifference - referenceXDifference;
-	const yDifference = currentYDifference - referenceYDifference;
+	const textWidthDifference =
+		parseFloat(currentEntry.styles.width) /
+		currentEntry.dimensions.width /
+		parentWidthDifference;
 
-	if (target.classList.contains("log")) {
-		console.log({
-			currentXDifference,
-			xDifference,
-			referenceXDifference,
-			target,
-			widthDifference,
-		});
-		console.log({
-			referenceWidthDifference,
-			currentWidthDifference,
-			widthDifference,
-			target,
-		});
-	}
+	const xDifference =
+		(currentXDifference / parentWidthDifference - referenceXDifference) *
+		textWidthDifference;
+	const yDifference =
+		currentYDifference / parentHeightDifference - referenceYDifference;
 
 	return {
 		heightDifference: save(heightDifference, 1),

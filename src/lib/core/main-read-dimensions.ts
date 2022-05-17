@@ -114,7 +114,7 @@ export const readDimensions =
 				);
 				const domRect = getDomRect(key);
 
-				if (false) {
+				if (textNode) {
 					const textWidth = measureText(key, computedStyle.font as string);
 
 					const transformOrigin = (computedStyle.transformOrigin as string)
@@ -126,15 +126,16 @@ export const readDimensions =
 							return `${(parseFloat(value) / domRect.width) * textWidth}px`;
 						})
 						.join(" ");
-					if (key.classList.contains("log")) {
-						console.log({
-							TO: computedStyle.transformOrigin,
-							transformOrigin,
-							key,
-							textWidth,
-							originalWidth: domRect.width,
-						});
-					}
+
+					// if (key.classList.contains("log")) {
+					// 	console.log({
+					// 		TO: computedStyle.transformOrigin,
+					// 		transformOrigin,
+					// 		key,
+					// 		textWidth,
+					// 		originalWidth: domRect.width,
+					// 	});
+					// }
 
 					return {
 						...value,
@@ -149,7 +150,6 @@ export const readDimensions =
 								styles: {
 									...computedStyle,
 									transformOrigin,
-									width: `${textWidth}px`,
 								},
 								offset: current,
 							},

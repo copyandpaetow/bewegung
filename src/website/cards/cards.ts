@@ -34,7 +34,6 @@ const initCards = () => {
 		];
 		const animation = bewegung(highlightCard, hideOthers);
 		animation.play();
-		animation.pause();
 	};
 
 	cardsNextButton?.addEventListener("click", () => {
