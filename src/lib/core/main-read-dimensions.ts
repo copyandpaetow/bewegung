@@ -127,16 +127,6 @@ export const readDimensions =
 						})
 						.join(" ");
 
-					// if (key.classList.contains("log")) {
-					// 	console.log({
-					// 		TO: computedStyle.transformOrigin,
-					// 		transformOrigin,
-					// 		key,
-					// 		textWidth,
-					// 		originalWidth: domRect.width,
-					// 	});
-					// }
-
 					return {
 						...value,
 						calculatedProperties: [

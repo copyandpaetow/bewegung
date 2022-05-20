@@ -36,6 +36,13 @@ export interface Flip extends ReadDimensions {
 	dimensionDifferences: DimensionDifferences[];
 }
 
+const applyImageStyles = (key: HTMLElement) => {
+	if (Array.from(key.children).some((child) => child.tagName === "IMG")) {
+		return { overflow: "hidden" };
+	}
+	return {};
+};
+
 export const createFlipEngine = (
 	key: HTMLElement,
 	value: ReadDimensions,
@@ -94,6 +101,7 @@ export const createFlipEngine = (
 						extractStylesRules(value.newStyle)),
 					...(flipMode === FlipMode.combined &&
 						getEdgeCaseStylings(key, animationMap)),
+					...applyImageStyles(key),
 				});
 				value.extraOptions?.onAnimationStart?.();
 			}
@@ -110,6 +118,7 @@ export const createFlipEngine = (
 						extractStylesRules(value.newStyle)),
 					...(flipMode === FlipMode.combined &&
 						getEdgeCaseStylings(key, animationMap)),
+					...applyImageStyles(key),
 				});
 				value.extraOptions?.onAnimationStart?.();
 			}

@@ -58,6 +58,7 @@ export const getChangeProperties = (animationOption: NormalizedInput[]) => {
 		"display",
 		"borderRadius",
 		"font",
+		"width",
 	]);
 	animationOption.forEach(
 		({ keyframeInstance: keyframe, unAnimatableStyles }) => {

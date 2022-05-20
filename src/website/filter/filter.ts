@@ -12,13 +12,13 @@ const initFilter = () => {
 				bewegung(
 					selectedImages,
 					{ display: "", transformOrigin: "50% 50%" },
-					{ duration: 1500 }
+					{ duration: 400 }
 				).play();
 			} else {
 				bewegung(
 					selectedImages,
 					{ display: "none", transformOrigin: "50% 50%" },
-					{ duration: 1500 }
+					{ duration: 400 }
 				).play();
 			}
 		})
