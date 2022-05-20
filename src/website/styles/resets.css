@@ -26,7 +26,8 @@ li,
 textarea,
 select,
 button,
-label {
+label,
+code {
 	font-size: var(--space-100);
 	line-height: 150%;
 }
@@ -36,7 +37,8 @@ a {
 	cursor: pointer;
 }
 
-ul, ol {
+ul,
+ol {
 	list-style: none;
 }
 

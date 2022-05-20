@@ -15,7 +15,7 @@
 	--space-50: calc(var(--space-60) / var(--multiplier)); /* 0.132rem */
 	--space-40: calc(var(--space-50) / var(--multiplier)); /* 0.088rem */
 	--space-30: calc(var(--space-40) / var(--multiplier)); /* 0.059rem */
-	
+
 	--main-row-gap: var(--space-500);
 
 	--border-radius: var(--space-70);
@@ -23,11 +23,10 @@
 	--border-color: grey;
 
 	--color-main: white;
-	--color-main-inverted: hsla(0,0%, 3%, 1);
-	--color-secondary: hsla(0,0%, 3%, 1);
+	--color-main-inverted: hsla(0, 0%, 3%, 1);
+	--color-secondary: hsla(0, 0%, 3%, 1);
 	--color-secondary-inverted: white;
 
 	--glass-background-color: rgba(255, 255, 255, 0.125);
 	--glass-border-color: rgba(17, 25, 40, 0.26);
-
 }
