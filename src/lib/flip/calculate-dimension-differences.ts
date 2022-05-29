@@ -8,7 +8,7 @@ export interface DimensionalDifferences {
 	yDifference: number;
 }
 
-type Entry = Omit<CalculatedProperties, "offset">;
+export type Entry = Omit<CalculatedProperties, "offset">;
 
 const parseTransformOrigin = (entry: Entry) => {
 	const transformOriginString = entry.styles.transformOrigin;
