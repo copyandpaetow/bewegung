@@ -41,10 +41,20 @@ bewegung.play()
 
 ## Think about
 
-- intersection Observer with rootMargin as the elements exact position => any movement will get noticed (Even page scroll ...) and could update the position of elements
+- intersection Observer with rootMargin as the elements exact position => any movement will get noticed and could update the position of elements
+  => can the observer catch a change that is revereted immediatly? it cant
+
 - mutation Observer to get any change
-  - changes and dimensions would have to be marked and reversed (and the observer most likely disconnected until the changes are reversed)
-  - elements could get an attribute so signal, they shouldnt be observered
+  - on change, the flip values will be calculated and directly applied, so the change isnt noticed and could than be played
+  - it is unclear, if complexer animations be orchestrated with this method
+    => alternatively, the changes could be reversed
+
+### what can we take from this?
+
+=> the structure of having a set of elements and several weakMaps is interesting and would maybe help with the web worker approach (IO only in the beginning and the end)
+
+- there could be a dimension weakMap with [element, [dimension1, dimension2, ... dimensionRef]] => the value could be sent to a web worker
+  => the mutationObserver and the idleCallback could be used to update the dimension or at least track of the dimensions are still valid
 
 ## License
 

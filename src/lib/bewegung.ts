@@ -31,7 +31,7 @@ const createAnimations = (
 		addAnimationEngine(context)
 	)(animationInputs);
 
-const logCalculationTime = (startingTime: number) => {
+export const logCalculationTime = (startingTime: number) => {
 	const end = performance.now() - startingTime;
 	if (end < 50) {
 		console.log(`animation calculation was fast with ${end}ms`);
@@ -67,6 +67,11 @@ export type CustomKeyframeEffect = [
 	options?: number | Options
 ];
 
+const logger = (input: any) => {
+	console.log({ input });
+	return input;
+};
+
 export const bewegung = (
 	...animationInput:
 		| CustomKeyframeEffect
@@ -78,7 +83,8 @@ export const bewegung = (
 		arrayifyInputs,
 		expandTargetsIntoEntries,
 		createInternalStructure,
-		addMissingDefaults
+		addMissingDefaults,
+		logger
 	)(animationInput);
 
 	const context = createContext(normalizedInputs);

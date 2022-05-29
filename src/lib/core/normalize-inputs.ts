@@ -21,7 +21,9 @@ export const arrayifyInputs = (
 ): (CustomKeyframeEffect | KeyframeEffect)[] => {
 	if (
 		animationInput instanceof KeyframeEffect ||
-		animationInput.some((prop) => !Array.isArray(prop))
+		animationInput.some(
+			(prop) => !Array.isArray(prop) && !(prop instanceof KeyframeEffect)
+		)
 	) {
 		return [animationInput] as (CustomKeyframeEffect | KeyframeEffect)[];
 	}
@@ -110,7 +112,7 @@ const formatArraySyntax = (
 	return objectArray;
 };
 
-const formatKeyFrames = (
+export const formatKeyFrames = (
 	keyframe: CustomKeyframe | CustomKeyframe[] | CustomKeyframeArrayValueSyntax
 ): CustomKeyframe[] => {
 	if (Array.isArray(keyframe)) {
@@ -125,7 +127,9 @@ const formatKeyFrames = (
 	throw new Error("No mixing between array and object syntax");
 };
 
-const splitByKeywords = ([key, _]: [string, unknown]): string | string[] => {
+export const splitByKeywords = ([key, _]: [string, unknown]):
+	| string
+	| string[] => {
 	const groupingKeys = ["callbacks"];
 	if (groupingKeys.includes(key)) {
 		return key;
@@ -141,7 +145,7 @@ const splitByKeywords = ([key, _]: [string, unknown]): string | string[] => {
 	return "styles";
 };
 
-const getUnanimatableStyles = (
+export const getUnanimatableStyles = (
 	computedKeyframes: ComputedKeyframe[],
 	originalKeyframes: CustomKeyframe[]
 ): CustomKeyframe[] =>

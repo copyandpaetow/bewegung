@@ -6,10 +6,11 @@ import { IncludeAffectedElements } from "./main-include-affected-elements";
 export const getComputedStylings = (
 	changeProperties: cssRuleName[],
 	element?: HTMLElement
-): CustomKeyframe => {
-	const style = element
-		? window.getComputedStyle(element)
-		: window.getComputedStyle(document.head); //an empty element that is mounted in the DOM
+): Partial<CSSStyleDeclaration> => {
+	const style =
+		element && document.body.contains(element)
+			? window.getComputedStyle(element)
+			: window.getComputedStyle(document.head); //an empty element that is mounted in the DOM
 
 	const transformedProperties = changeProperties.reduce(
 		(accumulator, current) => {

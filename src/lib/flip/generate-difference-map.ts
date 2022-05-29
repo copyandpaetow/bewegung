@@ -7,11 +7,11 @@ import {
 } from "../core/main-read-dimensions";
 import { DimensionDifferences, Flip } from "./create-flip-engine";
 
-const emptyNonZeroDOMRect: DOMRect = {
+export const emptyNonZeroDOMRect: DOMRect = {
 	width: 1,
 	height: 1,
-	x: 1,
-	y: 1,
+	x: 0,
+	y: 0,
 	top: 0,
 	right: 0,
 	bottom: 0,
