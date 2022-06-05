@@ -32,3 +32,10 @@ export type CustomKeyframeEffect = [
 	keyframes: CustomKeyframe | CustomKeyframe[] | CustomKeyframeArrayValueSyntax,
 	options?: number | KeyframeEffectOptions
 ];
+
+export type Callbacks = {
+	callback: VoidCallback;
+	offset: number;
+};
+
+export type ValueOf<T> = T[keyof T];

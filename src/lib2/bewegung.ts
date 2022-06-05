@@ -1,19 +1,26 @@
 import { CustomKeyframeEffect } from "./types";
-import { arrayifyInputs } from "../lib/core/normalize-inputs";
 import { logCalculationTime } from "../lib/bewegung";
-import {
-	cleanup,
-	mutate_callbacks,
-	mutate_keyframeState,
-	mutate_mainElements,
-	mutate_options,
-	play_animation,
-} from "./state";
 import {
 	normalizeTarget,
 	normalizeKeyframes,
 	normalizeOptions,
 } from "./format-inputs";
+import { arrayifyInputs } from "./helper/normalize-inputs";
+import { cleanup_animations, play_animation } from "./state/animation";
+import { cleanup_calculations } from "./state/calculations";
+import { cleanup_callbacks, mutate_callbacks } from "./state/callbacks";
+import { cleanup_elements, mutate_mainElements } from "./state/elements";
+import { cleanup_keyframes, mutate_keyframeState } from "./state/keyframes";
+import { cleanup_options, mutate_options } from "./state/options";
+
+const cleanup = () => {
+	cleanup_elements();
+	cleanup_options();
+	cleanup_keyframes();
+	cleanup_callbacks();
+	cleanup_calculations();
+	cleanup_animations();
+};
 
 export const bewegung2 = (
 	...animationInput:

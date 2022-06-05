@@ -1,5 +1,5 @@
 import { normalizeElement } from "../lib/core/dom-normalize-element";
-import { formatKeyFrames } from "../lib/core/normalize-inputs";
+import { formatKeyFrames } from "./helper/normalize-inputs";
 import { CustomKeyframeEffect } from "./types";
 
 const defaults: Partial<KeyframeEffectOptions> = {
