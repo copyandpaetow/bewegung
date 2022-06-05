@@ -206,6 +206,7 @@ const emptyCalculatedProperties = () =>
 export const mutation_calculateDifferences = () => {
 	const elements = [...state_mainElements, ...state_affectedElements];
 
+	//TODO: either conmbine the states or find a way to iterate more states at once
 	const entries = elements.map((element): [HTMLElement, Entry[]] => {
 		const dimensions = state_dimensions.get(element);
 		const styles = state_calculatedStyle.get(element);
@@ -230,6 +231,7 @@ export const mutation_calculateDifferences = () => {
 				parentEntries[index],
 				parentEntries[array.length - 1],
 			];
+			//TODO: somehow the animation is wrong: is the problem coming from here?
 			return calculateDimensionDifferences(child, parent, element);
 		});
 		state_calculatedDifferences.set(element, calculated);
@@ -257,6 +259,22 @@ export const mutation_createWAAPI = () => {
 
 export const play_animation = () => {
 	const elements = [...state_mainElements, ...state_affectedElements];
+
+	iterateWeakMap(
+		state_mainElements,
+		state_keyframes
+	)((value, key) => {
+		const resultingStyle = value.reduce(
+			(
+				accumulator,
+				{ offset, composite, computedOffset, easing, ...styles }
+			) => {
+				return { ...accumulator, ...styles };
+			},
+			{}
+		);
+		Object.assign(key.style, resultingStyle);
+	});
 
 	iterateWeakMap(elements, state_WAAPI)((value) => value.play());
 };
