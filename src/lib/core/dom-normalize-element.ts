@@ -32,9 +32,13 @@ export const normalizeElement = (
 	}
 
 	if (Array.isArray(elementOrElements)) {
-		return elementOrElements.flatMap((element) =>
-			convertToElementArray(element as HTMLElement)
-		);
+		return elementOrElements.flatMap((element) => {
+			if (element instanceof HTMLElement) {
+				return element;
+			}
+
+			return convertToElementArray(element as HTMLElement);
+		});
 	}
 
 	return convertToElementArray(elementOrElements as HTMLElement);

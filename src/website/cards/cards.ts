@@ -34,8 +34,11 @@ const initCards = () => {
 			},
 		];
 
-		const animation = bewegung(highlightCard, hideOthers);
+		const animation = bewegung2(highlightCard, hideOthers);
 		animation.play();
+		// setTimeout(() => {
+		// 	animation.pause();
+		// }, 1000);
 	};
 
 	cardsNextButton?.addEventListener("click", () => {
@@ -52,6 +55,7 @@ document.addEventListener(
 	"DOMContentLoaded",
 	() => {
 		initCards();
+		//test1();
 	},
 	false
 );
