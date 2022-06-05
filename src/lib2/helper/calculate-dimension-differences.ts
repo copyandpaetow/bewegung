@@ -1,9 +1,3 @@
-export type CalculatedProperties = {
-	dimensions: DOMRect;
-	styles: Record<string, any>;
-	offset: number;
-};
-
 export interface DimensionalDifferences {
 	heightDifference: number;
 	widthDifference: number;
@@ -11,13 +5,16 @@ export interface DimensionalDifferences {
 	yDifference: number;
 }
 
+export type Entry = {
+	dimensions: DOMRect;
+	styles: Record<string, any>;
+};
+
 const save = (value: number, alternative: number): number => {
 	return value === Infinity || value === -Infinity || isNaN(value)
 		? alternative
 		: value;
 };
-
-export type Entry = Omit<CalculatedProperties, "offset">;
 
 const parseTransformOrigin = (entry: Entry) => {
 	const transformOriginString = entry.styles.transformOrigin;

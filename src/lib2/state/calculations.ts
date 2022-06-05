@@ -9,7 +9,7 @@ import { getComputedStylings, getDomRect } from "../helper/read-dimensions";
 import { cssRuleName } from "../types";
 import { mutation_createWAAPI } from "./animation";
 import {
-	state_affectedElements,
+	getElements,
 	state_mainElements,
 	state_originalStyle,
 } from "./elements";
@@ -42,9 +42,7 @@ export const readDOM = () => {
 };
 
 const mutation_addDOMInformation = (changeProperties: cssRuleName[]) => {
-	const elements = [...state_mainElements, ...state_affectedElements];
-
-	elements.forEach((element) => {
+	getElements().forEach((element) => {
 		state_dimensions.set(element, [
 			...(state_dimensions.get(element) || []),
 			getDomRect(element),
@@ -88,7 +86,7 @@ const emptyCalculatedProperties = () =>
 	}));
 
 const mutation_calculateDifferences = () => {
-	const elements = [...state_mainElements, ...state_affectedElements];
+	const elements = getElements();
 
 	//TODO: either conmbine the states or find a way to iterate more states at once
 	const entries = elements.map((element): [HTMLElement, Entry[]] => {

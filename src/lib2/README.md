@@ -75,7 +75,3 @@
   - if a main element is added (via a css selector), the keyframe and the options would need to be extended and the derived state recalculated
 
   Both: since we cant guarantee that no layout shift took place when resizing re-reading the dom and recalculating the keyframes as well as replacing the whole animation is neccessary
-
-## Questions
-
-- how to split the state? state, mutations,actions or element states, element mutations, option state, option, mutation etc

@@ -2,7 +2,7 @@ import { findAffectedDOMElements } from "../helper/dom-find-affected-elements";
 import { mutate_options } from "./options";
 
 export let state_mainElements = new Set<HTMLElement>();
-export let state_affectedElements = new Set<HTMLElement>();
+let state_affectedElements = new Set<HTMLElement>();
 export let state_originalStyle = new WeakMap<HTMLElement, string>();
 export let state_affectedByMainElements = new WeakMap<
 	HTMLElement,
