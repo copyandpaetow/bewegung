@@ -1,26 +1,41 @@
 import { CustomKeyframeEffect } from "./types";
 import { logCalculationTime } from "../lib/bewegung";
+import { formatInputs } from "./format-inputs";
 import {
-	normalizeTarget,
-	normalizeKeyframes,
-	normalizeOptions,
-} from "./format-inputs";
-import { arrayifyInputs } from "./helper/normalize-inputs";
-import { cleanup_animations, play_animation } from "./state/animation";
-import { cleanup_calculations } from "./state/calculations";
-import { cleanup_callbacks, mutate_callbacks } from "./state/callbacks";
-import { cleanup_elements, mutate_mainElements } from "./state/elements";
-import { cleanup_keyframes, mutate_keyframeState } from "./state/keyframes";
-import { cleanup_options, mutate_options } from "./state/options";
+	finishPromise,
+	mutation_createWAAPI,
+	play_animation,
+} from "./state/animation";
+import {
+	mutation_addDOMInformation,
+	mutation_calculateDifferences,
+	action_readDom,
+} from "./state/calculations";
+import { action_updateCallbacks } from "./state/callbacks";
+import { action_updateElements } from "./state/elements";
+import { action_updateKeyframes } from "./state/keyframes";
+import { action_updateOptions } from "./state/options";
+import { init_mutationObserver } from "./helper/mutation-observer";
+import { execute } from "./helper/iterables";
+import { init_resizeObserver } from "./helper/resize-observer";
 
-const cleanup = () => {
-	cleanup_elements();
-	cleanup_options();
-	cleanup_keyframes();
-	cleanup_callbacks();
-	cleanup_calculations();
-	cleanup_animations();
-};
+//TODO: create a cleanup callback after the animation is done
+
+const preparationFlow = [
+	action_updateElements,
+	action_updateOptions,
+	action_updateKeyframes,
+	action_updateCallbacks,
+];
+
+const recalcFlow = [
+	action_readDom,
+	mutation_calculateDifferences,
+	mutation_createWAAPI,
+];
+
+const recalculateStyles = execute(...recalcFlow);
+const recalculateEverything = execute(...preparationFlow, ...recalcFlow);
 
 export const bewegung2 = (
 	...animationInput:
@@ -28,28 +43,25 @@ export const bewegung2 = (
 		| (CustomKeyframeEffect | KeyframeEffect)[]
 ) => {
 	const start = performance.now();
-	//TODO: maybe there could be a better place for this?
-	cleanup();
-	const targetElements = arrayifyInputs(animationInput).flatMap((input) => {
-		const target = normalizeTarget(input);
-		const { keyframes, callbacks } = normalizeKeyframes(input);
-		const options = normalizeOptions(input);
-		//TODO: composite is missing
+	formatInputs(...animationInput);
 
-		target.forEach((element) => {
-			mutate_options(element, options, true);
-			mutate_keyframeState(element, keyframes, true);
-			mutate_callbacks(element, callbacks, true);
-		});
+	execute(...preparationFlow.slice(1), ...recalcFlow)();
 
-		return target;
+	const MO = init_mutationObserver({
+		full: recalculateEverything,
+		stylesOnly: recalculateStyles,
 	});
 
-	mutate_mainElements(...targetElements);
+	const RO = init_resizeObserver(recalculateStyles);
 
 	logCalculationTime(start);
 
 	return {
-		play: () => play_animation(),
+		play: () => {
+			MO.disconnect();
+			RO.disconnect();
+			console.log("play");
+			play_animation();
+		},
 	};
 };

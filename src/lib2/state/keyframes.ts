@@ -1,6 +1,5 @@
-import { iterateWeakMap } from "../helper/iterate-weakMap";
+import { execute, iterateWeakMap } from "../helper/iterables";
 import { cssRuleName } from "../types";
-import { mutate_callbacks } from "./callbacks";
 import { state_mainElements } from "./elements";
 import { state_options, totalRuntime } from "./options";
 
@@ -85,35 +84,12 @@ const mutate_updateKeyframes = () => {
 	});
 };
 
-export const mutate_keyframeState = (
-	element?: HTMLElement,
-	keyframe?: ComputedKeyframe[],
-	hasNext?: boolean
-) => {
-	const listeners = [
-		compute_changeTimings,
-		compute_changingCSSProperties,
-		mutate_updateKeyframes,
-		mutate_callbacks,
-	];
+const flow = execute(
+	compute_changeTimings,
+	compute_changingCSSProperties,
+	mutate_updateKeyframes
+);
 
-	if (element && keyframe) {
-		state_keyframes.set(element, keyframe);
-	}
-	if (!Boolean(hasNext)) {
-		listeners.forEach((callback) => callback());
-	}
-};
-
-export const cleanup_keyframes = () => {
-	state_keyframes = new WeakMap<HTMLElement, ComputedKeyframe[]>();
-	timings = [0, 1];
-	changeProperties = [
-		"transformOrigin",
-		"position",
-		"display",
-		"borderRadius",
-		"font",
-		"width",
-	];
+export const action_updateKeyframes = () => {
+	flow();
 };

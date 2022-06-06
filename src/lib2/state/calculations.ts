@@ -4,10 +4,9 @@ import {
 	DimensionalDifferences,
 	Entry,
 } from "../helper/calculate-dimension-differences";
-import { iterateWeakMap } from "../helper/iterate-weakMap";
+import { iterateWeakMap } from "../helper/iterables";
 import { getComputedStylings, getDomRect } from "../helper/read-dimensions";
 import { cssRuleName } from "../types";
-import { mutation_createWAAPI } from "./animation";
 import {
 	getElements,
 	state_mainElements,
@@ -27,7 +26,21 @@ export let state_calculatedDifferences = new WeakMap<
 	DimensionalDifferences[]
 >();
 
-export const readDOM = () => {
+const cleanup_calculations = () => {
+	state_dimensions = new WeakMap<HTMLElement, DOMRect[]>();
+
+	state_calculatedStyle = new WeakMap<
+		HTMLElement,
+		Partial<CSSStyleDeclaration>[]
+	>();
+	state_calculatedDifferences = new WeakMap<
+		HTMLElement,
+		DimensionalDifferences[]
+	>();
+};
+
+export const action_readDom = () => {
+	cleanup_calculations();
 	timings.forEach((timing, index, array) => {
 		// apply the keyframe styles to the main element
 		dom_applyKeyframes(timing);
@@ -38,10 +51,9 @@ export const readDOM = () => {
 			dom_reapplyOriginalStyle();
 		}
 	});
-	mutation_calculateDifferences();
 };
 
-const mutation_addDOMInformation = (changeProperties: cssRuleName[]) => {
+export const mutation_addDOMInformation = (changeProperties: cssRuleName[]) => {
 	getElements().forEach((element) => {
 		state_dimensions.set(element, [
 			...(state_dimensions.get(element) || []),
@@ -85,7 +97,7 @@ const emptyCalculatedProperties = () =>
 		styles: getComputedStylings(changeProperties),
 	}));
 
-const mutation_calculateDifferences = () => {
+export const mutation_calculateDifferences = () => {
 	const elements = getElements();
 
 	//TODO: either conmbine the states or find a way to iterate more states at once
@@ -118,18 +130,4 @@ const mutation_calculateDifferences = () => {
 		});
 		state_calculatedDifferences.set(element, calculated);
 	});
-	mutation_createWAAPI();
-};
-
-export const cleanup_calculations = () => {
-	state_dimensions = new WeakMap<HTMLElement, DOMRect[]>();
-
-	state_calculatedStyle = new WeakMap<
-		HTMLElement,
-		Partial<CSSStyleDeclaration>[]
-	>();
-	state_calculatedDifferences = new WeakMap<
-		HTMLElement,
-		DimensionalDifferences[]
-	>();
 };

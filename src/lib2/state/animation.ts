@@ -1,10 +1,14 @@
-import { iterateWeakMap } from "../helper/iterate-weakMap";
+import { iterateWeakMap } from "../helper/iterables";
 import { state_calculatedDifferences } from "./calculations";
 import { state_mainElements, getElements } from "./elements";
 import { state_keyframes } from "./keyframes";
 import { state_options } from "./options";
 
 let state_WAAPI = new WeakMap<HTMLElement, Animation>();
+
+const cleanup_animations = () => {
+	state_WAAPI = new WeakMap<HTMLElement, Animation>();
+};
 
 export const play_animation = () => {
 	iterateWeakMap(
@@ -26,6 +30,7 @@ export const play_animation = () => {
 };
 
 export const mutation_createWAAPI = () => {
+	cleanup_animations();
 	getElements().forEach((element) => {
 		const keyframes = state_calculatedDifferences.get(element).map(
 			({ xDifference, yDifference, widthDifference, heightDifference }) =>
@@ -42,6 +47,11 @@ export const mutation_createWAAPI = () => {
 	});
 };
 
-export const cleanup_animations = () => {
-	state_WAAPI = new WeakMap<HTMLElement, Animation>();
+export const finishPromise = () => {
+	const promises = [];
+	iterateWeakMap(
+		getElements(),
+		state_WAAPI
+	)((value) => promises.push(value.finished));
+	return Promise.all(promises);
 };

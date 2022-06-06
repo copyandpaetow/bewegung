@@ -1,3 +1,5 @@
+import { VoidCallback } from "../types";
+
 export const iterateWeakMap =
 	<Value>(
 		elements: HTMLElement[] | Set<HTMLElement>,
@@ -15,3 +17,8 @@ export const iterateWeakMap =
 			callback(value, element, weakMap);
 		});
 	};
+
+export const execute =
+	(...callbacks: Function[]) =>
+	() =>
+		callbacks.forEach((callback) => callback());

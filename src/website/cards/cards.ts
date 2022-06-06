@@ -35,10 +35,10 @@ const initCards = () => {
 		];
 
 		const animation = bewegung2(highlightCard, hideOthers);
-		animation.play();
-		// setTimeout(() => {
-		// 	animation.pause();
-		// }, 1000);
+
+		setTimeout(() => {
+			animation.play();
+		}, 5000);
 	};
 
 	cardsNextButton?.addEventListener("click", () => {

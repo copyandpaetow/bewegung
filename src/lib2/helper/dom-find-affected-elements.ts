@@ -1,4 +1,4 @@
-const STOP_TRAVERSING_CLASS = "bewegung-stop-traversing";
+export const STOP_TRAVERSING_CLASS = "bewegung-stop-traversing";
 
 const getParent = (element: HTMLElement) =>
 	element.parentElement || document.body;

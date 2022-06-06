@@ -1,5 +1,9 @@
 import { normalizeElement } from "../lib/core/dom-normalize-element";
-import { formatKeyFrames } from "./helper/normalize-inputs";
+import { arrayifyInputs, formatKeyFrames } from "./helper/normalize-inputs";
+import { state_callbacks } from "./state/callbacks";
+import { state_mainElements } from "./state/elements";
+import { state_keyframes } from "./state/keyframes";
+import { state_options } from "./state/options";
 import { CustomKeyframeEffect } from "./types";
 
 const defaults: Partial<KeyframeEffectOptions> = {
@@ -68,3 +72,22 @@ export const normalizeOptions = (
 		? input.getComputedTiming()
 		: new KeyframeEffect(null, null, input[2] || defaults).getComputedTiming();
 };
+
+export const formatInputs = (
+	...animationInput:
+		| CustomKeyframeEffect
+		| (CustomKeyframeEffect | KeyframeEffect)[]
+) =>
+	arrayifyInputs(animationInput).forEach((input) => {
+		const target = normalizeTarget(input);
+		const { keyframes, callbacks } = normalizeKeyframes(input);
+		const options = normalizeOptions(input);
+		//TODO: composite is missing
+
+		target.forEach((element) => {
+			state_mainElements.add(element);
+			state_options.set(element, options);
+			state_keyframes.set(element, keyframes);
+			state_callbacks.set(element, callbacks);
+		});
+	});
