@@ -13,7 +13,7 @@ export const iterateWeakMap =
 		) => void
 	) => {
 		return Array.from(elements).forEach((element) => {
-			const value = weakMap.get(element);
+			const value = weakMap.get(element)!;
 			callback(value, element, weakMap);
 		});
 	};

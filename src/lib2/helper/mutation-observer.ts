@@ -19,7 +19,6 @@ const callback =
 	(mutationList: MutationRecord[], observer: MutationObserver) => {
 		observer.disconnect();
 		mutationList.forEach((mutation) => {
-			console.log({ mutation });
 			switch (mutation.type) {
 				case "childList":
 					const changedElements = [

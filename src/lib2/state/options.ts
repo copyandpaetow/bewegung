@@ -10,7 +10,7 @@ export const compute_runtime = () => {
 		state_mainElements,
 		state_options
 	)((value) => {
-		longestDuration = Math.max(value.endTime, longestDuration);
+		longestDuration = Math.max(value.endTime!, longestDuration);
 	});
 
 	totalRuntime = longestDuration;

@@ -10,11 +10,11 @@ const mutate_updateCallbacks = () => {
 		state_mainElements,
 		state_callbacks
 	)((value, key) => {
-		const { delay: start, duration: end, endDelay } = state_options.get(key);
+		const { delay: start, duration: end, endDelay } = state_options.get(key)!;
 
 		const updatedKeyframes = value.map((frame) => {
 			const absoluteTiming =
-				((end as number) * frame.offset + (start as number) + endDelay) /
+				((end as number) * frame.offset + (start as number) + endDelay!) /
 				totalRuntime;
 			return {
 				...frame,

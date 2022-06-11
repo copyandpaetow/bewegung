@@ -14,7 +14,7 @@ export let changeProperties: cssRuleName[] = [
 	"width",
 ];
 
-export function compute_changingCSSProperties() {
+export const compute_changingCSSProperties = () => {
 	const newStyles = new Set<cssRuleName>(changeProperties);
 
 	iterateWeakMap(
@@ -31,17 +31,17 @@ export function compute_changingCSSProperties() {
 	});
 
 	changeProperties = Array.from(newStyles);
-}
+};
 
 export let timings = [0, 1];
-export function compute_changeTimings() {
+export const compute_changeTimings = () => {
 	const newTimings = new Set(timings);
 
 	iterateWeakMap(
 		state_mainElements,
 		state_keyframes
 	)((value, key) => {
-		const { delay: start, duration: end, endDelay } = state_options.get(key);
+		const { delay: start, duration: end, endDelay } = state_options.get(key)!;
 
 		newTimings.add((start as number) / totalRuntime);
 
@@ -58,21 +58,22 @@ export function compute_changeTimings() {
 		}
 	});
 	timings = Array.from(newTimings).sort((a, b) => a - b);
-}
+};
 
-const mutate_updateKeyframes = () => {
+const mutate_updateOffsets = () => {
 	iterateWeakMap(
 		state_mainElements,
 		state_keyframes
 	)((value, key) => {
-		const { delay: start, duration: end, endDelay } = state_options.get(key);
+		const { delay: start, duration: end, endDelay } = state_options.get(key)!;
 
 		const updatedKeyframes = value.map((frame) => {
 			const absoluteTiming =
 				((end as number) * frame.computedOffset +
 					(start as number) +
-					endDelay) /
+					endDelay!) /
 				totalRuntime;
+
 			return {
 				...frame,
 				offset: absoluteTiming,
@@ -87,7 +88,7 @@ const mutate_updateKeyframes = () => {
 const flow = execute(
 	compute_changeTimings,
 	compute_changingCSSProperties,
-	mutate_updateKeyframes
+	mutate_updateOffsets
 );
 
 export const action_updateKeyframes = () => {
