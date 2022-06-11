@@ -57,7 +57,7 @@ const callback =
 					}
 					break;
 				case "characterData":
-					if (getElements().includes(mutation.target.parentElement)) {
+					if (getElements().includes(mutation.target.parentElement!)) {
 						stylesOnly();
 					}
 					break;

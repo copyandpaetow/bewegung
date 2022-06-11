@@ -2,7 +2,6 @@
 
 ## missing features that are already implemented in V1
 
-- calc the easing for affected Elements
 - animation concept for display: none
 - callbacks
 - scroll
