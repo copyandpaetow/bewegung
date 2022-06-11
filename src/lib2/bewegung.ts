@@ -4,10 +4,10 @@ import { formatInputs } from "./format-inputs";
 import {
 	finishPromise,
 	mutation_createWAAPI,
+	pause_animation,
 	play_animation,
 } from "./state/animation";
 import {
-	mutation_addDOMInformation,
 	mutation_calculateDifferences,
 	action_readDom,
 } from "./state/calculations";
@@ -18,8 +18,6 @@ import { action_updateOptions } from "./state/options";
 import { init_mutationObserver } from "./helper/mutation-observer";
 import { execute } from "./helper/iterables";
 import { init_resizeObserver } from "./helper/resize-observer";
-
-//TODO: create a cleanup callback after the animation is done
 
 const preparationFlow = [
 	action_updateElements,
@@ -45,7 +43,7 @@ export const bewegung2 = (
 	const start = performance.now();
 	formatInputs(...animationInput);
 
-	execute(...preparationFlow.slice(1), ...recalcFlow)();
+	recalculateEverything();
 
 	const MO = init_mutationObserver({
 		full: recalculateEverything,
@@ -60,8 +58,8 @@ export const bewegung2 = (
 		play: () => {
 			MO.disconnect();
 			RO.disconnect();
-			console.log("play");
 			play_animation();
 		},
+		pause: () => pause_animation(),
 	};
 };

@@ -1,14 +1,12 @@
+import { calculatedElementProperties } from "../state/calculations";
+
 export interface DimensionalDifferences {
 	heightDifference: number;
 	widthDifference: number;
 	xDifference: number;
 	yDifference: number;
+	offset: number;
 }
-
-export type Entry = {
-	dimensions: DOMRect;
-	styles: Record<string, any>;
-};
 
 const save = (value: number, alternative: number): number => {
 	return value === Infinity || value === -Infinity || isNaN(value)
@@ -16,8 +14,8 @@ const save = (value: number, alternative: number): number => {
 		: value;
 };
 
-const parseTransformOrigin = (entry: Entry) => {
-	const transformOriginString = entry.styles.transformOrigin;
+const parseTransformOrigin = (entry: calculatedElementProperties) => {
+	const transformOriginString = entry.computedStyle.transformOrigin!;
 
 	const calculated = transformOriginString
 		.split(" ")
@@ -36,8 +34,8 @@ const parseTransformOrigin = (entry: Entry) => {
 };
 
 export const calculateDimensionDifferences = (
-	child: [Entry, Entry],
-	parent: [Entry, Entry],
+	child: [calculatedElementProperties, calculatedElementProperties],
+	parent: [calculatedElementProperties, calculatedElementProperties],
 	target: HTMLElement
 ): DimensionalDifferences => {
 	const [currentEntry, referenceEntry] = child;
@@ -63,9 +61,10 @@ export const calculateDimensionDifferences = (
 	const childHeightDifference = current.height / reference.height;
 
 	const heightDifference = childHeightDifference / parentHeightDifference;
-	const widthDifference =
-		(target.childElementCount === 0 ? 1 : childWidthDifference) /
-		parentWidthDifference;
+	const widthDifference = childWidthDifference / parentWidthDifference;
+	// const widthDifference =
+	// 	(target.childElementCount === 0 ? 1 : childWidthDifference) /
+	// 	parentWidthDifference;
 
 	const currentXDifference =
 		current.x + originCurrentX - (parentCurrent.x + originParentCurrentX);
@@ -81,16 +80,19 @@ export const calculateDimensionDifferences = (
 		originReferenceY -
 		(parentReference.y + originParentReferenceY);
 
-	const textWidthDifference =
-		parseFloat(currentEntry.styles.width) === currentEntry.dimensions.width
-			? 1
-			: parseFloat(currentEntry.styles.width) /
-			  currentEntry.dimensions.width /
-			  parentWidthDifference;
+	// const textWidthDifference =
+	// 	parseFloat(currentEntry.computedStyle.width!) ===
+	// 	currentEntry.dimensions.width
+	// 		? 1
+	// 		: parseFloat(currentEntry.computedStyle.width!) /
+	// 		  currentEntry.dimensions.width /
+	// 		  parentWidthDifference;
 
+	// const xDifference =
+	// 	(currentXDifference / parentWidthDifference - referenceXDifference) *
+	// 	textWidthDifference;
 	const xDifference =
-		(currentXDifference / parentWidthDifference - referenceXDifference) *
-		textWidthDifference;
+		currentXDifference / parentWidthDifference - referenceXDifference;
 	const yDifference =
 		currentYDifference / parentHeightDifference - referenceYDifference;
 
@@ -99,5 +101,6 @@ export const calculateDimensionDifferences = (
 		widthDifference: save(widthDifference, 1),
 		xDifference: save(xDifference, 0),
 		yDifference: save(yDifference, 0),
+		offset: currentEntry.offset,
 	};
 };
