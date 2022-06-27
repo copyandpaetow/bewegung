@@ -18,8 +18,16 @@ export const bewegung3 = (
 	calculate(changeProperties, changeTimings);
 	const waapi = animate(totalRuntime);
 
-	//upcoming problems
-	//TODO: the same element could be in different chunks for different animation (animate rotate/opacity separatly)
+	/*
+	upcoming tasks
+	TODO: the same element could be in different chunks for different animation (animate rotate/opacity separatly)
+	TODO: image aspect ratio and border-radius 
+	?: does display: none work now? 
+	TODO: reactivity for mutations, resizes, and positional Changes (IO)
+
+	in favor of tail-end calls. Depending on style or full recalc, just a different function has to be called
+	*/
+
 	logCalculationTime(start);
 
 	return {

@@ -27,8 +27,6 @@ export let state_calculatedDifferences = new WeakMap<
 	HTMLElement,
 	DimensionalDifferences[]
 >();
-let state_WAAPI = new WeakMap<HTMLElement, Animation>();
-export let state_originalStyle = new WeakMap<HTMLElement, string>();
 
 export const setState = (chunks: Chunks[], totalRuntime: number) => {
 	chunks.forEach((chunk) => {
@@ -88,7 +86,6 @@ export const setState = (chunks: Chunks[], totalRuntime: number) => {
 		const { delay: start, duration: end, easing } = options;
 
 		target.forEach((element) => {
-			state_originalStyle.set(element, element.style.cssText);
 			findAffectedDOMElements(element).forEach((affectedElement) => {
 				if (mainElements.has(affectedElement)) {
 					return;
@@ -130,8 +127,8 @@ export const calculate = (
 	const affectedElements = [...state_affectedElements];
 
 	changeTimings.forEach((timing, index, array) => {
-		// apply the keyframe styles to the main element
 		mainElements.forEach((element) => {
+			const originalStyle = element.style.cssText;
 			const keyframes = state_keyframes.get(element);
 			const currentStyleChange = keyframes?.find(
 				(keyframe) => keyframe.offset === timing
@@ -143,8 +140,15 @@ export const calculate = (
 				currentStyleChange;
 
 			Object.assign(element.style, cssStyles);
+
+			element.addEventListener(
+				"bewegung-restore",
+				() => (element.style.cssText = originalStyle),
+				{
+					once: true,
+				}
+			);
 		});
-		// calculate the dimensions and change properties for all elements
 		[...mainElements, ...affectedElements].forEach((element) => {
 			const newCalculation: calculatedElementProperties = {
 				dimensions: getDomRect(element),
@@ -156,12 +160,9 @@ export const calculate = (
 				newCalculation,
 			]);
 		});
-		// reset on the last
 		if (index === array.length - 1) {
 			mainElements.forEach((element) => {
-				const originalStyle = state_originalStyle.get(element) as string;
-
-				element.style.cssText = originalStyle;
+				element.dispatchEvent(new CustomEvent("bewegung-restore"));
 			});
 		}
 	});
@@ -194,7 +195,6 @@ const calculateEasingMap = (mainElements: Timeline | undefined) => {
 	if (!mainElements) {
 		return {};
 	}
-	// const easingMap = new Map<HTMLElement, ComputedKeyframe[]>();
 	const easingTable: Record<number, string> = {};
 
 	getTimelineFractions(mainElements as Timeline).forEach(
@@ -215,11 +215,11 @@ export const animate = (totalRuntime: number) => {
 	];
 	const affectedElements = [...state_affectedElements];
 
-	return [...mainElements, ...affectedElements].map((element) => {
-		const options = state_options.get(element);
+	const sideAnimations = affectedElements.map((element) => {
 		const easingTable = calculateEasingMap(
 			state_affectedElementEasings.get(element)
 		);
+
 		const keyframes = state_calculatedDifferences.get(element)!.map(
 			({
 				xDifference,
@@ -232,13 +232,47 @@ export const animate = (totalRuntime: number) => {
 					offset,
 					computedOffset: offset,
 					composite: "auto",
-					easing: easingTable[offset] ?? options?.easing ?? "linear",
+					easing: easingTable[offset],
 					transform: `translate(${xDifference}px, ${yDifference}px) scale(${widthDifference}, ${heightDifference})`,
 				} as Keyframe)
 		);
 
 		return new Animation(new KeyframeEffect(element, keyframes, totalRuntime));
 	});
+
+	const mainAnimations = mainElements.flatMap((element) => {
+		const options = state_options.get(element);
+		const keyframes = state_calculatedDifferences.get(element)!.map(
+			({
+				xDifference,
+				yDifference,
+				widthDifference,
+				heightDifference,
+				offset,
+			}) =>
+				({
+					offset,
+					computedOffset: offset,
+					composite: "auto",
+					easing: options!.easing,
+					transform: `translate(${xDifference}px, ${yDifference}px) scale(${widthDifference}, ${heightDifference})`,
+				} as Keyframe)
+		);
+		const callbackAnimations: Animation[] = [];
+		state_callbacks.get(element)?.forEach(({ offset, callback }) => {
+			const animation = new Animation(
+				new KeyframeEffect(element, null, offset * totalRuntime)
+			);
+			animation.onfinish = callback;
+			callbackAnimations.push(animation);
+		});
+		return [
+			new Animation(new KeyframeEffect(element, keyframes, totalRuntime)),
+			...callbackAnimations,
+		];
+	});
+
+	return [...sideAnimations, ...mainAnimations];
 };
 
 export const applyStyles = () => {
