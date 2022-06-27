@@ -1,5 +1,6 @@
 import { bewegung, CustomKeyframeEffect } from "../../lib/bewegung";
 import { bewegung2 } from "../../lib2/bewegung";
+import { bewegung3 } from "../../lib3/bewegung";
 
 const initCards = () => {
 	const cardsPrevButton = document.querySelector(".cards__button--prev");
@@ -19,7 +20,7 @@ const initCards = () => {
 				width: "100%",
 				order: "-1",
 			},
-			{ duration: 2000, easing: "ease-in" },
+			{ duration: 2000, easing: "ease" },
 		];
 
 		const hideOthers: CustomKeyframeEffect = [
@@ -34,11 +35,12 @@ const initCards = () => {
 			},
 		];
 
-		const animation = bewegung2(highlightCard, hideOthers);
-
-		setTimeout(() => {
-			animation.play();
-		}, 5000);
+		const animation = bewegung3(highlightCard, hideOthers);
+		animation.play();
+		// animation.pause();
+		// setTimeout(() => {
+		// 	animation.play();
+		// }, 5000);
 	};
 
 	cardsNextButton?.addEventListener("click", () => {
@@ -55,7 +57,6 @@ document.addEventListener(
 	"DOMContentLoaded",
 	() => {
 		initCards();
-		//test1();
 	},
 	false
 );

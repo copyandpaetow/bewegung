@@ -2,7 +2,7 @@
 
 ## init / prerequisits
 
-- on input, format the 3 parts (main elements, keyframes, options) to fit the right internal structure
+- on input, format the 3 parts (main elements, keyframes, options (and callbacks)) to fit the right internal structure
 - add these to their respective states => could the validation be done while adding?
 
 - for every main element, some additional data is needed
