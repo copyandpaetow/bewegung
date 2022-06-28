@@ -1,8 +1,8 @@
 import { logCalculationTime } from "../lib/bewegung";
-import { formatInputs } from "./format-inputs";
-import { calculateContext } from "./helper/calculate-context";
-import { animate, applyStyles, calculate, setState } from "./state";
+import { formatInputs } from "./inputs/format-inputs";
+import { setState } from "./elements/state";
 import { CustomKeyframeEffect } from "./types";
+import { pauseAnimation, playAnimation } from "./animate/getters";
 
 export const bewegung3 = (
 	...animationInput:
@@ -10,13 +10,7 @@ export const bewegung3 = (
 		| (CustomKeyframeEffect | KeyframeEffect)[]
 ) => {
 	const start = performance.now();
-	const chunks = formatInputs(...animationInput);
-	const { changeProperties, changeTimings, totalRuntime } =
-		calculateContext(chunks);
-
-	setState(chunks, totalRuntime);
-	calculate(changeProperties, changeTimings);
-	const waapi = animate(totalRuntime);
+	setState(formatInputs(...animationInput));
 
 	/*
 	upcoming tasks
@@ -24,6 +18,7 @@ export const bewegung3 = (
 	TODO: image aspect ratio and border-radius 
 	?: does display: none work now? 
 	TODO: reactivity for mutations, resizes, and positional Changes (IO)
+	TODO: spans and text nodes
 
 	in favor of tail-end calls. Depending on style or full recalc, just a different function has to be called
 	*/
@@ -31,10 +26,7 @@ export const bewegung3 = (
 	logCalculationTime(start);
 
 	return {
-		play: () => {
-			applyStyles();
-			waapi.forEach((animation) => animation.play());
-		},
-		pause: () => waapi.forEach((animation) => animation.pause()),
+		play: () => playAnimation(),
+		pause: () => pauseAnimation(),
 	};
 };

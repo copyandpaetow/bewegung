@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { Chunks } from "./types";
 
 const input = [
 	{ target: [elem1, elem2, elem3], keyframes1, callbacks1, options1 },
@@ -40,7 +41,6 @@ const input = [
 => if a side element is removed, recalc only needed 
 */
 
-
 /*
 a. all entries need to get normalized and the data structure gets returned as singleSourceOfTruth
 * this would need to be reactive, changes from the MO need to affect this and tripple down from here
@@ -51,8 +51,6 @@ d. for a chunk of elements, their affeced elements will be fetched and added as 
 	 the element chunk will get added to the mainElements state. The options of the chunk will added to the affectedByMainElements state
 ?  unclear if this would allow for recalc later
 */
-
-
 
 /* 
 a. all entries need to get normalized and the data structure gets returned
@@ -69,52 +67,5 @@ d. set the main as chunks [[elem1, elem2, elem3],  [elem4, elem5, elem6], [elem7
 
 
 
-for every changed main state element
-=> get and set affected Elements (on add)
-=> add eventlisteners and AbortSignal (on add)
-* should be queued in a microtask
-=> recalc totalRunetime and changeStyles
-
-for every added affected state element
-=> get and set affectedByMainElements
-=> add eventlisteners and AbortSignal    
-
-for a change in totalRunetime and/or changeStyles
-=> update changeTimings
-
-for a change in changeTimings
-=> dispatch event to calc styles
-...
 
 */
-
-
-const SelectorWM = new WeakMap()
-
-const ArrayOfSets = [new Set([elem1, elem2, elem3]),new Set( [elem4, elem5, elem6]),  new Set([elem7, elem8, elem9])]
-
-SelectorWM.set(ArrayOfSets[0], "cards")
-
-
-const getChunkRepresentetive = ArrayOfSets.flatMap(entry => entry[0]).filter(Boolean)
-
-const getAllElements = ArrayOfSets.flatMap(entry => entry)
-
-const addToChunk = (element) => ArrayOfSets.forEach(entry=> {
-	if(!SelectorWM.has(entry) || !element.matches(SelectorWM.get(entry))){
-		return
-	}
-	entry.add(element)
-})
-
-const removeFromChunk = (element) => ArrayOfSets.forEach((entry, index)=> {
-	if(!entry.has(element)){
-		return
-	}
-	entry.delete(element)
-
-	if (entry.size === 0 || !SelectorWM.has(entry)) {
-		ArrayOfSets.splice(index, 1); 
-	}
-	return
-})

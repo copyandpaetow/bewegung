@@ -1,6 +1,11 @@
-import { normalizeElement } from "../lib/core/dom-normalize-element";
-import { arrayifyInputs, formatKeyFrames } from "./helper/normalize-inputs";
-import { Callbacks, Chunks, CustomKeyframeEffect, VoidCallback } from "./types";
+import { normalizeElement } from "../../lib/core/dom-normalize-element";
+import { arrayifyInputs, formatKeyFrames } from "./normalize-inputs";
+import {
+	Callbacks,
+	Chunks,
+	CustomKeyframeEffect,
+	VoidCallback,
+} from "../types";
 
 const defaults: Partial<KeyframeEffectOptions> = {
 	duration: 400,
