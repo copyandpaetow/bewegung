@@ -36,12 +36,12 @@ const initCards = () => {
 		];
 
 		const animation = bewegung3(highlightCard, hideOthers);
-		setTimeout(() => {
-			cards[0].remove();
-		}, 2500);
-		setTimeout(() => {
-			animation.play();
-		}, 4000);
+		// setTimeout(() => {
+		// 	cards[0].remove();
+		// }, 2500);
+		// setTimeout(() => {
+		// 	animation.play();
+		// }, 4000);
 	};
 
 	cardsNextButton?.addEventListener("click", () => {

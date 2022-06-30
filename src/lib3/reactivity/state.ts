@@ -1,11 +1,9 @@
 import { Animate, animate } from "../animate/state";
 import { calculate } from "../calculate/state";
-import {
-	STOP_TRAVERSING_CLASS,
-	traverseDomDown,
-} from "../elements/find-affected";
+import { STOP_TRAVERSING_CLASS } from "../elements/find-affected";
 import { Chunks } from "../types";
-import { ObserveElementDimensionChanges } from "./dimension-changes";
+import { ObserveBrowserResize } from "./browser-resize";
+import { ObserveDimensionChange } from "./dimension-changes";
 import { ObserveDomMutations } from "./dom-mutations";
 import { Observerable } from "./observable";
 
@@ -34,13 +32,18 @@ export const reactivity: Reactivity = (
 		Progress(State().getCurrentTime());
 	});
 
-	const observeDimensions = ObserveElementDimensionChanges(() => {
+	const observeResize = ObserveBrowserResize(() => {
 		//TODO: this might not work if the animation is running
+		State((calculate(), animate(Progress)));
+	});
+
+	const observeDimensions = ObserveDimensionChange(() => {
 		State((calculate(), animate(Progress)));
 	});
 
 	const disconnect = () => {
 		observeDOM.disconnect();
+		observeResize.disconnect();
 		observeDimensions.disconnect();
 	};
 

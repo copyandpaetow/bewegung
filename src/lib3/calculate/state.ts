@@ -10,7 +10,7 @@ import {
 } from "./calculate-differences";
 import { getComputedStylings, getDomRect } from "./read-dimensions";
 
-let state_elementProperties = new WeakMap<
+export let state_elementProperties = new WeakMap<
 	HTMLElement,
 	calculatedElementProperties[]
 >();
