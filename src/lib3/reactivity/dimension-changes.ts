@@ -1,5 +1,5 @@
 import { state_elementProperties } from "../calculate/state";
-import { Elements } from "../elements/getters";
+import { state_mainElements, state_affectedElements } from "../elements/state";
 import { topLevelElement } from "./state";
 
 let state_intersectionObserver = new WeakMap<
@@ -22,10 +22,13 @@ const IOcallback = (callback: () => void) => {
 };
 
 export const ObserveDimensionChange = (callback: () => void) => {
-	const { all } = Elements;
+	const allElements = new Set([
+		...state_mainElements,
+		...state_affectedElements,
+	]);
 	const { offsetWidth, offsetHeight } = topLevelElement;
 
-	all.forEach((element) => {
+	allElements.forEach((element) => {
 		state_intersectionObserver.get(element)?.disconnect();
 		const { dimensions } = state_elementProperties.get(element)![0];
 
@@ -62,7 +65,7 @@ export const ObserveDimensionChange = (callback: () => void) => {
 
 	return {
 		disconnect: () => {
-			all.forEach((element) => {
+			allElements.forEach((element) => {
 				state_intersectionObserver.get(element)?.disconnect();
 			});
 			state_intersectionObserver = new WeakMap<

@@ -1,9 +1,10 @@
 import { state_calculatedDifferences } from "../calculate/state";
 import { Context } from "../elements/context";
-import { Elements } from "../elements/getters";
 import {
 	state_affectedElementEasings,
+	state_affectedElements,
 	state_callbacks,
+	state_mainElements,
 	state_options,
 } from "../elements/state";
 import { getTimelineFractions, Timeline } from "./calculate-timeline";
@@ -40,11 +41,10 @@ export interface Animate {
 }
 
 export const animate = (progress?: () => number): Animate => {
-	const { main, affected } = Elements;
 	const { totalRuntime } = Context;
 	const allAnimations: Animation[] = [];
 
-	affected.forEach((element) => {
+	state_affectedElements.forEach((element) => {
 		const easingTable = calculateEasingMap(
 			state_affectedElementEasings.get(element)
 		);
@@ -69,7 +69,7 @@ export const animate = (progress?: () => number): Animate => {
 		);
 	});
 
-	main.forEach((element) => {
+	state_mainElements.forEach((element) => {
 		const options = state_options.get(element);
 		const keyframes = state_calculatedDifferences.get(element)!.map(
 			({

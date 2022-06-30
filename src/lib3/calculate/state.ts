@@ -1,7 +1,9 @@
-import { animate } from "../animate/state";
 import { Context } from "../elements/context";
-import { Elements } from "../elements/getters";
-import { state_keyframes } from "../elements/state";
+import {
+	state_affectedElements,
+	state_keyframes,
+	state_mainElements,
+} from "../elements/state";
 import { cssRuleName } from "../types";
 import {
 	calculatedElementProperties,
@@ -54,11 +56,14 @@ const cleanup = () => {
 
 export const calculate = () => {
 	cleanup();
-	const { main, all } = Elements;
+	const allElements = new Set([
+		...state_mainElements,
+		...state_affectedElements,
+	]);
 	const { changeProperties, changeTimings } = Context;
 
 	changeTimings.forEach((timing, index, array) => {
-		main.forEach((element) => {
+		state_mainElements.forEach((element) => {
 			const originalStyle = element.style.cssText;
 			const keyframes = state_keyframes.get(element);
 			const currentStyleChange = keyframes?.find(
@@ -80,7 +85,7 @@ export const calculate = () => {
 				}
 			);
 		});
-		all.forEach((element) => {
+		allElements.forEach((element) => {
 			const newCalculation: calculatedElementProperties = {
 				dimensions: getDomRect(element),
 				offset: timing,
@@ -92,13 +97,13 @@ export const calculate = () => {
 			]);
 		});
 		if (index === array.length - 1) {
-			main.forEach((element) => {
+			state_mainElements.forEach((element) => {
 				element.dispatchEvent(new CustomEvent("bewegung-restore"));
 			});
 		}
 	});
 
-	all.forEach((element) => {
+	allElements.forEach((element) => {
 		const parentEntries =
 			state_elementProperties.get(element.parentElement!) ??
 			emptyCalculatedProperties(changeProperties, changeTimings);

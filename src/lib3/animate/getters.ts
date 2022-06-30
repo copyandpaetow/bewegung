@@ -1,7 +1,6 @@
-import { Elements } from "../elements/getters";
-import { state_keyframes } from "../elements/state";
+import { state_keyframes, state_mainElements } from "../elements/state";
 
-const applyStyles = (mainElements: HTMLElement[]) => {
+const applyStyles = (mainElements: Set<HTMLElement>) => {
 	mainElements.forEach((element) => {
 		const keyframes = state_keyframes.get(element);
 
@@ -21,8 +20,7 @@ const applyStyles = (mainElements: HTMLElement[]) => {
 let currentAnimationTime;
 
 export const playAnimation = (animations: Animation[], progress?: number) => {
-	const { main } = Elements;
-	applyStyles(main);
+	applyStyles(state_mainElements);
 	animations.forEach((waapi) => {
 		progress && (waapi.currentTime = progress);
 		waapi.play();
