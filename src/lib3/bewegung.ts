@@ -1,54 +1,11 @@
 import { logCalculationTime } from "../lib/bewegung";
-import { formatInputs } from "./inputs/format-inputs";
-import { setState } from "./elements/state";
-import { Chunks, CustomKeyframeEffect } from "./types";
-import { calculate } from "./calculate/state";
 import { Animate, animate } from "./animate/state";
-import {
-	ObserveDomMutations,
-	ObserveElementDimensionChanges,
-} from "./reactivity/state";
+import { calculate } from "./calculate/state";
+import { setState } from "./elements/state";
+import { formatInputs } from "./inputs/format-inputs";
 import { effect, Observerable, observerable } from "./reactivity/observable";
-
-if (typeof window !== "undefined") {
-	// @ts-expect-error polyfill for requestIdleCallback
-	window.requestIdleCallback ||= window.requestAnimationFrame;
-}
-
-type Observer = { disconnect: () => void };
-
-type Reactivity = (
-	Input: Observerable<Chunks[]>,
-	State: Observerable<Animate>,
-	Progress: Observerable<number>
-) => Observer;
-
-const reactivity: Reactivity = (
-	Input: Observerable<Chunks[]>,
-	State: Observerable<Animate>,
-	Progress: Observerable<number>
-) => {
-	console.log("init reactivity");
-	const observeDOM = ObserveDomMutations(Input, (changes: Chunks[]) => {
-		Input(changes);
-		if (!State().isPaused) {
-			return;
-		}
-		Progress(State().getCurrentTime());
-	});
-
-	const observeDimensions = ObserveElementDimensionChanges(() => {
-		//TODO: this might not work if the animation is running
-		State((calculate(), animate(Progress)));
-	});
-
-	const disconnect = () => {
-		observeDOM.disconnect();
-		observeDimensions.disconnect();
-	};
-
-	return { disconnect };
-};
+import { Observer, reactivity } from "./reactivity/state";
+import { CustomKeyframeEffect } from "./types";
 
 interface bewegung {
 	play: () => void;
@@ -68,17 +25,17 @@ export const bewegung3 = (
 	let observer: Observer;
 
 	effect(() => {
-		//if the inputs are update, update the state
-		State = observerable((setState(Input()), calculate(), animate(Progress)));
-		console.log("on input change");
+		if (!State) {
+			State = observerable((setState(Input()), calculate(), animate(Progress)));
+			return;
+		}
+		State((setState(Input()), calculate(), animate(Progress)));
 	});
 
 	effect(() => {
-		//if the state or the progress change, update the reactivity callback
 		State(), Progress();
 		observer?.disconnect();
 		observer = reactivity(Input, State, Progress);
-		console.log("on state or progress change");
 	});
 
 	/*
@@ -86,8 +43,12 @@ export const bewegung3 = (
 	TODO: reactivity for mutations, resizes, and positional Changes (IO)
 	TODO: the same element could be in different chunks for different animation (animate rotate/opacity separatly)
 	TODO: image aspect ratio and border-radius 
+	TODO: scroll, reverse, cancel, finish, commitStyles, updatePlaybackRate
+	TODO: `delay: start, duration: end, endDelay` is often used but maybe `activeTime` and `endTime` could simplify things
 	?: does display: none work now? 
+	?: Should elements be filtered that dont change? They might change later
 	TODO: spans and text nodes
+	TODO: a config object with keepAlive, no reactivity etc 
 
 	*/
 

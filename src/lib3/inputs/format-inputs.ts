@@ -65,7 +65,7 @@ export const normalizeKeyframes = (
 		callbacks,
 	};
 };
-//TODO: it is costly to recalc that everytime, maybe init one once and set the timing again and again?
+
 export const normalizeOptions = (
 	input: CustomKeyframeEffect | KeyframeEffect
 ) => {
