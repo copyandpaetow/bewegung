@@ -41,7 +41,7 @@ export type Callbacks = {
 export type ValueOf<T> = T[keyof T];
 
 export type Chunks = {
-	target: HTMLElement[];
+	target: Set<HTMLElement>;
 	keyframes: ComputedKeyframe[];
 	callbacks: Callbacks[] | null;
 	options: ComputedEffectTiming;

@@ -1,8 +1,7 @@
 import { animate } from "../animate/state";
 import { Context } from "../elements/context";
 import { Elements } from "../elements/getters";
-import { state_mainElements } from "../elements/state";
-import { state_affectedElements, state_keyframes } from "../elements/state";
+import { state_keyframes } from "../elements/state";
 import { cssRuleName } from "../types";
 import {
 	calculatedElementProperties,
@@ -42,7 +41,19 @@ const emptyCalculatedProperties = (
 		offset: timing,
 	}));
 
+const cleanup = () => {
+	state_elementProperties = new WeakMap<
+		HTMLElement,
+		calculatedElementProperties[]
+	>();
+	state_calculatedDifferences = new WeakMap<
+		HTMLElement,
+		DimensionalDifferences[]
+	>();
+};
+
 export const calculate = () => {
+	cleanup();
 	const { main, all } = Elements;
 	const { changeProperties, changeTimings } = Context;
 
@@ -110,5 +121,5 @@ export const calculate = () => {
 		state_calculatedDifferences.set(element, calculatedDifferences);
 	});
 
-	return animate();
+	return;
 };

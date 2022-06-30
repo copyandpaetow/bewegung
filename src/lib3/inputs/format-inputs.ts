@@ -16,7 +16,7 @@ export const normalizeTarget = (
 	input: CustomKeyframeEffect | KeyframeEffect
 ) => {
 	return input instanceof KeyframeEffect
-		? ([input.target] as HTMLElement[])
+		? new Set([input.target] as HTMLElement[])
 		: normalizeElement(input[0]);
 };
 

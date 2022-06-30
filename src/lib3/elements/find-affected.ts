@@ -1,4 +1,6 @@
-export const STOP_TRAVERSING_CLASS = "bewegung-stop-traversing";
+export const STOP_TRAVERSING_CLASS = `bewegung-stop-traversing${(
+	Math.random() * 1000
+).toFixed(0)}`;
 
 const getParent = (element: HTMLElement) =>
 	element.parentElement || document.body;
@@ -30,7 +32,7 @@ const traverseDomUp = (
 	return traverseDomUp(parent, [...elements, element]);
 };
 
-const traverseDomDown = (element: HTMLElement): HTMLElement[] => {
+export const traverseDomDown = (element: HTMLElement): HTMLElement[] => {
 	return Array.from(element.querySelectorAll("*"));
 };
 

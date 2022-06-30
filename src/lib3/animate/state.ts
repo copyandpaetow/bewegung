@@ -1,18 +1,18 @@
 import { state_calculatedDifferences } from "../calculate/state";
 import { Context } from "../elements/context";
 import { Elements } from "../elements/getters";
-import { state_affectedElements, state_mainElements } from "../elements/state";
 import {
 	state_affectedElementEasings,
 	state_callbacks,
-	state_keyframes,
 	state_options,
 } from "../elements/state";
 import { getTimelineFractions, Timeline } from "./calculate-timeline";
-import { updateAnimations } from "./getters";
-
-export let state_animations = new WeakMap<HTMLElement, Animation>();
-export let state_callbackAnimations = new WeakMap<HTMLElement, Animation[]>();
+import {
+	getCurrentTime,
+	isPaused,
+	pauseAnimation,
+	playAnimation,
+} from "./getters";
 
 const calculateEasingMap = (mainElements: Timeline | undefined) => {
 	if (!mainElements) {
@@ -32,9 +32,17 @@ const calculateEasingMap = (mainElements: Timeline | undefined) => {
 	return easingTable;
 };
 
-export const animate = () => {
+export interface Animate {
+	playAnimation: () => void;
+	pauseAnimation: () => void;
+	isPaused: () => boolean;
+	getCurrentTime: () => number;
+}
+
+export const animate = (progress?: () => number): Animate => {
 	const { main, affected } = Elements;
 	const { totalRuntime } = Context;
+	const allAnimations: Animation[] = [];
 
 	affected.forEach((element) => {
 		const easingTable = calculateEasingMap(
@@ -56,8 +64,7 @@ export const animate = () => {
 					transform: `translate(${xDifference}px, ${yDifference}px) scale(${widthDifference}, ${heightDifference})`,
 				} as Keyframe)
 		);
-		state_animations.set(
-			element,
+		allAnimations.push(
 			new Animation(new KeyframeEffect(element, keyframes, totalRuntime))
 		);
 	});
@@ -79,20 +86,24 @@ export const animate = () => {
 					transform: `translate(${xDifference}px, ${yDifference}px) scale(${widthDifference}, ${heightDifference})`,
 				} as Keyframe)
 		);
-		const callbackAnimations: Animation[] = [];
+
 		state_callbacks.get(element)?.forEach(({ offset, callback }) => {
 			const animation = new Animation(
 				new KeyframeEffect(element, null, offset * totalRuntime)
 			);
 			animation.onfinish = callback;
-			callbackAnimations.push(animation);
+			allAnimations.push(animation);
 		});
 
-		state_animations.set(
-			element,
+		allAnimations.push(
 			new Animation(new KeyframeEffect(element, keyframes, totalRuntime))
 		);
-		state_callbackAnimations.set(element, callbackAnimations);
 	});
-	return updateAnimations();
+
+	return {
+		playAnimation: () => playAnimation(allAnimations, progress?.()),
+		pauseAnimation: () => pauseAnimation(allAnimations),
+		isPaused: () => isPaused(allAnimations),
+		getCurrentTime: () => getCurrentTime(allAnimations),
+	};
 };

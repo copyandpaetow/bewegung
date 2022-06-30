@@ -8,7 +8,6 @@ import {
 	state_mainElements,
 	state_affectedElements,
 	state_affectedElementEasings,
-	state_selectors,
 } from "./state";
 
 export const setOptions = (chunk: Chunks) => {
@@ -54,12 +53,8 @@ export const setCallbacks = (chunk: Chunks) => {
 };
 
 export const setMainELements = (chunk: Chunks) => {
-	const { target, selector } = chunk;
-	const newIndex = state_mainElements.push(new Set(target)) - 1;
-
-	if (selector) {
-		state_selectors.set(state_mainElements[newIndex], selector);
-	}
+	const { target } = chunk;
+	state_mainElements.push(new Set(target));
 };
 
 export const setSecondaryElements =
@@ -88,36 +83,3 @@ export const setSecondaryElements =
 			});
 		});
 	};
-
-// export const getChunkRepresentetive = state_mainElements
-// 	.flatMap((entry) => entry[0].values().next().value)
-// 	.filter(Boolean);
-
-export const addMainElement = (element) =>
-	state_mainElements.forEach((entry) => {
-		if (
-			!state_selectors.has(entry) ||
-			!element.matches(state_selectors.get(entry))
-		) {
-			return;
-		}
-		entry.add(element);
-		//recalc affected elements
-		//recalc dimensions
-	});
-
-export const removeMainElement = (element) =>
-	state_mainElements.forEach((entry, index) => {
-		if (!entry.has(element)) {
-			return;
-		}
-		entry.delete(element);
-		//recalc affected elements
-		//recalc dimensions
-
-		if (entry.size === 0 && !state_selectors.has(entry)) {
-			state_mainElements.splice(index, 1);
-			//recalc
-		}
-		return;
-	});

@@ -66,6 +66,55 @@ d. set the main as chunks [[elem1, elem2, elem3],  [elem4, elem5, elem6], [elem7
 * updates from the MO could be put in a queue and executed on requestIdleFrame
 
 
+!problem: adding elements can always mean that this element has children
+
+! => if a main element is added, all of its affected elements need to be collected (including its children) and proccessed . No change in Context
+! => if another element is added, it is unclear if it is related to the main elements, so it must be checked for all main elements. Worst case it is also related to them
+!		 (it must be added to the affected elements state, and affectedbyelements need to be calculated by matching every other main element)
+
+! => if a main element is removed, all affected elements need to get recalculated. Also, if a chunk is empty it must be excluded from the Context 
+!		 (but should not be deleted, since adding a new element of that selector would still need the adjasond chunk data )
+! => if another element is removed, it is unclear if it is related to the main elements, all of it and its children need to be checked if they are in the affected elements state and removed
 
 
+* only allow getters/setters access to state
+* data must stand alone
+
+* state must be encapsulated so when the setState function is called again, there is no cleanup needed
+
+*/
+
+const state = stateOf(normalizeInputs(input));
+
+state.listen();
+
+/*
+
+const StateBuilder = () => ({
+	mainElements: [] as Set<HTMLElement>[],
+	affectedElements: new Set<HTMLElement>(),
+	selectors: new WeakMap<Set<HTMLElement>, string>(),
+	options: new WeakMap<HTMLElement, ComputedEffectTiming>(),
+	keyframes: new WeakMap<HTMLElement, ComputedKeyframe[]>(),
+	callbacks: new WeakMap<HTMLElement, Callbacks[]>(),
+	affectedElementEasings: new WeakMap<HTMLElement, Timeline>(),
+});
+
+let currentState = StateBuilder();
+
+const callbacks = new Map([
+	["options", [updateRuntime]],
+	["keyframes", [updateTimings, updateKeyframes]],
+	["mainElements", [updateTimings, updateKeyframes]],
+]);
+
+export const updateState = (type: string, callback: (currentState) => any) => {
+	callback(currentState[type]);
+
+	callbacks.get(type)?.forEach((callback) => callback());
+};
+
+export const getState = (type) => {
+	currentState[type];
+};
 */

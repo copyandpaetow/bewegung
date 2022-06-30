@@ -1,12 +1,12 @@
 import { ElementOrSelector } from "../types";
 
-const findElementsByString = (elementString: string): HTMLElement[] => {
+const findElementsByString = (elementString: string) => {
 	const getFromSelector = document.querySelectorAll(elementString);
 	if (getFromSelector.length === 0) {
 		throw new Error("There is no selector with that name");
 	}
 
-	return Array.from(getFromSelector) as HTMLElement[];
+	return new Set([...getFromSelector] as HTMLElement[]);
 };
 
 const QUERYSTRING = "bewegung-getelement";
@@ -22,24 +22,23 @@ const convertToElementArray = (element: HTMLElement): HTMLElement[] => {
 
 export const normalizeElement = (
 	elementOrElements: ElementOrSelector
-): HTMLElement[] => {
+): Set<HTMLElement> => {
 	if (typeof elementOrElements === "string") {
 		return findElementsByString(elementOrElements);
 	}
 
 	if (elementOrElements instanceof NodeList) {
-		return Array.from(elementOrElements) as HTMLElement[];
+		return new Set([...elementOrElements] as HTMLElement[]);
 	}
 
 	if (Array.isArray(elementOrElements)) {
-		return elementOrElements.flatMap((element) => {
-			if (element instanceof HTMLElement) {
-				return element;
-			}
-
-			return convertToElementArray(element as HTMLElement);
+		const elementArray = elementOrElements.flatMap((element) => {
+			return element instanceof HTMLElement
+				? element
+				: convertToElementArray(element as HTMLElement);
 		});
+		return new Set(elementArray);
 	}
 
-	return convertToElementArray(elementOrElements as HTMLElement);
+	return new Set(convertToElementArray(elementOrElements as HTMLElement));
 };

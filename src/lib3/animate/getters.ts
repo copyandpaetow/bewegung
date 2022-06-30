@@ -1,8 +1,7 @@
 import { Elements } from "../elements/getters";
 import { state_keyframes } from "../elements/state";
-import { state_animations, state_callbackAnimations } from "./state";
 
-export const applyStyles = (mainElements: HTMLElement[]) => {
+const applyStyles = (mainElements: HTMLElement[]) => {
 	mainElements.forEach((element) => {
 		const keyframes = state_keyframes.get(element);
 
@@ -19,28 +18,34 @@ export const applyStyles = (mainElements: HTMLElement[]) => {
 	});
 };
 
-const Animations: Record<string, Animation[]> = {
-	all: [],
-};
+let currentAnimationTime;
 
-export const updateAnimations = () => {
-	const { main, affected } = Elements;
-	const mainAnimation = main.flatMap((element) => [
-		state_animations.get(element)!,
-		...(state_callbackAnimations.get(element) || []),
-	]);
-	const affecedElementAnimtion = affected.map(
-		(element) => state_animations.get(element)!
-	);
-	Animations.all = mainAnimation.concat(affecedElementAnimtion);
-};
-
-export const playAnimation = () => {
+export const playAnimation = (animations: Animation[], progress?: number) => {
 	const { main } = Elements;
 	applyStyles(main);
-	Animations.all.forEach((waapi) => waapi.play());
+	animations.forEach((waapi) => {
+		progress && (waapi.currentTime = progress);
+		waapi.play();
+	});
 };
 
-export const pauseAnimation = () => {
-	Animations.all.forEach((waapi) => waapi.pause());
+export const pauseAnimation = (animations: Animation[]) => {
+	let currentTime = 0;
+	animations.forEach((waapi) => {
+		currentTime = Math.max(currentTime, waapi.currentTime ?? 0);
+		waapi.pause();
+	});
+	currentAnimationTime = currentTime;
+	return;
+};
+
+export const isPaused = (animations: Animation[]) =>
+	animations.some((animation) => animation.playState === "paused");
+
+export const getCurrentTime = (animations: Animation[]) => {
+	currentAnimationTime = animations.reduce(
+		(longest, current) => Math.max(longest, current.currentTime ?? 0),
+		0
+	);
+	return currentAnimationTime;
 };
