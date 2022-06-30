@@ -40,7 +40,6 @@ export const bewegung3 = (
 
 	/*
 	upcoming tasks
-	TODO: reactivity for mutations, resizes, and positional Changes (IO)
 	TODO: the same element could be in different chunks for different animation (animate rotate/opacity separatly)
 	TODO: image aspect ratio and border-radius 
 	TODO: scroll, reverse, cancel, finish, commitStyles, updatePlaybackRate

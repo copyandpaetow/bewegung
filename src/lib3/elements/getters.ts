@@ -13,17 +13,10 @@ export const Elements: Record<ElementOptions, HTMLElement[]> = {
 	affected: [],
 };
 
-export const setMainElements = () => {
+export const saveMainElements = () => {
 	Elements.main = state_mainElements
 		.flatMap((entry) => Array.from(entry))
 		.filter(Boolean);
-	setAffectedElements();
-};
-
-export const setAffectedElements = () => {
 	Elements.affected = Array.from(state_affectedElements);
-	setAllElements();
+	Elements.all = Elements.main.concat(Elements.affected);
 };
-
-const setAllElements = () =>
-	(Elements.all = Elements.main.concat(Elements.affected));

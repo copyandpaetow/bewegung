@@ -52,9 +52,9 @@ export const setCallbacks = (chunk: Chunks) => {
 		target.forEach((element) => state_callbacks.set(element, updatedCallbacks));
 };
 
-export const setMainELements = (chunk: Chunks) => {
+export const setMainElements = (chunk: Chunks) => {
 	const { target } = chunk;
-	state_mainElements.push(new Set(target));
+	state_mainElements.push(target);
 };
 
 export const setSecondaryElements =

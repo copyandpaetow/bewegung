@@ -1,12 +1,12 @@
 import { Timeline } from "../animate/calculate-timeline";
 import { Callbacks, Chunks } from "../types";
 import { calculateContext } from "./context";
-import { setMainElements } from "./getters";
+import { saveMainElements } from "./getters";
 import {
 	setOptions,
 	setKeyframes,
 	setCallbacks,
-	setMainELements,
+	setMainElements,
 	setSecondaryElements,
 } from "./setters";
 
@@ -29,10 +29,10 @@ export const setState = (chunks: Chunks[]) => {
 		setOptions(chunk);
 		setKeyframes(chunk);
 		setCallbacks(chunk);
-		setMainELements(chunk);
+		setMainElements(chunk);
 		setSecondaryElements(mainElements)(chunk);
 	});
-	setMainElements();
+	saveMainElements();
 	return;
 };
 
