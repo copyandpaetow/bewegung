@@ -52,34 +52,28 @@ export const setCallbacks = (chunk: Chunks) => {
 		target.forEach((element) => state_callbacks.set(element, updatedCallbacks));
 };
 
-export const setMainElements = (chunk: Chunks) => {
-	const { target } = chunk;
-	state_mainElements.push(target);
-};
+export const setSecondaryElements = (chunk: Chunks) => {
+	const { totalRuntime } = Context;
+	const { target, options } = chunk;
+	const { delay: start, duration: end, easing } = options;
 
-export const setSecondaryElements =
-	(mainElements: Set<HTMLElement>) => (chunk: Chunks) => {
-		const { totalRuntime } = Context;
-		const { target, options } = chunk;
-		const { delay: start, duration: end, easing } = options;
-
-		target.forEach((element) => {
-			findAffectedDOMElements(element).forEach((affectedElement) => {
-				if (mainElements.has(affectedElement)) {
-					return;
-				}
-				state_affectedElements.add(affectedElement);
-				state_affectedElementEasings.set(
-					affectedElement,
-					Array.from([
-						...(state_affectedElementEasings.get(affectedElement) || []),
-						{
-							start: (start as number) / totalRuntime,
-							end: (end as number) / totalRuntime,
-							easing: easing as string,
-						},
-					])
-				);
-			});
+	target.forEach((element) => {
+		findAffectedDOMElements(element).forEach((affectedElement) => {
+			if (state_mainElements.has(affectedElement)) {
+				return;
+			}
+			state_affectedElements.add(affectedElement);
+			state_affectedElementEasings.set(
+				affectedElement,
+				Array.from([
+					...(state_affectedElementEasings.get(affectedElement) || []),
+					{
+						start: (start as number) / totalRuntime,
+						end: (end as number) / totalRuntime,
+						easing: easing as string,
+					},
+				])
+			);
 		});
-	};
+	});
+};

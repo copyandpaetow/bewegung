@@ -14,9 +14,7 @@ export const Elements: Record<ElementOptions, HTMLElement[]> = {
 };
 
 export const saveMainElements = () => {
-	Elements.main = state_mainElements
-		.flatMap((entry) => Array.from(entry))
-		.filter(Boolean);
+	Elements.main = Array.from(state_mainElements);
 	Elements.affected = Array.from(state_affectedElements);
 	Elements.all = Elements.main.concat(Elements.affected);
 };

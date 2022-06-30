@@ -35,7 +35,7 @@ const initCards = () => {
 			},
 		];
 
-		const animation = bewegung3(highlightCard, hideOthers);
+		const animation = bewegung3(highlightCard, hideOthers).play();
 		// setTimeout(() => {
 		// 	cards[0].remove();
 		// }, 2500);
