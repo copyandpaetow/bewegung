@@ -1,3 +1,6 @@
+import { cssRuleName } from "../types";
+import { getComputedStylings } from "./dimensions";
+
 export type calculatedElementProperties = {
 	dimensions: DOMRect;
 	computedStyle: Partial<CSSStyleDeclaration>;
@@ -65,9 +68,6 @@ export const calculateDimensionDifferences = (
 
 	const heightDifference = childHeightDifference / parentHeightDifference;
 	const widthDifference = childWidthDifference / parentWidthDifference;
-	// const widthDifference =
-	// 	(target.childElementCount === 0 ? 1 : childWidthDifference) /
-	// 	parentWidthDifference;
 
 	const currentXDifference =
 		current.x + originCurrentX - (parentCurrent.x + originParentCurrentX);
@@ -83,17 +83,6 @@ export const calculateDimensionDifferences = (
 		originReferenceY -
 		(parentReference.y + originParentReferenceY);
 
-	// const textWidthDifference =
-	// 	parseFloat(currentEntry.computedStyle.width!) ===
-	// 	currentEntry.dimensions.width
-	// 		? 1
-	// 		: parseFloat(currentEntry.computedStyle.width!) /
-	// 		  currentEntry.dimensions.width /
-	// 		  parentWidthDifference;
-
-	// const xDifference =
-	// 	(currentXDifference / parentWidthDifference - referenceXDifference) *
-	// 	textWidthDifference;
 	const xDifference =
 		currentXDifference / parentWidthDifference - referenceXDifference;
 	const yDifference =
@@ -107,3 +96,25 @@ export const calculateDimensionDifferences = (
 		offset: currentEntry.offset,
 	};
 };
+
+const emptyNonZeroDOMRect: DOMRect = {
+	width: 1,
+	height: 1,
+	x: 0,
+	y: 0,
+	top: 0,
+	right: 0,
+	bottom: 0,
+	left: 0,
+	toJSON: () => undefined,
+};
+
+export const emptyCalculatedProperties = (
+	changeProperties: cssRuleName[],
+	changeTimings: number[]
+): calculatedElementProperties[] =>
+	changeTimings.map((timing) => ({
+		dimensions: emptyNonZeroDOMRect,
+		computedStyle: getComputedStylings(changeProperties),
+		offset: timing,
+	}));

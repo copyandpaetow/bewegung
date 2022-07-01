@@ -1,26 +1,24 @@
-import { state_keyframes, state_mainElements } from "../elements/state";
+import { filterMatchingStyleFromKeyframes } from "../calculate/calculate";
+import { getKeyframes, state_mainElements } from "../prepare/prepare";
 
-const applyStyles = (mainElements: Set<HTMLElement>) => {
-	mainElements.forEach((element) => {
-		const keyframes = state_keyframes.get(element);
+export const applyStyles = (mainElement: HTMLElement) => {
+	const keyframes = getKeyframes(mainElement);
 
-		const resultingStyle = keyframes?.reduce(
-			(
-				accumulator,
-				{ offset, composite, computedOffset, easing, ...styles }
-			) => {
-				return { ...accumulator, ...styles };
-			},
-			{}
-		);
-		Object.assign(element.style, resultingStyle);
-	});
+	const resultingStyle = keyframes?.reduce(
+		(accumulator, { offset, composite, computedOffset, easing, ...styles }) => {
+			return { ...accumulator, ...styles };
+		},
+		{}
+	);
+	Object.assign(mainElement.style, resultingStyle);
 };
 
 let currentAnimationTime;
 
 export const playAnimation = (animations: Animation[], progress?: number) => {
-	applyStyles(state_mainElements);
+	state_mainElements.forEach((element) =>
+		filterMatchingStyleFromKeyframes(element)
+	);
 	animations.forEach((waapi) => {
 		progress && (waapi.currentTime = progress);
 		waapi.play();

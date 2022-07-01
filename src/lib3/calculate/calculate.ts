@@ -1,16 +1,17 @@
-import { Context } from "../elements/context";
+import { Context } from "../prepare/context";
 import {
+	getKeyframes,
 	state_affectedElements,
-	state_keyframes,
 	state_mainElements,
-} from "../elements/state";
-import { cssRuleName } from "../types";
+	state_originalStyle,
+} from "../prepare/prepare";
 import {
 	calculatedElementProperties,
 	DimensionalDifferences,
 	calculateDimensionDifferences,
-} from "./calculate-differences";
-import { getComputedStylings, getDomRect } from "./read-dimensions";
+	emptyCalculatedProperties,
+} from "./differences";
+import { getComputedStylings, getDomRect } from "./dimensions";
 
 export let state_elementProperties = new WeakMap<
 	HTMLElement,
@@ -20,28 +21,6 @@ export let state_calculatedDifferences = new WeakMap<
 	HTMLElement,
 	DimensionalDifferences[]
 >();
-
-export const emptyNonZeroDOMRect: DOMRect = {
-	width: 1,
-	height: 1,
-	x: 0,
-	y: 0,
-	top: 0,
-	right: 0,
-	bottom: 0,
-	left: 0,
-	toJSON: () => undefined,
-};
-
-const emptyCalculatedProperties = (
-	changeProperties: cssRuleName[],
-	changeTimings: number[]
-): calculatedElementProperties[] =>
-	changeTimings.map((timing) => ({
-		dimensions: emptyNonZeroDOMRect,
-		computedStyle: getComputedStylings(changeProperties),
-		offset: timing,
-	}));
 
 const cleanup = () => {
 	state_elementProperties = new WeakMap<
@@ -54,6 +33,27 @@ const cleanup = () => {
 	>();
 };
 
+export const filterMatchingStyleFromKeyframes = (
+	element: HTMLElement,
+	timing?: number
+) => {
+	const keyframes = getKeyframes(element);
+	let resultingStyle = {};
+	keyframes?.forEach((keyframe) => {
+		const { offset, composite, computedOffset, easing, ...styles } = keyframe;
+		if (timing !== undefined && timing !== offset) {
+			return;
+		}
+		resultingStyle = { ...resultingStyle, ...styles };
+	});
+
+	if (Object.values(resultingStyle).length === 0) {
+		return;
+	}
+
+	Object.assign(element.style, resultingStyle);
+};
+
 export const calculate = () => {
 	cleanup();
 	const allElements = new Set([
@@ -63,28 +63,9 @@ export const calculate = () => {
 	const { changeProperties, changeTimings } = Context;
 
 	changeTimings.forEach((timing, index, array) => {
-		state_mainElements.forEach((element) => {
-			const originalStyle = element.style.cssText;
-			const keyframes = state_keyframes.get(element);
-			const currentStyleChange = keyframes?.find(
-				(keyframe) => keyframe.offset === timing
-			);
-			if (!currentStyleChange) {
-				return;
-			}
-			const { offset, composite, computedOffset, easing, ...cssStyles } =
-				currentStyleChange;
-
-			Object.assign(element.style, cssStyles);
-
-			element.addEventListener(
-				"bewegung-restore",
-				() => (element.style.cssText = originalStyle),
-				{
-					once: true,
-				}
-			);
-		});
+		state_mainElements.forEach((element) =>
+			filterMatchingStyleFromKeyframes(element, timing)
+		);
 		allElements.forEach((element) => {
 			const newCalculation: calculatedElementProperties = {
 				dimensions: getDomRect(element),
@@ -98,7 +79,7 @@ export const calculate = () => {
 		});
 		if (index === array.length - 1) {
 			state_mainElements.forEach((element) => {
-				element.dispatchEvent(new CustomEvent("bewegung-restore"));
+				element.style.cssText = state_originalStyle.get(element)!;
 			});
 		}
 	});

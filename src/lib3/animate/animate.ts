@@ -1,12 +1,12 @@
-import { state_calculatedDifferences } from "../calculate/state";
-import { Context } from "../elements/context";
+import { state_calculatedDifferences } from "../calculate/calculate";
+import { Context } from "../prepare/context";
 import {
-	state_affectedElementEasings,
+	getCallbacks,
+	getOptions,
+	state_dependencyElements,
 	state_affectedElements,
-	state_callbacks,
 	state_mainElements,
-	state_options,
-} from "../elements/state";
+} from "../prepare/prepare";
 import { getTimelineFractions, Timeline } from "./calculate-timeline";
 import {
 	getCurrentTime,
@@ -15,21 +15,25 @@ import {
 	playAnimation,
 } from "./getters";
 
-const calculateEasingMap = (mainElements: Timeline | undefined) => {
-	if (!mainElements) {
-		return {};
-	}
+const calculateEasingMap = (mainElementOptions: ComputedEffectTiming[]) => {
 	const easingTable: Record<number, string> = {};
+	const { totalRuntime } = Context;
 
-	getTimelineFractions(mainElements as Timeline).forEach(
-		(entry, index, array) => {
-			const { start } = entry;
-			const nextIndex = array[index + 1] ? index + 1 : index;
-			const nextEasing = array[nextIndex].easing as string;
-
-			easingTable[start] = nextEasing;
-		}
+	const timings: Timeline = mainElementOptions.map(
+		({ delay, duration, easing }) => ({
+			start: (delay as number) / totalRuntime,
+			end: (duration as number) / totalRuntime,
+			easing: easing as string,
+		})
 	);
+
+	getTimelineFractions(timings).forEach((entry, index, array) => {
+		const { start } = entry;
+		const nextIndex = array[index + 1] ? index + 1 : index;
+		const nextEasing = array[nextIndex].easing as string;
+
+		easingTable[start] = nextEasing;
+	});
 	return easingTable;
 };
 
@@ -45,9 +49,15 @@ export const animate = (progress?: () => number): Animate => {
 	const allAnimations: Animation[] = [];
 
 	state_affectedElements.forEach((element) => {
-		const easingTable = calculateEasingMap(
-			state_affectedElementEasings.get(element)
-		);
+		const options: ComputedEffectTiming[] = [];
+
+		state_dependencyElements
+			.get(element)!
+			.forEach((element) =>
+				getOptions(element).forEach((option) => options.push(option))
+			);
+
+		const easingTable = calculateEasingMap(options);
 
 		const keyframes = state_calculatedDifferences.get(element)!.map(
 			({
@@ -64,13 +74,15 @@ export const animate = (progress?: () => number): Animate => {
 					transform: `translate(${xDifference}px, ${yDifference}px) scale(${widthDifference}, ${heightDifference})`,
 				} as Keyframe)
 		);
+
 		allAnimations.push(
 			new Animation(new KeyframeEffect(element, keyframes, totalRuntime))
 		);
 	});
 
 	state_mainElements.forEach((element) => {
-		const options = state_options.get(element);
+		//TODO: this needs to be adapted to more elements
+		const easingTable = calculateEasingMap(getOptions(element));
 		const keyframes = state_calculatedDifferences.get(element)!.map(
 			({
 				xDifference,
@@ -82,12 +94,12 @@ export const animate = (progress?: () => number): Animate => {
 				({
 					offset,
 					composite: "auto",
-					easing: options!.easing,
+					easing: easingTable[offset],
 					transform: `translate(${xDifference}px, ${yDifference}px) scale(${widthDifference}, ${heightDifference})`,
 				} as Keyframe)
 		);
 
-		state_callbacks.get(element)?.forEach(({ offset, callback }) => {
+		getCallbacks(element)?.forEach(({ offset, callback }) => {
 			const animation = new Animation(
 				new KeyframeEffect(element, null, offset * totalRuntime)
 			);

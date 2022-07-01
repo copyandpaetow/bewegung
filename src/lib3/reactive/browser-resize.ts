@@ -1,4 +1,4 @@
-import { topLevelElement } from "./state";
+import { topLevelElement } from "./reactive";
 
 let resizeIdleCallback;
 

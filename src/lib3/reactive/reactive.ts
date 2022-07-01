@@ -1,6 +1,6 @@
-import { Animate, animate } from "../animate/state";
-import { calculate } from "../calculate/state";
-import { STOP_TRAVERSING_CLASS } from "../elements/find-affected";
+import { Animate, animate } from "../animate/animate";
+import { calculate } from "../calculate/calculate";
+import { STOP_TRAVERSING_CLASS } from "../prepare/find-affected";
 import { Chunks } from "../types";
 import { ObserveBrowserResize } from "./browser-resize";
 import { ObserveDimensionChange } from "./dimension-changes";
@@ -13,13 +13,13 @@ export const topLevelElement = (document.querySelector(
 
 export type Observer = { disconnect: () => void };
 
-type Reactivity = (
+type Reactive = (
 	Input: Observerable<Chunks[]>,
 	State: Observerable<Animate>,
 	Progress: Observerable<number>
 ) => Observer;
 
-export const reactivity: Reactivity = (
+export const makeReactive: Reactive = (
 	Input: Observerable<Chunks[]>,
 	State: Observerable<Animate>,
 	Progress: Observerable<number>

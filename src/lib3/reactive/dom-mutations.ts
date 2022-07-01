@@ -1,6 +1,6 @@
-import { traverseDomDown } from "../elements/find-affected";
+import { traverseDomDown } from "../prepare/find-affected";
 import { Chunks } from "../types";
-import { topLevelElement } from "./state";
+import { topLevelElement } from "./reactive";
 
 if (typeof window !== "undefined") {
 	// @ts-expect-error polyfill for requestIdleCallback

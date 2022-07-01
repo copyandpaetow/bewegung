@@ -1,10 +1,10 @@
 import { logCalculationTime } from "../lib/bewegung";
-import { Animate, animate } from "./animate/state";
-import { calculate } from "./calculate/state";
-import { setState } from "./elements/state";
-import { formatInputs } from "./inputs/format-inputs";
-import { effect, Observerable, observerable } from "./reactivity/observable";
-import { Observer, reactivity } from "./reactivity/state";
+import { Animate, animate } from "./animate/animate";
+import { calculate } from "./calculate/calculate";
+import { prepare } from "./prepare/prepare";
+import { formatInputs } from "./inputs/format";
+import { effect, Observerable, observerable } from "./reactive/observable";
+import { Observer, makeReactive } from "./reactive/reactive";
 import { CustomKeyframeEffect } from "./types";
 
 interface bewegung {
@@ -26,21 +26,20 @@ export const bewegung3 = (
 
 	effect(() => {
 		if (!State) {
-			State = observerable((setState(Input()), calculate(), animate(Progress)));
+			State = observerable((prepare(Input()), calculate(), animate(Progress)));
 			return;
 		}
-		State((setState(Input()), calculate(), animate(Progress)));
+		State((prepare(Input()), calculate(), animate(Progress)));
 	});
 
 	effect(() => {
 		State(), Progress();
 		observer?.disconnect();
-		observer = reactivity(Input, State, Progress);
+		observer = makeReactive(Input, State, Progress);
 	});
 
 	/*
 	upcoming tasks
-	TODO: the same element could be in different chunks for different animation (animate rotate/opacity separatly)
 	TODO: image aspect ratio and border-radius 
 	TODO: scroll, reverse, cancel, finish, commitStyles, updatePlaybackRate
 	TODO: `delay: start, duration: end, endDelay` is often used but maybe `activeTime` and `endTime` could simplify things

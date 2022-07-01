@@ -1,5 +1,5 @@
 import { normalizeElement } from "../../lib/core/dom-normalize-element";
-import { arrayifyInputs, formatKeyFrames } from "./normalize-inputs";
+import { arrayifyInputs, formatKeyFrames } from "./normalize";
 import {
 	Callbacks,
 	Chunks,

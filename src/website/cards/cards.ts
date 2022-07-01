@@ -23,19 +23,28 @@ const initCards = () => {
 			{ duration: 2000, easing: "ease" },
 		];
 
+		// const hideOthers: CustomKeyframeEffect = [
+		// 	Array.from(cards).filter((card) => card !== cards[activeIndex]),
+		// 	{
+		// 		width: "",
+		// 		order: "",
+		// 	},
+		// 	{
+		// 		duration: 2000,
+		// 		easing: "ease-in-out",
+		// 	},
+		// ];
+
 		const hideOthers: CustomKeyframeEffect = [
-			Array.from(cards).filter((card) => card !== cards[activeIndex]),
+			cards[activeIndex],
 			{
-				width: "",
-				order: "",
+				height: "45vh",
 			},
-			{
-				duration: 2000,
-				easing: "ease-in-out",
-			},
+			{ duration: 2000, easing: "ease-in" },
 		];
 
-		const animation = bewegung3(highlightCard, hideOthers).play();
+		const animation = bewegung3(highlightCard, hideOthers);
+		animation.play();
 		// setTimeout(() => {
 		// 	cards[0].remove();
 		// }, 2500);

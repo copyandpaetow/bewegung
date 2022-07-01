@@ -1,6 +1,6 @@
-import { state_elementProperties } from "../calculate/state";
-import { state_mainElements, state_affectedElements } from "../elements/state";
-import { topLevelElement } from "./state";
+import { state_elementProperties } from "../calculate/calculate";
+import { state_mainElements, state_affectedElements } from "../prepare/prepare";
+import { topLevelElement } from "./reactive";
 
 let state_intersectionObserver = new WeakMap<
 	HTMLElement,
