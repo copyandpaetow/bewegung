@@ -17,8 +17,6 @@ export function effect(effectCallback) {
 	return () => result;
 }
 
-export type Observerable<Value> = (updatedValue?: Value | undefined) => Value;
-
 export const observerable = <Value>(value: Value) => {
 	let innerValue = value;
 	const dependencies = new Set<() => void>();

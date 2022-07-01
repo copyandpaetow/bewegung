@@ -39,6 +39,42 @@ export const getCallbacks = chunkLens("callbacks") as (
 	element: HTMLElement
 ) => Callbacks[];
 
+const addAffectedElements = (mainElements: Set<HTMLElement>) =>
+	mainElements.forEach((element) => {
+		findAffectedDOMElements(element).forEach((affectedElement) => {
+			if (state_mainElements.has(affectedElement)) {
+				return;
+			}
+			state_affectedElements.add(affectedElement);
+			state_dependencyElements.set(
+				affectedElement,
+				(state_dependencyElements.get(affectedElement) || new Set()).add(
+					element
+				)
+			);
+		});
+	});
+
+const updateKeyframeTiming = (
+	frame: ComputedKeyframe | Callbacks,
+	options: ComputedEffectTiming,
+	totalRuntime: number
+) => {
+	const { delay: start, duration: end, endDelay } = options;
+
+	const absoluteTiming =
+		//@ts-expect-error stupid typescript
+		((end as number) * (frame.offset || frame.computedOffset) +
+			(start as number) +
+			endDelay!) /
+		totalRuntime;
+
+	return {
+		...frame,
+		offset: absoluteTiming,
+	};
+};
+
 export const prepare = (chunks: Chunks[]) => {
 	cleanup();
 	calculateContext(chunks);
@@ -66,40 +102,5 @@ export const prepare = (chunks: Chunks[]) => {
 		});
 	});
 
-	chunks.forEach((chunk) => {
-		chunk.target.forEach((element) => {
-			findAffectedDOMElements(element).forEach((affectedElement) => {
-				if (state_mainElements.has(affectedElement)) {
-					return;
-				}
-				state_affectedElements.add(affectedElement);
-				state_dependencyElements.set(
-					affectedElement,
-					(state_dependencyElements.get(affectedElement) || new Set()).add(
-						element
-					)
-				);
-			});
-		});
-	});
-};
-
-const updateKeyframeTiming = (
-	frame: ComputedKeyframe | Callbacks,
-	options: ComputedEffectTiming,
-	totalRuntime: number
-) => {
-	const { delay: start, duration: end, endDelay } = options;
-
-	const absoluteTiming =
-		//@ts-expect-error stupid typescript
-		((end as number) * (frame.offset || frame.computedOffset) +
-			(start as number) +
-			endDelay!) /
-		totalRuntime;
-
-	return {
-		...frame,
-		offset: absoluteTiming,
-	};
+	chunks.forEach((chunk) => addAffectedElements(chunk.target));
 };

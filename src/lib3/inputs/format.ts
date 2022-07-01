@@ -6,11 +6,7 @@ import {
 	CustomKeyframeEffect,
 	VoidCallback,
 } from "../types";
-
-const defaults: Partial<KeyframeEffectOptions> = {
-	duration: 400,
-	easing: "ease",
-};
+import { defaultOptions } from "../constants";
 
 export const normalizeTarget = (
 	input: CustomKeyframeEffect | KeyframeEffect
@@ -30,7 +26,7 @@ export const normalizeKeyframes = (
 		};
 	}
 	//TODO: it is costly to recalc that everytime, maybe init one once and set the timing again and again?
-	const options = new KeyframeEffect(null, null, input[2] || defaults);
+	const options = new KeyframeEffect(null, null, input[2] || defaultOptions);
 	const easing = options.getComputedTiming().easing!;
 	const composite = options.composite;
 
@@ -71,7 +67,11 @@ export const normalizeOptions = (
 ) => {
 	return input instanceof KeyframeEffect
 		? input.getComputedTiming()
-		: new KeyframeEffect(null, null, input[2] || defaults).getComputedTiming();
+		: new KeyframeEffect(
+				null,
+				null,
+				input[2] || defaultOptions
+		  ).getComputedTiming();
 };
 
 export const formatInputs = (

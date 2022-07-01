@@ -1,17 +1,5 @@
 import { filterMatchingStyleFromKeyframes } from "../calculate/calculate";
-import { getKeyframes, state_mainElements } from "../prepare/prepare";
-
-export const applyStyles = (mainElement: HTMLElement) => {
-	const keyframes = getKeyframes(mainElement);
-
-	const resultingStyle = keyframes?.reduce(
-		(accumulator, { offset, composite, computedOffset, easing, ...styles }) => {
-			return { ...accumulator, ...styles };
-		},
-		{}
-	);
-	Object.assign(mainElement.style, resultingStyle);
-};
+import { state_mainElements } from "../prepare/prepare";
 
 let currentAnimationTime;
 

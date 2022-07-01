@@ -1,16 +1,11 @@
+import { rootElement } from "../constants";
 import { traverseDomDown } from "../prepare/find-affected";
 import { Chunks } from "../types";
-import { topLevelElement } from "./reactive";
 
 if (typeof window !== "undefined") {
 	// @ts-expect-error polyfill for requestIdleCallback
 	window.requestIdleCallback ||= window.requestAnimationFrame;
 }
-
-const observerOptions = {
-	childList: true,
-	subtree: true,
-};
 
 const areTheseRelated = (a: HTMLElement, b: HTMLElement) => {
 	return (
@@ -72,6 +67,9 @@ export const ObserveDomMutations = (
 	callback: (changes) => void
 ) => {
 	const MO = new MutationObserver(MOcallback(Input, callback));
-	MO.observe(topLevelElement, observerOptions);
+	MO.observe(rootElement, {
+		childList: true,
+		subtree: true,
+	});
 	return MO;
 };

@@ -1,6 +1,6 @@
 import { state_elementProperties } from "../calculate/calculate";
+import { rootElement } from "../constants";
 import { state_mainElements, state_affectedElements } from "../prepare/prepare";
-import { topLevelElement } from "./reactive";
 
 let state_intersectionObserver = new WeakMap<
 	HTMLElement,
@@ -26,7 +26,7 @@ export const ObserveDimensionChange = (callback: () => void) => {
 		...state_mainElements,
 		...state_affectedElements,
 	]);
-	const { offsetWidth, offsetHeight } = topLevelElement;
+	const { offsetWidth, offsetHeight } = rootElement;
 
 	allElements.forEach((element) => {
 		state_intersectionObserver.get(element)?.disconnect();
@@ -53,7 +53,7 @@ export const ObserveDimensionChange = (callback: () => void) => {
 				IOcallback(callback);
 			},
 			{
-				root: topLevelElement,
+				root: rootElement,
 				threshold: 1,
 				rootMargin,
 			}

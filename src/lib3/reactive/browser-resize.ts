@@ -1,4 +1,4 @@
-import { topLevelElement } from "./reactive";
+import { rootElement } from "../constants";
 
 let resizeIdleCallback;
 
@@ -16,6 +16,6 @@ export const ObserveBrowserResize = (callback: () => void) => {
 		}
 		ROcallback(callback);
 	});
-	RO.observe(topLevelElement);
+	RO.observe(rootElement);
 	return RO;
 };

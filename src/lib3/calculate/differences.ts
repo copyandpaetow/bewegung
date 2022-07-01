@@ -1,18 +1,10 @@
-import { cssRuleName } from "../types";
+import { emptyNonZeroDOMRect } from "../constants";
+import {
+	calculatedElementProperties,
+	cssRuleName,
+	DimensionalDifferences,
+} from "../types";
 import { getComputedStylings } from "./dimensions";
-
-export type calculatedElementProperties = {
-	dimensions: DOMRect;
-	computedStyle: Partial<CSSStyleDeclaration>;
-	offset: number;
-};
-export interface DimensionalDifferences {
-	heightDifference: number;
-	widthDifference: number;
-	xDifference: number;
-	yDifference: number;
-	offset: number;
-}
 
 const save = (value: number, alternative: number): number => {
 	return value === Infinity || value === -Infinity || isNaN(value)
@@ -41,8 +33,7 @@ const parseTransformOrigin = (entry: calculatedElementProperties) => {
 
 export const calculateDimensionDifferences = (
 	child: [calculatedElementProperties, calculatedElementProperties],
-	parent: [calculatedElementProperties, calculatedElementProperties],
-	target: HTMLElement
+	parent: [calculatedElementProperties, calculatedElementProperties]
 ): DimensionalDifferences => {
 	const [currentEntry, referenceEntry] = child;
 	const [parentCurrentEntry, parentReferenceEntry] = parent;
@@ -95,18 +86,6 @@ export const calculateDimensionDifferences = (
 		yDifference: save(yDifference, 0),
 		offset: currentEntry.offset,
 	};
-};
-
-const emptyNonZeroDOMRect: DOMRect = {
-	width: 1,
-	height: 1,
-	x: 0,
-	y: 0,
-	top: 0,
-	right: 0,
-	bottom: 0,
-	left: 0,
-	toJSON: () => undefined,
 };
 
 export const emptyCalculatedProperties = (

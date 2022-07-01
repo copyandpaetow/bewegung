@@ -1,13 +1,5 @@
+import { defaultChangeProperties } from "../constants";
 import { Chunks, cssRuleName } from "../types";
-
-const defaultChangeProperties: cssRuleName[] = [
-	"transformOrigin",
-	"position",
-	"display",
-	"borderRadius",
-	"font",
-	"width",
-];
 
 export const Context = {
 	changeTimings: [0, 1],

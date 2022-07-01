@@ -1,23 +1,9 @@
-import { Animate, animate } from "../animate/animate";
+import { animate } from "../animate/animate";
 import { calculate } from "../calculate/calculate";
-import { STOP_TRAVERSING_CLASS } from "../prepare/find-affected";
-import { Chunks } from "../types";
+import { Animate, Chunks, Observerable, Reactive } from "../types";
 import { ObserveBrowserResize } from "./browser-resize";
 import { ObserveDimensionChange } from "./dimension-changes";
 import { ObserveDomMutations } from "./dom-mutations";
-import { Observerable } from "./observable";
-
-export const topLevelElement = (document.querySelector(
-	`.${STOP_TRAVERSING_CLASS}`
-)?.parentElement ?? document.body) as HTMLElement;
-
-export type Observer = { disconnect: () => void };
-
-type Reactive = (
-	Input: Observerable<Chunks[]>,
-	State: Observerable<Animate>,
-	Progress: Observerable<number>
-) => Observer;
 
 export const makeReactive: Reactive = (
 	Input: Observerable<Chunks[]>,

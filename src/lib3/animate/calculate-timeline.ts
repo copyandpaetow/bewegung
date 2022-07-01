@@ -1,16 +1,5 @@
-export interface TimelineEntry {
-	start: number;
-	end: number;
-	easing: string | string[];
-}
-
-export interface TimelineResult {
-	start: number;
-	end: number;
-	easing: string;
-}
-
-export type Timeline = TimelineEntry[];
+import { Context } from "../prepare/context";
+import { Timeline, TimelineEntry } from "../types";
 
 export const toArray = <MaybeArrayType>(
 	maybeArray: MaybeArrayType | MaybeArrayType[]
@@ -121,4 +110,28 @@ export const getTimelineFractions = (
 		.filter(({ start, end }) => start !== end);
 
 	return getTimelineFractions(newTimeline, [...sortedTimeline, newSortedEntry]);
+};
+
+export const calculateEasingMap = (
+	mainElementOptions: ComputedEffectTiming[]
+) => {
+	const easingTable: Record<number, string> = {};
+	const { totalRuntime } = Context;
+
+	const timings: Timeline = mainElementOptions.map(
+		({ delay, duration, easing }) => ({
+			start: (delay as number) / totalRuntime,
+			end: (duration as number) / totalRuntime,
+			easing: easing as string,
+		})
+	);
+
+	getTimelineFractions(timings).forEach((entry, index, array) => {
+		const { start } = entry;
+		const nextIndex = array[index + 1] ? index + 1 : index;
+		const nextEasing = array[nextIndex].easing as string;
+
+		easingTable[start] = nextEasing;
+	});
+	return easingTable;
 };

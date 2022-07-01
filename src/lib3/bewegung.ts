@@ -1,11 +1,11 @@
 import { logCalculationTime } from "../lib/bewegung";
-import { Animate, animate } from "./animate/animate";
+import { animate } from "./animate/animate";
 import { calculate } from "./calculate/calculate";
 import { prepare } from "./prepare/prepare";
 import { formatInputs } from "./inputs/format";
-import { effect, Observerable, observerable } from "./reactive/observable";
-import { Observer, makeReactive } from "./reactive/reactive";
-import { CustomKeyframeEffect } from "./types";
+import { effect, observerable } from "./reactive/observable";
+import {  makeReactive } from "./reactive/reactive";
+import { Animate, CustomKeyframeEffect, Observer, Observerable } from "./types";
 
 interface bewegung {
 	play: () => void;

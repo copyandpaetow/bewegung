@@ -47,3 +47,46 @@ export type Chunks = {
 	options: ComputedEffectTiming;
 	selector: string | null;
 };
+
+export interface TimelineEntry {
+	start: number;
+	end: number;
+	easing: string | string[];
+}
+
+export interface TimelineResult {
+	start: number;
+	end: number;
+	easing: string;
+}
+
+export type Timeline = TimelineEntry[];
+
+export interface Animate {
+	playAnimation: () => void;
+	pauseAnimation: () => void;
+	isPaused: () => boolean;
+	getCurrentTime: () => number;
+}
+
+export type calculatedElementProperties = {
+	dimensions: DOMRect;
+	computedStyle: Partial<CSSStyleDeclaration>;
+	offset: number;
+};
+export interface DimensionalDifferences {
+	heightDifference: number;
+	widthDifference: number;
+	xDifference: number;
+	yDifference: number;
+	offset: number;
+}
+
+export type Observer = { disconnect: () => void };
+
+export type Observerable<Value> = (updatedValue?: Value | undefined) => Value;
+export type Reactive = (
+	Input: Observerable<Chunks[]>,
+	State: Observerable<Animate>,
+	Progress: Observerable<number>
+) => Observer;

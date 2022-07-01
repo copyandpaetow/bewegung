@@ -7,42 +7,14 @@ import {
 	state_affectedElements,
 	state_mainElements,
 } from "../prepare/prepare";
-import { getTimelineFractions, Timeline } from "./calculate-timeline";
+import { Animate } from "../types";
+import { calculateEasingMap } from "./calculate-timeline";
 import {
 	getCurrentTime,
 	isPaused,
 	pauseAnimation,
 	playAnimation,
-} from "./getters";
-
-const calculateEasingMap = (mainElementOptions: ComputedEffectTiming[]) => {
-	const easingTable: Record<number, string> = {};
-	const { totalRuntime } = Context;
-
-	const timings: Timeline = mainElementOptions.map(
-		({ delay, duration, easing }) => ({
-			start: (delay as number) / totalRuntime,
-			end: (duration as number) / totalRuntime,
-			easing: easing as string,
-		})
-	);
-
-	getTimelineFractions(timings).forEach((entry, index, array) => {
-		const { start } = entry;
-		const nextIndex = array[index + 1] ? index + 1 : index;
-		const nextEasing = array[nextIndex].easing as string;
-
-		easingTable[start] = nextEasing;
-	});
-	return easingTable;
-};
-
-export interface Animate {
-	playAnimation: () => void;
-	pauseAnimation: () => void;
-	isPaused: () => boolean;
-	getCurrentTime: () => number;
-}
+} from "./methods";
 
 export const animate = (progress?: () => number): Animate => {
 	const { totalRuntime } = Context;
@@ -81,7 +53,6 @@ export const animate = (progress?: () => number): Animate => {
 	});
 
 	state_mainElements.forEach((element) => {
-		//TODO: this needs to be adapted to more elements
 		const easingTable = calculateEasingMap(getOptions(element));
 		const keyframes = state_calculatedDifferences.get(element)!.map(
 			({
