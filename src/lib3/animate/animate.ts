@@ -28,7 +28,7 @@ export const animate = (Context: Observerable<Context>): Animate => {
 				getOptions(element).forEach((option) => options.push(option))
 			);
 
-		const easingTable = calculateEasingMap(options);
+		const easingTable = calculateEasingMap(options, Context);
 
 		const keyframes = state_calculatedDifferences.get(element)!.map(
 			({
@@ -52,7 +52,7 @@ export const animate = (Context: Observerable<Context>): Animate => {
 	});
 
 	state_mainElements.forEach((element) => {
-		const easingTable = calculateEasingMap(getOptions(element));
+		const easingTable = calculateEasingMap(getOptions(element), Context);
 		const keyframes = state_calculatedDifferences.get(element)!.map(
 			({
 				xDifference,

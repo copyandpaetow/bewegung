@@ -1,5 +1,4 @@
-import { Context } from "../prepare/context";
-import { Timeline, TimelineEntry } from "../types";
+import { Context, Observerable, Timeline, TimelineEntry } from "../types";
 
 export const toArray = <MaybeArrayType>(
 	maybeArray: MaybeArrayType | MaybeArrayType[]
@@ -113,10 +112,11 @@ export const getTimelineFractions = (
 };
 
 export const calculateEasingMap = (
-	mainElementOptions: ComputedEffectTiming[]
+	mainElementOptions: ComputedEffectTiming[],
+	Context: Observerable<Context>
 ) => {
 	const easingTable: Record<number, string> = {};
-	const { totalRuntime } = Context;
+	const { totalRuntime } = Context();
 
 	const timings: Timeline = mainElementOptions.map(
 		({ delay, duration, easing }) => ({
