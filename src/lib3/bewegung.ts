@@ -4,7 +4,7 @@ import { calculate } from "./calculate/calculate";
 import { prepare } from "./prepare/prepare";
 import { formatInputs } from "./inputs/format";
 import { effect, observerable } from "./reactive/observable";
-import {  makeReactive } from "./reactive/reactive";
+import { makeReactive } from "./reactive/reactive";
 import { Animate, CustomKeyframeEffect, Observer, Observerable } from "./types";
 
 interface bewegung {
@@ -40,13 +40,17 @@ export const bewegung3 = (
 
 	/*
 	upcoming tasks
+	TODO: make the setup more functional
 	TODO: image aspect ratio and border-radius 
+	TODO: recheck the IO
 	TODO: scroll, reverse, cancel, finish, commitStyles, updatePlaybackRate
 	TODO: `delay: start, duration: end, endDelay` is often used but maybe `activeTime` and `endTime` could simplify things
 	?: does display: none work now? 
 	?: Should elements be filtered that dont change? They might change later
 	TODO: spans and text nodes
 	TODO: a config object with keepAlive, no reactivity etc 
+	TODO: rootElement: reevaluate if the root should be included or excluded
+
 
 	*/
 

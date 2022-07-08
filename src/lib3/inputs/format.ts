@@ -25,7 +25,6 @@ export const normalizeKeyframes = (
 			callbacks: null,
 		};
 	}
-	//TODO: it is costly to recalc that everytime, maybe init one once and set the timing again and again?
 	const options = new KeyframeEffect(null, null, input[2] || defaultOptions);
 	const easing = options.getComputedTiming().easing!;
 	const composite = options.composite;
