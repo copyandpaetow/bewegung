@@ -1,5 +1,5 @@
-import { Callbacks, Chunks } from "../types";
-import { calculateContext, Context } from "./context";
+import { calculate } from "../calculate/calculate";
+import { Callbacks, Chunks, Context, Observerable } from "../types";
 import { findAffectedDOMElements } from "./find-affected";
 
 export const chunkMap = new Map<symbol, Chunks>();
@@ -75,10 +75,9 @@ const updateKeyframeTiming = (
 	};
 };
 
-export const prepare = (chunks: Chunks[]) => {
+export const prepare = (chunks: Chunks[], Context: Observerable<Context>) => {
 	cleanup();
-	calculateContext(chunks);
-	const { totalRuntime } = Context;
+	const { totalRuntime } = Context();
 
 	chunks.forEach((chunk) => {
 		const newChunk = { ...chunk };
@@ -103,4 +102,6 @@ export const prepare = (chunks: Chunks[]) => {
 	});
 
 	chunks.forEach((chunk) => addAffectedElements(chunk.target));
+
+	return calculate(Context);
 };

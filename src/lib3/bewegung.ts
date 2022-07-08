@@ -1,46 +1,37 @@
 import { logCalculationTime } from "../lib/bewegung";
-import { animate } from "./animate/animate";
-import { calculate } from "./calculate/calculate";
 import { prepare } from "./prepare/prepare";
 import { formatInputs } from "./inputs/format";
 import { effect, observerable } from "./reactive/observable";
 import { makeReactive } from "./reactive/reactive";
-import { Animate, CustomKeyframeEffect, Observer, Observerable } from "./types";
+import { bewegung, bewegungProps, Observer } from "./types";
+import { calculateContext } from "./prepare/context";
 
-interface bewegung {
-	play: () => void;
-	pause: () => void;
-}
-
-export const bewegung3 = (
-	...animationInput:
-		| CustomKeyframeEffect
-		| (CustomKeyframeEffect | KeyframeEffect)[]
-): bewegung => {
+export const bewegung3 = (...animationInput: bewegungProps): bewegung => {
 	const start = performance.now();
 	const Input = observerable(formatInputs(...animationInput));
-	const Progress = observerable(0);
+	const Context = observerable(calculateContext(Input()));
+	const State = observerable(prepare(Input(), Context));
 
-	let State: Observerable<Animate>;
 	let observer: Observer;
+	let calculationProgress = "init";
 
 	effect(() => {
-		if (!State) {
-			State = observerable((prepare(Input()), calculate(), animate(Progress)));
+		if (calculationProgress === "init") {
+			Input();
 			return;
 		}
-		State((prepare(Input()), calculate(), animate(Progress)));
+		Context(calculateContext(Input()));
+		State(prepare(Input(), Context));
 	});
 
 	effect(() => {
-		State(), Progress();
+		State(), Context();
 		observer?.disconnect();
-		observer = makeReactive(Input, State, Progress);
+		observer = makeReactive(Input, State, Context);
 	});
 
 	/*
 	upcoming tasks
-	TODO: make the setup more functional
 	TODO: image aspect ratio and border-radius 
 	TODO: recheck the IO
 	TODO: scroll, reverse, cancel, finish, commitStyles, updatePlaybackRate
@@ -48,13 +39,13 @@ export const bewegung3 = (
 	?: does display: none work now? 
 	?: Should elements be filtered that dont change? They might change later
 	TODO: spans and text nodes
-	TODO: a config object with keepAlive, no reactivity etc 
 	TODO: rootElement: reevaluate if the root should be included or excluded
 
 
 	*/
 
 	logCalculationTime(start);
+	calculationProgress = "ready";
 
 	return {
 		play: () => {

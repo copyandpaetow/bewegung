@@ -1,24 +1,16 @@
 import { defaultChangeProperties } from "../constants";
 import { Chunks, cssRuleName } from "../types";
 
-export const Context = {
-	changeTimings: [0, 1],
-	changeProperties: defaultChangeProperties,
-	totalRuntime: 400,
+const updateTotalRuntime = (times: number[]) => {
+	return times.reduce((longest, current) => Math.max(longest, current));
 };
 
-export const updateTotalRuntime = (times: number[]) => {
-	Context.totalRuntime = times.reduce((longest, current) =>
-		Math.max(longest, current)
-	);
-};
-
-export const updateChangeTimings = (
+const updateChangeTimings = (
 	allKeyframes: ComputedKeyframe[][],
-	options: ComputedEffectTiming[]
+	options: ComputedEffectTiming[],
+	totalRuntime: number
 ) => {
 	const newTimings = new Set([0, 1]);
-	const totalRuntime = Context.totalRuntime;
 
 	allKeyframes.forEach((keyframes, index) => {
 		const { delay: start, duration: end, endDelay } = options[index];
@@ -34,10 +26,10 @@ export const updateChangeTimings = (
 			newTimings.add(((end as number) + (endDelay as number)) / totalRuntime);
 		}
 	});
-	Context.changeTimings = Array.from(newTimings).sort((a, b) => a - b);
+	return Array.from(newTimings).sort((a, b) => a - b);
 };
 
-export const updateChangeProperties = (allKeyframes: ComputedKeyframe[][]) => {
+const updateChangeProperties = (allKeyframes: ComputedKeyframe[][]) => {
 	const changeProperties = new Set(defaultChangeProperties);
 
 	allKeyframes.forEach((keyframes) => {
@@ -49,16 +41,20 @@ export const updateChangeProperties = (allKeyframes: ComputedKeyframe[][]) => {
 			}
 		);
 	});
-	Context.changeProperties = Array.from(changeProperties);
+	return Array.from(changeProperties);
 };
 
 export const calculateContext = (chunks: Chunks[]) => {
 	const keyframes = chunks.map((chunk) => chunk.keyframes);
 	const options = chunks.map((chunk) => chunk.options);
+	const totalRuntime = updateTotalRuntime(
+		options.map((option) => option.endTime!)
+	);
 
-	updateTotalRuntime(options.map((option) => option.endTime!));
-	updateChangeTimings(keyframes, options);
-	updateChangeProperties(keyframes);
-
-	return Context;
+	return {
+		totalRuntime,
+		changeTimings: updateChangeTimings(keyframes, options, totalRuntime),
+		changeProperties: updateChangeProperties(keyframes),
+		progress: 0,
+	};
 };

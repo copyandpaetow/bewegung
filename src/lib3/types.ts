@@ -88,5 +88,21 @@ export type Observerable<Value> = (updatedValue?: Value | undefined) => Value;
 export type Reactive = (
 	Input: Observerable<Chunks[]>,
 	State: Observerable<Animate>,
-	Progress: Observerable<number>
+	context: Observerable<Context>
 ) => Observer;
+
+export interface bewegung {
+	play: () => void;
+	pause: () => void;
+}
+
+export type bewegungProps =
+	| CustomKeyframeEffect
+	| (CustomKeyframeEffect | KeyframeEffect)[];
+
+export interface Context {
+	changeTimings: number[];
+	changeProperties: cssRuleName[];
+	totalRuntime: number;
+	progress: number;
+}

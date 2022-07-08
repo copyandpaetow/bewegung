@@ -1,5 +1,4 @@
 import { state_calculatedDifferences } from "../calculate/calculate";
-import { Context } from "../prepare/context";
 import {
 	getCallbacks,
 	getOptions,
@@ -7,7 +6,7 @@ import {
 	state_affectedElements,
 	state_mainElements,
 } from "../prepare/prepare";
-import { Animate } from "../types";
+import { Animate, Context, Observerable } from "../types";
 import { calculateEasingMap } from "./calculate-timeline";
 import {
 	getCurrentTime,
@@ -16,8 +15,8 @@ import {
 	playAnimation,
 } from "./methods";
 
-export const animate = (progress?: () => number): Animate => {
-	const { totalRuntime } = Context;
+export const animate = (Context: Observerable<Context>): Animate => {
+	const { totalRuntime, progress } = Context();
 	const allAnimations: Animation[] = [];
 
 	state_affectedElements.forEach((element) => {
@@ -84,7 +83,7 @@ export const animate = (progress?: () => number): Animate => {
 	});
 
 	return {
-		playAnimation: () => playAnimation(allAnimations, progress?.()),
+		playAnimation: () => playAnimation(allAnimations, progress),
 		pauseAnimation: () => pauseAnimation(allAnimations),
 		isPaused: () => isPaused(allAnimations),
 		getCurrentTime: () => getCurrentTime(allAnimations),
