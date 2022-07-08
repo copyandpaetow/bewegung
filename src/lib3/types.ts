@@ -61,12 +61,10 @@ export interface TimelineResult {
 }
 
 export type Timeline = TimelineEntry[];
-
 export interface Animate {
 	playAnimation: () => void;
 	pauseAnimation: () => void;
-	isPaused: () => boolean;
-	getCurrentTime: () => number;
+	keepProgress: () => void;
 }
 
 export type calculatedElementProperties = {
@@ -82,13 +80,16 @@ export interface DimensionalDifferences {
 	offset: number;
 }
 
-export type Observer = { disconnect: () => void };
+export type Observer = {
+	disconnect: () => void;
+	disconnectStateObserver: () => void;
+};
 
 export type Observerable<Value> = (updatedValue?: Value | undefined) => Value;
+
 export type Reactive = (
 	Input: Observerable<Chunks[]>,
-	State: Observerable<Animate>,
-	context: Observerable<Context>
+	State: Observerable<Animate>
 ) => Observer;
 
 export interface bewegung {

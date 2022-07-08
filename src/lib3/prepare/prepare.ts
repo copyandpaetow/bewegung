@@ -1,9 +1,10 @@
 import { calculate } from "../calculate/calculate";
 import { Callbacks, Chunks, Context, Observerable } from "../types";
+import { calculateContext } from "./context";
 import { findAffectedDOMElements } from "./find-affected";
 
-export const chunkMap = new Map<symbol, Chunks>();
-export let chunkKeys = new WeakMap<HTMLElement, symbol[]>();
+const chunkMap = new Map<symbol, Chunks>();
+let chunkKeys = new WeakMap<HTMLElement, symbol[]>();
 export let state_originalStyle = new WeakMap<HTMLElement, string>();
 export const state_mainElements = new Set<HTMLElement>();
 export const state_affectedElements = new Set<HTMLElement>();
@@ -11,6 +12,8 @@ export let state_dependencyElements = new WeakMap<
 	HTMLElement,
 	Set<HTMLElement>
 >();
+
+export let state_context: Context;
 
 const cleanup = () => {
 	chunkMap.clear();
@@ -75,25 +78,26 @@ const updateKeyframeTiming = (
 	};
 };
 
-export const prepare = (chunks: Chunks[], Context: Observerable<Context>) => {
+export const prepare = (chunks: Chunks[]) => {
 	cleanup();
-	const { totalRuntime } = Context();
+	state_context = Object.freeze(calculateContext(chunks));
+	const { totalRuntime } = state_context;
 
 	chunks.forEach((chunk) => {
-		const newChunk = { ...chunk };
-
 		const { callbacks, keyframes, options, target } = chunk;
 		const updatedKeyframes = keyframes.map((frame) =>
 			updateKeyframeTiming(frame, options, totalRuntime)
-		);
+		) as ComputedKeyframe[];
 		const updatedCallbacks = callbacks?.map((frame) =>
 			updateKeyframeTiming(frame, options, totalRuntime)
-		);
-		newChunk.keyframes = updatedKeyframes as ComputedKeyframe[];
-		newChunk.callbacks = (updatedCallbacks as Callbacks[]) ?? null;
+		) as Callbacks[];
 
 		const key = Symbol("chunkKey");
-		chunkMap.set(key, newChunk);
+		chunkMap.set(key, {
+			...chunk,
+			keyframes: updatedKeyframes,
+			callbacks: updatedCallbacks ?? null,
+		});
 		target.forEach((element) => {
 			state_mainElements.add(element);
 			state_originalStyle.set(element, element.style.cssText);
@@ -103,5 +107,5 @@ export const prepare = (chunks: Chunks[], Context: Observerable<Context>) => {
 
 	chunks.forEach((chunk) => addAffectedElements(chunk.target));
 
-	return calculate(Context);
+	return calculate();
 };

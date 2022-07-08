@@ -5,19 +5,16 @@ import {
 	state_dependencyElements,
 	state_affectedElements,
 	state_mainElements,
+	state_context,
 } from "../prepare/prepare";
-import { Animate, Context, Observerable } from "../types";
+import { Animate } from "../types";
 import { calculateEasingMap } from "./calculate-timeline";
-import {
-	getCurrentTime,
-	isPaused,
-	pauseAnimation,
-	playAnimation,
-} from "./methods";
+import { keepProgress, pauseAnimation, playAnimation } from "./methods";
 
-export const animate = (Context: Observerable<Context>): Animate => {
-	const { totalRuntime, progress } = Context();
-	const allAnimations: Animation[] = [];
+export const animate = (): Animate => {
+	const { totalRuntime, progress } = state_context;
+	const elementAnimations: Animation[] = [];
+	const callbackAnimations: Animation[] = [];
 
 	state_affectedElements.forEach((element) => {
 		const options: ComputedEffectTiming[] = [];
@@ -28,7 +25,7 @@ export const animate = (Context: Observerable<Context>): Animate => {
 				getOptions(element).forEach((option) => options.push(option))
 			);
 
-		const easingTable = calculateEasingMap(options, Context);
+		const easingTable = calculateEasingMap(options, totalRuntime);
 
 		const keyframes = state_calculatedDifferences.get(element)!.map(
 			({
@@ -46,13 +43,13 @@ export const animate = (Context: Observerable<Context>): Animate => {
 				} as Keyframe)
 		);
 
-		allAnimations.push(
+		elementAnimations.push(
 			new Animation(new KeyframeEffect(element, keyframes, totalRuntime))
 		);
 	});
 
 	state_mainElements.forEach((element) => {
-		const easingTable = calculateEasingMap(getOptions(element), Context);
+		const easingTable = calculateEasingMap(getOptions(element), totalRuntime);
 		const keyframes = state_calculatedDifferences.get(element)!.map(
 			({
 				xDifference,
@@ -74,18 +71,19 @@ export const animate = (Context: Observerable<Context>): Animate => {
 				new KeyframeEffect(element, null, offset * totalRuntime)
 			);
 			animation.onfinish = callback;
-			allAnimations.push(animation);
+			callbackAnimations.push(animation);
 		});
 
-		allAnimations.push(
+		elementAnimations.push(
 			new Animation(new KeyframeEffect(element, keyframes, totalRuntime))
 		);
 	});
 
+	const allAnimations = [...elementAnimations, ...callbackAnimations];
+
 	return {
-		playAnimation: () => playAnimation(allAnimations, progress),
+		playAnimation: () => playAnimation(allAnimations),
 		pauseAnimation: () => pauseAnimation(allAnimations),
-		isPaused: () => isPaused(allAnimations),
-		getCurrentTime: () => getCurrentTime(allAnimations),
+		keepProgress: () => keepProgress(elementAnimations[0]),
 	};
 };

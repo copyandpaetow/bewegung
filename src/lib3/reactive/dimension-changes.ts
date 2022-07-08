@@ -7,18 +7,22 @@ let state_intersectionObserver = new WeakMap<
 	IntersectionObserver
 >();
 
-// get all elements
-// get initial dimensions
-// set the rootMargin to that
-//set the intersectionObserver for all elements
-const buffer = 5;
-let resizeIdleCallback;
+const calculateRootMargin = (
+	rootElement: HTMLElement,
+	element: HTMLElement
+) => {
+	const { clientWidth, clientHeight } = rootElement;
+	const { dimensions } = state_elementProperties.get(element)![0];
+	const buffer = 5;
 
-const IOcallback = (callback: () => void) => {
-	resizeIdleCallback && clearTimeout(resizeIdleCallback);
-	resizeIdleCallback = setTimeout(() => {
-		callback();
-	}, 100);
+	const rootMargins = [
+		dimensions.top,
+		clientWidth - dimensions.right,
+		clientHeight - dimensions.bottom,
+		dimensions.left,
+	];
+
+	return rootMargins.map((px) => `${-1 * Math.floor(px - buffer)}px`).join(" ");
 };
 
 export const ObserveDimensionChange = (callback: () => void) => {
@@ -26,22 +30,9 @@ export const ObserveDimensionChange = (callback: () => void) => {
 		...state_mainElements,
 		...state_affectedElements,
 	]);
-	const { offsetWidth, offsetHeight } = rootElement;
 
 	allElements.forEach((element) => {
 		state_intersectionObserver.get(element)?.disconnect();
-		const { dimensions } = state_elementProperties.get(element)![0];
-
-		const rootMargins = [
-			dimensions.top - buffer,
-			offsetWidth - (dimensions.left + buffer + dimensions.width),
-			offsetHeight - (dimensions.top + buffer + dimensions.height),
-			dimensions.left - buffer,
-		];
-
-		const rootMargin = rootMargins
-			.map((px) => `${-1 * Math.floor(px)}px`)
-			.join(" ");
 
 		let firstTime = true;
 		const observer = new IntersectionObserver(
@@ -50,12 +41,12 @@ export const ObserveDimensionChange = (callback: () => void) => {
 					firstTime = false;
 					return;
 				}
-				IOcallback(callback);
+				callback();
 			},
 			{
 				root: rootElement,
-				threshold: 1,
-				rootMargin,
+				threshold: [0.2, 0.4, 0.6, 0.8, 1],
+				rootMargin: calculateRootMargin(rootElement, element),
 			}
 		);
 

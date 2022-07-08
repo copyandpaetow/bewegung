@@ -4,13 +4,11 @@ import { formatInputs } from "./inputs/format";
 import { effect, observerable } from "./reactive/observable";
 import { makeReactive } from "./reactive/reactive";
 import { bewegung, bewegungProps, Observer } from "./types";
-import { calculateContext } from "./prepare/context";
 
 export const bewegung3 = (...animationInput: bewegungProps): bewegung => {
 	const start = performance.now();
 	const Input = observerable(formatInputs(...animationInput));
-	const Context = observerable(calculateContext(Input()));
-	const State = observerable(prepare(Input(), Context));
+	const State = observerable(prepare(Input()));
 
 	let observer: Observer;
 	let calculationProgress = "init";
@@ -20,20 +18,18 @@ export const bewegung3 = (...animationInput: bewegungProps): bewegung => {
 			Input();
 			return;
 		}
-		Context(calculateContext(Input()));
-		State(prepare(Input(), Context));
+		State(prepare(Input()));
 	});
 
 	effect(() => {
-		State(), Context();
+		State();
 		observer?.disconnect();
-		observer = makeReactive(Input, State, Context);
+		observer = makeReactive(Input, State);
 	});
 
 	/*
 	upcoming tasks
 	TODO: image aspect ratio and border-radius 
-	TODO: recheck the IO
 	TODO: scroll, reverse, cancel, finish, commitStyles, updatePlaybackRate
 	TODO: `delay: start, duration: end, endDelay` is often used but maybe `activeTime` and `endTime` could simplify things
 	?: does display: none work now? 
@@ -49,7 +45,7 @@ export const bewegung3 = (...animationInput: bewegungProps): bewegung => {
 
 	return {
 		play: () => {
-			observer.disconnect();
+			observer.disconnectStateObserver();
 			State().playAnimation();
 		},
 		pause: () => {

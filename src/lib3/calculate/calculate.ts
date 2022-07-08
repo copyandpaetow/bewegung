@@ -2,15 +2,11 @@ import { animate } from "../animate/animate";
 import {
 	getKeyframes,
 	state_affectedElements,
+	state_context,
 	state_mainElements,
 	state_originalStyle,
 } from "../prepare/prepare";
-import {
-	calculatedElementProperties,
-	Context,
-	DimensionalDifferences,
-	Observerable,
-} from "../types";
+import { calculatedElementProperties, DimensionalDifferences } from "../types";
 import {
 	calculateDimensionDifferences,
 	emptyCalculatedProperties,
@@ -58,13 +54,13 @@ export const filterMatchingStyleFromKeyframes = (
 	Object.assign(element.style, resultingStyle);
 };
 
-export const calculate = (Context: Observerable<Context>) => {
+export const calculate = () => {
 	cleanup();
 	const allElements = new Set([
 		...state_mainElements,
 		...state_affectedElements,
 	]);
-	const { changeProperties, changeTimings } = Context();
+	const { changeProperties, changeTimings } = state_context;
 
 	changeTimings.forEach((timing, index, array) => {
 		state_mainElements.forEach((element) =>
@@ -111,5 +107,5 @@ export const calculate = (Context: Observerable<Context>) => {
 		state_calculatedDifferences.set(element, calculatedDifferences);
 	});
 
-	return animate(Context);
+	return animate();
 };
