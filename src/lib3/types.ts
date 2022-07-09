@@ -65,6 +65,7 @@ export interface Animate {
 	playAnimation: () => void;
 	pauseAnimation: () => void;
 	keepProgress: () => void;
+	scrollAnimation: (progress: number, done?: boolean) => void;
 }
 
 export type calculatedElementProperties = {
@@ -95,6 +96,7 @@ export type Reactive = (
 export interface bewegung {
 	play: () => void;
 	pause: () => void;
+	scroll: (progress: number, done?: boolean) => void;
 }
 
 export type bewegungProps =

@@ -30,10 +30,9 @@ export const bewegung3 = (...animationInput: bewegungProps): bewegung => {
 	/*
 	upcoming tasks
 	TODO: image aspect ratio and border-radius 
-	TODO: scroll, reverse, cancel, finish, commitStyles, updatePlaybackRate
+	TODO: reverse, cancel, finish, commitStyles, updatePlaybackRate
 	TODO: `delay: start, duration: end, endDelay` is often used but maybe `activeTime` and `endTime` could simplify things
-	?: does display: none work now? 
-	?: Should elements be filtered that dont change? They might change later
+	TODO: fix position for display: none;
 	TODO: spans and text nodes
 	TODO: rootElement: reevaluate if the root should be included or excluded
 
@@ -50,6 +49,10 @@ export const bewegung3 = (...animationInput: bewegungProps): bewegung => {
 		},
 		pause: () => {
 			State().pauseAnimation();
+		},
+		scroll: (progress: number, done?: boolean) => {
+			observer.disconnectStateObserver();
+			State().scrollAnimation(progress, done);
 		},
 	};
 };

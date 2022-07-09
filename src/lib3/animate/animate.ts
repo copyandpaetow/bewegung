@@ -1,4 +1,7 @@
-import { state_calculatedDifferences } from "../calculate/calculate";
+import {
+	state_calculatedDifferences,
+	state_elementProperties,
+} from "../calculate/calculate";
 import {
 	getCallbacks,
 	getOptions,
@@ -9,10 +12,50 @@ import {
 } from "../prepare/prepare";
 import { Animate } from "../types";
 import { calculateEasingMap } from "./calculate-timeline";
-import { keepProgress, pauseAnimation, playAnimation } from "./methods";
+import {
+	keepProgress,
+	pauseAnimation,
+	playAnimation,
+	scrollAnimation,
+} from "./methods";
+
+//TODO: this could be combined
+const getBorderRadius = (
+	element: HTMLElement
+): Record<number, string> | false => {
+	const styleMap = state_elementProperties.get(element)!;
+	if (styleMap.every((style) => style.computedStyle.borderRadius === "0px")) {
+		return false;
+	}
+
+	const borderRadiusTable = {};
+
+	styleMap.forEach(
+		(style) =>
+			(borderRadiusTable[style.offset] = style.computedStyle.borderRadius)
+	);
+
+	return borderRadiusTable;
+};
+//TODO: this could be combined
+//TODO: this is impacting performance
+const getOpacity = (element: HTMLElement): Record<number, string> | false => {
+	const styleMap = state_elementProperties.get(element)!;
+	if (styleMap.every((style) => style.computedStyle.opacity === "1")) {
+		return false;
+	}
+
+	const opacityTable = {};
+
+	styleMap.forEach(
+		(style) => (opacityTable[style.offset] = style.computedStyle.opacity)
+	);
+
+	return opacityTable;
+};
 
 export const animate = (): Animate => {
-	const { totalRuntime, progress } = state_context;
+	const { totalRuntime } = state_context;
 	const elementAnimations: Animation[] = [];
 	const callbackAnimations: Animation[] = [];
 
@@ -26,7 +69,9 @@ export const animate = (): Animate => {
 			);
 
 		const easingTable = calculateEasingMap(options, totalRuntime);
+		const borderRadiusTable = getBorderRadius(element);
 
+		//TODO: if the user supplied non-layout styles like color or opacity, or rotate they need to be added here as well
 		const keyframes = state_calculatedDifferences.get(element)!.map(
 			({
 				xDifference,
@@ -40,6 +85,9 @@ export const animate = (): Animate => {
 					composite: "auto",
 					easing: easingTable[offset],
 					transform: `translate(${xDifference}px, ${yDifference}px) scale(${widthDifference}, ${heightDifference})`,
+					...(borderRadiusTable && {
+						clipPath: `inset(0px round ${borderRadiusTable[offset]})`,
+					}),
 				} as Keyframe)
 		);
 
@@ -50,6 +98,9 @@ export const animate = (): Animate => {
 
 	state_mainElements.forEach((element) => {
 		const easingTable = calculateEasingMap(getOptions(element), totalRuntime);
+		const borderRadiusTable = getBorderRadius(element);
+		const opacityTable = getOpacity(element);
+
 		const keyframes = state_calculatedDifferences.get(element)!.map(
 			({
 				xDifference,
@@ -63,6 +114,12 @@ export const animate = (): Animate => {
 					composite: "auto",
 					easing: easingTable[offset],
 					transform: `translate(${xDifference}px, ${yDifference}px) scale(${widthDifference}, ${heightDifference})`,
+					...(borderRadiusTable && {
+						clipPath: `inset(0px round ${borderRadiusTable[offset]})`,
+					}),
+					...(opacityTable && {
+						opacity: `${opacityTable[offset]}`,
+					}),
 				} as Keyframe)
 		);
 
@@ -80,10 +137,13 @@ export const animate = (): Animate => {
 	});
 
 	const allAnimations = [...elementAnimations, ...callbackAnimations];
+	const prefixedScrollAnimation = scrollAnimation(allAnimations);
 
 	return {
 		playAnimation: () => playAnimation(allAnimations),
 		pauseAnimation: () => pauseAnimation(allAnimations),
 		keepProgress: () => keepProgress(elementAnimations[0]),
+		scrollAnimation: (progress: number, done?: boolean) =>
+			prefixedScrollAnimation(progress, done),
 	};
 };

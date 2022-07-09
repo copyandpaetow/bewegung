@@ -19,6 +19,7 @@ const initCards = () => {
 			{
 				width: "100%",
 				order: "-1",
+				opacity: 0.5,
 			},
 			{ duration: 2000, easing: "ease" },
 		];
@@ -44,7 +45,7 @@ const initCards = () => {
 		];
 
 		const animation = bewegung3(highlightCard, hideOthers);
-		//animation.play();
+		animation.play();
 		// setTimeout(() => {
 		// 	cards[0].remove();
 		// }, 2500);

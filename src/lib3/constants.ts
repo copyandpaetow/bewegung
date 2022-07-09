@@ -21,11 +21,13 @@ export const rootElement = (document.querySelector(`.${rootClass}`)
 	?.parentElement ?? document.body) as HTMLElement;
 
 export const defaultChangeProperties: cssRuleName[] = [
-	"transformOrigin",
-	"position",
-	"display",
 	"borderRadius",
+	"display",
 	"font",
+	"opacity",
+	"position",
+	"transform",
+	"transformOrigin",
 	"width",
 ];
 
