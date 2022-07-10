@@ -6,25 +6,21 @@ import {
 	state_affectedElements,
 	state_context,
 	state_mainElements,
+	state_originalStyle,
 } from "../prepare/prepare";
 
 let state_progress = { progress: 0, time: 0 };
+let state_stylesApplied = false;
 
 const applyStyles = () => {
+	if (state_stylesApplied) {
+		return;
+	}
+
 	state_mainElements.forEach((element) =>
 		filterMatchingStyleFromKeyframes(element)
 	);
-
-	[...state_mainElements, ...state_affectedElements].forEach((element) => {
-		const styles = state_elementProperties.get(element)!;
-		if (styles.every((style) => style.computedStyle.borderRadius === "0px")) {
-			return;
-		}
-		Object.assign(element.style, {
-			borderRadius: "",
-			clipPath: `inset(0px round ${styles.at(-1)!.computedStyle.borderRadius})`,
-		});
-	});
+	state_stylesApplied = true;
 };
 
 const clamp = (number: number, min = 0, max = 1) =>
@@ -88,4 +84,32 @@ export const keepProgress = (animation: Animation) => {
 	if (playState === "paused") {
 		state_progress.progress = currentTime;
 	}
+};
+
+export const reverseAnimation = (animations: Animation[]) => {
+	applyStyles();
+	animations.forEach((waapi) => {
+		waapi.reverse();
+	});
+};
+export const cancelAnimation = (animations: Animation[]) => {
+	state_mainElements.forEach(
+		(element) => (element.style.cssText = state_originalStyle.get(element)!)
+	);
+
+	animations.forEach((waapi) => {
+		waapi.cancel();
+	});
+	state_stylesApplied = false;
+};
+export const commitAnimationStyles = (animations: Animation[]) => {
+	animations.forEach((waapi) => {
+		waapi.commitStyles();
+	});
+};
+export const finishAnimation = (animations: Animation[]) => {
+	animations.forEach((waapi) => {
+		waapi.finish();
+	});
+	state_stylesApplied = false;
 };

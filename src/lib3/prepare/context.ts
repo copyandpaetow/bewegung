@@ -13,7 +13,7 @@ const updateChangeTimings = (
 	const newTimings = new Set([0, 1]);
 
 	allKeyframes.forEach((keyframes, index) => {
-		const { delay: start, duration: end, endDelay } = options[index];
+		const { delay: start, duration: end, endTime } = options[index];
 
 		keyframes.forEach(({ offset, computedOffset }) => {
 			newTimings.add(
@@ -22,9 +22,7 @@ const updateChangeTimings = (
 			);
 		});
 		newTimings.add((end as number) / totalRuntime);
-		if ((endDelay as number) > 0) {
-			newTimings.add(((end as number) + (endDelay as number)) / totalRuntime);
-		}
+		newTimings.add((endTime as number) / totalRuntime);
 	});
 	return Array.from(newTimings).sort((a, b) => a - b);
 };

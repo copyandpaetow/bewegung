@@ -13,9 +13,13 @@ import {
 import { Animate } from "../types";
 import { calculateEasingMap } from "./calculate-timeline";
 import {
+	cancelAnimation,
+	commitAnimationStyles,
+	finishAnimation,
 	keepProgress,
 	pauseAnimation,
 	playAnimation,
+	reverseAnimation,
 	scrollAnimation,
 } from "./methods";
 
@@ -145,5 +149,16 @@ export const animate = (): Animate => {
 		keepProgress: () => keepProgress(elementAnimations[0]),
 		scrollAnimation: (progress: number, done?: boolean) =>
 			prefixedScrollAnimation(progress, done),
+		reverseAnimation: () => reverseAnimation(allAnimations),
+		cancelAnimation: () => cancelAnimation(allAnimations),
+		commitAnimationStyles: () => commitAnimationStyles(allAnimations),
+		updatePlaybackRate: (newPlaybackRate: number) =>
+			allAnimations.forEach((animation) =>
+				animation.updatePlaybackRate(newPlaybackRate)
+			),
+		finishAnimation: () => finishAnimation(allAnimations),
+		finishPromise: Promise.all(
+			allAnimations.map((animation) => animation.finished)
+		),
 	};
 };

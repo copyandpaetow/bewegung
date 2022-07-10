@@ -63,14 +63,11 @@ const updateKeyframeTiming = (
 	options: ComputedEffectTiming,
 	totalRuntime: number
 ) => {
-	const { delay: start, duration: end, endDelay } = options;
+	const { delay: start, endTime } = options;
 
 	const absoluteTiming =
 		//@ts-expect-error stupid typescript
-		((end as number) * (frame.offset || frame.computedOffset) +
-			(start as number) +
-			endDelay!) /
-		totalRuntime;
+		(endTime! * (frame.offset || frame.computedOffset) + start!) / totalRuntime;
 
 	return {
 		...frame,

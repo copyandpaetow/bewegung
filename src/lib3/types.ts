@@ -66,6 +66,12 @@ export interface Animate {
 	pauseAnimation: () => void;
 	keepProgress: () => void;
 	scrollAnimation: (progress: number, done?: boolean) => void;
+	reverseAnimation: () => void;
+	cancelAnimation: () => void;
+	commitAnimationStyles: () => void;
+	finishAnimation: () => void;
+	updatePlaybackRate: (newPlaybackRate: number) => void;
+	finishPromise: Promise<Animation[]>;
 }
 
 export type calculatedElementProperties = {
@@ -97,6 +103,12 @@ export interface bewegung {
 	play: () => void;
 	pause: () => void;
 	scroll: (progress: number, done?: boolean) => void;
+	reverse: () => void;
+	cancel: () => void;
+	commitStyles: () => void;
+	finish: () => void;
+	updatePlaybackRate: (newPlaybackRate: number) => void;
+	finished: Promise<Animation[]>;
 }
 
 export type bewegungProps =

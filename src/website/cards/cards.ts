@@ -19,9 +19,8 @@ const initCards = () => {
 			{
 				width: "100%",
 				order: "-1",
-				opacity: 0.5,
 			},
-			{ duration: 2000, easing: "ease" },
+			{ duration: 4000, easing: "ease" },
 		];
 
 		// const hideOthers: CustomKeyframeEffect = [
@@ -37,18 +36,17 @@ const initCards = () => {
 		// ];
 
 		const hideOthers: CustomKeyframeEffect = [
-			cards[activeIndex],
+			[...cards].filter((card, index) => index !== activeIndex),
 			{
-				height: "45vh",
+				width: "",
+				order: "",
 			},
-			{ duration: 2000, easing: "ease-in" },
+			{ duration: 4000, easing: "ease-in" },
 		];
 
 		const animation = bewegung3(highlightCard, hideOthers);
 		animation.play();
-		// setTimeout(() => {
-		// 	cards[0].remove();
-		// }, 2500);
+		//animation.pause();
 		// setTimeout(() => {
 		// 	animation.play();
 		// }, 4000);
