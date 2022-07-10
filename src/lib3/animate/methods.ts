@@ -3,7 +3,6 @@ import {
 	state_elementProperties,
 } from "../calculate/calculate";
 import {
-	state_affectedElements,
 	state_context,
 	state_mainElements,
 	state_originalStyle,
@@ -12,7 +11,7 @@ import {
 let state_progress = { progress: 0, time: 0 };
 let state_stylesApplied = false;
 
-const applyStyles = () => {
+const applyStyles = (animations: Animation[]) => {
 	if (state_stylesApplied) {
 		return;
 	}
@@ -21,6 +20,9 @@ const applyStyles = () => {
 		filterMatchingStyleFromKeyframes(element)
 	);
 	state_stylesApplied = true;
+	getFinishPromise(animations).then(() => {
+		state_stylesApplied = false;
+	});
 };
 
 const clamp = (number: number, min = 0, max = 1) =>
@@ -36,7 +38,7 @@ const getProgress = () => {
 };
 
 export const playAnimation = (animations: Animation[]) => {
-	applyStyles();
+	applyStyles(animations);
 
 	animations.forEach((waapi) => {
 		waapi.currentTime = getProgress();
@@ -46,7 +48,7 @@ export const playAnimation = (animations: Animation[]) => {
 };
 
 export const scrollAnimation = (animations: Animation[]) => {
-	applyStyles();
+	applyStyles(animations);
 	const { totalRuntime } = state_context;
 
 	return (progress: number, done?: boolean) => {
@@ -87,7 +89,7 @@ export const keepProgress = (animation: Animation) => {
 };
 
 export const reverseAnimation = (animations: Animation[]) => {
-	applyStyles();
+	applyStyles(animations);
 	animations.forEach((waapi) => {
 		waapi.reverse();
 	});
@@ -112,4 +114,8 @@ export const finishAnimation = (animations: Animation[]) => {
 		waapi.finish();
 	});
 	state_stylesApplied = false;
+};
+
+export const getFinishPromise = (animations: Animation[]) => {
+	return Promise.all(animations.map((animation) => animation.finished));
 };

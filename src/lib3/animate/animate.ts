@@ -16,6 +16,7 @@ import {
 	cancelAnimation,
 	commitAnimationStyles,
 	finishAnimation,
+	getFinishPromise,
 	keepProgress,
 	pauseAnimation,
 	playAnimation,
@@ -157,8 +158,6 @@ export const animate = (): Animate => {
 				animation.updatePlaybackRate(newPlaybackRate)
 			),
 		finishAnimation: () => finishAnimation(allAnimations),
-		finishPromise: Promise.all(
-			allAnimations.map((animation) => animation.finished)
-		),
+		finishPromise: getFinishPromise(allAnimations),
 	};
 };

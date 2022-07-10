@@ -30,8 +30,6 @@ export const bewegung3 = (...animationInput: bewegungProps): bewegung => {
 	/*
 	upcoming tasks
 	TODO: image aspect ratio
-
-	TODO: fix position for display: none;
 	TODO: spans and text nodes
 	TODO: rootElement: reevaluate if the root should be included or excluded
 

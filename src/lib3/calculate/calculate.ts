@@ -53,7 +53,6 @@ export const filterMatchingStyleFromKeyframes = (
 
 	Object.assign(element.style, resultingStyle);
 };
-
 export const calculate = () => {
 	cleanup();
 	const allElements = new Set([
@@ -82,6 +81,43 @@ export const calculate = () => {
 				element.style.cssText = state_originalStyle.get(element)!;
 			});
 		}
+	});
+
+	allElements.forEach((element) => {
+		const existingCalculations = state_elementProperties.get(element)!;
+
+		if (
+			existingCalculations.every(
+				(entry) => entry.computedStyle.display !== "none"
+			)
+		) {
+			return;
+		}
+
+		const newCalculations = existingCalculations.map((entry, index, array) => {
+			if (entry.computedStyle.display !== "none") {
+				return entry;
+			}
+			const nextEntryDimensions = (
+				array
+					.slice(0, index)
+					.reverse()
+					.find((entry) => entry.computedStyle.display !== "none") ||
+				array
+					.slice(index)
+					.find((entry) => entry.computedStyle.display !== "none")
+			)?.dimensions;
+
+			if (!nextEntryDimensions) {
+				return entry;
+			}
+
+			return {
+				...entry,
+				dimensions: { ...nextEntryDimensions, width: 0, height: 0 },
+			};
+		});
+		state_elementProperties.set(element, newCalculations);
 	});
 
 	allElements.forEach((element) => {
