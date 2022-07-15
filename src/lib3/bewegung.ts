@@ -78,5 +78,6 @@ export const bewegung3 = (...animationInput: bewegungProps): bewegung => {
 			State().updatePlaybackRate(newPlaybackRate);
 		},
 		finished: State().finishPromise,
+		playState: () => State().getPlayState(),
 	};
 };

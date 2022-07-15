@@ -59,6 +59,11 @@ code {
 	max-width: 60ch;
 }
 
+span {
+	color: var(--color-main);
+
+}
+
 a {
 	white-space: nowrap;
 }

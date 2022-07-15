@@ -1,10 +1,12 @@
-import { bewegung, CustomKeyframeEffect } from "../../lib/bewegung";
+import { CustomKeyframeEffect } from "../../lib/bewegung";
 import { bewegung2 } from "../../lib2/bewegung";
 import { bewegung3 } from "../../lib3/bewegung";
+import { bewegung } from "../../lib3/types";
 
 const initCards = () => {
-	const cardsPrevButton = document.querySelector(".cards__button--prev");
-	const cardsNextButton = document.querySelector(".cards__button--next");
+	const cardsAbortButton = document.querySelector(".cards__button--abort");
+	const cardsPlayButton = document.querySelector(".cards__button--play");
+	const cardsPauseButton = document.querySelector(".cards__button--pause");
 	let activeIndex = 1;
 	const cards = document.querySelectorAll(".card");
 
@@ -17,8 +19,9 @@ const initCards = () => {
 		const highlightCard: CustomKeyframeEffect = [
 			cards[activeIndex],
 			{
-				width: "100%",
+				width: "15%",
 				order: "-1",
+				// height: "60vh",
 			},
 			{ duration: 4000, easing: "ease" },
 		];
@@ -40,25 +43,38 @@ const initCards = () => {
 			{
 				width: "",
 				order: "",
+				// height: "",
 			},
 			{ duration: 4000, easing: "ease-in" },
 		];
 
-		const animation = bewegung3(highlightCard, hideOthers);
-		animation.play();
-		//animation.pause();
-		// setTimeout(() => {
-		// 	animation.play();
-		// }, 4000);
+		return bewegung3(highlightCard, hideOthers);
 	};
 
-	cardsNextButton?.addEventListener("click", () => {
-		highlight();
-		updateIndex(1);
+	let animation: bewegung | undefined;
+	let paused = false;
+
+	cardsPlayButton?.addEventListener("click", () => {
+		if (!animation) {
+			animation = highlight();
+		}
+		console.log(animation.playState());
+		animation.playState() !== "running" ? animation.play() : animation.pause();
+		paused && animation.pause();
+		animation.finished.then(() => {
+			animation = undefined;
+			updateIndex(+1);
+			console.log("finished");
+		});
 	});
-	cardsPrevButton?.addEventListener("click", () => {
-		highlight();
-		updateIndex(-1);
+	cardsPauseButton?.addEventListener("click", () => {
+		paused = !paused;
+		cardsPauseButton.innerHTML = `start paused: ${paused}`;
+	});
+	cardsAbortButton?.addEventListener("click", () => {
+		animation?.cancel();
+		updateIndex(+1);
+		animation = undefined;
 	});
 };
 

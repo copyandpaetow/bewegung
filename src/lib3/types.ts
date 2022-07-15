@@ -72,6 +72,7 @@ export interface Animate {
 	finishAnimation: () => void;
 	updatePlaybackRate: (newPlaybackRate: number) => void;
 	finishPromise: Promise<Animation[]>;
+	getPlayState: () => AnimationPlayState;
 }
 
 export type calculatedElementProperties = {
@@ -109,6 +110,7 @@ export interface bewegung {
 	finish: () => void;
 	updatePlaybackRate: (newPlaybackRate: number) => void;
 	finished: Promise<Animation[]>;
+	playState: () => AnimationPlayState;
 }
 
 export type bewegungProps =
