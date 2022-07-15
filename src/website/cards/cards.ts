@@ -19,9 +19,9 @@ const initCards = () => {
 		const highlightCard: CustomKeyframeEffect = [
 			cards[activeIndex],
 			{
-				width: "15%",
+				width: "100%",
 				order: "-1",
-				// height: "60vh",
+				height: "60vh",
 			},
 			{ duration: 4000, easing: "ease" },
 		];
@@ -43,7 +43,7 @@ const initCards = () => {
 			{
 				width: "",
 				order: "",
-				// height: "",
+				height: "",
 			},
 			{ duration: 4000, easing: "ease-in" },
 		];

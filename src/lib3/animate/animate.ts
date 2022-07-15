@@ -159,5 +159,6 @@ export const animate = (): Animate => {
 			),
 		finishAnimation: () => finishAnimation(allAnimations),
 		finishPromise: getFinishPromise(allAnimations),
+		getPlayState: () => elementAnimations[0].playState,
 	};
 };

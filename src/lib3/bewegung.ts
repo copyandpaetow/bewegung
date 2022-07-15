@@ -34,10 +34,10 @@ export const bewegung3 = (...animationInput: bewegungProps): bewegung => {
 	TODO: rootElement: reevaluate if the root should be included or excluded
 
 	* clip-path can help with image aspect ratio in different ways
-	* => if the image goes from small to big, the image just needs to get counter scaled and clipped
-	! => if the image goes from big to small the above doesnt work any more :( it can not "enlargen" only clip
-	! => for this to work we would scale first, animate and then apply the style as last step (the opposite of now)
-
+	* if the image becomes bigger (and needs to get scaled down)
+	- counter scale against parent 
+	- clip widthDifference/2 
+	- animate the clip-path
 	
 
 

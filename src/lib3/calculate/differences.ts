@@ -31,9 +31,30 @@ const parseTransformOrigin = (entry: calculatedElementProperties) => {
 	return calculated;
 };
 
+const checkForTextNode = (element: HTMLElement) => {
+	const childNodes = Array.from(element.childNodes);
+
+	if (
+		childNodes.length === 0 ||
+		childNodes.every((node) => node.nodeType !== 3)
+	) {
+		return false;
+	}
+
+	return childNodes.every((node) =>
+		Boolean(
+			((node as Text).wholeText || (node as HTMLElement).innerText)
+				//@ts-expect-error compiler weirdness
+				?.replaceAll("\t", "")
+				.replaceAll("\n", "")
+		)
+	);
+};
+
 export const calculateDimensionDifferences = (
 	child: [calculatedElementProperties, calculatedElementProperties],
-	parent: [calculatedElementProperties, calculatedElementProperties]
+	parent: [calculatedElementProperties, calculatedElementProperties],
+	element: HTMLElement
 ): DimensionalDifferences => {
 	const [currentEntry, referenceEntry] = child;
 	const [parentCurrentEntry, parentReferenceEntry] = parent;
@@ -52,13 +73,17 @@ export const calculateDimensionDifferences = (
 	const [originParentCurrentX, originParentCurrentY] =
 		parseTransformOrigin(parentCurrentEntry);
 
+	const isTextNode = checkForTextNode(element);
+
 	const parentWidthDifference = parentCurrent.width / parentReference.width;
-	const childWidthDifference = current.width / reference.width;
 	const parentHeightDifference = parentCurrent.height / parentReference.height;
+	const childWidthDifference = current.width / reference.width;
 	const childHeightDifference = current.height / reference.height;
 
-	const heightDifference = childHeightDifference / parentHeightDifference;
-	const widthDifference = childWidthDifference / parentWidthDifference;
+	const heightDifference =
+		(isTextNode ? 1 : childHeightDifference) / parentHeightDifference;
+	const widthDifference =
+		(isTextNode ? 1 : childWidthDifference) / parentWidthDifference;
 
 	const currentXDifference =
 		current.x + originCurrentX - (parentCurrent.x + originParentCurrentX);
@@ -74,8 +99,14 @@ export const calculateDimensionDifferences = (
 		originReferenceY -
 		(parentReference.y + originParentReferenceY);
 
+	const positionCorrection = isTextNode
+		? (parentCurrent.width - parentReference.width) / 2 / parentWidthDifference
+		: 0;
+
 	const xDifference =
-		currentXDifference / parentWidthDifference - referenceXDifference;
+		currentXDifference / parentWidthDifference -
+		referenceXDifference -
+		positionCorrection;
 	const yDifference =
 		currentYDifference / parentHeightDifference - referenceYDifference;
 

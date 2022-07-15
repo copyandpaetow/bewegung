@@ -53,6 +53,7 @@ export const filterMatchingStyleFromKeyframes = (
 
 	Object.assign(element.style, resultingStyle);
 };
+
 export const calculate = () => {
 	cleanup();
 	const allElements = new Set([
@@ -136,7 +137,7 @@ export const calculate = () => {
 					calculatedElementProperties,
 					calculatedElementProperties
 				] = [parentEntries[index], parentEntries.at(-1)!];
-				return calculateDimensionDifferences(child, parent);
+				return calculateDimensionDifferences(child, parent, element);
 			}
 		);
 
