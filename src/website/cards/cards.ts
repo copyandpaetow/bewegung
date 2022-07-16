@@ -1,7 +1,5 @@
-import { CustomKeyframeEffect } from "../../lib/bewegung";
-import { bewegung2 } from "../../lib2/bewegung";
-import { bewegung3 } from "../../lib3/bewegung";
-import { bewegung } from "../../lib3/types";
+import { bewegung3 } from "../../lib/bewegung";
+import { bewegung, CustomKeyframeEffect } from "../../lib/types";
 
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
@@ -83,13 +81,38 @@ const initAdditionalImages = () => {
 
 	imageWrappers.forEach((element) => {
 		element.addEventListener("click", () => {
+			const image =
+				element.querySelector("img")! || element.querySelector("div")!;
+
 			let expanded = false;
 			if (expanded) {
-				bewegung3(element, { height: "", width: "" }, 1000);
-				expanded = true;
-			} else {
-				bewegung3(element, { height: "80vh", width: "80vh" }, 1000);
+				bewegung3(
+					[
+						element,
+						{ height: "", width: "" },
+						{ duration: 4000, easing: "ease-in" },
+					],
+					[
+						image,
+						{ height: "", width: "" },
+						{ duration: 4000, easing: "ease-in" },
+					]
+				).play();
 				expanded = false;
+			} else {
+				bewegung3(
+					[
+						element,
+						{ height: "20vh", width: "30vh" },
+						{ duration: 4000, easing: "ease-in" },
+					],
+					[
+						image,
+						{ height: "15vh", width: "20vh" },
+						{ duration: 4000, easing: "ease-in" },
+					]
+				).play();
+				expanded = true;
 			}
 		});
 	});

@@ -16,5 +16,5 @@
 		"noUnusedParameters": true,
 		"noImplicitReturns": true
 	},
-	"include": ["src/lib/", "src/lib2/helper/normalize-inputs.ts"]
+	"include": ["src/lib/"]
 }
