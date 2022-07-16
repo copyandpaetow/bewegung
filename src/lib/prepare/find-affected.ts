@@ -1,4 +1,4 @@
-const STOP_TRAVERSING_CLASS = "bewegung-stop-traversing";
+import { rootClass } from "../constants";
 
 const getParent = (element: HTMLElement) =>
 	element.parentElement || document.body;
@@ -23,14 +23,14 @@ const traverseDomUp = (
 	if (element.tagName === "BODY") {
 		return [...elements];
 	}
-	if (element.classList.contains(STOP_TRAVERSING_CLASS)) {
+	if (element.classList.contains(rootClass)) {
 		return [element, ...elements];
 	}
 
 	return traverseDomUp(parent, [...elements, element]);
 };
 
-const traverseDomDown = (element: HTMLElement): HTMLElement[] => {
+export const traverseDomDown = (element: HTMLElement): HTMLElement[] => {
 	return Array.from(element.querySelectorAll("*"));
 };
 

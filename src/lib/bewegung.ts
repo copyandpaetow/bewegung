@@ -1,37 +1,10 @@
-import { Context, createContext } from "./core/create-context";
-import { filterHiddenElements } from "./core/main-filter-hidden-elements";
-import { includeAffectedElements } from "./core/main-include-affected-elements";
-import { readDimensions } from "./core/main-read-dimensions";
-import { updateMissingDimensions } from "./core/main-update-missing-dimensions";
-import { addAnimationEngine } from "./core/main-add-animation-engine";
-import {
-	addMissingDefaults,
-	arrayifyInputs,
-	createInternalStructure,
-	expandTargetsIntoEntries,
-} from "./core/normalize-inputs";
-import {
-	CustomKeyframe,
-	CustomKeyframeArrayValueSyntax,
-	ElementOrSelector,
-	Options,
-	VoidCallback,
-} from "./types";
-import { pipe } from "./utils/pipe";
+import { prepare } from "./prepare/prepare";
+import { formatInputs } from "./inputs/format";
+import { effect, observerable } from "./reactive/observable";
+import { makeReactive } from "./reactive/reactive";
+import { bewegung, bewegungProps, Observer } from "./types";
 
-const createAnimations = (
-	context: Context,
-	animationInputs: NormalizedInput[]
-) =>
-	pipe(
-		includeAffectedElements(context),
-		readDimensions(context),
-		filterHiddenElements,
-		updateMissingDimensions,
-		addAnimationEngine(context)
-	)(animationInputs);
-
-export const logCalculationTime = (startingTime: number) => {
+const logCalculationTime = (startingTime: number) => {
 	const end = performance.now() - startingTime;
 	if (end < 50) {
 		console.log(`animation calculation was fast with ${end}ms`);
@@ -46,113 +19,63 @@ export const logCalculationTime = (startingTime: number) => {
 	}
 };
 
-export interface NormalizedInput {
-	keyframeInstance: KeyframeEffect;
-	unAnimatableStyles: Omit<CustomKeyframe, "callback">[] | null;
-	extraOptions: Partial<
-		Pick<
-			Options,
-			| "onAnimationStart"
-			| "onAnimationEnd"
-			| "onAnimationPause"
-			| "onAnimationCancel"
-		>
-	> | null;
-	callbacks: { offset: number; callback: VoidCallback }[] | null;
-}
-
-export type CustomKeyframeEffect = [
-	target: ElementOrSelector,
-	keyframes: CustomKeyframe | CustomKeyframe[] | CustomKeyframeArrayValueSyntax,
-	options?: number | Options
-];
-
-const logger = (input: any) => {
-	console.log({ input });
-	return input;
-};
-
-export const bewegung = (
-	...animationInput:
-		| CustomKeyframeEffect
-		| (CustomKeyframeEffect | KeyframeEffect)[]
-) => {
+export const bewegung3 = (...animationInput: bewegungProps): bewegung => {
 	const start = performance.now();
+	const Input = observerable(formatInputs(...animationInput));
+	const State = observerable(prepare(Input()));
 
-	const normalizedInputs: NormalizedInput[] = pipe(
-		arrayifyInputs,
-		expandTargetsIntoEntries,
-		createInternalStructure,
-		addMissingDefaults,
-		logger
-	)(animationInput);
+	let observer: Observer;
+	let calculationProgress = "init";
 
-	const context = createContext(normalizedInputs);
+	effect(() => {
+		if (calculationProgress === "init") {
+			Input();
+			return;
+		}
+		State(prepare(Input()));
+	});
 
-	let animations = createAnimations(context, normalizedInputs);
-
-	console.log({ animations });
-	const readyPromise = Promise.all(
-		Array.from(animations.values()).map((anim) => anim._animationInstance.ready)
-	);
-	const finishPromise = Promise.all(
-		Array.from(animations.values()).map(
-			(anim) => anim._animationInstance.finished
-		)
-	);
-
-	const isPending = Array.from(animations.values()).some(
-		(anim) => anim._animationInstance.pending
-	);
+	effect(() => {
+		State();
+		observer?.disconnect();
+		observer = makeReactive(Input, State);
+	});
 
 	logCalculationTime(start);
-	return Object.freeze({
-		ready: readyPromise,
-		finished: finishPromise,
-		pending: isPending,
+	calculationProgress = "ready";
+
+	return {
 		play: () => {
-			animations.forEach((value) => {
-				value.play();
-			});
-		},
-		reverse: () => {
-			animations.forEach((value) => {
-				value.play("reverse");
-			});
+			observer.disconnectStateObserver();
+			State().playAnimation();
 		},
 		pause: () => {
-			animations.forEach((value) => {
-				value.pause();
-			});
+			State().pauseAnimation();
 		},
 		scroll: (progress: number, done?: boolean) => {
-			animations.forEach((value) => {
-				value.scroll(progress, done);
-			});
+			observer.disconnectStateObserver();
+			State().scrollAnimation(progress, done);
 		},
-		refresh: () => {
-			animations = createAnimations(context, normalizedInputs);
-		},
-
-		finish: () => {
-			animations.forEach((value) => {
-				value.finish();
-			});
+		reverse: () => {
+			observer.disconnectStateObserver();
+			State().reverseAnimation();
 		},
 		cancel: () => {
-			animations.forEach((value) => {
-				value.cancel();
-			});
+			observer.disconnect();
+			State().cancelAnimation();
+		},
+		finish: () => {
+			observer.disconnect();
+			State().finishAnimation();
 		},
 		commitStyles: () => {
-			animations.forEach((value) => {
-				value.commitStyles();
-			});
+			observer.disconnect();
+			State().commitAnimationStyles();
 		},
-		updatePlaybackRate: (playbackRate: number) => {
-			animations.forEach((value) => {
-				value.updatePlaybackRate(playbackRate);
-			});
+		updatePlaybackRate: (newPlaybackRate: number) => {
+			State().updatePlaybackRate(newPlaybackRate);
 		},
-	});
+		finished: State().finishPromise,
+		playState: () => State().getPlayState(),
+	};
 };

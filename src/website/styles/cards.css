@@ -47,3 +47,29 @@
 	font-weight: bold;
 	box-shadow: 1px 1px 4px 1px hsla(0, 0%, 20%, 0.25);
 }
+
+.additional_images {
+	margin-top: var(--space-500);
+}
+
+.additional__img {
+	width: 100%;
+	border-radius: var(--border-radius);
+}
+
+.additional__img--2 {
+	aspect-ratio: 1/1;
+}
+
+.additional__img--3 {
+	aspect-ratio: 1/1;
+	object-fit: cover;
+	object-position: bottom right;
+}
+
+.additional__img--4 {
+	width: auto;
+	height: 50vh;
+	background-image: var(--background);
+}
+

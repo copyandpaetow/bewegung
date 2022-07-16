@@ -59,13 +59,13 @@ code {
 	max-width: 60ch;
 }
 
-a {
-	white-space: nowrap;
+span {
+	color: var(--color-main);
+
 }
 
-img {
-	max-height: 100vh;
-	max-width: 100vw;
+a {
+	white-space: nowrap;
 }
 
 h1 {
@@ -205,8 +205,12 @@ code::-webkit-scrollbar {
 	flex-wrap: wrap;
 }
 
-.gap4 {
+.gap500 {
 	--flow-gap: var(--space-500);
+}
+
+.gap90 {
+	--flow-gap: var(--space-90);
 }
 
 .padding {

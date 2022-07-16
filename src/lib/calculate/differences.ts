@@ -1,17 +1,19 @@
-import { CalculatedProperties } from "../core/main-read-dimensions";
-import { save } from "../utils/number-helpers";
+import { emptyNonZeroDOMRect } from "../constants";
+import {
+	calculatedElementProperties,
+	cssRuleName,
+	DimensionalDifferences,
+} from "../types";
+import { getComputedStylings } from "./dimensions";
 
-export interface DimensionalDifferences {
-	heightDifference: number;
-	widthDifference: number;
-	xDifference: number;
-	yDifference: number;
-}
+const save = (value: number, alternative: number): number => {
+	return value === Infinity || value === -Infinity || isNaN(value)
+		? alternative
+		: value;
+};
 
-type Entry = Omit<CalculatedProperties, "offset">;
-
-const parseTransformOrigin = (entry: Entry) => {
-	const transformOriginString = entry.styles.transformOrigin;
+const parseTransformOrigin = (entry: calculatedElementProperties) => {
+	const transformOriginString = entry.computedStyle.transformOrigin!;
 
 	const calculated = transformOriginString
 		.split(" ")
@@ -29,10 +31,29 @@ const parseTransformOrigin = (entry: Entry) => {
 	return calculated;
 };
 
+const checkForTextNode = (element: HTMLElement) => {
+	const childNodes = Array.from(element.childNodes);
+
+	if (
+		childNodes.length === 0 ||
+		childNodes.every((node) => node.nodeType !== 3)
+	) {
+		return false;
+	}
+
+	return childNodes.every((node) =>
+		Boolean(
+			((node as Text).wholeText || (node as HTMLElement).innerText)
+				?.replaceAll("\t", "")
+				.replaceAll("\n", "")
+		)
+	);
+};
+
 export const calculateDimensionDifferences = (
-	child: [Entry, Entry],
-	parent: [Entry, Entry],
-	target: HTMLElement
+	child: [calculatedElementProperties, calculatedElementProperties],
+	parent: [calculatedElementProperties, calculatedElementProperties],
+	element: HTMLElement
 ): DimensionalDifferences => {
 	const [currentEntry, referenceEntry] = child;
 	const [parentCurrentEntry, parentReferenceEntry] = parent;
@@ -51,15 +72,17 @@ export const calculateDimensionDifferences = (
 	const [originParentCurrentX, originParentCurrentY] =
 		parseTransformOrigin(parentCurrentEntry);
 
+	const isTextNode = checkForTextNode(element);
+
 	const parentWidthDifference = parentCurrent.width / parentReference.width;
-	const childWidthDifference = current.width / reference.width;
 	const parentHeightDifference = parentCurrent.height / parentReference.height;
+	const childWidthDifference = current.width / reference.width;
 	const childHeightDifference = current.height / reference.height;
 
-	const heightDifference = childHeightDifference / parentHeightDifference;
+	const heightDifference =
+		(isTextNode ? 1 : childHeightDifference) / parentHeightDifference;
 	const widthDifference =
-		(target.childElementCount === 0 ? 1 : childWidthDifference) /
-		parentWidthDifference;
+		(isTextNode ? 1 : childWidthDifference) / parentWidthDifference;
 
 	const currentXDifference =
 		current.x + originCurrentX - (parentCurrent.x + originParentCurrentX);
@@ -75,16 +98,14 @@ export const calculateDimensionDifferences = (
 		originReferenceY -
 		(parentReference.y + originParentReferenceY);
 
-	const textWidthDifference =
-		parseFloat(currentEntry.styles.width) === currentEntry.dimensions.width
-			? 1
-			: parseFloat(currentEntry.styles.width) /
-			  currentEntry.dimensions.width /
-			  parentWidthDifference;
+	const positionCorrection = isTextNode
+		? (parentCurrent.width - parentReference.width) / 2 / parentWidthDifference
+		: 0;
 
 	const xDifference =
-		(currentXDifference / parentWidthDifference - referenceXDifference) *
-		textWidthDifference;
+		currentXDifference / parentWidthDifference -
+		referenceXDifference -
+		positionCorrection;
 	const yDifference =
 		currentYDifference / parentHeightDifference - referenceYDifference;
 
@@ -93,5 +114,17 @@ export const calculateDimensionDifferences = (
 		widthDifference: save(widthDifference, 1),
 		xDifference: save(xDifference, 0),
 		yDifference: save(yDifference, 0),
+		offset: currentEntry.offset,
+		//TODO: this should also export an optional clipPath
 	};
 };
+
+export const emptyCalculatedProperties = (
+	changeProperties: cssRuleName[],
+	changeTimings: number[]
+): calculatedElementProperties[] =>
+	changeTimings.map((timing) => ({
+		dimensions: emptyNonZeroDOMRect,
+		computedStyle: getComputedStylings(changeProperties),
+		offset: timing,
+	}));

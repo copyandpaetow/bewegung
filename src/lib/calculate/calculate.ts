@@ -1,0 +1,148 @@
+import { animate } from "../animate/animate";
+import {
+	getKeyframes,
+	state_affectedElements,
+	state_context,
+	state_mainElements,
+	state_originalStyle,
+} from "../prepare/prepare";
+import { calculatedElementProperties, DimensionalDifferences } from "../types";
+import {
+	calculateDimensionDifferences,
+	emptyCalculatedProperties,
+} from "./differences";
+import { getComputedStylings, getDomRect } from "./dimensions";
+
+export let state_elementProperties = new WeakMap<
+	HTMLElement,
+	calculatedElementProperties[]
+>();
+export let state_calculatedDifferences = new WeakMap<
+	HTMLElement,
+	DimensionalDifferences[]
+>();
+
+const cleanup = () => {
+	state_elementProperties = new WeakMap<
+		HTMLElement,
+		calculatedElementProperties[]
+	>();
+	state_calculatedDifferences = new WeakMap<
+		HTMLElement,
+		DimensionalDifferences[]
+	>();
+};
+
+export const filterMatchingStyleFromKeyframes = (
+	element: HTMLElement,
+	timing?: number
+) => {
+	const keyframes = getKeyframes(element);
+	let resultingStyle = {};
+	keyframes?.forEach((keyframe) => {
+		const { offset, composite, computedOffset, easing, ...styles } = keyframe;
+		if (timing !== undefined && timing !== offset) {
+			return;
+		}
+		resultingStyle = { ...resultingStyle, ...styles };
+	});
+
+	if (Object.values(resultingStyle).length === 0) {
+		return;
+	}
+
+	Object.assign(element.style, resultingStyle);
+};
+
+export const calculate = () => {
+	cleanup();
+	const allElements = new Set([
+		...state_mainElements,
+		...state_affectedElements,
+	]);
+	const { changeProperties, changeTimings } = state_context;
+
+	changeTimings.forEach((timing, index, array) => {
+		state_mainElements.forEach((element) =>
+			filterMatchingStyleFromKeyframes(element, timing)
+		);
+		allElements.forEach((element) => {
+			const newCalculation: calculatedElementProperties = {
+				dimensions: getDomRect(element),
+				offset: timing,
+				computedStyle: getComputedStylings(changeProperties, element),
+			};
+			state_elementProperties.set(element, [
+				...(state_elementProperties.get(element) || []),
+				newCalculation,
+			]);
+		});
+		if (index === array.length - 1) {
+			state_mainElements.forEach((element) => {
+				element.style.cssText = state_originalStyle.get(element)!;
+			});
+		}
+	});
+
+	allElements.forEach((element) => {
+		const existingCalculations = state_elementProperties.get(element)!;
+
+		if (
+			existingCalculations.every(
+				(entry) => entry.computedStyle.display !== "none"
+			)
+		) {
+			return;
+		}
+
+		const newCalculations = existingCalculations.map((entry, index, array) => {
+			if (entry.computedStyle.display !== "none") {
+				return entry;
+			}
+			const nextEntryDimensions = (
+				array
+					.slice(0, index)
+					.reverse()
+					.find((entry) => entry.computedStyle.display !== "none") ||
+				array
+					.slice(index)
+					.find((entry) => entry.computedStyle.display !== "none")
+			)?.dimensions;
+
+			if (!nextEntryDimensions) {
+				return entry;
+			}
+
+			return {
+				...entry,
+				dimensions: { ...nextEntryDimensions, width: 0, height: 0 },
+			};
+		});
+		state_elementProperties.set(element, newCalculations);
+	});
+
+	allElements.forEach((element) => {
+		const parentEntries =
+			state_elementProperties.get(element.parentElement!) ??
+			emptyCalculatedProperties(changeProperties, changeTimings);
+		const elementProperties = state_elementProperties.get(element)!;
+
+		const calculatedDifferences = elementProperties.map(
+			(calculatedProperty, index, array) => {
+				const child: [
+					calculatedElementProperties,
+					calculatedElementProperties
+				] = [calculatedProperty, array.at(-1)!];
+				const parent: [
+					calculatedElementProperties,
+					calculatedElementProperties
+				] = [parentEntries[index], parentEntries.at(-1)!];
+				return calculateDimensionDifferences(child, parent, element);
+			}
+		);
+
+		state_calculatedDifferences.set(element, calculatedDifferences);
+	});
+
+	return animate();
+};
