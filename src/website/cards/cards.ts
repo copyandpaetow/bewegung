@@ -19,9 +19,9 @@ const initCards = () => {
 		const highlightCard: CustomKeyframeEffect = [
 			cards[activeIndex],
 			{
-				width: "100%",
-				order: "-1",
-				height: "60vh",
+				// width: "100%",
+				// order: "-1",
+				height: "70vh",
 			},
 			{ duration: 4000, easing: "ease" },
 		];
@@ -41,8 +41,8 @@ const initCards = () => {
 		const hideOthers: CustomKeyframeEffect = [
 			[...cards].filter((card, index) => index !== activeIndex),
 			{
-				width: "",
-				order: "",
+				// width: "",
+				// order: "",
 				height: "",
 			},
 			{ duration: 4000, easing: "ease-in" },
@@ -78,10 +78,28 @@ const initCards = () => {
 	});
 };
 
+const initAdditionalImages = () => {
+	const imageWrappers = document.querySelectorAll(".additional__image");
+
+	imageWrappers.forEach((element) => {
+		element.addEventListener("click", () => {
+			let expanded = false;
+			if (expanded) {
+				bewegung3(element, { height: "", width: "" }, 1000);
+				expanded = true;
+			} else {
+				bewegung3(element, { height: "80vh", width: "80vh" }, 1000);
+				expanded = false;
+			}
+		});
+	});
+};
+
 document.addEventListener(
 	"DOMContentLoaded",
 	() => {
 		initCards();
+		initAdditionalImages();
 	},
 	false
 );

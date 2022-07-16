@@ -32,6 +32,7 @@ export const bewegung3 = (...animationInput: bewegungProps): bewegung => {
 	TODO: image aspect ratio
 	TODO: spans and text nodes
 	TODO: rootElement: reevaluate if the root should be included or excluded
+	? a data attribute "data-bewegung=[...]" which we could look for and add those as well with their value as input arguments
 
 	* clip-path can help with image aspect ratio in different ways
 	* if the image becomes bigger (and needs to get scaled down)
@@ -39,7 +40,11 @@ export const bewegung3 = (...animationInput: bewegungProps): bewegung => {
 	- clip widthDifference/2 
 	- animate the clip-path
 	
+	*if the images becomes smaller
+	- instead of counter-scaling, "counter-scale" the width
+	- clip the difference
 
+	? maybe updating the width to match the scaling from the parent works in both cases?
 
 	*/
 
