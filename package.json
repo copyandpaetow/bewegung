@@ -1,7 +1,12 @@
 {
   "name": "bewegung",
-  "private": true,
   "version": "0.0.1",
+  "description": "FLIP animation library",
+  "license": "MIT",
+  "keywords": [
+    "FLIP",
+    "animation"
+  ],
   "scripts": {
     "dev": "vite --host",
     "build": "tsc && vite build --config vite.config.ts --emptyOutDir",
