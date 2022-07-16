@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Bewegung JS</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	
+  <script type="module" crossorigin src="/bewegung/assets/cards.e284a655.js"></script>
+  <link rel="modulepreload" href="/bewegung/assets/style.7f2dd081.js">
+  <link rel="modulepreload" href="/bewegung/assets/bewegung.a9520132.js">
+  <link rel="stylesheet" href="/bewegung/assets/style.801888f3.css">
+</head>
+
+<body>
+	<nav class="site-naviagtion">
+		<ul class="flow flexrow">
+			<li>
+				<a href="../">home</a>
+			</li>
+			<li>
+				<a href="./">cards</a>
+			</li>
+			<li>
+				<a href="../filter/">filter</a>
+			</li>
+		</ul>
+	</nav>
+	<!-- bewegung-stop-traversing -->
+	<main>
+		<section id="cards">
+			<h1 class="cards__headline">Cards</h1>
+			<p class="cards__copy">navigate card via buttons</p>
+			<div class="cards__navigation">
+				<button class="cards__button cards__button--abort">abort</button>
+				<button class="cards__button cards__button--play">play</button>
+				<button class="cards__button cards__button--pause">pause</button>
+			</div>
+			<ul class="cards_wrapper">
+				<li class="card card--1">
+					<div class="card__image">
+						<img loading="lazy" class="card__img" src="/bewegung/assets/blue.a2c39ec7.jpeg"
+							alt="blue landscape shapes by Nicole Giampietro" />
+					</div>
+					<h2 class="card__headline">blue</h2>
+					<p class="card__date">2021</p>
+				</li>
+				<li class="card card--2">
+					<div class="card__image">
+						<img loading="lazy" class="card__img test" src="/bewegung/assets/red.da3eac5c.jpeg"
+							alt="flowers and a coffee mug on a red background by Liana Mikah" />
+					</div>
+					<h2 class="card__headline">red-<b class="">ish</b></h2>
+					<p class="card__date">2021</p>
+				</li>
+				<li class="card card--3">
+					<div class="card__image">
+						<img loading="lazy" class="card__img" src="/bewegung/assets/green.5dadc28e.jpeg"
+							alt="green leafs before a green wall by Runze Shi" />
+					</div>
+					<h2 class="card__headline">green</h2>
+					<p class="card__date">2021</p>
+				</li>
+				<li class="card card--4">
+					<div class="card__image">
+						<img loading="lazy" class="card__img" src="/bewegung/assets/yellow.cb3be7fa.jpeg"
+							alt="flowers before a yellow wall by Mona Eendra" />
+					</div>
+					<h2 class="card__headline">yellow</h2>
+					<p class="card__date">2021</p>
+				</li>
+				<li class="card card--5">
+					<div class="card__image">
+						<img loading="lazy" class="card__img" src="/bewegung/assets/pink.49fc314e.jpeg" alt="waves on a beach by Hal Gatewood" />
+					</div>
+					<h2 class="card__headline">pink</h2>
+					<p class="card__date">2021</p>
+				</li>
+			</ul>
+
+			<div class="additional_images flow">
+				<h2>More Image implementations</h2>
+				<ul class="flow gap500">
+					<li class="additional__image additional__image--1 flow gap90">
+						<h3>with picture tag</h3>
+						<span>some span here</span>
+						<picture>
+							<img loading="lazy" class="additional__img additional__img--1" src="/bewegung/assets/pink.49fc314e.jpeg"
+								alt="waves on a beach by Hal Gatewood" />
+						</picture>
+					</li>
+					<li class="additional__image additional__image--2 flow gap90">
+						<h3>with aspect-ratio</h3>
+
+						<img loading="lazy" class="additional__img additional__img--2" src="/bewegung/assets/yellow.cb3be7fa.jpeg"
+							alt="flowers before a yellow wall by Mona Eendra" />
+					</li>
+					<li class="additional__image additional__image--3 flow gap90">
+						<h3>with aspect-ratio and object-fit/object-position</h3>
+
+						<img loading="lazy" class="additional__img additional__img--3" src="/bewegung/assets/green.5dadc28e.jpeg"
+							alt="green leafs before a green wall by Runze Shi" />
+					</li>
+					<li class="additional__image additional__image--4 flow gap90">
+						<h3>background-image</h3>
+						<div class="additional__img additional__img--4" style="--background: url('/bewegung/assets/blue.a2c39ec7.jpeg')"></div>
+					</li>
+				</ul>
+			</div>
+		</section>
+	</main>
+	<footer>
+		<a href="#">back to top</a>
+	</footer>
+	
+</body>
+
+</html>
