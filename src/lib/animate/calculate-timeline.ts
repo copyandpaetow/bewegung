@@ -15,15 +15,16 @@ const easingValues = {
 const getEasingFromCubicBezier = (
 	easing: string
 ): [number, number, number, number] | undefined => {
-	if (easing.includes("cubic-bezier")) {
-		const stringArray = easing.split("(")[1].split(")")[0].split(",");
-		return stringArray.map((stringNumber) => Number(stringNumber)) as [
-			number,
-			number,
-			number,
-			number
-		];
+	if (!easing.includes("cubic-bezier")) {
+		return;
 	}
+	const stringArray = easing.split("(")[1].split(")")[0].split(",");
+	return stringArray.map((stringNumber) => Number(stringNumber)) as [
+		number,
+		number,
+		number,
+		number
+	];
 };
 
 const transformEasings = (easings: string[]): string => {

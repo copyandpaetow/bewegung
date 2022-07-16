@@ -100,7 +100,7 @@ export type Reactive = (
 	State: Observerable<Animate>
 ) => Observer;
 
-export interface bewegung {
+export interface Bewegung {
 	play: () => void;
 	pause: () => void;
 	scroll: (progress: number, done?: boolean) => void;

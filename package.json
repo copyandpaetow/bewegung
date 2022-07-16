@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "vite --host",
-    "build": "tsc && vite build --config vite.config.ts",
+    "build": "tsc && vite build --config vite.config.ts --emptyOutDir",
     "build:lib": "vite build --config vite-lib.config.ts && tsc",
     "preview": "vite preview",
     "deploy": "sh deploy.sh"

@@ -39,6 +39,7 @@ export const getComputedStylings = (
 	const relevantStyles: Partial<CSSStyleDeclaration> = {};
 
 	changeProperties.forEach((cssRule: cssRuleName) => {
+		//@ts-expect-error indexing
 		const currentRule = computedElementStyle[cssRule];
 		//@ts-expect-error length/parentRule weirdness
 		relevantStyles[cssRule] = transformCSSValues(

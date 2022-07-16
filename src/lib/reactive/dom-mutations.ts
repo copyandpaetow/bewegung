@@ -15,10 +15,13 @@ const areTheseRelated = (a: HTMLElement, b: HTMLElement) => {
 	);
 };
 
-let idleCallback;
+let idleCallback: number | undefined;
 
 const MOcallback =
-	(Input: (update?: Chunks[]) => Chunks[], callback: (changes) => void) =>
+	(
+		Input: (update?: Chunks[]) => Chunks[],
+		callback: (changes: Chunks[]) => void
+	) =>
 	(mutationList: MutationRecord[]) => {
 		const changedElements = new Set(
 			mutationList
@@ -64,7 +67,7 @@ const MOcallback =
 
 export const ObserveDomMutations = (
 	Input: (update?: Chunks[]) => Chunks[],
-	callback: (changes) => void
+	callback: (changes: Chunks[]) => void
 ) => {
 	const MO = new MutationObserver(MOcallback(Input, callback));
 	MO.observe(rootElement, {

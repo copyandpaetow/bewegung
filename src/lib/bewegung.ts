@@ -2,7 +2,7 @@ import { prepare } from "./prepare/prepare";
 import { formatInputs } from "./inputs/format";
 import { effect, observerable } from "./reactive/observable";
 import { makeReactive } from "./reactive/reactive";
-import { bewegung, bewegungProps, Observer } from "./types";
+import { Bewegung, bewegungProps, Observer } from "./types";
 
 const logCalculationTime = (startingTime: number) => {
 	const end = performance.now() - startingTime;
@@ -19,7 +19,7 @@ const logCalculationTime = (startingTime: number) => {
 	}
 };
 
-export const bewegung3 = (...animationInput: bewegungProps): bewegung => {
+export const bewegung = (...animationInput: bewegungProps): Bewegung => {
 	const start = performance.now();
 	const Input = observerable(formatInputs(...animationInput));
 	const State = observerable(prepare(Input()));

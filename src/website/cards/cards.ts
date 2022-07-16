@@ -1,5 +1,5 @@
-import { bewegung3 } from "../../lib/bewegung";
-import { bewegung, CustomKeyframeEffect } from "../../lib/types";
+import { bewegung } from "../../lib/bewegung";
+import { Bewegung, CustomKeyframeEffect } from "../../lib/types";
 
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
@@ -17,39 +17,27 @@ const initCards = () => {
 		const highlightCard: CustomKeyframeEffect = [
 			cards[activeIndex],
 			{
-				// width: "100%",
-				// order: "-1",
-				height: "70vh",
+				width: "100%",
+				order: "-1",
+				height: "60vh",
 			},
 			{ duration: 4000, easing: "ease" },
 		];
 
-		// const hideOthers: CustomKeyframeEffect = [
-		// 	Array.from(cards).filter((card) => card !== cards[activeIndex]),
-		// 	{
-		// 		width: "",
-		// 		order: "",
-		// 	},
-		// 	{
-		// 		duration: 2000,
-		// 		easing: "ease-in-out",
-		// 	},
-		// ];
-
 		const hideOthers: CustomKeyframeEffect = [
-			[...cards].filter((card, index) => index !== activeIndex),
+			[...cards].filter((_, index) => index !== activeIndex),
 			{
-				// width: "",
-				// order: "",
+				width: "",
+				order: "",
 				height: "",
 			},
 			{ duration: 4000, easing: "ease-in" },
 		];
 
-		return bewegung3(highlightCard, hideOthers);
+		return bewegung(highlightCard, hideOthers);
 	};
 
-	let animation: bewegung | undefined;
+	let animation: Bewegung | undefined;
 	let paused = false;
 
 	cardsPlayButton?.addEventListener("click", () => {
@@ -86,7 +74,7 @@ const initAdditionalImages = () => {
 
 			let expanded = false;
 			if (expanded) {
-				bewegung3(
+				bewegung(
 					[
 						element,
 						{ height: "", width: "" },
@@ -100,7 +88,7 @@ const initAdditionalImages = () => {
 				).play();
 				expanded = false;
 			} else {
-				bewegung3(
+				bewegung(
 					[
 						element,
 						{ height: "20vh", width: "30vh" },

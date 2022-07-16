@@ -1,5 +1,4 @@
 import { bewegung } from "../../lib/bewegung";
-import { bewegung3 } from "../../lib3/bewegung";
 
 const initFilter = () => {
 	const checkboxes = document.querySelectorAll("#filter input");
@@ -10,9 +9,9 @@ const initFilter = () => {
 				document.querySelectorAll(`img[data-color=${element.value}]`)
 			).map((element) => element.parentElement) as HTMLElement[];
 			if (element.checked) {
-				bewegung3(selectedImages, { display: "" }, { duration: 1400 }).play();
+				bewegung(selectedImages, { display: "" }, { duration: 1400 }).play();
 			} else {
-				bewegung3(
+				bewegung(
 					selectedImages,
 					{ display: "none" },
 					{ duration: 1400 }
