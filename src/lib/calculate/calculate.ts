@@ -6,7 +6,11 @@ import {
 	state_mainElements,
 	state_originalStyle,
 } from "../prepare/prepare";
-import { calculatedElementProperties, DimensionalDifferences } from "../types";
+import {
+	calculatedElementProperties,
+	differenceArray,
+	DimensionalDifferences,
+} from "../types";
 import {
 	calculateDimensionDifferences,
 	emptyCalculatedProperties,
@@ -129,14 +133,11 @@ export const calculate = () => {
 
 		const calculatedDifferences = elementProperties.map(
 			(calculatedProperty, index, array) => {
-				const child: [
-					calculatedElementProperties,
-					calculatedElementProperties
-				] = [calculatedProperty, array.at(-1)!];
-				const parent: [
-					calculatedElementProperties,
-					calculatedElementProperties
-				] = [parentEntries[index], parentEntries.at(-1)!];
+				const child: differenceArray = [calculatedProperty, array.at(-1)!];
+				const parent: differenceArray = [
+					parentEntries[index],
+					parentEntries.at(-1)!,
+				];
 				return calculateDimensionDifferences(child, parent, element);
 			}
 		);

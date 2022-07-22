@@ -1,10 +1,15 @@
 import {
 	state_calculatedDifferences,
-	state_elementProperties
+	state_elementProperties,
 } from "../calculate/calculate";
+import { defaultOptions } from "../constants";
 import {
 	getCallbacks,
-	getOptions, state_affectedElements, state_context, state_dependencyElements, state_mainElements
+	getOptions,
+	state_affectedElements,
+	state_context,
+	state_dependencyElements,
+	state_mainElements,
 } from "../prepare/prepare";
 import { Animate } from "../types";
 import { calculateEasingMap } from "./calculate-timeline";
@@ -17,13 +22,14 @@ import {
 	pauseAnimation,
 	playAnimation,
 	reverseAnimation,
-	scrollAnimation
+	scrollAnimation,
 } from "./methods";
 
 const getBorderRadius = (
 	element: HTMLElement
 ): Record<number, string> | false => {
 	const styleMap = state_elementProperties.get(element)!;
+
 	if (styleMap.every((style) => style.computedStyle.borderRadius === "0px")) {
 		return false;
 	}
@@ -61,15 +67,15 @@ export const animate = (): Animate => {
 	const callbackAnimations: Animation[] = [];
 
 	state_affectedElements.forEach((element) => {
-		const options: ComputedEffectTiming[] = [];
+		const options = new Set<ComputedEffectTiming>();
 
 		state_dependencyElements
 			.get(element)!
 			.forEach((element) =>
-				getOptions(element).forEach((option) => options.push(option))
+				getOptions(element).forEach((option) => options.add(option))
 			);
 
-		const easingTable = calculateEasingMap(options, totalRuntime);
+		const easingTable = calculateEasingMap([...options], totalRuntime);
 		const borderRadiusTable = getBorderRadius(element);
 
 		//TODO: if the user supplied non-layout styles like color or opacity, or rotate they need to be added here as well
@@ -84,7 +90,7 @@ export const animate = (): Animate => {
 				({
 					offset,
 					composite: "auto",
-					easing: easingTable[offset],
+					easing: easingTable[offset] ?? defaultOptions.easing,
 					transform: `translate(${xDifference}px, ${yDifference}px) scale(${widthDifference}, ${heightDifference})`,
 					...(borderRadiusTable && {
 						clipPath: `inset(0px round ${borderRadiusTable[offset]})`,

@@ -2,6 +2,7 @@ import { emptyNonZeroDOMRect } from "../constants";
 import {
 	calculatedElementProperties,
 	cssRuleName,
+	differenceArray,
 	DimensionalDifferences,
 } from "../types";
 import { getComputedStylings } from "./dimensions";
@@ -51,8 +52,8 @@ const checkForTextNode = (element: HTMLElement) => {
 };
 
 export const calculateDimensionDifferences = (
-	child: [calculatedElementProperties, calculatedElementProperties],
-	parent: [calculatedElementProperties, calculatedElementProperties],
+	child: differenceArray,
+	parent: differenceArray,
 	element: HTMLElement
 ): DimensionalDifferences => {
 	const [currentEntry, referenceEntry] = child;

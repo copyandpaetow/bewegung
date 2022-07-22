@@ -3,9 +3,19 @@
 ## upcoming tasks
 
 - image aspect ratio
-- spans and text nodes
+
 - rootElement: reevaluate if the root should be included or excluded
-- combine the lookup tables for clipPath and Opacity or move them as optional return value iin the difference calculation
+- move some properties to the calculation
+  - clipPath,
+  - opacity,
+  - rotate,
+  - perspective,
+  - filter
+- logic to allow unperformant entries to pass through, like color etc
+- before the animation, some styles need to be temporarily disabled or changed:
+  - display: inline => display: inline-block
+  - borderRadius: x => 0
+- disallow mutations of the sets/weakmaps/maps outside of their file by export a getter function instead
 
 ## Maybes
 

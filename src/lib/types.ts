@@ -123,3 +123,8 @@ export interface Context {
 	totalRuntime: number;
 	progress: number;
 }
+
+export type differenceArray = [
+	calculatedElementProperties,
+	calculatedElementProperties
+];
