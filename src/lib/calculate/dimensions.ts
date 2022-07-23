@@ -3,7 +3,8 @@ import { cssRuleName, ValueOf } from "../types";
 const transformCSSValues = (
 	key: cssRuleName,
 	value: ValueOf<CSSStyleDeclaration>,
-	computedStyle: CSSStyleDeclaration
+	computedStyle: CSSStyleDeclaration,
+	element?: HTMLElement
 ): ValueOf<CSSStyleDeclaration> => {
 	const { width, height } = computedStyle;
 	switch (key) {
@@ -21,6 +22,13 @@ const transformCSSValues = (
 			return `${(100 * parsedValue) / numWidth}% / ${
 				(100 * parsedValue) / numHeight
 			}%`;
+
+		case "transform":
+			if (value === "none") {
+				return value;
+			}
+			//* the computed style returns a matrix that is hard to work with
+			return element!.style.transform;
 
 		default:
 			return value;
@@ -45,7 +53,8 @@ export const getComputedStylings = (
 		relevantStyles[cssRule] = transformCSSValues(
 			cssRule,
 			currentRule,
-			computedElementStyle
+			computedElementStyle,
+			element
 		);
 	});
 

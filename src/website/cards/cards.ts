@@ -17,9 +17,14 @@ const initCards = () => {
 		const highlightCard: CustomKeyframeEffect = [
 			cards[activeIndex],
 			{
-				width: "100%",
-				order: "-1",
-				height: "60vh",
+				width: ["33vh", "50%", "100%"],
+				// transform: [
+				// 	"translate(0px, 0px) rotate(0deg)",
+				// 	"translate(-100px, -100px) rotate(45deg)",
+				// 	"translate(100px, 100px) rotate(-45deg)",
+				// ],
+				// order: "-1",
+				// height: "60vh",",
 			},
 			{ duration: 4000, easing: "ease" },
 		];
@@ -27,9 +32,10 @@ const initCards = () => {
 		const hideOthers: CustomKeyframeEffect = [
 			[...cards].filter((_, index) => index !== activeIndex),
 			{
-				width: "",
-				order: "",
-				height: "",
+				//width: "",
+				//transform: "",
+				// order: "",
+				// height: "",
 			},
 			{ duration: 4000, easing: "ease-in" },
 		];
@@ -66,14 +72,17 @@ const initCards = () => {
 
 const initAdditionalImages = () => {
 	const imageWrappers = document.querySelectorAll(".additional__image");
+	const imageExpandedState = Array.from(
+		Array(imageWrappers.length),
+		() => false
+	);
 
-	imageWrappers.forEach((element) => {
+	imageWrappers.forEach((element, index) => {
 		element.addEventListener("click", () => {
 			const image =
 				element.querySelector("img")! || element.querySelector("div")!;
 
-			let expanded = false;
-			if (expanded) {
+			if (imageExpandedState[index]) {
 				bewegung(
 					[
 						element,
@@ -86,7 +95,7 @@ const initAdditionalImages = () => {
 						{ duration: 4000, easing: "ease-in" },
 					]
 				).play();
-				expanded = false;
+				imageExpandedState[index] = false;
 			} else {
 				bewegung(
 					[
@@ -100,7 +109,7 @@ const initAdditionalImages = () => {
 						{ duration: 4000, easing: "ease-in" },
 					]
 				).play();
-				expanded = true;
+				imageExpandedState[index] = true;
 			}
 		});
 	});

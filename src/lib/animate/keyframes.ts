@@ -8,6 +8,7 @@ import {
 	getOptions,
 	state_context,
 	state_mainElements,
+	getKeyframes,
 } from "../prepare/prepare";
 import { calculateEasingMap } from "./calculate-timeline";
 
@@ -20,15 +21,15 @@ const getBorderRadius = (
 		return false;
 	}
 
-	const borderRadiusTable = {};
+	const styleTable = {};
 
 	styleMap.forEach(
 		(style) =>
 			//@ts-expect-error indexing
-			(borderRadiusTable[style.offset] = style.computedStyle.borderRadius)
+			(styleTable[style.offset] = style.computedStyle.borderRadius)
 	);
 
-	return borderRadiusTable;
+	return styleTable;
 };
 
 const getOpacity = (element: HTMLElement): Record<number, string> | false => {
@@ -37,14 +38,71 @@ const getOpacity = (element: HTMLElement): Record<number, string> | false => {
 		return false;
 	}
 
-	const opacityTable = {};
+	const styleTable = {};
 
 	styleMap.forEach(
 		//@ts-expect-error indexing
-		(style) => (opacityTable[style.offset] = style.computedStyle.opacity)
+		(style) => (styleTable[style.offset] = style.computedStyle.opacity)
 	);
 
-	return opacityTable;
+	return styleTable;
+};
+
+const getFilter = (element: HTMLElement): Record<number, string> | false => {
+	const styleMap = state_elementProperties.get(element)!;
+	if (styleMap.every((style) => style.computedStyle.filter === "none")) {
+		return false;
+	}
+
+	const styleTable = {};
+
+	styleMap.forEach(
+		//@ts-expect-error indexing
+		(style) => (styleTable[style.offset] = style.computedStyle.filter)
+	);
+
+	return styleTable;
+};
+
+const getUserTransforms = (
+	element: HTMLElement
+): Record<number, string> | false => {
+	const styleMap = state_elementProperties.get(element)!;
+	const { changeTimings } = state_context;
+
+	const styleTable = {};
+
+	if (element.style.transform) {
+		changeTimings.forEach((timing) => {
+			//@ts-expect-error indexing
+			styleTable[timing] = element.style.transform;
+		});
+	}
+
+	state_mainElements.has(element)
+		? getKeyframes(element).forEach((style) => {
+				if (!style.transform) {
+					return;
+				}
+				//@ts-expect-error indexing
+				styleTable[style.offset] = style.transform;
+		  })
+		: styleMap.forEach((style) => {
+				if (!style.computedStyle.transform) {
+					return;
+				}
+				//@ts-expect-error indexing
+				styleTable[style.offset] = style.computedStyle.transform;
+		  });
+
+	if (
+		Object.values(styleTable).every(
+			(style) => !Boolean(style) || style === "none"
+		)
+	) {
+		return false;
+	}
+	return styleTable;
 };
 
 const getDependecyOptions = (element: HTMLElement): ComputedEffectTiming[] => {
@@ -59,7 +117,7 @@ const getDependecyOptions = (element: HTMLElement): ComputedEffectTiming[] => {
 	return [...options];
 };
 
-export const getKeyframes = (element: HTMLElement): Keyframe[] => {
+export const constructKeyframes = (element: HTMLElement): Keyframe[] => {
 	const { totalRuntime } = state_context;
 	const easingTable = calculateEasingMap(
 		state_mainElements.has(element)
@@ -67,20 +125,31 @@ export const getKeyframes = (element: HTMLElement): Keyframe[] => {
 			: getDependecyOptions(element),
 		totalRuntime
 	);
+
 	const borderRadiusTable = getBorderRadius(element);
 	const opacityTable = getOpacity(element);
+	const userTransformTable = getUserTransforms(element);
+	const filterTable = getFilter(element);
+
+	console.log({ element, userTransformTable });
+
 	const keyframes = getTransformValues(element).map(
 		({ xDifference, yDifference, widthDifference, heightDifference, offset }) =>
 			({
 				offset,
 				composite: "auto",
 				easing: easingTable[offset] ?? defaultOptions.easing,
-				transform: `translate(${xDifference}px, ${yDifference}px) scale(${widthDifference}, ${heightDifference})`,
+				transform: `translate(${xDifference}px, ${yDifference}px) scale(${widthDifference}, ${heightDifference}) ${
+					userTransformTable ? userTransformTable[offset] : ""
+				} `,
 				...(borderRadiusTable && {
 					clipPath: `inset(0px round ${borderRadiusTable[offset]})`,
 				}),
 				...(opacityTable && {
 					opacity: `${opacityTable[offset]}`,
+				}),
+				...(filterTable && {
+					filter: `${filterTable[offset]}`,
 				}),
 			} as Keyframe)
 	);

@@ -5,7 +5,7 @@ import {
 	state_mainElements,
 } from "../prepare/prepare";
 import { Animate } from "../types";
-import { getKeyframes } from "./keyframes";
+import { constructKeyframes } from "./keyframes";
 import {
 	cancelAnimation,
 	commitAnimationStyles,
@@ -26,7 +26,7 @@ export const animate = (): Animate => {
 	state_affectedElements.forEach((element) => {
 		elementAnimations.push(
 			new Animation(
-				new KeyframeEffect(element, getKeyframes(element), totalRuntime)
+				new KeyframeEffect(element, constructKeyframes(element), totalRuntime)
 			)
 		);
 	});
@@ -42,7 +42,7 @@ export const animate = (): Animate => {
 
 		elementAnimations.push(
 			new Animation(
-				new KeyframeEffect(element, getKeyframes(element), totalRuntime)
+				new KeyframeEffect(element, constructKeyframes(element), totalRuntime)
 			)
 		);
 	});

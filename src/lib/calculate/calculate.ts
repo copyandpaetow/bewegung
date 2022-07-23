@@ -34,13 +34,20 @@ export const filterMatchingStyleFromKeyframes = (
 	timing?: number
 ) => {
 	const keyframes = getKeyframes(element);
-	let resultingStyle = {};
+	let resultingStyle: Partial<ComputedKeyframe> = {};
 	keyframes?.forEach((keyframe) => {
-		const { offset, composite, computedOffset, easing, ...styles } = keyframe;
-		if (timing !== undefined && timing !== offset) {
+		if (timing !== undefined && timing !== keyframe.offset) {
 			return;
 		}
-		resultingStyle = { ...resultingStyle, ...styles };
+
+		const { offset, composite, computedOffset, easing, transform, ...styles } =
+			keyframe;
+
+		resultingStyle = {
+			...resultingStyle,
+			...(timing === undefined && { transform }),
+			...styles,
+		};
 	});
 
 	if (Object.values(resultingStyle).length === 0) {
@@ -93,7 +100,6 @@ export const calculate = () => {
 
 	changeTimings.forEach((timing, index, array) => {
 		state_mainElements.forEach((element) =>
-			//TODO: in here the rotate needs to be extracted
 			filterMatchingStyleFromKeyframes(element, timing)
 		);
 		allElements.forEach((element) => {
