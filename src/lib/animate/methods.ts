@@ -1,8 +1,13 @@
-import { filterMatchingStyleFromKeyframes } from "../calculate/calculate";
 import {
+	applyCSSStyles,
+	filterMatchingStyleFromKeyframes,
+	state_elementStyleOverrides,
+} from "../calculate/calculate";
+import {
+	getAllElements,
 	state_context,
 	state_mainElements,
-	state_originalStyle
+	state_originalStyle,
 } from "../prepare/prepare";
 
 let state_progress = { progress: 0, time: 0 };
@@ -13,12 +18,33 @@ const applyStyles = (animations: Animation[]) => {
 		return;
 	}
 
-	state_mainElements.forEach((element) =>
-		filterMatchingStyleFromKeyframes(element)
-	);
+	getAllElements().forEach((element) => {
+		const overrides = state_elementStyleOverrides.get(element);
+		const isMainElement = state_mainElements.has(element);
+
+		if (!overrides && !isMainElement) {
+			return;
+		}
+
+		applyCSSStyles(element, {
+			...(isMainElement && filterMatchingStyleFromKeyframes(element)),
+			...(overrides && overrides.override),
+		});
+	});
+
 	state_stylesApplied = true;
 	getFinishPromise(animations).then(() => {
 		state_stylesApplied = false;
+		getAllElements().forEach((element) => {
+			const overrides = state_elementStyleOverrides.get(element);
+			if (!overrides) {
+				return;
+			}
+
+			applyCSSStyles(element, {
+				...overrides.existingStyle,
+			});
+		});
 	});
 };
 

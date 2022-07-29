@@ -32,29 +32,20 @@ const parseTransformOrigin = (entry: calculatedElementProperties) => {
 	return calculated;
 };
 
-const checkForTextNode = (element: HTMLElement) => {
+export const checkForTextNode = (element: HTMLElement) => {
 	const childNodes = Array.from(element.childNodes);
 
-	if (
-		childNodes.length === 0 ||
-		childNodes.every((node) => node.nodeType !== 3)
-	) {
+	if (childNodes.length === 0) {
 		return false;
 	}
 
-	return childNodes.every((node) =>
-		Boolean(
-			((node as Text).wholeText || (node as HTMLElement).innerText)
-				?.replaceAll("\t", "")
-				.replaceAll("\n", "")
-		)
-	);
+	return childNodes.every((node) => Boolean(node.textContent?.trim()));
 };
 
 export const calculateDimensionDifferences = (
 	child: differenceArray,
 	parent: differenceArray,
-	element: HTMLElement
+	isTextNode: boolean
 ): DimensionalDifferences => {
 	const [currentEntry, referenceEntry] = child;
 	const [parentCurrentEntry, parentReferenceEntry] = parent;
@@ -72,8 +63,6 @@ export const calculateDimensionDifferences = (
 	const [originCurrentX, originCurrentY] = parseTransformOrigin(currentEntry);
 	const [originParentCurrentX, originParentCurrentY] =
 		parseTransformOrigin(parentCurrentEntry);
-
-	const isTextNode = checkForTextNode(element);
 
 	const parentWidthDifference = parentCurrent.width / parentReference.width;
 	const parentHeightDifference = parentCurrent.height / parentReference.height;

@@ -24,10 +24,12 @@ export const defaultChangeProperties: cssRuleName[] = [
 	"display",
 	"font",
 	"opacity",
+	"filter",
 	"position",
 	"transform",
 	"transformOrigin",
 	"width",
+	"height",
 ];
 
 export const defaultOptions: Partial<KeyframeEffectOptions> = {

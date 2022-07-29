@@ -13,13 +13,23 @@ import {
 } from "../types";
 import {
 	calculateDimensionDifferences,
+	checkForTextNode,
 	emptyCalculatedProperties,
 } from "./differences";
 import { getComputedStylings, getDomRect } from "./dimensions";
+import { recalculateDisplayNoneValues } from "./postprocess";
 
 export let state_elementProperties = new WeakMap<
 	HTMLElement,
 	calculatedElementProperties[]
+>();
+
+export let state_elementStyleOverrides = new WeakMap<
+	HTMLElement,
+	{
+		existingStyle: Partial<CSSStyleDeclaration>;
+		override: Partial<CSSStyleDeclaration>;
+	}
 >();
 
 const cleanup = () => {
@@ -27,6 +37,88 @@ const cleanup = () => {
 		HTMLElement,
 		calculatedElementProperties[]
 	>();
+	state_elementStyleOverrides = new WeakMap<
+		HTMLElement,
+		{
+			existingStyle: Partial<CSSStyleDeclaration>;
+			override: Partial<CSSStyleDeclaration>;
+		}
+	>();
+};
+
+export const addOverrideStyles = (element: HTMLElement) => {
+	const styleProperties = state_elementProperties.get(element)!;
+	const keyframes = state_mainElements.has(element)
+		? getKeyframes(element)
+		: [];
+	let override: Partial<CSSStyleDeclaration> | undefined;
+	let existingStyle: Partial<CSSStyleDeclaration> | undefined;
+
+	styleProperties.some((entry) => {
+		if (
+			entry.computedStyle.display !== "inline" ||
+			element.tagName !== "SPAN"
+		) {
+			return false;
+		}
+		existingStyle = {
+			...existingStyle,
+			display: (keyframes.filter((keyframe) => keyframe?.display).at(-1) ??
+				"") as string,
+		};
+		override = { ...override, display: "inline-block" };
+		return true;
+	});
+
+	styleProperties.some((entry) => {
+		if (entry.computedStyle.borderRadius === "0px") {
+			return false;
+		}
+		existingStyle = {
+			...existingStyle,
+			borderRadius: (keyframes
+				.filter((keyframe) => keyframe?.borderRadius)
+				.at(-1) ?? "") as string,
+		};
+		override = { ...override, borderRadius: "0px" };
+		return true;
+	});
+
+	if (!override || !existingStyle) {
+		return;
+	}
+	state_elementStyleOverrides.set(element, { existingStyle, override });
+};
+
+export const getTransformValues = (
+	element: HTMLElement
+): DimensionalDifferences[] => {
+	const { changeProperties, changeTimings } = state_context;
+	const parentEntries =
+		state_elementProperties.get(element.parentElement!) ??
+		emptyCalculatedProperties(changeProperties, changeTimings);
+	const elementProperties = state_elementProperties.get(element)!;
+	const isTextNode = checkForTextNode(element);
+
+	return elementProperties.map((calculatedProperty, index, array) => {
+		const child: differenceArray = [calculatedProperty, array.at(-1)!];
+		const parent: differenceArray = [
+			parentEntries[index],
+			parentEntries.at(-1)!,
+		];
+		return calculateDimensionDifferences(child, parent, isTextNode);
+	});
+};
+
+export const applyCSSStyles = (
+	element: HTMLElement,
+	style: Partial<CSSStyleDeclaration>
+) => {
+	if (Object.values(style).length === 0) {
+		return false;
+	}
+	Object.assign(element.style, style);
+	return true;
 };
 
 export const filterMatchingStyleFromKeyframes = (
@@ -34,7 +126,7 @@ export const filterMatchingStyleFromKeyframes = (
 	timing?: number
 ) => {
 	const keyframes = getKeyframes(element);
-	let resultingStyle: Partial<ComputedKeyframe> = {};
+	let resultingStyle: Partial<CSSStyleDeclaration> = {};
 	keyframes?.forEach((keyframe) => {
 		if (timing !== undefined && timing !== keyframe.offset) {
 			return;
@@ -45,52 +137,14 @@ export const filterMatchingStyleFromKeyframes = (
 
 		resultingStyle = {
 			...resultingStyle,
-			...(timing === undefined && { transform }),
+			...(timing === undefined && {
+				transform: transform as string | undefined,
+			}),
 			...styles,
 		};
 	});
 
-	if (Object.values(resultingStyle).length === 0) {
-		return;
-	}
-
-	Object.assign(element.style, resultingStyle);
-};
-
-const recalculateDisplayNoneValues = (
-	element: HTMLElement
-): calculatedElementProperties[] => {
-	const existingCalculations = state_elementProperties.get(element)!;
-
-	if (
-		existingCalculations.every(
-			(entry) => entry.computedStyle.display !== "none"
-		)
-	) {
-		return existingCalculations;
-	}
-
-	return existingCalculations.map((entry, index, array) => {
-		if (entry.computedStyle.display !== "none") {
-			return entry;
-		}
-		const nextEntryDimensions = (
-			array
-				.slice(0, index)
-				.reverse()
-				.find((entry) => entry.computedStyle.display !== "none") ||
-			array.slice(index).find((entry) => entry.computedStyle.display !== "none")
-		)?.dimensions;
-
-		if (!nextEntryDimensions) {
-			return entry;
-		}
-
-		return {
-			...entry,
-			dimensions: { ...nextEntryDimensions, width: 0, height: 0 },
-		};
-	});
+	return resultingStyle;
 };
 
 export const calculate = () => {
@@ -100,7 +154,7 @@ export const calculate = () => {
 
 	changeTimings.forEach((timing, index, array) => {
 		state_mainElements.forEach((element) =>
-			filterMatchingStyleFromKeyframes(element, timing)
+			applyCSSStyles(element, filterMatchingStyleFromKeyframes(element, timing))
 		);
 		allElements.forEach((element) => {
 			const newCalculation: calculatedElementProperties = {
@@ -120,28 +174,12 @@ export const calculate = () => {
 		}
 	});
 
+	//TODO: here could be a good place to post process values
+
 	allElements.forEach((element) => {
 		state_elementProperties.set(element, recalculateDisplayNoneValues(element));
+		addOverrideStyles(element);
 	});
 
 	return animate();
-};
-
-export const getTransformValues = (
-	element: HTMLElement
-): DimensionalDifferences[] => {
-	const { changeProperties, changeTimings } = state_context;
-	const parentEntries =
-		state_elementProperties.get(element.parentElement!) ??
-		emptyCalculatedProperties(changeProperties, changeTimings);
-	const elementProperties = state_elementProperties.get(element)!;
-
-	return elementProperties.map((calculatedProperty, index, array) => {
-		const child: differenceArray = [calculatedProperty, array.at(-1)!];
-		const parent: differenceArray = [
-			parentEntries[index],
-			parentEntries.at(-1)!,
-		];
-		return calculateDimensionDifferences(child, parent, element);
-	});
 };

@@ -10,7 +10,25 @@ import {
 	state_mainElements,
 	getKeyframes,
 } from "../prepare/prepare";
+import { calculatedElementProperties } from "../types";
 import { calculateEasingMap } from "./calculate-timeline";
+
+const calculateBorderRadius = (
+	styleEntry: calculatedElementProperties
+): string => {
+	const numHeight = parseFloat(styleEntry.computedStyle.height!);
+	const numWidth = parseFloat(styleEntry.computedStyle.width!);
+	const parsedRadius = parseFloat(styleEntry.computedStyle.borderRadius!);
+
+	if (isNaN(parsedRadius)) {
+		//TODO: handle more complex border radius
+		return "0px";
+	}
+
+	return `${(100 * parsedRadius) / numWidth}% / ${
+		(100 * parsedRadius) / numHeight
+	}%`;
+};
 
 const getBorderRadius = (
 	element: HTMLElement
@@ -26,7 +44,7 @@ const getBorderRadius = (
 	styleMap.forEach(
 		(style) =>
 			//@ts-expect-error indexing
-			(styleTable[style.offset] = style.computedStyle.borderRadius)
+			(styleTable[style.offset] = calculateBorderRadius(style))
 	);
 
 	return styleTable;
@@ -67,33 +85,23 @@ const getFilter = (element: HTMLElement): Record<number, string> | false => {
 const getUserTransforms = (
 	element: HTMLElement
 ): Record<number, string> | false => {
-	const styleMap = state_elementProperties.get(element)!;
-	const { changeTimings } = state_context;
-
 	const styleTable = {};
 
 	if (element.style.transform) {
-		changeTimings.forEach((timing) => {
+		state_context.changeTimings.forEach((timing) => {
 			//@ts-expect-error indexing
 			styleTable[timing] = element.style.transform;
 		});
 	}
 
-	state_mainElements.has(element)
-		? getKeyframes(element).forEach((style) => {
-				if (!style.transform) {
-					return;
-				}
-				//@ts-expect-error indexing
-				styleTable[style.offset] = style.transform;
-		  })
-		: styleMap.forEach((style) => {
-				if (!style.computedStyle.transform) {
-					return;
-				}
-				//@ts-expect-error indexing
-				styleTable[style.offset] = style.computedStyle.transform;
-		  });
+	state_mainElements.has(element) &&
+		getKeyframes(element).forEach((style) => {
+			if (!style.transform) {
+				return;
+			}
+			//@ts-expect-error indexing
+			styleTable[style.offset] = style.transform;
+		});
 
 	if (
 		Object.values(styleTable).every(
@@ -130,8 +138,6 @@ export const constructKeyframes = (element: HTMLElement): Keyframe[] => {
 	const opacityTable = getOpacity(element);
 	const userTransformTable = getUserTransforms(element);
 	const filterTable = getFilter(element);
-
-	console.log({ element, userTransformTable });
 
 	const keyframes = getTransformValues(element).map(
 		({ xDifference, yDifference, widthDifference, heightDifference, offset }) =>
