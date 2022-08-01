@@ -17,7 +17,8 @@ const initCards = () => {
 		const highlightCard: CustomKeyframeEffect = [
 			cards[activeIndex],
 			{
-				width: ["33vh", "50%", "100%"],
+				width: ["30%", "100%", "15%"],
+				height: ["50vh", "25vh", "66vh"],
 				// transform: [
 				// 	"translate(0px, 0px) rotate(0deg)",
 				// 	"translate(-100px, -100px) rotate(45deg)",

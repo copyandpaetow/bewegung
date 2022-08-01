@@ -126,10 +126,11 @@ export const calculateEasingMap = (
 		})
 	);
 
+	//TODO: recheck if the shift is needed as it was for the css animation
 	getTimelineFractions(timings).forEach((entry, index, array) => {
 		const { start } = entry;
-		const nextIndex = array[index + 1] ? index + 1 : index;
-		const nextEasing = array[nextIndex].easing as string;
+		//const nextIndex = array[index + 1] ? index + 1 : index;
+		const nextEasing = array[index].easing as string;
 
 		easingTable[start] = nextEasing;
 	});

@@ -1,6 +1,6 @@
 import {
+	getAllElements,
 	getCallbacks,
-	state_affectedElements,
 	state_context,
 	state_mainElements,
 } from "../prepare/prepare";
@@ -23,15 +23,13 @@ export const animate = (): Animate => {
 	const elementAnimations: Animation[] = [];
 	const callbackAnimations: Animation[] = [];
 
-	state_affectedElements.forEach((element) => {
-		elementAnimations.push(
-			new Animation(
-				new KeyframeEffect(element, constructKeyframes(element), totalRuntime)
-			)
-		);
+	getAllElements().forEach((element) => {
+		elementAnimations.push(...constructKeyframes(element));
 	});
 
 	state_mainElements.forEach((element) => {
+		//!: this is wrong, it would execute the callback multiple times
+		//TODO: do this only for each chunk. Maybe the function could return all if no element is provided
 		getCallbacks(element)?.forEach(({ offset, callback }) => {
 			const animation = new Animation(
 				new KeyframeEffect(element, null, offset * totalRuntime)
@@ -39,12 +37,6 @@ export const animate = (): Animate => {
 			animation.onfinish = callback;
 			callbackAnimations.push(animation);
 		});
-
-		elementAnimations.push(
-			new Animation(
-				new KeyframeEffect(element, constructKeyframes(element), totalRuntime)
-			)
-		);
 	});
 
 	const allAnimations = [...elementAnimations, ...callbackAnimations];

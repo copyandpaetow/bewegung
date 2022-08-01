@@ -12,6 +12,8 @@ export const emptyNonZeroDOMRect: DOMRect = {
 	toJSON: () => undefined,
 };
 
+//TODO: every chunk should have its own root-selector option. Otherwise it will be the body
+
 export const rootClass = `bewegung-stop-traversing${(
 	Math.random() * 1000
 ).toFixed(0)}`;

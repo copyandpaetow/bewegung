@@ -9,9 +9,12 @@ import {
 	state_mainElements,
 	state_originalStyle,
 } from "../prepare/prepare";
+import { state_image } from "./calculate-image";
 
 let state_progress = { progress: 0, time: 0 };
 let state_stylesApplied = false;
+
+let state_afterAnimationCallback = new WeakMap<HTMLElement, VoidFunction>();
 
 const applyStyles = (animations: Animation[]) => {
 	if (state_stylesApplied) {
@@ -32,11 +35,23 @@ const applyStyles = (animations: Animation[]) => {
 		});
 	});
 
+	getAllElements().forEach((element) => {
+		const callback = state_image.get(element);
+
+		if (!callback) {
+			return;
+		}
+		state_afterAnimationCallback.set(element, callback());
+	});
+
 	state_stylesApplied = true;
 	getFinishPromise(animations).then(() => {
 		state_stylesApplied = false;
 		getAllElements().forEach((element) => {
 			const overrides = state_elementStyleOverrides.get(element);
+
+			state_afterAnimationCallback.get(element)?.();
+
 			if (!overrides) {
 				return;
 			}

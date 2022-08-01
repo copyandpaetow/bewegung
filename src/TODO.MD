@@ -3,27 +3,24 @@
 ## upcoming tasks
 
 - image aspect ratio
-
-  - instead of changing the element, we could clone it and add it within a container to the DOM that is fixed and overlays the original image
-  - see https://codesandbox.io/s/framer-motion-scale-correction-for-transformed-images-ude0np?file=%2Fsrc%2FApp.js
-
-- rootElement: reevaluate if the root should be included or excluded
+- rootElement: rootElement should be included but not the body element. It should also be configurable as option for each chunk
 - disallow mutations of the sets/weakmaps/maps outside of their file by export a getter function instead
 - callbacks need to be reversable? How to handle on reverse, iterations etc
-
-- lookup tables for the exceptional CSS rules are slow as well
+  - they currently will be called to often. They dont need to be called on element- but on chunk based
+- add the observer delayed so if the lib is used as bewegung(...).play() it is never set up. Could be checked via the playState
+- lookup tables for the exceptional CSS rules might be slow
+- rename "calculate" since there the reading is done and the calculations are more in "animate" (maybe rename that too)
 
 ## Questions
 
 - should the reactivity part do just the invalidation or should everything actually recalculated ?
 - does the easing for the WAAPI need to adjusted like it would have been for the keyframes?
+- are the cleanups really working? Maybe they should be executed in one place again to avoid issues when more than one animation is running
 
 ## Maybes
 
-- a data attribute "data-bewegung=[...]" which we could look for and add those as well with their value as input arguments
+- helper functions for
+  - a data attribute "data-bewegung=[...]" which we could look for and add those as well with their value as input arguments
+  - adding and deleting elements from the dom
 - logic to allow unperformant entries to pass through, like color etc
-
-- try the MutationObserver one more time for more magic
-  - use the MO to get all elements and get their dimensions initially
-  - apply changes via classes, functions, styles etc and re-record the dom snapshot
-  -
+- the 2 ways to create an animation are `element.animate(...)` and `new Animation(...)` maybe the function should also do that? At least the class syntax

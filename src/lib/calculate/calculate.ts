@@ -149,7 +149,7 @@ export const filterMatchingStyleFromKeyframes = (
 
 export const calculate = () => {
 	cleanup();
-	const allElements = getAllElements();
+	const allElements = [...getAllElements(), document.body];
 	const { changeProperties, changeTimings } = state_context;
 
 	changeTimings.forEach((timing, index, array) => {
