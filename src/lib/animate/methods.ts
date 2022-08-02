@@ -2,7 +2,7 @@ import {
 	applyCSSStyles,
 	filterMatchingStyleFromKeyframes,
 	state_elementStyleOverrides,
-} from "../calculate/calculate";
+} from "../read/read";
 import {
 	getAllElements,
 	state_context,

@@ -1,11 +1,44 @@
-import { state_elementProperties } from "../calculate/calculate";
-import { rootElement } from "../constants";
-import { state_mainElements, state_affectedElements } from "../prepare/prepare";
+import { state_elementProperties } from "../read/read";
+import {
+	state_mainElements,
+	state_affectedElements,
+	getOptions,
+	state_dependencyElements,
+} from "../prepare/prepare";
 
 let state_intersectionObserver = new WeakMap<
 	HTMLElement,
 	IntersectionObserver
 >();
+
+export const getRootElement = (element: HTMLElement) => {
+	const selectors = new Set<string>();
+	const mainElements = state_mainElements.has(element)
+		? [element]
+		: [...(state_dependencyElements.get(element) || new Set())];
+
+	mainElements.forEach((mainElement) => {
+		getOptions(mainElement).forEach(
+			(option) => option.rootSelector && selectors.add(option.rootSelector)
+		);
+	});
+	if (selectors.size === 0) {
+		return document.body;
+	}
+
+	let currentElement = element?.parentElement;
+	let match: HTMLElement | undefined;
+
+	while (currentElement && !match) {
+		selectors.forEach((selector) => {
+			if (currentElement?.matches(selector)) {
+				match = currentElement;
+			}
+		});
+		currentElement = currentElement.parentElement;
+	}
+	return match || document.body;
+};
 
 const calculateRootMargin = (
 	rootElement: HTMLElement,
@@ -33,6 +66,7 @@ export const ObserveDimensionChange = (callback: () => void) => {
 
 	allElements.forEach((element) => {
 		state_intersectionObserver.get(element)?.disconnect();
+		const rootElement = getRootElement(element);
 
 		let firstTime = true;
 		const observer = new IntersectionObserver(

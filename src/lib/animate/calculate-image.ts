@@ -1,5 +1,5 @@
-import { state_elementProperties } from "../calculate/calculate";
-import { save } from "../calculate/differences";
+import { state_elementProperties } from "../read/read";
+import { save } from "../read/differences";
 import { state_context } from "../prepare/prepare";
 
 export const state_image = new WeakMap<HTMLElement, () => VoidFunction>();

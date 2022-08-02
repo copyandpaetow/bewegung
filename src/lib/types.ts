@@ -40,11 +40,15 @@ export type Callbacks = {
 
 export type ValueOf<T> = T[keyof T];
 
+export interface ChunkOption extends ComputedEffectTiming {
+	rootSelector?: string;
+}
+
 export type Chunks = {
 	target: Set<HTMLElement>;
 	keyframes: ComputedKeyframe[];
 	callbacks: Callbacks[] | null;
-	options: ComputedEffectTiming;
+	options: ChunkOption;
 	selector: string | null;
 };
 

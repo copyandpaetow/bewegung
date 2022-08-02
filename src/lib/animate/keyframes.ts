@@ -1,7 +1,4 @@
-import {
-	state_elementProperties,
-	getTransformValues,
-} from "../calculate/calculate";
+import { state_elementProperties, getTransformValues } from "../read/read";
 import { defaultOptions } from "../constants";
 import {
 	state_dependencyElements,

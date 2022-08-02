@@ -1,5 +1,3 @@
-import { rootClass } from "../constants";
-
 const getParent = (element: HTMLElement) =>
 	element.parentElement || document.body;
 
@@ -15,19 +13,20 @@ const getSiblings = (element: HTMLElement): HTMLElement[] => {
 
 const traverseDomUp = (
 	element: HTMLElement,
+	rootSelector?: string,
 	elementMap?: HTMLElement[]
 ): HTMLElement[] => {
-	const elements = elementMap || [];
 	const parent = getParent(element);
+	const elements = (elementMap || []).concat(element);
 
-	if (element.tagName === "BODY") {
-		return [...elements];
-	}
-	if (element.classList.contains(rootClass)) {
-		return [element, ...elements];
+	if (
+		(rootSelector && element.matches(rootSelector)) ||
+		parent.tagName === "BODY"
+	) {
+		return elements;
 	}
 
-	return traverseDomUp(parent, [...elements, element]);
+	return traverseDomUp(parent, rootSelector, elements);
 };
 
 export const traverseDomDown = (element: HTMLElement): HTMLElement[] => {
@@ -35,10 +34,11 @@ export const traverseDomDown = (element: HTMLElement): HTMLElement[] => {
 };
 
 export const findAffectedDOMElements = (
-	element: HTMLElement
+	element: HTMLElement,
+	rootSelector?: string
 ): HTMLElement[] => {
-	const parents = traverseDomUp(element).flatMap((relatedElement) =>
-		getSiblings(relatedElement)
+	const parents = traverseDomUp(element, rootSelector).flatMap(
+		(relatedElement) => getSiblings(relatedElement)
 	);
 
 	const includingChildren = [...traverseDomDown(element), ...parents].filter(
