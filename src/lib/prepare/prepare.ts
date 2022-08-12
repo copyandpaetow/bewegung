@@ -24,13 +24,8 @@ const cleanup = () => {
 	state_dependencyElements = new WeakMap<HTMLElement, Set<HTMLElement>>();
 };
 
-let allElements: Set<HTMLElement> | undefined;
 export const getAllElements = () => {
-	if (!allElements) {
-		allElements = new Set([...state_mainElements, ...state_affectedElements]);
-	}
-
-	return allElements;
+	return new Set([...state_mainElements, ...state_affectedElements]);
 };
 
 const chunkLens = (type: keyof Chunks) => (element: HTMLElement) =>

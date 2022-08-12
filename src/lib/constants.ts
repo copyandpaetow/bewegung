@@ -23,9 +23,14 @@ export const defaultChangeProperties: cssRuleName[] = [
 	"transformOrigin",
 	"width",
 	"height",
+	"objectFit",
+	"objectPosition",
 ];
 
 export const defaultOptions: Partial<KeyframeEffectOptions> = {
 	duration: 400,
 	easing: "ease",
 };
+
+export const emptyImageSrc =
+	"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";

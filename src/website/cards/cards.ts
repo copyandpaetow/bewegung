@@ -17,8 +17,8 @@ const initCards = () => {
 		const highlightCard: CustomKeyframeEffect = [
 			cards[activeIndex],
 			{
-				width: ["30%", "100%", "15%"],
-				height: ["50vh", "25vh", "66vh"],
+				width: ["30%", "100%", "55%"],
+				height: ["50vh", "25vh", "65vh"],
 				// transform: [
 				// 	"translate(0px, 0px) rotate(0deg)",
 				// 	"translate(-100px, -100px) rotate(45deg)",
@@ -104,11 +104,7 @@ const initAdditionalImages = () => {
 						{ height: "20vh", width: "30vh" },
 						{ duration: 4000, easing: "ease-in" },
 					],
-					[
-						image,
-						{ height: "15vh", width: "20vh" },
-						{ duration: 4000, easing: "ease-in" },
-					]
+					[image, { width: "20vh" }, { duration: 4000, easing: "ease-in" }]
 				).play();
 				imageExpandedState[index] = true;
 			}

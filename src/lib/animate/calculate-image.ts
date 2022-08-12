@@ -1,6 +1,7 @@
-import { state_elementProperties } from "../read/read";
+import { applyCSSStyles, state_elementProperties } from "../read/read";
 import { save } from "../read/differences";
 import { state_context } from "../prepare/prepare";
+import { emptyImageSrc } from "../constants";
 
 export const state_image = new WeakMap<HTMLElement, () => VoidFunction>();
 
@@ -40,15 +41,20 @@ export const calculateNewImage = (
 	}, 0);
 
 	const { top: rootTop, left: rootLeft } = rootStyleMap?.at(-1)?.dimensions!;
-	placeholderImage.src =
-		"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
-	//placeholderImage.src = element.src;
+	placeholderImage.src = false ? emptyImageSrc : element.src;
+	placeholderImage.style.opacity = "0";
 
-	wrapper.style.position = "absolute";
-	wrapper.style.top = `${styleMap.at(-1)?.dimensions.top! - rootTop}px`;
-	wrapper.style.left = `${styleMap.at(-1)?.dimensions.left! - rootLeft}px`;
-	wrapper.style.height = `${maxHeight}px`;
-	wrapper.style.width = `${maxWidth}px`;
+	const wrapperStyle: Partial<CSSStyleDeclaration> = {
+		position: "absolute",
+		top: `${styleMap.at(-1)?.dimensions.top! - rootTop}px`,
+		left: `${styleMap.at(-1)?.dimensions.left! - rootLeft}px`,
+		height: `${maxHeight}px`,
+		width: `${maxWidth}px`,
+		pointerEvents: "none",
+		overflow: "hidden",
+	};
+
+	applyCSSStyles(wrapper, wrapperStyle);
 
 	const wrapperKeyframes = styleMap.map((entry, _, array): Keyframe => {
 		const horizontalInset = (maxWidth - entry.dimensions.width) / 2;
@@ -63,10 +69,6 @@ export const calculateNewImage = (
 		const translateX = -1 * horizontalInset + deltaLeft;
 		const translateY = -1 * verticalInset + deltaTop;
 
-		// if (element.classList.contains("test")) {
-		// 	//console.log({ element, horizontalInset, verticalInset, translateX, translateY, deltaTop, deltaLeft });
-		// }
-
 		return {
 			offset: entry.offset,
 			clipPath: `inset(${verticalInset}px ${horizontalInset}px round ${calculateBorderRadius(
@@ -79,35 +81,59 @@ export const calculateNewImage = (
 		};
 	});
 
-	const imageKeyframes = styleMap.map((entry): Keyframe => {
-		const scaleX = maxWidth / (maxWidth - entry.dimensions.width);
-		const scaleY = maxHeight / (maxHeight - entry.dimensions.height);
+	const originalImageRatio = element.naturalWidth / element.naturalHeight;
 
-		if (element.classList.contains("test")) {
-			console.log({ element, scaleX, scaleY });
+	const imageKeyframes = styleMap.map((entry): Keyframe => {
+		let scaleWidth: number = entry.dimensions.width / maxWidth;
+		let scaleHeight: number = entry.dimensions.height / maxHeight;
+
+		let translateX: number = 0;
+		let translateY: number = 0;
+
+		if (entry.computedStyle.objectFit === "cover") {
+			const alternateScaleWidth = (originalImageRatio * maxHeight) / maxWidth;
+			const alternateScaleHeight = maxWidth / originalImageRatio / maxHeight;
+			const currentRatio = entry.dimensions.width / entry.dimensions.height;
+
+			if (currentRatio <= 1) {
+				scaleWidth = alternateScaleWidth * scaleHeight;
+			} else {
+				scaleHeight = alternateScaleHeight * scaleWidth;
+			}
+		}
+
+		if (entry.computedStyle.objectPosition !== "50% 50%") {
+			const [xAchis, yAchis] = entry.computedStyle
+				.objectPosition!.split(" ")
+				.map((value, index) => {
+					if (value.includes("%")) {
+						return (parseFloat(value) - 100) / 100;
+					}
+					return (
+						parseFloat(value) /
+						(index === 0 ? entry.dimensions.width : entry.dimensions.height)
+					);
+				});
+
+			translateX =
+				save((maxWidth * scaleWidth - entry.dimensions.width) / 2, 0) *
+				xAchis *
+				-1;
+			translateY =
+				save((maxHeight * scaleHeight - entry.dimensions.height) / 2, 0) *
+				yAchis *
+				-1;
 		}
 
 		return {
 			offset: entry.offset,
-			//?these are currently off by 2% and 4%
-			//transform: `scale(${save(scaleX, 1)}, ${save(scaleY, 1)})`,
+			transform: `translate(${translateX}px, ${translateY}px) scale(${save(
+				scaleWidth,
+				1
+			)}, ${save(scaleHeight, 1)})`,
 			easing: easingTable[entry.offset] ?? "ease",
 		};
 	});
-
-	if (
-		element.classList.contains("test") ||
-		element.classList.contains("additional__img")
-	) {
-		console.log({
-			element,
-			wrapperKeyframes,
-			imageKeyframes,
-			maxHeight,
-			maxWidth,
-			styleMap,
-		});
-	}
 
 	state_image.set(element, () => {
 		const nextSibling = element.nextElementSibling;
@@ -118,11 +144,7 @@ export const calculateNewImage = (
 			? parent?.insertBefore(placeholderImage, nextSibling)
 			: parent?.appendChild(placeholderImage);
 
-		element.style.cssText = `all: initial; height: ${maxHeight}px; width: ${maxWidth}px`;
-		//element.style.opacity = "0.5";
-
-		// wrapper.dataset.clipPath = wrapperKeyframes.at(-1).clipPath;
-		// wrapper.dataset.transform = wrapperKeyframes.at(-1).transform;
+		element.style.cssText = `all: initial; height: ${maxHeight}px; width: ${maxWidth}px; pointer-events: none;`;
 
 		wrapper.appendChild(element);
 		document.body.appendChild(wrapper);
@@ -136,6 +158,6 @@ export const calculateNewImage = (
 
 	return [
 		new Animation(new KeyframeEffect(wrapper, wrapperKeyframes, totalRuntime)),
-		//new Animation(new KeyframeEffect(element, imageKeyframes, totalRuntime)),
+		new Animation(new KeyframeEffect(element, imageKeyframes, totalRuntime)),
 	];
 };
