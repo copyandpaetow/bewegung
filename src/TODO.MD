@@ -3,7 +3,7 @@
 ## upcoming tasks
 
 - disallow mutations of the sets/weakmaps/maps outside of their file by export a getter function instead
-  - the cleanup approach is not that good, maybe scope the state it if performance is still okay
+- the cleanup approach is not that good, maybe scope the state it if performance is still okay
 - callbacks need to be reversable? How to handle on reverse, iterations etc
 
 ## Questions
