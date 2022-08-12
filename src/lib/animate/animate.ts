@@ -1,6 +1,6 @@
 import {
+	getAllElements,
 	getCallbacks,
-	state_affectedElements,
 	state_context,
 	state_mainElements,
 } from "../prepare/prepare";
@@ -23,28 +23,18 @@ export const animate = (): Animate => {
 	const elementAnimations: Animation[] = [];
 	const callbackAnimations: Animation[] = [];
 
-	state_affectedElements.forEach((element) => {
-		elementAnimations.push(
-			new Animation(
-				new KeyframeEffect(element, constructKeyframes(element), totalRuntime)
-			)
-		);
+	getAllElements().forEach((element) => {
+		elementAnimations.push(...constructKeyframes(element));
 	});
 
 	state_mainElements.forEach((element) => {
-		getCallbacks(element)?.forEach(({ offset, callback }) => {
+		getCallbacks().forEach(({ offset, callback }) => {
 			const animation = new Animation(
 				new KeyframeEffect(element, null, offset * totalRuntime)
 			);
 			animation.onfinish = callback;
 			callbackAnimations.push(animation);
 		});
-
-		elementAnimations.push(
-			new Animation(
-				new KeyframeEffect(element, constructKeyframes(element), totalRuntime)
-			)
-		);
 	});
 
 	const allAnimations = [...elementAnimations, ...callbackAnimations];

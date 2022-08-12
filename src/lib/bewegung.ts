@@ -1,7 +1,7 @@
 import { prepare } from "./prepare/prepare";
-import { formatInputs } from "./inputs/format";
-import { effect, observerable } from "./reactive/observable";
-import { makeReactive } from "./reactive/reactive";
+import { formatInputs } from "./input/format";
+import { effect, observerable } from "./react/observable";
+import { makeReactive } from "./react/react";
 import { Bewegung, bewegungProps, Observer } from "./types";
 
 const logCalculationTime = (startingTime: number) => {
@@ -37,8 +37,13 @@ export const bewegung = (...animationInput: bewegungProps): Bewegung => {
 
 	effect(() => {
 		State();
-		observer?.disconnect();
-		observer = makeReactive(Input, State);
+		queueMicrotask(() => {
+			if (calculationProgress !== "ready") {
+				return;
+			}
+			observer?.disconnect();
+			observer = makeReactive(Input, State);
+		});
 	});
 
 	logCalculationTime(start);
@@ -46,31 +51,38 @@ export const bewegung = (...animationInput: bewegungProps): Bewegung => {
 
 	return {
 		play: () => {
-			observer.disconnectStateObserver();
+			calculationProgress = "playing";
+			observer?.disconnectStateObserver();
 			State().playAnimation();
 		},
 		pause: () => {
+			calculationProgress = "paused";
 			State().pauseAnimation();
 		},
 		scroll: (progress: number, done?: boolean) => {
-			observer.disconnectStateObserver();
+			calculationProgress = "playing";
+			observer?.disconnectStateObserver();
 			State().scrollAnimation(progress, done);
 		},
 		reverse: () => {
-			observer.disconnectStateObserver();
+			calculationProgress = "playing";
+			observer?.disconnectStateObserver();
 			State().reverseAnimation();
 		},
 		cancel: () => {
-			observer.disconnect();
+			observer?.disconnect();
 			State().cancelAnimation();
+			calculationProgress = "done";
 		},
 		finish: () => {
-			observer.disconnect();
+			observer?.disconnect();
 			State().finishAnimation();
+			calculationProgress = "done";
 		},
 		commitStyles: () => {
-			observer.disconnect();
+			observer?.disconnect();
 			State().commitAnimationStyles();
+			calculationProgress = "done";
 		},
 		updatePlaybackRate: (newPlaybackRate: number) => {
 			State().updatePlaybackRate(newPlaybackRate);

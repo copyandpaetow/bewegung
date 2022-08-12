@@ -1,5 +1,5 @@
 import { calculatedElementProperties } from "../types";
-import { state_elementProperties } from "./calculate";
+import { state_elementProperties } from "./read";
 
 export const recalculateDisplayNoneValues = (
 	element: HTMLElement

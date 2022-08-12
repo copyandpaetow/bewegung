@@ -1,7 +1,4 @@
-import {
-	state_elementProperties,
-	getTransformValues,
-} from "../calculate/calculate";
+import { state_elementProperties, getTransformValues } from "../read/read";
 import { defaultOptions } from "../constants";
 import {
 	state_dependencyElements,
@@ -11,6 +8,7 @@ import {
 	getKeyframes,
 } from "../prepare/prepare";
 import { calculatedElementProperties } from "../types";
+import { calculateNewImage } from "./calculate-image";
 import { calculateEasingMap } from "./calculate-timeline";
 
 const calculateBorderRadius = (
@@ -125,7 +123,7 @@ const getDependecyOptions = (element: HTMLElement): ComputedEffectTiming[] => {
 	return [...options];
 };
 
-export const constructKeyframes = (element: HTMLElement): Keyframe[] => {
+export const constructKeyframes = (element: HTMLElement): Animation[] => {
 	const { totalRuntime } = state_context;
 	const easingTable = calculateEasingMap(
 		state_mainElements.has(element)
@@ -159,5 +157,22 @@ export const constructKeyframes = (element: HTMLElement): Keyframe[] => {
 				}),
 			} as Keyframe)
 	);
-	return keyframes;
+
+	const allAnimations = [];
+
+	if (element.classList.contains("main")) {
+		console.log({ keyframes });
+	}
+
+	if (element.tagName === "IMG") {
+		allAnimations.push(
+			...calculateNewImage(element as HTMLImageElement, easingTable)
+		);
+	} else {
+		allAnimations.push(
+			new Animation(new KeyframeEffect(element, keyframes, totalRuntime))
+		);
+	}
+
+	return allAnimations;
 };

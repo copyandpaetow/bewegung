@@ -1,4 +1,3 @@
-import { rootElement } from "../constants";
 import { traverseDomDown } from "../prepare/find-affected";
 import { Chunks } from "../types";
 
@@ -70,7 +69,7 @@ export const ObserveDomMutations = (
 	callback: (changes: Chunks[]) => void
 ) => {
 	const MO = new MutationObserver(MOcallback(Input, callback));
-	MO.observe(rootElement, {
+	MO.observe(document.body, {
 		childList: true,
 		subtree: true,
 	});

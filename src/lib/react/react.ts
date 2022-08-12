@@ -1,4 +1,4 @@
-import { calculate } from "../calculate/calculate";
+import { read } from "../read/read";
 import { Animate, Chunks, Observerable, Reactive } from "../types";
 import { ObserveDimensionChange } from "./dimension-changes";
 import { ObserveDomMutations } from "./dom-mutations";
@@ -24,11 +24,11 @@ export const makeReactive: Reactive = (
 	});
 
 	const observeResize = ObserveBrowserResize(() => {
-		throttledCallback(() => State(calculate()));
+		throttledCallback(() => State(read()));
 	});
 
 	const observeDimensions = ObserveDimensionChange(() => {
-		throttledCallback(() => State(calculate()));
+		throttledCallback(() => State(read()));
 	});
 
 	const disconnect = () => {

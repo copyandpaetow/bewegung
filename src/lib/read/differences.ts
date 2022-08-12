@@ -7,7 +7,7 @@ import {
 } from "../types";
 import { getComputedStylings } from "./dimensions";
 
-const save = (value: number, alternative: number): number => {
+export const save = (value: number, alternative: number): number => {
 	return value === Infinity || value === -Infinity || isNaN(value)
 		? alternative
 		: value;

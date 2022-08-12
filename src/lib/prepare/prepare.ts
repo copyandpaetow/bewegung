@@ -1,5 +1,5 @@
-import { calculate } from "../calculate/calculate";
-import { Callbacks, Chunks, Context } from "../types";
+import { read } from "../read/read";
+import { Callbacks, ChunkOption, Chunks, Context } from "../types";
 import { calculateContext } from "./context";
 import { findAffectedDOMElements } from "./find-affected";
 
@@ -24,13 +24,8 @@ const cleanup = () => {
 	state_dependencyElements = new WeakMap<HTMLElement, Set<HTMLElement>>();
 };
 
-let allElements: Set<HTMLElement> | undefined;
 export const getAllElements = () => {
-	if (!allElements) {
-		allElements = new Set([...state_mainElements, ...state_affectedElements]);
-	}
-
-	return allElements;
+	return new Set([...state_mainElements, ...state_affectedElements]);
 };
 
 const chunkLens = (type: keyof Chunks) => (element: HTMLElement) =>
@@ -45,26 +40,38 @@ export const getKeyframes = chunkLens("keyframes") as (
 
 export const getOptions = chunkLens("options") as (
 	element: HTMLElement
-) => ComputedEffectTiming[];
+) => ChunkOption[];
 
-export const getCallbacks = chunkLens("callbacks") as (
-	element: HTMLElement
-) => Callbacks[];
+export const getCallbacks = (): Callbacks[] => {
+	let callbacks: Callbacks[] = [];
+	chunkMap.forEach((chunk) => {
+		if (!chunk.callbacks) {
+			return;
+		}
+		callbacks = [...callbacks, ...chunk.callbacks];
+	});
+	return callbacks;
+};
 
-const addAffectedElements = (mainElements: Set<HTMLElement>) =>
+const addAffectedElements = (
+	mainElements: Set<HTMLElement>,
+	options?: { rootSelector?: string }
+) =>
 	mainElements.forEach((element) => {
-		findAffectedDOMElements(element).forEach((affectedElement) => {
-			if (state_mainElements.has(affectedElement)) {
-				return;
+		findAffectedDOMElements(element, options?.rootSelector).forEach(
+			(affectedElement) => {
+				if (state_mainElements.has(affectedElement)) {
+					return;
+				}
+				state_affectedElements.add(affectedElement);
+				state_dependencyElements.set(
+					affectedElement,
+					(state_dependencyElements.get(affectedElement) || new Set()).add(
+						element
+					)
+				);
 			}
-			state_affectedElements.add(affectedElement);
-			state_dependencyElements.set(
-				affectedElement,
-				(state_dependencyElements.get(affectedElement) || new Set()).add(
-					element
-				)
-			);
-		});
+		);
 	});
 
 const updateKeyframeTiming = (
@@ -111,7 +118,11 @@ export const prepare = (chunks: Chunks[]) => {
 		});
 	});
 
-	chunks.forEach((chunk) => addAffectedElements(chunk.target));
+	chunks.forEach((chunk) =>
+		addAffectedElements(chunk.target, {
+			rootSelector: chunk.options.rootSelector,
+		})
+	);
 
-	return calculate();
+	return read();
 };
