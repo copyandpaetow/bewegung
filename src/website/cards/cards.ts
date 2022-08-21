@@ -1,5 +1,6 @@
 import { bewegung } from "../../lib/bewegung";
 import { Bewegung, CustomKeyframeEffect } from "../../lib/types";
+import { Bewegung2 } from "../../lib2/bewegung";
 
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
@@ -41,7 +42,8 @@ const initCards = () => {
 			{ duration: 4000, easing: "ease-in" },
 		];
 
-		return bewegung(highlightCard, hideOthers);
+		return new Bewegung2(highlightCard, hideOthers);
+		//return bewegung(highlightCard, hideOthers);
 	};
 
 	let animation: Bewegung | undefined;
@@ -51,14 +53,15 @@ const initCards = () => {
 		if (!animation) {
 			animation = highlight();
 		}
-		console.log(animation.playState());
-		animation.playState() !== "running" ? animation.play() : animation.pause();
-		paused && animation.pause();
-		animation.finished.then(() => {
-			animation = undefined;
-			updateIndex(+1);
-			console.log("finished");
-		});
+		animation?.play();
+		// console.log(animation.playState());
+		// animation.playState() !== "running" ? animation.play() : animation.pause();
+		// paused && animation.pause();
+		// animation.finished.then(() => {
+		// 	animation = undefined;
+		// 	updateIndex(+1);
+		// 	console.log("finished");
+		// });
 	});
 	cardsPauseButton?.addEventListener("click", () => {
 		paused = !paused;
