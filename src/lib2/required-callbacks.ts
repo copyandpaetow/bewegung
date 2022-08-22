@@ -1,10 +1,10 @@
-import { ChunkState } from "./prepare/chunk-state";
-import { ElementState } from "./prepare/element-state";
 import {
 	StyleState,
 	applyCSSStyles,
 	filterMatchingStyleFromKeyframes,
-} from "./read/read";
+} from "./calculate-dom-changes";
+import { ChunkState } from "./get-chunk-state";
+import { ElementState } from "./get-element-state";
 
 export const runBeforeAnimation = (
 	chunkState: ChunkState,

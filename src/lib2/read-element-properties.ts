@@ -1,4 +1,4 @@
-import { cssRuleName } from "../types";
+import { cssRuleName } from "./types";
 
 export const getComputedStylings = (
 	changeProperties: cssRuleName[],

@@ -1,11 +1,11 @@
-import { emptyNonZeroDOMRect } from "../constants";
+import { emptyNonZeroDOMRect } from "./constants";
 import {
 	calculatedElementProperties,
 	cssRuleName,
 	differenceArray,
 	DimensionalDifferences,
-} from "../types";
-import { getComputedStylings } from "./dimensions";
+} from "./types";
+import { getComputedStylings } from "./read-element-properties";
 
 export const save = (value: number, alternative: number): number => {
 	return value === Infinity || value === -Infinity || isNaN(value)

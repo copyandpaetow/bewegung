@@ -1,33 +1,29 @@
-import { calculateImageAnimation } from "./animate/calculate-image";
-import { calculateEasingMap } from "./animate/calculate-timeline";
-import { getDependecyOptions } from "./animate/keyframes";
-import { getMainAnimation, getCallbackAnimations } from "./animations";
-import { calculateContext } from "./input/context";
-import { formatInputs } from "./input/convert-to-chunks";
-import { normalizeChunks } from "./input/normalize-chunks";
-import { logCalculationTime } from "./logger";
 import {
-	ChunkState,
-	getChunkState,
-	mapKeysToChunks,
-} from "./prepare/chunk-state";
-import {
-	ElementState,
-	findAffectedAndDependencyElements,
-	getElementState,
-} from "./prepare/element-state";
-import {
+	StyleState,
 	getStyleState,
 	postprocessProperties,
 	readDomChanges,
-	StyleState,
-} from "./read/read";
+} from "./calculate-dom-changes";
+import { calculateEasingMap } from "./calculate-easings";
+import { calculateImageAnimation } from "./calculate-image-animations";
+import { getDependecyOptions } from "./construct-keyframes";
+import { formatInputs } from "./convert-input-to-chunks";
+import { calculateContext } from "./get-context";
+import { ChunkState, getChunkState, mapKeysToChunks } from "./get-chunk-state";
+import {
+	ElementState,
+	getElementState,
+	findAffectedAndDependencyElements,
+} from "./get-element-state";
+import { logCalculationTime } from "./logger";
+import { normalizeChunks } from "./normalize-chunks";
 import {
 	callbackState,
-	runAfterAnimation,
 	runBeforeAnimation,
+	runAfterAnimation,
 } from "./required-callbacks";
-import { Bewegung, BewegungProps, Chunks, Context, Observer } from "./types";
+import { Bewegung, BewegungProps, Chunks, Observer, Context } from "./types";
+import { getMainAnimation, getCallbackAnimations } from "./get-animations";
 
 export class Bewegung2 implements Bewegung {
 	private now: number;

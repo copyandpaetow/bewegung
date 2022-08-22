@@ -1,5 +1,5 @@
-import { defaultOptions } from "../constants";
-import { Callbacks, Chunks, CustomKeyframeEffect } from "../types";
+import { defaultOptions } from "./constants";
+import { Callbacks, Chunks, CustomKeyframeEffect } from "./types";
 import {
 	arrayifyInputs,
 	formatKeyFrames,

@@ -1,8 +1,7 @@
-import { defaultOptions } from "../constants";
-import { ChunkState } from "../prepare/chunk-state";
-import { ElementState } from "../prepare/element-state";
-
-import { calculatedElementProperties, DimensionalDifferences } from "../types";
+import { defaultOptions } from "./constants";
+import { ChunkState } from "./get-chunk-state";
+import { ElementState } from "./get-element-state";
+import { calculatedElementProperties, DimensionalDifferences } from "./types";
 
 const calculateBorderRadius = (
 	styleEntry: calculatedElementProperties

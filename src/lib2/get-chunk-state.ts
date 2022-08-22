@@ -1,4 +1,4 @@
-import { Callbacks, ChunkOption, Chunks } from "../types";
+import { Chunks, ChunkOption, Callbacks } from "./types";
 
 interface ChunkKeyValues {
 	chunkKeys: WeakMap<HTMLElement, symbol[]>;

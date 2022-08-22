@@ -2,8 +2,9 @@ import {
 	CustomKeyframe,
 	CustomKeyframeArrayValueSyntax,
 	CustomKeyframeEffect,
+	ElementOrSelector,
 	ValueOf,
-} from "../types";
+} from "./types";
 
 export const arrayifyInputs = (
 	animationInput:
@@ -88,8 +89,6 @@ export const formatKeyFrames = (
 	}
 	throw new Error("No mixing between array and object syntax");
 };
-
-import { ElementOrSelector } from "../types";
 
 const findElementsByString = (elementString: string) => {
 	const getFromSelector = document.querySelectorAll(elementString);

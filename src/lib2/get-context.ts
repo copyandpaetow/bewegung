@@ -1,5 +1,5 @@
-import { defaultChangeProperties } from "../constants";
-import { Chunks, cssRuleName } from "../types";
+import { defaultChangeProperties } from "./constants";
+import { cssRuleName, Chunks } from "./types";
 
 const updateTotalRuntime = (times: number[]) => {
 	return times.reduce((longest, current) => Math.max(longest, current));
@@ -53,6 +53,5 @@ export const calculateContext = (chunks: Chunks[]) => {
 		totalRuntime,
 		changeTimings: updateChangeTimings(keyframes, options, totalRuntime),
 		changeProperties: updateChangeProperties(keyframes),
-		progress: 0,
 	};
 };

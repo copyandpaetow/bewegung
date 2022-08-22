@@ -1,4 +1,4 @@
-import { Chunks } from "../types";
+import { Chunks } from "./types";
 import { findAffectedDOMElements } from "./find-affected-elements";
 
 interface StatefulElements {

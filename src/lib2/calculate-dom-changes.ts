@@ -1,19 +1,18 @@
-import { ChunkState } from "../prepare/chunk-state";
-import { ElementState } from "../prepare/element-state";
+import {
+	emptyCalculatedProperties,
+	checkForTextNode,
+	calculateDimensionDifferences,
+} from "./calculate-dimension-differences";
+import { ChunkState } from "./get-chunk-state";
+import { ElementState } from "./get-element-state";
+import { getDomRect, getComputedStylings } from "./read-element-properties";
 import {
 	calculatedElementProperties,
 	Context,
-	cssRuleName,
-	differenceArray,
 	DimensionalDifferences,
-} from "../types";
-import {
-	calculateDimensionDifferences,
-	checkForTextNode,
-	emptyCalculatedProperties,
-} from "./differences";
-import { getComputedStylings, getDomRect } from "./dimensions";
-import { recalculateDisplayNoneValues } from "./postprocess";
+	differenceArray,
+} from "./types";
+import { recalculateDisplayNoneValues } from "./postprocess-element-properties";
 
 export const addOverrideStyles = (
 	elementProperties: calculatedElementProperties[],

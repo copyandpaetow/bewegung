@@ -1,4 +1,4 @@
-import { Timeline, TimelineEntry } from "../types";
+import { Timeline, TimelineEntry } from "./types";
 
 export const toArray = <MaybeArrayType>(
 	maybeArray: MaybeArrayType | MaybeArrayType[]

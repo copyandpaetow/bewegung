@@ -1,4 +1,4 @@
-import { Callbacks, Chunks } from "../types";
+import { Callbacks, Chunks } from "./types";
 
 const updateKeyframeTiming = (
 	frame: ComputedKeyframe | Callbacks,

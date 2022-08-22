@@ -1,4 +1,4 @@
-import { calculatedElementProperties } from "../types";
+import { calculatedElementProperties } from "./types";
 
 export const recalculateDisplayNoneValues = (
 	elementProperties: calculatedElementProperties[]

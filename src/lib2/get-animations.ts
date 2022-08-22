@@ -1,13 +1,13 @@
+import { StyleState, getTransformValues } from "./calculate-dom-changes";
 import {
-	constructKeyframes,
 	getBorderRadius,
-	getFilter,
 	getOpacity,
+	getFilter,
 	getUserTransforms,
-} from "./animate/keyframes";
-import { ChunkState } from "./prepare/chunk-state";
-import { ElementState } from "./prepare/element-state";
-import { getTransformValues, StyleState } from "./read/read";
+	constructKeyframes,
+} from "./construct-keyframes";
+import { ChunkState } from "./get-chunk-state";
+import { ElementState } from "./get-element-state";
 import { calculatedElementProperties, Context } from "./types";
 
 export const getCallbackAnimations = (
