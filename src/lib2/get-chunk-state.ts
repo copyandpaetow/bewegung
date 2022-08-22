@@ -23,6 +23,7 @@ export const mapKeysToChunks = (chunks: Chunks[]): ChunkKeyValues => {
 export interface ChunkState {
 	getKeyframes(element: HTMLElement): ComputedKeyframe[];
 	getOptions(element: HTMLElement): ChunkOption[];
+	getSelector(element: HTMLElement): string[];
 	getAllKeyframes(): ComputedKeyframe[][];
 	getAllOptions(): ChunkOption[];
 	getAllCallbacks(): Callbacks[];
@@ -45,6 +46,12 @@ export const getChunkState = ({
 				.get(element)!
 				.map((chunkKey) => chunkValues.get(chunkKey)!.options)
 				.flat();
+		},
+		getSelector(element: HTMLElement) {
+			return chunkKeys
+				.get(element)!
+				.flatMap((chunkKey) => chunkValues.get(chunkKey)!.selector)
+				.filter(Boolean) as string[];
 		},
 		getAllKeyframes() {
 			const allKeyframes: ComputedKeyframe[][] = [];

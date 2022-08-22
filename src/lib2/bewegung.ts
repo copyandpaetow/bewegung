@@ -21,10 +21,15 @@ import {
 	callbackState,
 	runBeforeAnimation,
 	runAfterAnimation,
-} from "./required-callbacks";
-import { Bewegung, BewegungProps, Chunks, Observer, Context } from "./types";
+} from "./get-callback-state";
+import { Bewegung, BewegungProps, Chunks, Context } from "./types";
 import { getMainAnimation, getCallbackAnimations } from "./get-animations";
+import { ObserveBrowserResize } from "./watch-resize";
+import { ObserveDimensionChange } from "./watch-dimension-changes";
+import { ObserveDomMutations } from "./watch-dom-mutations";
 
+const clamp = (number: number, min = 0, max = 1) =>
+	Math.min(Math.max(number, min), max);
 export class Bewegung2 implements Bewegung {
 	private now: number;
 
@@ -36,7 +41,7 @@ export class Bewegung2 implements Bewegung {
 	//required
 	private input: Chunks[] = [];
 	private animations: Animation[] = [];
-	private reactive?: Observer;
+	private disconnectReactivity: VoidFunction = () => {};
 	private beforeAnimationCallbacks = callbackState();
 	private afterAnimationCallbacks = callbackState();
 
@@ -136,22 +141,144 @@ export class Bewegung2 implements Bewegung {
 	}
 
 	private makeReactive() {
-		/*
-			TODO: the makeReactive function also has some dependcies:
-			* it needs the  elementProperties-, mainElements-, affectedElements-, chunk-, dependencyElement-State
-			
-		*/
-		//this.reactive?.disconnect();
-		// this.reactive = listenForChange({
-		// 	recalcFromInput: (newInput) => this.prepareInput(newInput),
-		// 	recalcAnimations: () => this.setAnimations(),
-		// });
+		this.disconnectReactivity?.();
+		if (this.playState === "running") {
+			return;
+		}
+
+		let resizeIdleCallback: NodeJS.Timeout | undefined;
+
+		const throttledCallback = (callback: () => void) => {
+			resizeIdleCallback && clearTimeout(resizeIdleCallback);
+			resizeIdleCallback = setTimeout(() => {
+				callback();
+			}, 100);
+		};
+
+		const observeDOM = ObserveDomMutations(this.input, (changes: Chunks[]) => {
+			this.prepareInput(changes);
+		});
+
+		const observeResize = ObserveBrowserResize(
+			this.elementState.getAllElements(),
+			() => {
+				throttledCallback(() => this.setAnimations());
+			}
+		);
+
+		const observeDimensions = ObserveDimensionChange(
+			this.chunkState,
+			this.elementState,
+			this.styleState,
+			() => {
+				throttledCallback(() => this.setAnimations());
+			}
+		);
+
+		this.disconnectReactivity = () => {
+			observeDOM?.disconnect();
+			observeResize?.disconnect();
+			observeDimensions?.disconnect();
+		};
+	}
+
+	//TODO: this needs some rechecking
+	private getProgress() {
+		let progress = this.progressTime;
+		if (this.currentTime !== 0) {
+			progress += performance.now() - this.currentTime;
+		}
+		return progress;
+	}
+	//TODO: this needs some rechecking
+	private keepProgress() {
+		const currentTime = this.animations[0].currentTime ?? 0;
+		const playState = this.animations[0].playState;
+		if (playState === "running") {
+			this.currentTime = performance.now();
+			this.progressTime = currentTime;
+		}
+
+		if (playState === "paused") {
+			this.progressTime = currentTime;
+		}
 	}
 
 	public play() {
+		this.playState = "running";
+		this.disconnectReactivity?.();
 		this.beforeAnimationCallbacks.execute();
 
-		console.log(this.animations);
-		this.animations.forEach((waapi) => waapi.play());
+		this.animations.forEach((waapi) => {
+			waapi.currentTime = this.getProgress();
+			waapi.play();
+		});
+		this.currentTime = 0;
+		this.progressTime = 0;
+	}
+
+	public scrollAnimation() {
+		this.playState = "running";
+		this.disconnectReactivity?.();
+		this.beforeAnimationCallbacks.execute();
+
+		return (progress: number, done?: boolean) => {
+			if (done) {
+				return;
+			}
+
+			const currentFrame =
+				-1 *
+				clamp(progress, 0.001, done === undefined ? 1 : 0.999) *
+				this.context.totalRuntime;
+
+			this.animations.forEach((waapi) => {
+				waapi.currentTime = currentFrame;
+			});
+			this.progressTime = currentFrame;
+		};
+	}
+
+	public pauseAnimation() {
+		this.playState = "paused";
+		this.progressTime = this.animations[0].currentTime ?? 0;
+		this.animations.forEach((waapi) => {
+			waapi.pause();
+		});
+		return;
+	}
+
+	reverseAnimation() {
+		this.playState = "running";
+		this.disconnectReactivity?.();
+		this.beforeAnimationCallbacks.execute();
+		this.animations.forEach((waapi) => {
+			waapi.reverse();
+		});
+	}
+	cancelAnimation() {
+		this.playState = "finished";
+		this.elementState
+			.getAllElements()
+			.forEach(
+				(element) =>
+					(element.style.cssText = this.styleState.getOriginalStyle(element)!)
+			);
+
+		this.animations.forEach((waapi) => {
+			waapi.cancel();
+		});
+	}
+	commitAnimationStyles() {
+		this.playState = "finished";
+		this.animations.forEach((waapi) => {
+			waapi.commitStyles();
+		});
+	}
+	finishAnimation() {
+		this.playState = "finished";
+		this.animations.forEach((waapi) => {
+			waapi.finish();
+		});
 	}
 }

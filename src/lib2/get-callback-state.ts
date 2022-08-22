@@ -27,8 +27,6 @@ export const runBeforeAnimation = (
 	});
 };
 
-type RequiredCallbacks = "requiredBeforeAnimation" | "requiredAfterAnimation";
-
 export const runAfterAnimation = (
 	elementState: ElementState,
 	styleState: StyleState

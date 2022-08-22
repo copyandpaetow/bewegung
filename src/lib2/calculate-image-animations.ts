@@ -1,7 +1,7 @@
 import { save } from "./calculate-dimension-differences";
 import { StyleState, applyCSSStyles } from "./calculate-dom-changes";
 import { emptyImageSrc } from "./constants";
-import { CallbackState } from "./required-callbacks";
+import { CallbackState } from "./get-callback-state";
 
 const calculateBorderRadius = (
 	borderRadius: string,
