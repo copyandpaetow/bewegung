@@ -1,6 +1,8 @@
+import { ChunkState } from "../prepare/chunk-state";
 import { ElementState } from "../prepare/element-state";
 import {
 	calculatedElementProperties,
+	Context,
 	cssRuleName,
 	differenceArray,
 	DimensionalDifferences,
@@ -56,9 +58,9 @@ export const addOverrideStyles = (
 export const getTransformValues = (
 	element: HTMLElement,
 	styleState: StyleState,
-	changeTimings: number[],
-	changeProperties: cssRuleName[]
+	context: Context
 ): DimensionalDifferences[] => {
+	const { changeProperties, changeTimings } = context;
 	const parentEntries =
 		styleState.getElementProperties(element.parentElement!) ??
 		emptyCalculatedProperties(changeProperties, changeTimings);
@@ -115,27 +117,20 @@ interface DomChanges {
 	originalStyle: WeakMap<HTMLElement, string>;
 	elementProperties: WeakMap<HTMLElement, calculatedElementProperties[]>;
 	elementState: ElementState;
-	getKeyframes: (element: HTMLElement) => ComputedKeyframe[];
+	chunkState: ChunkState;
 }
 
-interface ReadDomChanges {
-	elementState: ElementState;
-	getKeyframes: (element: HTMLElement) => ComputedKeyframe[];
-	changeTimings: number[];
-	changeProperties: cssRuleName[];
-}
-
-export const readDomChanges = ({
-	elementState,
-	getKeyframes,
-	changeTimings,
-	changeProperties,
-}: ReadDomChanges): DomChanges => {
+export const readDomChanges = (
+	chunkState: ChunkState,
+	elementState: ElementState,
+	context: Context
+): DomChanges => {
 	const originalStyle = new WeakMap<HTMLElement, string>();
 	const elementProperties = new WeakMap<
 		HTMLElement,
 		calculatedElementProperties[]
 	>();
+	const { changeTimings, changeProperties } = context;
 
 	changeTimings.forEach((timing, index, array) => {
 		if (index === 0) {
@@ -149,7 +144,10 @@ export const readDomChanges = ({
 			.forEach((element) =>
 				applyCSSStyles(
 					element,
-					filterMatchingStyleFromKeyframes(getKeyframes(element), timing)
+					filterMatchingStyleFromKeyframes(
+						chunkState.getKeyframes(element),
+						timing
+					)
 				)
 			);
 		elementState
@@ -177,7 +175,7 @@ export const readDomChanges = ({
 		originalStyle,
 		elementProperties,
 		elementState,
-		getKeyframes,
+		chunkState,
 	};
 };
 
@@ -197,7 +195,7 @@ export const postprocessProperties = ({
 	originalStyle,
 	elementProperties,
 	elementState,
-	getKeyframes,
+	chunkState,
 }: DomChanges): DomStates => {
 	const elementStyleOverrides = new WeakMap<
 		HTMLElement,
@@ -214,7 +212,9 @@ export const postprocessProperties = ({
 		);
 		const overrideStyle = addOverrideStyles(
 			elementProperties.get(element)!,
-			elementState.isMainElement(element) ? getKeyframes(element) : [],
+			elementState.isMainElement(element)
+				? chunkState.getKeyframes(element)
+				: [],
 			element.tagName
 		);
 		if (overrideStyle) {

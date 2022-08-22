@@ -123,7 +123,6 @@ export interface Context {
 	changeTimings: number[];
 	changeProperties: cssRuleName[];
 	totalRuntime: number;
-	progress: number;
 }
 
 export type differenceArray = [

@@ -1,7 +1,11 @@
 import { defaultChangeProperties } from "../constants";
-import { cssRuleName } from "../types";
+import { Chunks, cssRuleName } from "../types";
 
-export const updateChangeTimings = (
+const updateTotalRuntime = (times: number[]) => {
+	return times.reduce((longest, current) => Math.max(longest, current));
+};
+
+const updateChangeTimings = (
 	allKeyframes: ComputedKeyframe[][],
 	options: ComputedEffectTiming[],
 	totalRuntime: number
@@ -23,7 +27,7 @@ export const updateChangeTimings = (
 	return Array.from(newTimings).sort((a, b) => a - b);
 };
 
-export const updateChangeProperties = (allKeyframes: ComputedKeyframe[][]) => {
+const updateChangeProperties = (allKeyframes: ComputedKeyframe[][]) => {
 	const changeProperties = new Set(defaultChangeProperties);
 
 	allKeyframes.forEach((keyframes) => {
@@ -36,4 +40,19 @@ export const updateChangeProperties = (allKeyframes: ComputedKeyframe[][]) => {
 		);
 	});
 	return Array.from(changeProperties);
+};
+
+export const calculateContext = (chunks: Chunks[]) => {
+	const keyframes = chunks.map((chunk) => chunk.keyframes);
+	const options = chunks.map((chunk) => chunk.options);
+	const totalRuntime = updateTotalRuntime(
+		options.map((option) => option.endTime!)
+	);
+
+	return {
+		totalRuntime,
+		changeTimings: updateChangeTimings(keyframes, options, totalRuntime),
+		changeProperties: updateChangeProperties(keyframes),
+		progress: 0,
+	};
 };

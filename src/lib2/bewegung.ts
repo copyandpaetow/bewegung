@@ -1,56 +1,33 @@
-import { Observer, BewegungProps, Chunks, Bewegung } from "./types";
+import { calculateImageAnimation } from "./animate/calculate-image";
+import { calculateEasingMap } from "./animate/calculate-timeline";
+import { getDependecyOptions } from "./animate/keyframes";
+import { getMainAnimation, getCallbackAnimations } from "./animations";
+import { calculateContext } from "./input/context";
 import { formatInputs } from "./input/convert-to-chunks";
-import { defaultOptions } from "./constants";
-import { calculateTotalRuntime } from "./input/runtime";
 import { normalizeChunks } from "./input/normalize-chunks";
+import { logCalculationTime } from "./logger";
 import {
 	ChunkState,
 	getChunkState,
 	mapKeysToChunks,
 } from "./prepare/chunk-state";
 import {
-	getElementState,
-	findAffectedAndDependencyElements,
 	ElementState,
+	findAffectedAndDependencyElements,
+	getElementState,
 } from "./prepare/element-state";
 import {
 	getStyleState,
-	getTransformValues,
 	postprocessProperties,
 	readDomChanges,
 	StyleState,
 } from "./read/read";
 import {
-	updateChangeTimings,
-	updateChangeProperties,
-} from "./read/properties-and-timings";
-import {
-	constructKeyframes,
-	getBorderRadius,
-	getDependecyOptions,
-	getFilter,
-	getOpacity,
-	getUserTransforms,
-} from "./animate/keyframes";
-import { calculateEasingMap } from "./animate/calculate-timeline";
-import { calculateNewImage } from "./animate/calculate-image";
-import { applyStyles } from "./animate/methods";
-import { getAnimations } from "./animations";
-
-const logCalculationTime = (startingTime: number) => {
-	const end = performance.now() - startingTime;
-	if (end < 50) {
-		console.log(`animation calculation was fast with ${end}ms`);
-	}
-	if (end > 50) {
-		console.warn(`animation calculation was slow with ${end}ms`);
-	}
-	if (end > 100) {
-		console.error(
-			`animation calculation was so slow that the user might notice with ${end}ms`
-		);
-	}
-};
+	callbackState,
+	runAfterAnimation,
+	runBeforeAnimation,
+} from "./required-callbacks";
+import { Bewegung, BewegungProps, Chunks, Context, Observer } from "./types";
 
 export class Bewegung2 implements Bewegung {
 	private now: number;
@@ -60,13 +37,18 @@ export class Bewegung2 implements Bewegung {
 		this.prepareInput(formatInputs(...bewegungProps));
 	}
 
-	private totalRuntime = defaultOptions.duration as number;
+	//required
 	private input: Chunks[] = [];
 	private animations: Animation[] = [];
 	private reactive?: Observer;
+	private beforeAnimationCallbacks = callbackState();
+	private afterAnimationCallbacks = callbackState();
+
+	//recalc friendly
+	private context: Context;
 	private elementState: ElementState;
 	private chunkState: ChunkState;
-	private applyStyles: VoidFunction;
+	private styleState: StyleState;
 
 	private playState: AnimationPlayState = "idle";
 	private currentTime = 0;
@@ -75,33 +57,85 @@ export class Bewegung2 implements Bewegung {
 	public finished: Promise<Animation[]>;
 
 	private prepareInput(chunks: Chunks[]) {
-		this.totalRuntime = calculateTotalRuntime(
-			chunks.map((chunk) => chunk.options.endTime!)
-		);
-		this.input = normalizeChunks(chunks, this.totalRuntime);
+		this.context = calculateContext(chunks);
+		this.input = normalizeChunks(chunks, this.context.totalRuntime);
 		this.chunkState = getChunkState(mapKeysToChunks(this.input));
 		this.elementState = getElementState(
 			findAffectedAndDependencyElements(this.input)
 		);
-		this.calculateState();
+		this.setAnimations();
 	}
 
-	private calculateState() {
-		this.animations = getAnimations(
-			this.chunkState,
-			this.elementState,
-			this.totalRuntime
+	private setAnimations() {
+		this.styleState = getStyleState(
+			postprocessProperties(
+				readDomChanges(this.chunkState, this.elementState, this.context)
+			)
 		);
-		this.applyStyles = createApplyStyleCallback(this.elementState);
+
+		this.elementState.getAllElements().forEach((element) => {
+			const calculateEasing = calculateEasingMap(
+				this.elementState.isMainElement(element)
+					? this.chunkState.getOptions(element)
+					: getDependecyOptions(element, this.elementState, this.chunkState),
+				this.context.totalRuntime
+			);
+
+			if (element.tagName === "IMG") {
+				this.animations.push(
+					...calculateImageAnimation(
+						element as HTMLImageElement,
+						this.styleState,
+						calculateEasing,
+						this.context.totalRuntime,
+						this.beforeAnimationCallbacks,
+						this.afterAnimationCallbacks
+					)
+				);
+			} else {
+				this.animations.push(
+					getMainAnimation(
+						element,
+						this.chunkState,
+						this.elementState,
+						this.styleState,
+						this.context,
+						calculateEasing
+					)
+				);
+			}
+
+			this.animations.push(
+				...getCallbackAnimations(
+					element,
+					this.chunkState,
+					this.context.totalRuntime
+				)
+			);
+		});
+
+		this.setCallbacks();
+		logCalculationTime(this.now);
+
+		queueMicrotask(() => {
+			this.makeReactive();
+		});
+	}
+
+	private setCallbacks() {
+		this.beforeAnimationCallbacks.set(() =>
+			runBeforeAnimation(this.chunkState, this.elementState, this.styleState)
+		);
+		this.afterAnimationCallbacks.set(() =>
+			runAfterAnimation(this.elementState, this.styleState)
+		);
 
 		this.finished = Promise.all(
 			this.animations.map((animation) => animation.finished)
 		);
 
-		logCalculationTime(this.now);
-
-		queueMicrotask(() => {
-			this.makeReactive();
+		this.finished.then(() => {
+			this.afterAnimationCallbacks.execute();
 		});
 	}
 
@@ -113,18 +147,14 @@ export class Bewegung2 implements Bewegung {
 		*/
 		//this.reactive?.disconnect();
 		// this.reactive = listenForChange({
-		// 	recalcAll: (newInput) => this.prepareInput(newInput),
-		// 	recalcAnimations: () => this.calculateState(),
+		// 	recalcFromInput: (newInput) => this.prepareInput(newInput),
+		// 	recalcAnimations: () => this.setAnimations(),
 		// });
 	}
 
 	public play() {
-		applyStyles(
-			this.elementState,
-			this.styleState,
-			this.chunkState,
-			this.animations
-		);
+		this.beforeAnimationCallbacks.execute();
+
 		console.log(this.animations);
 		this.animations.forEach((waapi) => waapi.play());
 	}

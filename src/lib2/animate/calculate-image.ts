@@ -1,8 +1,7 @@
 import { emptyImageSrc } from "../constants";
 import { save } from "../read/differences";
 import { applyCSSStyles, StyleState } from "../read/read";
-
-export const state_image = new WeakMap<HTMLElement, () => VoidFunction>();
+import { CallbackState } from "../required-callbacks";
 
 const calculateBorderRadius = (
 	borderRadius: string,
@@ -19,11 +18,13 @@ const calculateBorderRadius = (
 	return `${(100 * parsedRadius) / width}% / ${(100 * parsedRadius) / height}%`;
 };
 
-export const calculateNewImage = (
+export const calculateImageAnimation = (
 	element: HTMLImageElement,
 	styleState: StyleState,
 	easingTable: Record<number, string>,
-	totalRuntime: number
+	totalRuntime: number,
+	beforeAnimationCallbacks: CallbackState,
+	afterAnimationCallbacks: CallbackState
 ): Animation[] => {
 	const styleMap = styleState.getElementProperties(element)!;
 	const rootStyleMap = styleState.getElementProperties(document.body);
@@ -134,11 +135,11 @@ export const calculateNewImage = (
 		};
 	});
 
-	state_image.set(element, () => {
-		const nextSibling = element.nextElementSibling;
-		const parent = element.parentElement;
-		const styles = element.style.cssText;
+	const nextSibling = element.nextElementSibling;
+	const parent = element.parentElement;
+	const styles = element.style.cssText;
 
+	beforeAnimationCallbacks.set(() => {
 		nextSibling
 			? parent?.insertBefore(placeholderImage, nextSibling)
 			: parent?.appendChild(placeholderImage);
@@ -147,12 +148,12 @@ export const calculateNewImage = (
 
 		wrapper.appendChild(element);
 		document.body.appendChild(wrapper);
+	});
 
-		return () => {
-			parent?.replaceChild(element, placeholderImage);
-			element.style.cssText = styles;
-			wrapper.remove();
-		};
+	afterAnimationCallbacks.set(() => {
+		parent?.replaceChild(element, placeholderImage);
+		element.style.cssText = styles;
+		wrapper.remove();
 	});
 
 	return [

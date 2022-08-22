@@ -1,113 +1,74 @@
-import { calculateNewImage } from "./animate/calculate-image";
-import { calculateEasingMap } from "./animate/calculate-timeline";
 import {
-	getDependecyOptions,
 	constructKeyframes,
 	getBorderRadius,
-	getOpacity,
 	getFilter,
+	getOpacity,
 	getUserTransforms,
 } from "./animate/keyframes";
 import { ChunkState } from "./prepare/chunk-state";
 import { ElementState } from "./prepare/element-state";
-import {
-	updateChangeTimings,
-	updateChangeProperties,
-} from "./read/properties-and-timings";
-import {
-	getStyleState,
-	postprocessProperties,
-	readDomChanges,
-	getTransformValues,
-} from "./read/read";
+import { getTransformValues, StyleState } from "./read/read";
+import { calculatedElementProperties, Context } from "./types";
 
-export const getAnimations = (
+export const getCallbackAnimations = (
+	element: HTMLElement,
 	chunkState: ChunkState,
-	elementState: ElementState,
 	totalRuntime: number
 ) => {
-	const changeTimings = updateChangeTimings(
-		chunkState.getAllKeyframes(),
-		chunkState.getAllOptions(),
-		totalRuntime
-	);
-	const changeProperties = updateChangeProperties(chunkState.getAllKeyframes());
-
-	const styleState = getStyleState(
-		postprocessProperties(
-			readDomChanges({
-				elementState: elementState,
-				getKeyframes: (element: HTMLElement) =>
-					chunkState.getKeyframes(element),
-				changeTimings,
-				changeProperties,
-			})
-		)
-	);
-
-	const elementAnimations: Animation[] = [];
 	const callbackAnimations: Animation[] = [];
 
-	elementState.getAllElements().forEach((element) => {
-		const easingTable = calculateEasingMap(
-			elementState.isMainElement(element)
-				? chunkState.getOptions(element)
-				: getDependecyOptions(element, elementState, chunkState),
-			totalRuntime
+	chunkState.getAllCallbacks().forEach(({ offset, callback }) => {
+		const animation = new Animation(
+			new KeyframeEffect(element, null, offset * totalRuntime)
 		);
-		const elementProperties = styleState.getElementProperties(element)!;
-
-		if (element.tagName === "IMG") {
-			elementAnimations.push(
-				...calculateNewImage(
-					element as HTMLImageElement,
-					styleState,
-					easingTable,
-					totalRuntime
-				)
-			);
-		} else {
-			elementAnimations.push(
-				new Animation(
-					new KeyframeEffect(
-						element,
-						constructKeyframes(
-							getTransformValues(
-								element,
-								styleState,
-								changeTimings,
-								changeProperties
-							),
-							{
-								easingTable,
-								borderRadiusTable: getBorderRadius(elementProperties),
-								opacityTable: getOpacity(elementProperties),
-								filterTable: getFilter(elementProperties),
-								userTransformTable: getUserTransforms(
-									element,
-									changeTimings,
-									elementState.isMainElement(element)
-										? chunkState.getKeyframes(element)
-										: undefined
-								),
-							}
-						),
-						totalRuntime
-					)
-				)
-			);
-		}
+		animation.onfinish = callback;
+		callbackAnimations.push(animation);
 	});
 
-	elementState.getMainElements().forEach((element) => {
-		chunkState.getAllCallbacks().forEach(({ offset, callback }) => {
-			const animation = new Animation(
-				new KeyframeEffect(element, null, offset * totalRuntime)
-			);
-			animation.onfinish = callback;
-			callbackAnimations.push(animation);
-		});
-	});
+	return callbackAnimations;
+};
 
-	return elementAnimations.concat(callbackAnimations);
+const calculateAdditionalKeyframeTables = (
+	element: HTMLElement,
+	elementProperties: calculatedElementProperties[],
+	changeTimings: number[],
+	keyframes?: ComputedKeyframe[]
+) => {
+	return {
+		borderRadiusTable: getBorderRadius(elementProperties),
+		opacityTable: getOpacity(elementProperties),
+		filterTable: getFilter(elementProperties),
+		userTransformTable: getUserTransforms(element, changeTimings, keyframes),
+	};
+};
+
+export const getMainAnimation = (
+	element: HTMLElement,
+	chunkState: ChunkState,
+	elementState: ElementState,
+	styleState: StyleState,
+	context: Context,
+	easingTable: Record<number, string>
+) => {
+	const { totalRuntime, changeTimings } = context;
+
+	const additionalTables = calculateAdditionalKeyframeTables(
+		element,
+		styleState.getElementProperties(element)!,
+		changeTimings,
+		elementState.isMainElement(element)
+			? chunkState.getKeyframes(element)
+			: undefined
+	);
+
+	return new Animation(
+		new KeyframeEffect(
+			element,
+			constructKeyframes(getTransformValues(element, styleState, context), {
+				easingTable,
+				...additionalTables,
+			}),
+			totalRuntime
+		)
+	);
 };
