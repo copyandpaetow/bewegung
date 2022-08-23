@@ -22,7 +22,7 @@ import {
 	runBeforeAnimation,
 	runAfterAnimation,
 } from "./get-callback-state";
-import { Bewegung, BewegungProps, Chunks, Context } from "./types";
+import { BewegungTypes, BewegungProps, Chunks, Context } from "./types";
 import { getMainAnimation, getCallbackAnimations } from "./get-animations";
 import { ObserveBrowserResize } from "./watch-resize";
 import { ObserveDimensionChange } from "./watch-dimension-changes";
@@ -30,7 +30,7 @@ import { ObserveDomMutations } from "./watch-dom-mutations";
 
 const clamp = (number: number, min = 0, max = 1) =>
 	Math.min(Math.max(number, min), max);
-export class Bewegung2 implements Bewegung {
+export class Bewegung implements BewegungTypes {
 	private now: number;
 
 	constructor(...bewegungProps: BewegungProps) {
@@ -51,10 +51,10 @@ export class Bewegung2 implements Bewegung {
 	private chunkState: ChunkState;
 	private styleState: StyleState;
 
-	private playState: AnimationPlayState = "idle";
 	private currentTime = 0;
 	private progressTime = 0;
 
+	public playState: AnimationPlayState = "idle";
 	public finished: Promise<Animation[]>;
 
 	private prepareInput(chunks: Chunks[]) {
@@ -115,8 +115,8 @@ export class Bewegung2 implements Bewegung {
 			);
 		});
 
-		this.setCallbacks();
 		logCalculationTime(this.now);
+		this.setCallbacks();
 
 		queueMicrotask(() => {
 			this.makeReactive();
@@ -124,12 +124,12 @@ export class Bewegung2 implements Bewegung {
 	}
 
 	private setCallbacks() {
-		this.beforeAnimationCallbacks.set(() =>
+		this.beforeAnimationCallbacks.setWithPriority(() =>
 			runBeforeAnimation(this.chunkState, this.elementState, this.styleState)
-		);
-		this.afterAnimationCallbacks.set(() =>
-			runAfterAnimation(this.elementState, this.styleState)
-		);
+		),
+			this.afterAnimationCallbacks.set(() =>
+				runAfterAnimation(this.elementState, this.styleState)
+			);
 
 		this.finished = Promise.all(
 			this.animations.map((animation) => animation.finished)
@@ -155,30 +155,30 @@ export class Bewegung2 implements Bewegung {
 			}, 100);
 		};
 
-		const observeDOM = ObserveDomMutations(this.input, (changes: Chunks[]) => {
-			this.prepareInput(changes);
-		});
+		// const observeDOM = ObserveDomMutations(this.input, (changes: Chunks[]) => {
+		// 	this.prepareInput(changes);
+		// });
 
-		const observeResize = ObserveBrowserResize(
-			this.elementState.getAllElements(),
-			() => {
-				throttledCallback(() => this.setAnimations());
-			}
-		);
+		// const observeResize = ObserveBrowserResize(
+		// 	this.elementState.getAllElements(),
+		// 	() => {
+		// 		throttledCallback(() => this.setAnimations());
+		// 	}
+		// );
 
-		const observeDimensions = ObserveDimensionChange(
-			this.chunkState,
-			this.elementState,
-			this.styleState,
-			() => {
-				throttledCallback(() => this.setAnimations());
-			}
-		);
+		// const observeDimensions = ObserveDimensionChange(
+		// 	this.chunkState,
+		// 	this.elementState,
+		// 	this.styleState,
+		// 	() => {
+		// 		throttledCallback(() => this.setAnimations());
+		// 	}
+		// );
 
 		this.disconnectReactivity = () => {
-			observeDOM?.disconnect();
-			observeResize?.disconnect();
-			observeDimensions?.disconnect();
+			// observeDOM?.disconnect();
+			// observeResize?.disconnect();
+			// observeDimensions?.disconnect();
 		};
 	}
 
@@ -217,7 +217,7 @@ export class Bewegung2 implements Bewegung {
 		this.progressTime = 0;
 	}
 
-	public scrollAnimation() {
+	public scroll() {
 		this.playState = "running";
 		this.disconnectReactivity?.();
 		this.beforeAnimationCallbacks.execute();
@@ -239,7 +239,7 @@ export class Bewegung2 implements Bewegung {
 		};
 	}
 
-	public pauseAnimation() {
+	public pause() {
 		this.playState = "paused";
 		this.progressTime = this.animations[0].currentTime ?? 0;
 		this.animations.forEach((waapi) => {
@@ -248,7 +248,7 @@ export class Bewegung2 implements Bewegung {
 		return;
 	}
 
-	reverseAnimation() {
+	public reverse() {
 		this.playState = "running";
 		this.disconnectReactivity?.();
 		this.beforeAnimationCallbacks.execute();
@@ -256,7 +256,7 @@ export class Bewegung2 implements Bewegung {
 			waapi.reverse();
 		});
 	}
-	cancelAnimation() {
+	public cancel() {
 		this.playState = "finished";
 		this.elementState
 			.getAllElements()
@@ -269,16 +269,22 @@ export class Bewegung2 implements Bewegung {
 			waapi.cancel();
 		});
 	}
-	commitAnimationStyles() {
+	public commitStyles() {
 		this.playState = "finished";
 		this.animations.forEach((waapi) => {
 			waapi.commitStyles();
 		});
 	}
-	finishAnimation() {
+	public finish() {
 		this.playState = "finished";
 		this.animations.forEach((waapi) => {
 			waapi.finish();
+		});
+	}
+
+	public updatePlaybackRate(newPlaybackRate: number) {
+		this.animations.forEach((waapi) => {
+			waapi.updatePlaybackRate(newPlaybackRate);
 		});
 	}
 }

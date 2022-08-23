@@ -1,6 +1,5 @@
-import { bewegung } from "../../lib/bewegung";
-import { Bewegung, CustomKeyframeEffect } from "../../lib/types";
-import { Bewegung2 } from "../../lib2/bewegung";
+import { Bewegung } from "../../lib2/bewegung";
+import { CustomKeyframeEffect } from "../../lib2/types";
 
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
@@ -42,7 +41,7 @@ const initCards = () => {
 			{ duration: 4000, easing: "ease-in" },
 		];
 
-		return new Bewegung2(highlightCard, hideOthers);
+		return new Bewegung(highlightCard, hideOthers);
 		//return bewegung(highlightCard, hideOthers);
 	};
 
@@ -53,15 +52,14 @@ const initCards = () => {
 		if (!animation) {
 			animation = highlight();
 		}
-		animation?.play();
-		// console.log(animation.playState());
-		// animation.playState() !== "running" ? animation.play() : animation.pause();
-		// paused && animation.pause();
-		// animation.finished.then(() => {
-		// 	animation = undefined;
-		// 	updateIndex(+1);
-		// 	console.log("finished");
-		// });
+		console.log(animation.playState);
+		animation.playState !== "running" ? animation.play() : animation.pause();
+		paused && animation.pause();
+		animation.finished.then(() => {
+			animation = undefined;
+			updateIndex(+1);
+			console.log("finished");
+		});
 	});
 	cardsPauseButton?.addEventListener("click", () => {
 		paused = !paused;
@@ -87,7 +85,7 @@ const initAdditionalImages = () => {
 				element.querySelector("img")! || element.querySelector("div")!;
 
 			if (imageExpandedState[index]) {
-				bewegung(
+				const animation = new Bewegung(
 					[
 						element,
 						{ height: "", width: "" },
@@ -98,17 +96,19 @@ const initAdditionalImages = () => {
 						{ height: "", width: "" },
 						{ duration: 4000, easing: "ease-in" },
 					]
-				).play();
+				);
+				animation.play();
 				imageExpandedState[index] = false;
 			} else {
-				bewegung(
+				const animation = new Bewegung(
 					[
 						element,
 						{ height: "20vh", width: "30vh" },
 						{ duration: 4000, easing: "ease-in" },
 					],
 					[image, { width: "20vh" }, { duration: 4000, easing: "ease-in" }]
-				).play();
+				);
+				animation.play();
 				imageExpandedState[index] = true;
 			}
 		});

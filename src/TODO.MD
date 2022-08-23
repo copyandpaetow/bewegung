@@ -3,8 +3,21 @@
 ## upcoming tasks
 
 - callbacks need to be reversable? How to handle on reverse, iterations etc
-- classes and attributes?
-- custom properties
+- enable addtion/removal or classes and attributes?
+- custom properties?
+- background images
+- prefer reduced motion
+- make private methods more private with #
+
+## test
+
+- iterations
+- can clip-path pass through?
+- progress, resumeability, reactivity
+- other media elements like video
+- transform-origin
+- filter
+- pseudo-elements
 
 ## Questions
 
@@ -14,7 +27,6 @@
   - a data attribute "data-bewegung=[...]" which we could look for and add those as well with their value as input arguments
   - adding and deleting elements from the dom
 - logic to allow unperformant entries to pass through, like color etc
-- the 2 ways to create an animation are `element.animate(...)` and `new Animation(...)` maybe the function should also do that? At least the class syntax
 
 ## performance
 

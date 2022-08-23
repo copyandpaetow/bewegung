@@ -13,7 +13,7 @@ export const mapKeysToChunks = (chunks: Chunks[]): ChunkKeyValues => {
 		const key = Symbol("chunkKey");
 		chunkValues.set(key, chunk);
 		chunk.target.forEach((element) => {
-			chunkKeys.set(element, (chunkKeys.get(element) || []).concat([key]));
+			chunkKeys.set(element, (chunkKeys.get(element) || []).concat(key));
 		});
 	});
 

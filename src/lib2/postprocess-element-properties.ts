@@ -1,24 +1,24 @@
 import { calculatedElementProperties } from "./types";
 
+const isEntryVisible = (entry: calculatedElementProperties) =>
+	entry.computedStyle.display !== "none" &&
+	entry.dimensions.height !== 0 &&
+	entry.dimensions.width !== 0;
+
 export const recalculateDisplayNoneValues = (
 	elementProperties: calculatedElementProperties[]
-): calculatedElementProperties[] => {
-	if (
-		elementProperties.every((entry) => entry.computedStyle.display !== "none")
-	) {
-		return elementProperties;
+): calculatedElementProperties[] | undefined => {
+	if (elementProperties.every(isEntryVisible)) {
+		return;
 	}
 
 	return elementProperties.map((entry, index, array) => {
-		if (entry.computedStyle.display !== "none") {
+		if (isEntryVisible(entry)) {
 			return entry;
 		}
 		const nextEntryDimensions = (
-			array
-				.slice(0, index)
-				.reverse()
-				.find((entry) => entry.computedStyle.display !== "none") ||
-			array.slice(index).find((entry) => entry.computedStyle.display !== "none")
+			array.slice(0, index).reverse().find(isEntryVisible) ||
+			array.slice(index).find(isEntryVisible)
 		)?.dimensions;
 
 		if (!nextEntryDimensions) {

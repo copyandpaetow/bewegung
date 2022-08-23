@@ -102,8 +102,8 @@ export const filterMatchingStyleFromKeyframes = (
 
 		resultingStyle = {
 			...resultingStyle,
-			...(timing === undefined && {
-				transform: transform as string | undefined,
+			...((timing === undefined || !transform) && {
+				transform: transform as string,
 			}),
 			...styles,
 		};
@@ -151,7 +151,7 @@ export const readDomChanges = (
 			);
 		elementState
 			.getAllElements()
-			.concat([document.body])
+			.concat(document.body)
 			.forEach((element) => {
 				const newCalculation: calculatedElementProperties = {
 					dimensions: getDomRect(element),
@@ -160,7 +160,7 @@ export const readDomChanges = (
 				};
 				elementProperties.set(
 					element,
-					(elementProperties.get(element) || []).concat([newCalculation])
+					(elementProperties.get(element) || []).concat(newCalculation)
 				);
 			});
 		if (index === array.length - 1) {
@@ -205,10 +205,14 @@ export const postprocessProperties = ({
 	>();
 
 	elementState.getAllElements().forEach((element) => {
-		elementProperties.set(
-			element,
-			recalculateDisplayNoneValues(elementProperties.get(element)!)
+		const updatedProperties = recalculateDisplayNoneValues(
+			elementProperties.get(element)!
 		);
+
+		if (updatedProperties) {
+			elementProperties.set(element, updatedProperties);
+		}
+
 		const overrideStyle = addOverrideStyles(
 			elementProperties.get(element)!,
 			elementState.isMainElement(element)

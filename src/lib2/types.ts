@@ -102,17 +102,17 @@ export type Reactive = (
 	State: Observerable<Animate>
 ) => Observer;
 
-export interface Bewegung {
+export interface BewegungTypes {
 	play: () => void;
-	// pause: () => void;
-	// scroll: (progress: number, done?: boolean) => void;
-	// reverse: () => void;
-	// cancel: () => void;
-	// commitStyles: () => void;
-	// finish: () => void;
-	// updatePlaybackRate: (newPlaybackRate: number) => void;
-	// finished: Promise<Animation[]>;
-	// playState: () => AnimationPlayState;
+	pause: () => void;
+	scroll: (progress: number, done?: boolean) => void;
+	reverse: () => void;
+	cancel: () => void;
+	commitStyles: () => void;
+	finish: () => void;
+	updatePlaybackRate: (newPlaybackRate: number) => void;
+	finished: Promise<Animation[]>;
+	playState: AnimationPlayState;
 }
 
 export type BewegungProps =

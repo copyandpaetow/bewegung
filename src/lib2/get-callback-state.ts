@@ -46,19 +46,27 @@ export const runAfterAnimation = (
 
 export interface CallbackState {
 	set(callback: VoidFunction): void;
+	setWithPriority(callback: VoidFunction): void;
 	execute(): void;
 }
 
 export const callbackState = (): CallbackState => {
-	const callbacks = new Set<VoidFunction>();
+	const queue = new Set<VoidFunction>();
+	const priorityQueue = new Set<VoidFunction>();
 
 	return {
 		set(callback: VoidFunction) {
-			callbacks.add(callback);
+			queue.add(callback);
+		},
+		setWithPriority(callback: VoidFunction) {
+			priorityQueue.add(callback);
 		},
 		execute() {
-			callbacks.forEach((callback) => callback());
-			callbacks.clear;
+			priorityQueue.forEach((callback) => callback());
+			queue.forEach((callback) => callback());
+
+			priorityQueue.clear();
+			queue.clear();
 		},
 	};
 };

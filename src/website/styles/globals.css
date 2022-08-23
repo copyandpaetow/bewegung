@@ -164,7 +164,7 @@ code::-webkit-scrollbar {
 }
 
 *:not(pre) > code {
-	padding: var(--space-70);
+	padding: var(--space-70) var(--space-80);
 	width: max-content;
 }
 
