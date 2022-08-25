@@ -71,16 +71,19 @@ a {
 h1 {
 	font-size: clamp(var(--space-200), 10vw, var(--space-400));
 	margin-top: var(--space-500);
+	font-weight: bold;
 }
 
 h2 {
 	font-size: clamp(var(--space-200), 10vw, var(--space-300));
 	line-height: 100%;
+	font-weight: bold;
 }
 
-h3 {
+h3, dt button {
 	font-size: clamp(var(--space-100), 10vw, var(--space-200));
 	line-height: 100%;
+	font-weight: bold;
 }
 
 section {

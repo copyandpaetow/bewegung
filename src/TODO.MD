@@ -8,6 +8,7 @@
 - background images
 - prefer reduced motion
 - make private methods more private with #
+- update docs
 
 ## test
 

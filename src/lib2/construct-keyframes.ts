@@ -117,7 +117,7 @@ export const getDependecyOptions = (
 	elementState.getDependecyElements(element)?.forEach((dependencyElement) => {
 		chunkState
 			.getOptions(dependencyElement)
-			.forEach((option) => options.add(option));
+			?.forEach((option) => options.add(option));
 	});
 	return [...options];
 };

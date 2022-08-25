@@ -1,18 +1,14 @@
 import {
-	emptyCalculatedProperties,
-	checkForTextNode,
-	calculateDimensionDifferences,
+	calculateDimensionDifferences, checkForTextNode, emptyCalculatedProperties
 } from "./calculate-dimension-differences";
 import { ChunkState } from "./get-chunk-state";
 import { ElementState } from "./get-element-state";
-import { getDomRect, getComputedStylings } from "./read-element-properties";
+import { recalculateDisplayNoneValues } from "./postprocess-element-properties";
+import { getComputedStylings, getDomRect } from "./read-element-properties";
 import {
 	calculatedElementProperties,
-	Context,
-	DimensionalDifferences,
-	differenceArray,
+	Context, differenceArray, DimensionalDifferences
 } from "./types";
-import { recalculateDisplayNoneValues } from "./postprocess-element-properties";
 
 export const addOverrideStyles = (
 	elementProperties: calculatedElementProperties[],
@@ -144,7 +140,7 @@ export const readDomChanges = (
 				applyCSSStyles(
 					element,
 					filterMatchingStyleFromKeyframes(
-						chunkState.getKeyframes(element),
+						chunkState.getKeyframes(element)!,
 						timing
 					)
 				)
@@ -205,19 +201,13 @@ export const postprocessProperties = ({
 	>();
 
 	elementState.getAllElements().forEach((element) => {
-		const updatedProperties = recalculateDisplayNoneValues(
-			elementProperties.get(element)!
-		);
+		const properties = elementProperties.get(element)!;
 
-		if (updatedProperties) {
-			elementProperties.set(element, updatedProperties);
-		}
+		elementProperties.set(element, recalculateDisplayNoneValues(properties));
 
 		const overrideStyle = addOverrideStyles(
-			elementProperties.get(element)!,
-			elementState.isMainElement(element)
-				? chunkState.getKeyframes(element)
-				: [],
+			properties,
+			chunkState.getKeyframes(element) ?? [],
 			element.tagName
 		);
 		if (overrideStyle) {

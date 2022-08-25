@@ -1,35 +1,23 @@
 import {
-	StyleState,
 	getStyleState,
 	postprocessProperties,
 	readDomChanges,
+	StyleState,
 } from "./calculate-dom-changes";
-import { calculateEasingMap } from "./calculate-easings";
-import { calculateImageAnimation } from "./calculate-image-animations";
-import { getDependecyOptions } from "./construct-keyframes";
 import { formatInputs } from "./convert-input-to-chunks";
-import { calculateContext } from "./get-context";
+import { getAnimations } from "./get-animations";
+import { callbackState } from "./get-callback-state";
 import { ChunkState, getChunkState, mapKeysToChunks } from "./get-chunk-state";
+import { calculateContext } from "./get-context";
 import {
 	ElementState,
-	getElementState,
 	findAffectedAndDependencyElements,
+	getElementState,
 } from "./get-element-state";
 import { logCalculationTime } from "./logger";
 import { normalizeChunks } from "./normalize-chunks";
-import {
-	callbackState,
-	runBeforeAnimation,
-	runAfterAnimation,
-} from "./get-callback-state";
-import { BewegungTypes, BewegungProps, Chunks, Context } from "./types";
-import { getMainAnimation, getCallbackAnimations } from "./get-animations";
-import { ObserveBrowserResize } from "./watch-resize";
-import { ObserveDimensionChange } from "./watch-dimension-changes";
-import { ObserveDomMutations } from "./watch-dom-mutations";
+import { BewegungProps, BewegungTypes, Chunks, Context } from "./types";
 
-const clamp = (number: number, min = 0, max = 1) =>
-	Math.min(Math.max(number, min), max);
 export class Bewegung implements BewegungTypes {
 	private now: number;
 
@@ -74,46 +62,18 @@ export class Bewegung implements BewegungTypes {
 			)
 		);
 
-		this.elementState.getAllElements().forEach((element) => {
-			const calculateEasing = calculateEasingMap(
-				this.elementState.isMainElement(element)
-					? this.chunkState.getOptions(element)
-					: getDependecyOptions(element, this.elementState, this.chunkState),
-				this.context.totalRuntime
-			);
-
-			if (element.tagName === "IMG") {
-				this.animations.push(
-					...calculateImageAnimation(
-						element as HTMLImageElement,
-						this.styleState,
-						calculateEasing,
-						this.context.totalRuntime,
-						this.beforeAnimationCallbacks,
-						this.afterAnimationCallbacks
-					)
-				);
-			} else {
-				this.animations.push(
-					getMainAnimation(
-						element,
-						this.chunkState,
-						this.elementState,
-						this.styleState,
-						this.context,
-						calculateEasing
-					)
-				);
+		const { animations, runAfterAnimation, runBeforeAnimation } = getAnimations(
+			{
+				context: this.context,
+				elementState: this.elementState,
+				chunkState: this.chunkState,
+				styleState: this.styleState,
 			}
+		);
 
-			this.animations.push(
-				...getCallbackAnimations(
-					element,
-					this.chunkState,
-					this.context.totalRuntime
-				)
-			);
-		});
+		this.animations = animations;
+		this.beforeAnimationCallbacks.set(runBeforeAnimation);
+		this.afterAnimationCallbacks.set(runAfterAnimation);
 
 		logCalculationTime(this.now);
 		this.setCallbacks();
@@ -124,13 +84,6 @@ export class Bewegung implements BewegungTypes {
 	}
 
 	private setCallbacks() {
-		this.beforeAnimationCallbacks.setWithPriority(() =>
-			runBeforeAnimation(this.chunkState, this.elementState, this.styleState)
-		),
-			this.afterAnimationCallbacks.set(() =>
-				runAfterAnimation(this.elementState, this.styleState)
-			);
-
 		this.finished = Promise.all(
 			this.animations.map((animation) => animation.finished)
 		);
@@ -229,7 +182,7 @@ export class Bewegung implements BewegungTypes {
 
 			const currentFrame =
 				-1 *
-				clamp(progress, 0.001, done === undefined ? 1 : 0.999) *
+				Math.min(Math.max(progress, 0.001), done === undefined ? 1 : 0.999) *
 				this.context.totalRuntime;
 
 			this.animations.forEach((waapi) => {

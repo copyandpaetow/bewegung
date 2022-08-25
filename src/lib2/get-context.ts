@@ -1,9 +1,8 @@
 import { defaultChangeProperties } from "./constants";
 import { cssRuleName, Chunks } from "./types";
 
-const updateTotalRuntime = (times: number[]) => {
-	return times.reduce((longest, current) => Math.max(longest, current));
-};
+export const highestNumber = (numbers: number[]) =>
+	numbers.reduce((largest, current) => Math.max(largest, current));
 
 const updateChangeTimings = (
 	allKeyframes: ComputedKeyframe[][],
@@ -45,9 +44,7 @@ const updateChangeProperties = (allKeyframes: ComputedKeyframe[][]) => {
 export const calculateContext = (chunks: Chunks[]) => {
 	const keyframes = chunks.map((chunk) => chunk.keyframes);
 	const options = chunks.map((chunk) => chunk.options);
-	const totalRuntime = updateTotalRuntime(
-		options.map((option) => option.endTime!)
-	);
+	const totalRuntime = highestNumber(options.map((option) => option.endTime!));
 
 	return {
 		totalRuntime,

@@ -7,9 +7,9 @@ const isEntryVisible = (entry: calculatedElementProperties) =>
 
 export const recalculateDisplayNoneValues = (
 	elementProperties: calculatedElementProperties[]
-): calculatedElementProperties[] | undefined => {
+): calculatedElementProperties[] => {
 	if (elementProperties.every(isEntryVisible)) {
-		return;
+		return elementProperties;
 	}
 
 	return elementProperties.map((entry, index, array) => {

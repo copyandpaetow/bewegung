@@ -21,12 +21,12 @@ export const mapKeysToChunks = (chunks: Chunks[]): ChunkKeyValues => {
 };
 
 export interface ChunkState {
-	getKeyframes(element: HTMLElement): ComputedKeyframe[];
-	getOptions(element: HTMLElement): ChunkOption[];
-	getSelector(element: HTMLElement): string[];
+	getCallbacks(element: HTMLElement): Callbacks[] | undefined;
+	getKeyframes(element: HTMLElement): ComputedKeyframe[] | undefined;
+	getOptions(element: HTMLElement): ChunkOption[] | undefined;
+	getSelector(element: HTMLElement): string[] | undefined;
 	getAllKeyframes(): ComputedKeyframe[][];
 	getAllOptions(): ChunkOption[];
-	getAllCallbacks(): Callbacks[];
 	getAllTargetElements(): Set<HTMLElement>;
 }
 
@@ -37,21 +37,28 @@ export const getChunkState = ({
 	return {
 		getKeyframes(element: HTMLElement) {
 			return chunkKeys
-				.get(element)!
-				.map((chunkKey) => chunkValues.get(chunkKey)!.keyframes)
+				.get(element)
+				?.map((chunkKey) => chunkValues.get(chunkKey)!.keyframes)
 				.flat();
+		},
+		getCallbacks(element: HTMLElement) {
+			return chunkKeys
+				.get(element)
+				?.map((chunkKey) => chunkValues.get(chunkKey)!.callbacks)
+				.flat()
+				.filter(Boolean) as Callbacks[] | undefined;
 		},
 		getOptions(element: HTMLElement) {
 			return chunkKeys
-				.get(element)!
-				.map((chunkKey) => chunkValues.get(chunkKey)!.options)
+				.get(element)
+				?.map((chunkKey) => chunkValues.get(chunkKey)!.options)
 				.flat();
 		},
 		getSelector(element: HTMLElement) {
 			return chunkKeys
-				.get(element)!
-				.flatMap((chunkKey) => chunkValues.get(chunkKey)!.selector)
-				.filter(Boolean) as string[];
+				.get(element)
+				?.flatMap((chunkKey) => chunkValues.get(chunkKey)!.selector)
+				.filter(Boolean) as string[] | undefined;
 		},
 		getAllKeyframes() {
 			const allKeyframes: ComputedKeyframe[][] = [];
@@ -66,13 +73,6 @@ export const getChunkState = ({
 				allOptions.push(options);
 			});
 			return allOptions;
-		},
-		getAllCallbacks() {
-			const allCallbacks: Callbacks[] = [];
-			chunkValues.forEach(({ callbacks }) => {
-				callbacks && allCallbacks.push(...callbacks.flat());
-			});
-			return allCallbacks;
 		},
 		getAllTargetElements() {
 			const elements = new Set<HTMLElement>();

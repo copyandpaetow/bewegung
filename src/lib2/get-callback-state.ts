@@ -6,7 +6,7 @@ import {
 import { ChunkState } from "./get-chunk-state";
 import { ElementState } from "./get-element-state";
 
-export const runBeforeAnimation = (
+export const beforeAnimationCallback = (
 	chunkState: ChunkState,
 	elementState: ElementState,
 	styleState: StyleState
@@ -21,13 +21,13 @@ export const runBeforeAnimation = (
 
 		applyCSSStyles(element, {
 			...(isMainElement &&
-				filterMatchingStyleFromKeyframes(chunkState.getKeyframes(element))),
+				filterMatchingStyleFromKeyframes(chunkState.getKeyframes(element)!)),
 			...(overrides && overrides.override),
 		});
 	});
 };
 
-export const runAfterAnimation = (
+export const afterAnimationCallback = (
 	elementState: ElementState,
 	styleState: StyleState
 ) => {
@@ -45,27 +45,21 @@ export const runAfterAnimation = (
 };
 
 export interface CallbackState {
-	set(callback: VoidFunction): void;
-	setWithPriority(callback: VoidFunction): void;
+	set(callback: VoidFunction | VoidFunction[]): void;
 	execute(): void;
 }
 
 export const callbackState = (): CallbackState => {
 	const queue = new Set<VoidFunction>();
-	const priorityQueue = new Set<VoidFunction>();
 
 	return {
-		set(callback: VoidFunction) {
-			queue.add(callback);
-		},
-		setWithPriority(callback: VoidFunction) {
-			priorityQueue.add(callback);
+		set(...callbacks: VoidFunction[]) {
+			callbacks.forEach((callback) => {
+				queue.add(callback);
+			});
 		},
 		execute() {
-			priorityQueue.forEach((callback) => callback());
 			queue.forEach((callback) => callback());
-
-			priorityQueue.clear();
 			queue.clear();
 		},
 	};
