@@ -26,7 +26,9 @@ const MOcallback =
 					...mutation.removedNodes,
 				])
 				.filter((node) => node instanceof HTMLElement)
-				.flatMap((element) => traverseDomDown(element as HTMLElement))
+				.flatMap((element) =>
+					traverseDomDown(element as HTMLElement).concat(element as HTMLElement)
+				)
 		);
 
 		if (changedElements.size === 0) {
@@ -57,10 +59,11 @@ const MOcallback =
 			});
 		});
 
-		if (recalculationFlag) {
-			idleCallback && cancelIdleCallback(idleCallback);
-			idleCallback = requestIdleCallback(() => callback(currentChunks));
+		if (!recalculationFlag) {
+			return;
 		}
+
+		callback(currentChunks);
 	};
 
 export const ObserveDomMutations = (

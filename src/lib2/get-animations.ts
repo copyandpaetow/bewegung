@@ -96,9 +96,7 @@ export const getAnimations = (props: GetAnimationsProps): GetAnimations => {
 	const runBeforeAnimation: VoidFunction[] = [
 		() => beforeAnimationCallback(chunkState, elementState, styleState),
 	];
-	const runAfterAnimation: VoidFunction[] = [
-		() => afterAnimationCallback(elementState, styleState),
-	];
+	const runAfterAnimation: VoidFunction[] = [];
 
 	elementState.getAllElements().forEach((element) => {
 		const calculateEasing = calculateEasingMap(
@@ -134,6 +132,10 @@ export const getAnimations = (props: GetAnimationsProps): GetAnimations => {
 			...getCallbackAnimations(element, chunkState, context.totalRuntime)
 		);
 	});
+
+	runAfterAnimation.push(() =>
+		afterAnimationCallback(elementState, styleState)
+	);
 
 	return {
 		animations,

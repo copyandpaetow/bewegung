@@ -17,163 +17,216 @@ import {
 import { logCalculationTime } from "./logger";
 import { normalizeChunks } from "./normalize-chunks";
 import { BewegungProps, BewegungTypes, Chunks, Context } from "./types";
+import { ObserveBrowserResize } from "./watch-resize";
+import { ObserveDimensionChange } from "./watch-dimension-changes";
+import { ObserveDomMutations } from "./watch-dom-mutations";
 
 export class Bewegung implements BewegungTypes {
-	private now: number;
+	#now: number;
 
 	constructor(...bewegungProps: BewegungProps) {
-		this.now = performance.now();
-		this.prepareInput(formatInputs(...bewegungProps));
+		this.#now = performance.now();
+		this.#prepareInput(formatInputs(...bewegungProps));
 	}
 
 	//required
-	private input: Chunks[] = [];
-	private animations: Animation[] = [];
-	private disconnectReactivity: VoidFunction = () => {};
-	private beforeAnimationCallbacks = callbackState();
-	private afterAnimationCallbacks = callbackState();
+	#input: Chunks[] = [];
+	#animations: Animation[] = [];
+	#disconnectReactivity: VoidFunction = () => {};
+	#beforeAnimationCallbacks = callbackState();
+	#afterAnimationCallbacks = callbackState();
 
 	//recalc friendly
-	private context: Context;
-	private elementState: ElementState;
-	private chunkState: ChunkState;
-	private styleState: StyleState;
+	#context: Context;
+	#elementState: ElementState;
+	#chunkState: ChunkState;
+	#styleState: StyleState;
 
-	private currentTime = 0;
-	private progressTime = 0;
+	#currentTime = 0;
+	#progressTime = 0;
 
-	public playState: AnimationPlayState = "idle";
-	public finished: Promise<Animation[]>;
+	playState: AnimationPlayState = "idle";
+	finished: Promise<Animation[]>;
 
-	private prepareInput(chunks: Chunks[]) {
-		this.context = calculateContext(chunks);
-		this.input = normalizeChunks(chunks, this.context.totalRuntime);
-		this.chunkState = getChunkState(mapKeysToChunks(this.input));
-		this.elementState = getElementState(
-			findAffectedAndDependencyElements(this.input)
+	#prepareInput(chunks: Chunks[]) {
+		this.#context = calculateContext(chunks);
+		this.#input = normalizeChunks(chunks, this.#context.totalRuntime);
+		this.#chunkState = getChunkState(mapKeysToChunks(this.#input));
+		this.#elementState = getElementState(
+			findAffectedAndDependencyElements(this.#input)
 		);
-		this.setAnimations();
+		this.#setAnimations();
 	}
 
-	private setAnimations() {
-		this.styleState = getStyleState(
+	#setAnimations() {
+		this.#styleState = getStyleState(
 			postprocessProperties(
-				readDomChanges(this.chunkState, this.elementState, this.context)
+				readDomChanges(this.#chunkState, this.#elementState, this.#context)
 			)
 		);
 
 		const { animations, runAfterAnimation, runBeforeAnimation } = getAnimations(
 			{
-				context: this.context,
-				elementState: this.elementState,
-				chunkState: this.chunkState,
-				styleState: this.styleState,
+				context: this.#context,
+				elementState: this.#elementState,
+				chunkState: this.#chunkState,
+				styleState: this.#styleState,
 			}
 		);
 
-		this.animations = animations;
-		this.beforeAnimationCallbacks.set(runBeforeAnimation);
-		this.afterAnimationCallbacks.set(runAfterAnimation);
+		this.#animations = animations;
+		this.#beforeAnimationCallbacks.set(runBeforeAnimation);
+		this.#afterAnimationCallbacks.set(runAfterAnimation);
 
-		logCalculationTime(this.now);
-		this.setCallbacks();
+		logCalculationTime(this.#now);
+		this.#setCallbacks();
 
 		queueMicrotask(() => {
-			this.makeReactive();
+			this.#makeReactive();
 		});
 	}
 
-	private setCallbacks() {
+	#setCallbacks() {
 		this.finished = Promise.all(
-			this.animations.map((animation) => animation.finished)
+			this.#animations.map((animation) => animation.finished)
 		);
 
 		this.finished.then(() => {
-			this.afterAnimationCallbacks.execute();
+			this.#afterAnimationCallbacks.execute();
 		});
 	}
 
-	private makeReactive() {
-		this.disconnectReactivity?.();
+	#cancelExistingAnimations() {
+		this.#animations.forEach((waapi) => {
+			waapi.cancel();
+		});
+	}
+
+	#makeReactive() {
 		if (this.playState === "running") {
 			return;
 		}
 
-		let resizeIdleCallback: NodeJS.Timeout | undefined;
+		this.#disconnectReactivity?.();
 
-		const throttledCallback = (callback: () => void) => {
+		let resizeIdleCallback: NodeJS.Timeout | undefined;
+		const priorityMap = new Map<
+			"recalcInput" | "recalcAnimation",
+			VoidFunction
+		>();
+
+		const throttledCallback = () => {
+			const callback =
+				priorityMap.get("recalcInput") ??
+				priorityMap.get("recalcAnimation") ??
+				(() => undefined);
+
 			resizeIdleCallback && clearTimeout(resizeIdleCallback);
 			resizeIdleCallback = setTimeout(() => {
 				callback();
+				priorityMap.clear();
 			}, 100);
 		};
 
-		// const observeDOM = ObserveDomMutations(this.input, (changes: Chunks[]) => {
-		// 	this.prepareInput(changes);
-		// });
+		const resumeAfterRecalc = (recalculation: VoidFunction) => {
+			this.#now = performance.now();
+			this.#disconnectReactivity?.();
+			if (this.playState !== "idle") {
+				this.#keepProgress();
+				this.#afterAnimationCallbacks.execute();
+				this.#cancelExistingAnimations();
+			}
 
-		// const observeResize = ObserveBrowserResize(
-		// 	this.elementState.getAllElements(),
-		// 	() => {
-		// 		throttledCallback(() => this.setAnimations());
-		// 	}
-		// );
+			recalculation();
 
-		// const observeDimensions = ObserveDimensionChange(
-		// 	this.chunkState,
-		// 	this.elementState,
-		// 	this.styleState,
-		// 	() => {
-		// 		throttledCallback(() => this.setAnimations());
-		// 	}
-		// );
+			if (this.playState !== "idle") {
+				this.#beforeAnimationCallbacks.execute();
+			}
+			this.#setAnimationProgress();
+		};
 
-		this.disconnectReactivity = () => {
-			// observeDOM?.disconnect();
-			// observeResize?.disconnect();
-			// observeDimensions?.disconnect();
+		const observeDOM = ObserveDomMutations(this.#input, (changes: Chunks[]) => {
+			priorityMap.set("recalcInput", () =>
+				resumeAfterRecalc(() => {
+					this.#prepareInput(changes);
+				})
+			);
+
+			throttledCallback();
+		});
+
+		const observeResize = ObserveBrowserResize(
+			this.#elementState.getAllElements(),
+			() => {
+				priorityMap.set("recalcAnimation", () =>
+					resumeAfterRecalc(() => {
+						this.#setAnimations();
+					})
+				);
+
+				throttledCallback();
+			}
+		);
+
+		const observeDimensions = ObserveDimensionChange(
+			this.#chunkState,
+			this.#elementState,
+			this.#styleState,
+			() => {
+				priorityMap.set("recalcAnimation", () =>
+					resumeAfterRecalc(() => {
+						this.#setAnimations();
+					})
+				);
+
+				throttledCallback();
+			}
+		);
+
+		this.#disconnectReactivity = () => {
+			observeDOM?.disconnect();
+			observeResize?.disconnect();
+			observeDimensions?.disconnect();
 		};
 	}
 
-	//TODO: this needs some rechecking
-	private getProgress() {
-		let progress = this.progressTime;
-		if (this.currentTime !== 0) {
-			progress += performance.now() - this.currentTime;
-		}
-		return progress;
-	}
-	//TODO: this needs some rechecking
-	private keepProgress() {
-		const currentTime = this.animations[0].currentTime ?? 0;
-		const playState = this.animations[0].playState;
-		if (playState === "running") {
-			this.currentTime = performance.now();
-			this.progressTime = currentTime;
+	#keepProgress() {
+		const currentTime = this.#animations[0].currentTime ?? 0;
+		if (this.playState === "running") {
+			this.#currentTime = performance.now();
+			this.#progressTime = currentTime;
 		}
 
-		if (playState === "paused") {
-			this.progressTime = currentTime;
+		if (this.playState === "paused") {
+			this.#currentTime = 0;
+			this.#progressTime = currentTime;
 		}
 	}
 
-	public play() {
+	#setAnimationProgress() {
+		let progress = this.#progressTime;
+		if (this.#currentTime !== 0) {
+			progress += performance.now() - this.#currentTime;
+		}
+		this.#animations.forEach((waapi) => {
+			waapi.currentTime = progress;
+		});
+	}
+
+	play() {
 		this.playState = "running";
-		this.disconnectReactivity?.();
-		this.beforeAnimationCallbacks.execute();
+		this.#disconnectReactivity?.();
+		this.#beforeAnimationCallbacks.execute();
 
-		this.animations.forEach((waapi) => {
-			waapi.currentTime = this.getProgress();
+		this.#animations.forEach((waapi) => {
 			waapi.play();
 		});
-		this.currentTime = 0;
-		this.progressTime = 0;
 	}
 
-	public scroll() {
+	scroll() {
 		this.playState = "running";
-		this.disconnectReactivity?.();
-		this.beforeAnimationCallbacks.execute();
+		this.#disconnectReactivity?.();
+		this.#beforeAnimationCallbacks.execute();
 
 		return (progress: number, done?: boolean) => {
 			if (done) {
@@ -183,60 +236,60 @@ export class Bewegung implements BewegungTypes {
 			const currentFrame =
 				-1 *
 				Math.min(Math.max(progress, 0.001), done === undefined ? 1 : 0.999) *
-				this.context.totalRuntime;
+				this.#context.totalRuntime;
 
-			this.animations.forEach((waapi) => {
+			this.#animations.forEach((waapi) => {
 				waapi.currentTime = currentFrame;
 			});
-			this.progressTime = currentFrame;
+			this.#progressTime = currentFrame;
 		};
 	}
 
-	public pause() {
+	pause() {
 		this.playState = "paused";
-		this.progressTime = this.animations[0].currentTime ?? 0;
-		this.animations.forEach((waapi) => {
+		this.#keepProgress();
+		this.#animations.forEach((waapi) => {
 			waapi.pause();
 		});
-		return;
+		this.#makeReactive();
 	}
 
-	public reverse() {
+	reverse() {
 		this.playState = "running";
-		this.disconnectReactivity?.();
-		this.beforeAnimationCallbacks.execute();
-		this.animations.forEach((waapi) => {
+		this.#disconnectReactivity?.();
+		this.#beforeAnimationCallbacks.execute();
+		this.#animations.forEach((waapi) => {
 			waapi.reverse();
 		});
 	}
-	public cancel() {
+	cancel() {
 		this.playState = "finished";
-		this.elementState
+		this.#elementState
 			.getAllElements()
 			.forEach(
 				(element) =>
-					(element.style.cssText = this.styleState.getOriginalStyle(element)!)
+					(element.style.cssText = this.#styleState.getOriginalStyle(element)!)
 			);
 
-		this.animations.forEach((waapi) => {
+		this.#animations.forEach((waapi) => {
 			waapi.cancel();
 		});
 	}
-	public commitStyles() {
+	commitStyles() {
 		this.playState = "finished";
-		this.animations.forEach((waapi) => {
+		this.#animations.forEach((waapi) => {
 			waapi.commitStyles();
 		});
 	}
-	public finish() {
+	finish() {
 		this.playState = "finished";
-		this.animations.forEach((waapi) => {
+		this.#animations.forEach((waapi) => {
 			waapi.finish();
 		});
 	}
 
-	public updatePlaybackRate(newPlaybackRate: number) {
-		this.animations.forEach((waapi) => {
+	updatePlaybackRate(newPlaybackRate: number) {
+		this.#animations.forEach((waapi) => {
 			waapi.updatePlaybackRate(newPlaybackRate);
 		});
 	}

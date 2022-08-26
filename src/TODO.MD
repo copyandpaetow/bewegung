@@ -7,14 +7,13 @@
 - custom properties?
 - background images
 - prefer reduced motion
-- make private methods more private with #
 - update docs
+- improve the playState setting
 
 ## test
 
 - iterations
 - can clip-path pass through?
-- progress, resumeability, reactivity
 - other media elements like video
 - transform-origin
 - filter

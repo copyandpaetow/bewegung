@@ -109,6 +109,7 @@ const initAdditionalImages = () => {
 					[image, { width: "20vh" }, { duration: 4000, easing: "ease-in" }]
 				);
 				animation.play();
+				animation.pause();
 				imageExpandedState[index] = true;
 			}
 		});

@@ -165,26 +165,6 @@ const getWrapperKeyframes = (
 	});
 };
 
-const getImageBeforeAnimationCallback = (
-	element: HTMLImageElement,
-	wrapper: HTMLElement,
-	placeholderImage: HTMLElement,
-	maximumDimensions: MaximumDimensions
-) => {
-	const { width: maxWidth, height: maxHeight } = maximumDimensions;
-	const nextSibling = element.nextElementSibling;
-	const parent = element.parentElement;
-
-	nextSibling
-		? parent?.insertBefore(placeholderImage, nextSibling)
-		: parent?.appendChild(placeholderImage);
-
-	element.style.cssText = `all: initial; height: ${maxWidth}px; width: ${maxHeight}px; pointer-events: none;`;
-
-	wrapper.appendChild(element);
-	document.body.appendChild(wrapper);
-};
-
 interface CalculateImageAnimationProps {
 	element: HTMLImageElement;
 	styleState: StyleState;
@@ -207,11 +187,11 @@ export const calculateImageAnimation = (
 	const rootStyleMap = styleState.getElementProperties(document.body)!;
 	const maxDimensions = getMaximumDimensions(styleMap);
 
+	const parentElement = element.parentElement;
+	const placeholderImage = getPlaceholderElement(element);
 	const wrapper = getWrapperElement(
 		getWrapperStyle(styleMap, rootStyleMap, maxDimensions)
 	);
-
-	const placeholderImage = getPlaceholderElement(element);
 
 	const originalImageRatio = element.naturalWidth / element.naturalHeight;
 
@@ -237,15 +217,25 @@ export const calculateImageAnimation = (
 				new KeyframeEffect(element, imageKeyframes, context.totalRuntime)
 			),
 		],
-		beforeImageCallback: () =>
-			getImageBeforeAnimationCallback(
-				element,
-				wrapper,
-				placeholderImage,
-				maxDimensions
-			),
+		beforeImageCallback: () => {
+			const nextSibling = element.nextElementSibling;
+
+			nextSibling
+				? parentElement?.insertBefore(placeholderImage, nextSibling)
+				: parentElement?.appendChild(placeholderImage);
+
+			element.style.cssText = `all: initial; height: ${maxDimensions.height}px; width: ${maxDimensions.width}px; pointer-events: none;`;
+
+			wrapper.appendChild(element);
+			document.body.appendChild(wrapper);
+		},
 		afterImageCallback: () => {
-			element.parentElement?.replaceChild(element, placeholderImage);
+			try {
+				parentElement?.replaceChild(element, placeholderImage);
+			} catch (error) {
+				placeholderImage.remove();
+			}
+
 			element.style.cssText = styleState.getOriginalStyle(element)!;
 			wrapper.remove();
 		},

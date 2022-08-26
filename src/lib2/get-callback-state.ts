@@ -45,7 +45,7 @@ export const afterAnimationCallback = (
 };
 
 export interface CallbackState {
-	set(callback: VoidFunction | VoidFunction[]): void;
+	set(allCallbacks: VoidFunction[]): void;
 	execute(): void;
 }
 
@@ -53,8 +53,8 @@ export const callbackState = (): CallbackState => {
 	const queue = new Set<VoidFunction>();
 
 	return {
-		set(...callbacks: VoidFunction[]) {
-			callbacks.forEach((callback) => {
+		set(allCallbacks: VoidFunction[]) {
+			allCallbacks.forEach((callback) => {
 				queue.add(callback);
 			});
 		},
