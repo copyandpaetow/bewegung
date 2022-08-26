@@ -1,32 +1,36 @@
+import { logCalculationTime } from "./logger";
+import { normalizeProps } from "./normalize-props/props";
+import { callbackState } from "./prepare-input/callback-state";
+import { getChunkState, mapKeysToChunks } from "./prepare-input/chunk-state";
+import { calculateContext } from "./prepare-input/context";
+import {
+	findAffectedAndDependencyElements,
+	getElementState,
+} from "./prepare-input/element-state";
+import { normalizeChunks } from "./prepare-input/normalize-chunks";
+import { getAnimations } from "./set-animations/animations";
 import {
 	getStyleState,
 	postprocessProperties,
 	readDomChanges,
-	StyleState,
-} from "./calculate-dom-changes";
-import { formatInputs } from "./convert-input-to-chunks";
-import { getAnimations } from "./get-animations";
-import { callbackState } from "./get-callback-state";
-import { ChunkState, getChunkState, mapKeysToChunks } from "./get-chunk-state";
-import { calculateContext } from "./get-context";
+} from "./set-animations/style-state";
 import {
+	BewegungProps,
+	BewegungAPI,
+	Chunks,
+	ChunkState,
+	Context,
 	ElementState,
-	findAffectedAndDependencyElements,
-	getElementState,
-} from "./get-element-state";
-import { logCalculationTime } from "./logger";
-import { normalizeChunks } from "./normalize-chunks";
-import { BewegungProps, BewegungTypes, Chunks, Context } from "./types";
-import { ObserveBrowserResize } from "./watch-resize";
-import { ObserveDimensionChange } from "./watch-dimension-changes";
-import { ObserveDomMutations } from "./watch-dom-mutations";
+	StyleState,
+} from "./types";
+import { watchChanges } from "./watch/all-changes";
 
-export class Bewegung implements BewegungTypes {
+export class Bewegung implements BewegungAPI {
 	#now: number;
 
 	constructor(...bewegungProps: BewegungProps) {
 		this.#now = performance.now();
-		this.#prepareInput(formatInputs(...bewegungProps));
+		this.#prepareInput(normalizeProps(...bewegungProps));
 	}
 
 	//required
@@ -109,25 +113,6 @@ export class Bewegung implements BewegungTypes {
 
 		this.#disconnectReactivity?.();
 
-		let resizeIdleCallback: NodeJS.Timeout | undefined;
-		const priorityMap = new Map<
-			"recalcInput" | "recalcAnimation",
-			VoidFunction
-		>();
-
-		const throttledCallback = () => {
-			const callback =
-				priorityMap.get("recalcInput") ??
-				priorityMap.get("recalcAnimation") ??
-				(() => undefined);
-
-			resizeIdleCallback && clearTimeout(resizeIdleCallback);
-			resizeIdleCallback = setTimeout(() => {
-				callback();
-				priorityMap.clear();
-			}, 100);
-		};
-
 		const resumeAfterRecalc = (recalculation: VoidFunction) => {
 			this.#now = performance.now();
 			this.#disconnectReactivity?.();
@@ -145,49 +130,26 @@ export class Bewegung implements BewegungTypes {
 			this.#setAnimationProgress();
 		};
 
-		const observeDOM = ObserveDomMutations(this.#input, (changes: Chunks[]) => {
-			priorityMap.set("recalcInput", () =>
-				resumeAfterRecalc(() => {
-					this.#prepareInput(changes);
-				})
-			);
-
-			throttledCallback();
-		});
-
-		const observeResize = ObserveBrowserResize(
-			this.#elementState.getAllElements(),
-			() => {
-				priorityMap.set("recalcAnimation", () =>
+		this.#disconnectReactivity = watchChanges(
+			{
+				input: this.#input,
+				elementState: this.#elementState,
+				chunkState: this.#chunkState,
+				styleState: this.#styleState,
+			},
+			{
+				recalcInput: (changes) => {
+					resumeAfterRecalc(() => {
+						this.#prepareInput(changes);
+					});
+				},
+				recalcAnimations: () => {
 					resumeAfterRecalc(() => {
 						this.#setAnimations();
-					})
-				);
-
-				throttledCallback();
+					});
+				},
 			}
 		);
-
-		const observeDimensions = ObserveDimensionChange(
-			this.#chunkState,
-			this.#elementState,
-			this.#styleState,
-			() => {
-				priorityMap.set("recalcAnimation", () =>
-					resumeAfterRecalc(() => {
-						this.#setAnimations();
-					})
-				);
-
-				throttledCallback();
-			}
-		);
-
-		this.#disconnectReactivity = () => {
-			observeDOM?.disconnect();
-			observeResize?.disconnect();
-			observeDimensions?.disconnect();
-		};
 	}
 
 	#keepProgress() {

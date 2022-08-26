@@ -1,5 +1,5 @@
-import { traverseDomDown } from "./find-affected-elements";
-import { Chunks } from "./types";
+import { traverseDomDown } from "../prepare-input/find-affected-elements";
+import { Chunks } from "../types";
 
 if (typeof window !== "undefined") {
 	// @ts-expect-error polyfill for requestIdleCallback
@@ -13,8 +13,6 @@ const areTheseRelated = (a: HTMLElement, b: HTMLElement) => {
 		(a.parentElement ?? document.body).contains(b)
 	);
 };
-
-let idleCallback: number | undefined;
 
 const MOcallback =
 	(chunks: Chunks[], callback: (changes: Chunks[]) => void) =>

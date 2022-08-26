@@ -1,7 +1,7 @@
-import { cssRuleName } from "./types";
+import { CssRuleName } from "../types";
 
 export const getComputedStylings = (
-	changeProperties: cssRuleName[],
+	changeProperties: CssRuleName[],
 	element?: HTMLElement
 ): Partial<CSSStyleDeclaration> => {
 	const computedElementStyle =
@@ -11,7 +11,7 @@ export const getComputedStylings = (
 
 	const relevantStyles: Partial<CSSStyleDeclaration> = {};
 
-	changeProperties.forEach((cssRule: cssRuleName) => {
+	changeProperties.forEach((cssRule: CssRuleName) => {
 		//@ts-expect-error length/parentRule weirdness
 		relevantStyles[cssRule] = computedElementStyle[cssRule];
 	});

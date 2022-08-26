@@ -1,7 +1,9 @@
-import { StyleState } from "./calculate-dom-changes";
-import { ChunkState } from "./get-chunk-state";
-import { ElementState } from "./get-element-state";
-import { calculatedElementProperties } from "./types";
+import {
+	calculatedElementProperties,
+	ChunkState,
+	ElementState,
+	StyleState,
+} from "../types";
 
 export const getRootElement = (
 	element: HTMLElement,
@@ -63,8 +65,8 @@ export const ObserveDimensionChange = (
 			? [element]
 			: [...elementState.getDependecyElements(element)!];
 
-		const allSelectors = mainElements.flatMap((mainElement) =>
-			chunkState.getSelector(mainElement)
+		const allSelectors = mainElements.flatMap(
+			(mainElement) => chunkState.getSelector(mainElement)!
 		);
 
 		const rootElement = getRootElement(element, allSelectors);

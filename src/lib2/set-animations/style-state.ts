@@ -1,14 +1,19 @@
 import {
-	calculateDimensionDifferences, checkForTextNode, emptyCalculatedProperties
-} from "./calculate-dimension-differences";
-import { ChunkState } from "./get-chunk-state";
-import { ElementState } from "./get-element-state";
-import { recalculateDisplayNoneValues } from "./postprocess-element-properties";
-import { getComputedStylings, getDomRect } from "./read-element-properties";
-import {
 	calculatedElementProperties,
-	Context, differenceArray, DimensionalDifferences
-} from "./types";
+	StyleState,
+	Context,
+	DimensionalDifferences,
+	differenceArray,
+	ElementState,
+	ChunkState,
+} from "../types";
+import {
+	emptyCalculatedProperties,
+	checkForTextNode,
+	calculateDimensionDifferences,
+} from "./calculate-dimension-differences";
+import { recalculateDisplayNoneValues } from "./postprocess-element-properties";
+import { getDomRect, getComputedStylings } from "./read-element-properties";
 
 export const addOverrideStyles = (
 	elementProperties: calculatedElementProperties[],
@@ -217,19 +222,6 @@ export const postprocessProperties = ({
 
 	return { originalStyle, elementProperties, elementStyleOverrides };
 };
-
-export interface StyleState {
-	getOriginalStyle(element: HTMLElement): string | undefined;
-	getElementProperties(
-		element: HTMLElement
-	): calculatedElementProperties[] | undefined;
-	getStyleOverrides(element: HTMLElement):
-		| {
-				existingStyle: Partial<CSSStyleDeclaration>;
-				override: Partial<CSSStyleDeclaration>;
-		  }
-		| undefined;
-}
 
 export const getStyleState = ({
 	originalStyle,

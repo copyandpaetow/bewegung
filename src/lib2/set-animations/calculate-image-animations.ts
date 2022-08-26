@@ -1,10 +1,8 @@
-import { Context } from "vm";
+import { emptyImageSrc } from "../constants";
+import { highestNumber } from "../prepare-input/context";
+import { calculatedElementProperties, StyleState, Context } from "../types";
 import { save } from "./calculate-dimension-differences";
-import { StyleState, applyCSSStyles } from "./calculate-dom-changes";
-import { emptyImageSrc } from "./constants";
-import { CallbackState } from "./get-callback-state";
-import { highestNumber } from "./get-context";
-import { calculatedElementProperties } from "./types";
+import { applyCSSStyles } from "./style-state";
 
 const calculateBorderRadius = (
 	borderRadius: string,

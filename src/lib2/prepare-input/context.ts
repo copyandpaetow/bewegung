@@ -1,5 +1,5 @@
-import { defaultChangeProperties } from "./constants";
-import { cssRuleName, Chunks } from "./types";
+import { defaultChangeProperties } from "../constants";
+import { CssRuleName, Chunks } from "../types";
 
 export const highestNumber = (numbers: number[]) =>
 	numbers.reduce((largest, current) => Math.max(largest, current));
@@ -33,7 +33,7 @@ const updateChangeProperties = (allKeyframes: ComputedKeyframe[][]) => {
 		keyframes.forEach(
 			({ composite, computedOffset, easing, offset, ...stylings }) => {
 				Object.keys(stylings).forEach((style) =>
-					changeProperties.add(style as cssRuleName)
+					changeProperties.add(style as CssRuleName)
 				);
 			}
 		);

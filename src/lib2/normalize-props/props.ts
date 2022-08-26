@@ -1,17 +1,31 @@
-import { defaultOptions } from "./constants";
-import { Callbacks, Chunks, CustomKeyframeEffect } from "./types";
-import {
-	arrayifyInputs,
-	formatKeyFrames,
-	normalizeElement,
-} from "./normalize-inputs";
+import { defaultOptions } from "../constants";
+import { Callbacks, Chunks, CustomKeyframeEffect } from "../types";
+import { formatKeyframes } from "./keyframes";
+import { normalizeElements } from "./elements";
+
+export const arrayifyInputs = (
+	animationInput:
+		| CustomKeyframeEffect
+		| KeyframeEffect
+		| (CustomKeyframeEffect | KeyframeEffect)[]
+): (CustomKeyframeEffect | KeyframeEffect)[] => {
+	if (
+		animationInput instanceof KeyframeEffect ||
+		animationInput.some(
+			(prop) => !Array.isArray(prop) && !(prop instanceof KeyframeEffect)
+		)
+	) {
+		return [animationInput] as (CustomKeyframeEffect | KeyframeEffect)[];
+	}
+	return animationInput as (CustomKeyframeEffect | KeyframeEffect)[];
+};
 
 export const normalizeTarget = (
 	input: CustomKeyframeEffect | KeyframeEffect
 ) => {
 	return input instanceof KeyframeEffect
 		? new Set([input.target] as HTMLElement[])
-		: normalizeElement(input[0]);
+		: normalizeElements(input[0]);
 };
 
 export const normalizeKeyframes = (
@@ -27,7 +41,7 @@ export const normalizeKeyframes = (
 	const easing = options.getComputedTiming().easing!;
 	const composite = options.composite;
 
-	const formattedKeyFrames = formatKeyFrames(input[1]);
+	const formattedKeyFrames = formatKeyframes(input[1]);
 
 	const callbacks: Callbacks[] = [];
 	const keyframes: ComputedKeyframe[] = [];
@@ -71,7 +85,7 @@ export const normalizeOptions = (
 		  ).getComputedTiming();
 };
 
-export const formatInputs = (
+export const normalizeProps = (
 	...animationInput:
 		| CustomKeyframeEffect
 		| (CustomKeyframeEffect | KeyframeEffect)[]

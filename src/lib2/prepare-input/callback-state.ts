@@ -1,10 +1,8 @@
 import {
-	StyleState,
 	applyCSSStyles,
 	filterMatchingStyleFromKeyframes,
-} from "./calculate-dom-changes";
-import { ChunkState } from "./get-chunk-state";
-import { ElementState } from "./get-element-state";
+} from "../set-animations/style-state";
+import { ChunkState, ElementState, StyleState, CallbackState } from "../types";
 
 export const beforeAnimationCallback = (
 	chunkState: ChunkState,
@@ -43,11 +41,6 @@ export const afterAnimationCallback = (
 		});
 	});
 };
-
-export interface CallbackState {
-	set(allCallbacks: VoidFunction[]): void;
-	execute(): void;
-}
 
 export const callbackState = (): CallbackState => {
 	const queue = new Set<VoidFunction>();

@@ -1,4 +1,4 @@
-import { calculatedElementProperties } from "./types";
+import { calculatedElementProperties } from "../types";
 
 const isEntryVisible = (entry: calculatedElementProperties) =>
 	entry.computedStyle.display !== "none" &&

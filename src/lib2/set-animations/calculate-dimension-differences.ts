@@ -1,10 +1,10 @@
-import { emptyNonZeroDOMRect } from "./constants";
+import { emptyNonZeroDOMRect } from "../constants";
 import {
 	calculatedElementProperties,
-	cssRuleName,
+	CssRuleName,
 	differenceArray,
 	DimensionalDifferences,
-} from "./types";
+} from "../types";
 import { getComputedStylings } from "./read-element-properties";
 
 export const save = (value: number, alternative: number): number => {
@@ -110,7 +110,7 @@ export const calculateDimensionDifferences = (
 };
 
 export const emptyCalculatedProperties = (
-	changeProperties: cssRuleName[],
+	changeProperties: CssRuleName[],
 	changeTimings: number[]
 ): calculatedElementProperties[] =>
 	changeTimings.map((timing) => ({

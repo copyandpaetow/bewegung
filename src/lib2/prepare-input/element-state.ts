@@ -1,4 +1,4 @@
-import { Chunks } from "./types";
+import { Chunks, ElementState } from "../types";
 import { findAffectedDOMElements } from "./find-affected-elements";
 
 interface StatefulElements {
@@ -37,13 +37,6 @@ export const findAffectedAndDependencyElements = (
 
 	return { mainElements, affectedElements, dependencyElements };
 };
-
-export interface ElementState {
-	getMainElements(): Set<HTMLElement>;
-	isMainElement(element: HTMLElement): boolean;
-	getAllElements(): HTMLElement[];
-	getDependecyElements(element: HTMLElement): Set<HTMLElement> | undefined;
-}
 
 export const getElementState = ({
 	mainElements,

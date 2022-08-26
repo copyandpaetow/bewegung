@@ -1,21 +1,25 @@
-import { getTransformValues, StyleState } from "./calculate-dom-changes";
+import {
+	beforeAnimationCallback,
+	afterAnimationCallback,
+} from "../prepare-input/callback-state";
+import {
+	ChunkState,
+	calculatedElementProperties,
+	StyleState,
+	Context,
+	ElementState,
+} from "../types";
 import { calculateEasingMap } from "./calculate-easings";
 import { calculateImageAnimation } from "./calculate-image-animations";
 import {
-	constructKeyframes,
 	getBorderRadius,
-	getDependecyOptions,
-	getFilter,
 	getOpacity,
+	getFilter,
 	getUserTransforms,
+	constructKeyframes,
+	getDependecyOptions,
 } from "./construct-keyframes";
-import {
-	afterAnimationCallback,
-	beforeAnimationCallback,
-} from "./get-callback-state";
-import { ChunkState } from "./get-chunk-state";
-import { ElementState } from "./get-element-state";
-import { calculatedElementProperties, Context } from "./types";
+import { getTransformValues } from "./style-state";
 
 export const getCallbackAnimations = (
 	element: HTMLElement,

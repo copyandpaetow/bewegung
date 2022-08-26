@@ -1,4 +1,4 @@
-import { Chunks, ChunkOption, Callbacks } from "./types";
+import { Chunks, ChunkOption, Callbacks, ChunkState } from "../types";
 
 interface ChunkKeyValues {
 	chunkKeys: WeakMap<HTMLElement, symbol[]>;
@@ -19,16 +19,6 @@ export const mapKeysToChunks = (chunks: Chunks[]): ChunkKeyValues => {
 
 	return { chunkKeys, chunkValues };
 };
-
-export interface ChunkState {
-	getCallbacks(element: HTMLElement): Callbacks[] | undefined;
-	getKeyframes(element: HTMLElement): ComputedKeyframe[] | undefined;
-	getOptions(element: HTMLElement): ChunkOption[] | undefined;
-	getSelector(element: HTMLElement): string[] | undefined;
-	getAllKeyframes(): ComputedKeyframe[][];
-	getAllOptions(): ChunkOption[];
-	getAllTargetElements(): Set<HTMLElement>;
-}
 
 export const getChunkState = ({
 	chunkKeys,
