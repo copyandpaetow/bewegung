@@ -10,9 +10,12 @@ import {
 import { normalizeChunks } from "./prepare-input/normalize-chunks";
 import { getAnimations } from "./set-animations/animations";
 import {
+	readDomChanges,
+	restoreOriginalStyle,
+} from "./set-animations/read-dom";
+import {
 	getStyleState,
 	postprocessProperties,
-	readDomChanges,
 } from "./set-animations/style-state";
 import {
 	BewegungProps,
@@ -228,9 +231,11 @@ export class Bewegung implements BewegungAPI {
 		this.playState = "finished";
 		this.#elementState
 			.getAllElements()
-			.forEach(
-				(element) =>
-					(element.style.cssText = this.#styleState.getOriginalStyle(element)!)
+			.forEach((element) =>
+				restoreOriginalStyle(
+					element,
+					this.#styleState.getOriginalStyle(element)!
+				)
 			);
 
 		this.#animations.forEach((waapi) => {

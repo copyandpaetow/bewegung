@@ -17,6 +17,8 @@ export type CustomKeyframeArrayValueSyntax = Partial<
 >;
 
 export type NonCSSEntries = {
+	cssClass: string;
+	attribute: string;
 	callback: VoidFunction;
 	offset: number;
 };
@@ -121,7 +123,7 @@ export interface ElementState {
 }
 
 export interface StyleState {
-	getOriginalStyle(element: HTMLElement): string | undefined;
+	getOriginalStyle(element: HTMLElement): Map<string, string> | undefined;
 	getElementProperties(
 		element: HTMLElement
 	): calculatedElementProperties[] | undefined;
@@ -131,4 +133,23 @@ export interface StyleState {
 				override: Partial<CSSStyleDeclaration>;
 		  }
 		| undefined;
+}
+
+export interface DomChanges {
+	originalStyle: WeakMap<HTMLElement, Map<string, string>>;
+	elementProperties: WeakMap<HTMLElement, calculatedElementProperties[]>;
+	elementState: ElementState;
+	chunkState: ChunkState;
+}
+
+export interface DomStates {
+	originalStyle: WeakMap<HTMLElement, Map<string, string>>;
+	elementProperties: WeakMap<HTMLElement, calculatedElementProperties[]>;
+	elementStyleOverrides: WeakMap<
+		HTMLElement,
+		{
+			existingStyle: Partial<CSSStyleDeclaration>;
+			override: Partial<CSSStyleDeclaration>;
+		}
+	>;
 }

@@ -1,11 +1,6 @@
 import { traverseDomDown } from "../prepare-input/find-affected-elements";
 import { Chunks } from "../types";
 
-if (typeof window !== "undefined") {
-	// @ts-expect-error polyfill for requestIdleCallback
-	window.requestIdleCallback ||= window.requestAnimationFrame;
-}
-
 const areTheseRelated = (a: HTMLElement, b: HTMLElement) => {
 	return (
 		a.contains(b) ||

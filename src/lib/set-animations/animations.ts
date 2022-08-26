@@ -8,7 +8,14 @@ import {
 	StyleState,
 	Context,
 	ElementState,
+	differenceArray,
+	DimensionalDifferences,
 } from "../types";
+import {
+	emptyCalculatedProperties,
+	checkForTextNode,
+	calculateDimensionDifferences,
+} from "./calculate-dimension-differences";
 import { calculateEasingMap } from "./calculate-easings";
 import { calculateImageAnimation } from "./calculate-image-animations";
 import {
@@ -19,7 +26,28 @@ import {
 	constructKeyframes,
 	getDependecyOptions,
 } from "./construct-keyframes";
-import { getTransformValues } from "./style-state";
+
+const getTransformValues = (
+	element: HTMLElement,
+	styleState: StyleState,
+	context: Context
+): DimensionalDifferences[] => {
+	const { changeProperties, changeTimings } = context;
+	const parentEntries =
+		styleState.getElementProperties(element.parentElement!) ??
+		emptyCalculatedProperties(changeProperties, changeTimings);
+	const elementProperties = styleState.getElementProperties(element)!;
+	const isTextNode = checkForTextNode(element);
+
+	return elementProperties.map((calculatedProperty, index, array) => {
+		const child: differenceArray = [calculatedProperty, array.at(-1)!];
+		const parent: differenceArray = [
+			parentEntries[index],
+			parentEntries.at(-1)!,
+		];
+		return calculateDimensionDifferences(child, parent, isTextNode);
+	});
+};
 
 export const getCallbackAnimations = (
 	element: HTMLElement,

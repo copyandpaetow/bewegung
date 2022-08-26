@@ -48,6 +48,6 @@ dd {
 	border-bottom-right-radius: var(--space-100);
 }
 
-dd[hidden] {
+dd[hidden="true"] {
 	display: none;
 }

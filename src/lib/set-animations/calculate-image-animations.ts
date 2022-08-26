@@ -1,8 +1,8 @@
 import { emptyImageSrc } from "../constants";
 import { highestNumber } from "../prepare-input/context";
-import { calculatedElementProperties, StyleState, Context } from "../types";
+import { calculatedElementProperties, Context, StyleState } from "../types";
 import { save } from "./calculate-dimension-differences";
-import { applyCSSStyles } from "./style-state";
+import { applyStyleObject } from "./read-dom";
 
 const calculateBorderRadius = (
 	borderRadius: string,
@@ -29,7 +29,7 @@ const getPlaceholderElement = (element: HTMLImageElement) => {
 
 const getWrapperElement = (wrapperStyle: Partial<CSSStyleDeclaration>) => {
 	const wrapper = document.createElement("div");
-	applyCSSStyles(wrapper, wrapperStyle);
+	applyStyleObject(wrapper, wrapperStyle);
 	return wrapper;
 };
 
@@ -185,6 +185,7 @@ export const calculateImageAnimation = (
 	const rootStyleMap = styleState.getElementProperties(document.body)!;
 	const maxDimensions = getMaximumDimensions(styleMap);
 
+	const elementStyle = element.style.cssText;
 	const parentElement = element.parentElement;
 	const placeholderImage = getPlaceholderElement(element);
 	const wrapper = getWrapperElement(
@@ -234,7 +235,7 @@ export const calculateImageAnimation = (
 				placeholderImage.remove();
 			}
 
-			element.style.cssText = styleState.getOriginalStyle(element)!;
+			element.style.cssText = elementStyle;
 			wrapper.remove();
 		},
 	};
