@@ -34,6 +34,7 @@ const chunkLens = (type: keyof Chunks) => (element: HTMLElement) =>
 		.map((chunkKey) => chunkMap.get(chunkKey)![type])
 		.flat();
 
+//TODO: these should handle if the element was not found
 export const getKeyframes = chunkLens("keyframes") as (
 	element: HTMLElement
 ) => ComputedKeyframe[];
