@@ -1,4 +1,4 @@
-import { cssRuleName } from "./types";
+import { CssRuleName } from "./types";
 
 export const emptyNonZeroDOMRect: DOMRect = {
 	width: 1,
@@ -12,7 +12,7 @@ export const emptyNonZeroDOMRect: DOMRect = {
 	toJSON: () => undefined,
 };
 
-export const defaultChangeProperties: cssRuleName[] = [
+export const defaultChangeProperties: CssRuleName[] = [
 	"borderRadius",
 	"display",
 	"font",

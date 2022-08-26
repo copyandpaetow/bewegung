@@ -37,6 +37,7 @@ export const getBorderRadius = (
 	const styleTable = {};
 
 	calculatedProperties.forEach(
+		//@ts-expect-error ts thinks numbers cant be keys
 		(style) => (styleTable[style.offset] = calculateBorderRadius(style))
 	);
 
@@ -55,6 +56,7 @@ export const getOpacity = (
 	const styleTable = {};
 
 	calculatedProperties.forEach(
+		//@ts-expect-error ts thinks numbers cant be keys
 		(style) => (styleTable[style.offset] = style.computedStyle.opacity)
 	);
 
@@ -73,6 +75,7 @@ export const getFilter = (
 	const styleTable = {};
 
 	calculatedProperties.forEach(
+		//@ts-expect-error ts thinks numbers cant be keys
 		(style) => (styleTable[style.offset] = style.computedStyle.filter)
 	);
 
@@ -88,6 +91,7 @@ export const getUserTransforms = (
 
 	if (element.style.transform) {
 		changeTimings.forEach((timing) => {
+			//@ts-expect-error ts thinks numbers cant be keys
 			styleTable[timing] = element.style.transform;
 		});
 	}
@@ -96,7 +100,7 @@ export const getUserTransforms = (
 		if (!style.transform) {
 			return;
 		}
-
+		//@ts-expect-error ts thinks numbers cant be keys
 		styleTable[style.offset as number] = style.transform;
 	});
 

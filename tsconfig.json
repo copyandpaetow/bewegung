@@ -14,7 +14,8 @@
 		"outFile": "dist/bewegung.js",
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
-		"noImplicitReturns": true
+		"noImplicitReturns": true,
+		"strictPropertyInitialization": false
 	},
 	"include": ["src/lib/"]
 }

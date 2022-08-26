@@ -32,7 +32,9 @@ const transformEasings = (easings: string[]): string => {
 
 	easings.forEach((easing) => {
 		const [p0, p1, p2, p3] = getEasingFromCubicBezier(easing) ??
-			easingValues[easing] ?? [0, 0, 1, 1];
+			easingValues[
+				easing as "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out"
+			] ?? [0, 0, 1, 1];
 
 		easingPoints = [
 			Math.max(easingPoints[0], p0),

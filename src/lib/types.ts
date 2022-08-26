@@ -1,5 +1,3 @@
-export type VoidCallback = () => void;
-
 export type ElementOrSelector =
 	| HTMLElement
 	| Element
@@ -9,22 +7,22 @@ export type ElementOrSelector =
 	| HTMLCollection
 	| string;
 
-export type cssRuleName = "cssOffset" | keyof CSSStyleDeclaration;
+export type CssRuleName = "cssOffset" | keyof CSSStyleDeclaration;
 
 export type CustomKeyframeArrayValueSyntax = Partial<
-	Record<cssRuleName, string[] | number[]> & {
-		callback: VoidCallback[];
+	Record<CssRuleName, string[] | number[]> & {
+		callback: VoidFunction[];
 		offset: number | number[];
 	}
 >;
 
 export type NonCSSEntries = {
-	callback: VoidCallback;
+	callback: VoidFunction;
 	offset: number;
 };
 
 export type CustomKeyframe = Partial<
-	Record<cssRuleName, string | number> & NonCSSEntries
+	Record<CssRuleName, string | number> & NonCSSEntries
 >;
 
 export type CustomKeyframeEffect = [
@@ -34,7 +32,7 @@ export type CustomKeyframeEffect = [
 ];
 
 export type Callbacks = {
-	callback: VoidCallback;
+	callback: VoidFunction;
 	offset: number;
 };
 
@@ -57,27 +55,7 @@ export interface TimelineEntry {
 	end: number;
 	easing: string | string[];
 }
-
-export interface TimelineResult {
-	start: number;
-	end: number;
-	easing: string;
-}
-
 export type Timeline = TimelineEntry[];
-export interface Animate {
-	playAnimation: () => void;
-	pauseAnimation: () => void;
-	keepProgress: () => void;
-	scrollAnimation: (progress: number, done?: boolean) => void;
-	reverseAnimation: () => void;
-	cancelAnimation: () => void;
-	commitAnimationStyles: () => void;
-	finishAnimation: () => void;
-	updatePlaybackRate: (newPlaybackRate: number) => void;
-	finishPromise: Promise<Animation[]>;
-	getPlayState: () => AnimationPlayState;
-}
 
 export type calculatedElementProperties = {
 	dimensions: DOMRect;
@@ -92,19 +70,7 @@ export interface DimensionalDifferences {
 	offset: number;
 }
 
-export type Observer = {
-	disconnect: () => void;
-	disconnectStateObserver: () => void;
-};
-
-export type Observerable<Value> = (updatedValue?: Value | undefined) => Value;
-
-export type Reactive = (
-	Input: Observerable<Chunks[]>,
-	State: Observerable<Animate>
-) => Observer;
-
-export interface Bewegung {
+export interface BewegungAPI {
 	play: () => void;
 	pause: () => void;
 	scroll: (progress: number, done?: boolean) => void;
@@ -114,21 +80,55 @@ export interface Bewegung {
 	finish: () => void;
 	updatePlaybackRate: (newPlaybackRate: number) => void;
 	finished: Promise<Animation[]>;
-	playState: () => AnimationPlayState;
+	playState: AnimationPlayState;
 }
 
-export type bewegungProps =
+export type BewegungProps =
 	| CustomKeyframeEffect
 	| (CustomKeyframeEffect | KeyframeEffect)[];
 
 export interface Context {
 	changeTimings: number[];
-	changeProperties: cssRuleName[];
+	changeProperties: CssRuleName[];
 	totalRuntime: number;
-	progress: number;
 }
 
 export type differenceArray = [
 	calculatedElementProperties,
 	calculatedElementProperties
 ];
+
+export interface ChunkState {
+	getCallbacks(element: HTMLElement): Callbacks[] | undefined;
+	getKeyframes(element: HTMLElement): ComputedKeyframe[] | undefined;
+	getOptions(element: HTMLElement): ChunkOption[] | undefined;
+	getSelector(element: HTMLElement): string[] | undefined;
+	getAllKeyframes(): ComputedKeyframe[][];
+	getAllOptions(): ChunkOption[];
+	getAllTargetElements(): Set<HTMLElement>;
+}
+
+export interface CallbackState {
+	set(allCallbacks: VoidFunction[]): void;
+	execute(): void;
+}
+
+export interface ElementState {
+	getMainElements(): Set<HTMLElement>;
+	isMainElement(element: HTMLElement): boolean;
+	getAllElements(): HTMLElement[];
+	getDependecyElements(element: HTMLElement): Set<HTMLElement> | undefined;
+}
+
+export interface StyleState {
+	getOriginalStyle(element: HTMLElement): string | undefined;
+	getElementProperties(
+		element: HTMLElement
+	): calculatedElementProperties[] | undefined;
+	getStyleOverrides(element: HTMLElement):
+		| {
+				existingStyle: Partial<CSSStyleDeclaration>;
+				override: Partial<CSSStyleDeclaration>;
+		  }
+		| undefined;
+}

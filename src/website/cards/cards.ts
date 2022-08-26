@@ -1,5 +1,5 @@
-import { Bewegung } from "../../lib2/bewegung";
-import { CustomKeyframeEffect } from "../../lib2/types";
+import { Bewegung } from "../../lib/bewegung";
+import { CustomKeyframeEffect } from "../../lib/types";
 
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
@@ -42,7 +42,6 @@ const initCards = () => {
 		];
 
 		return new Bewegung(highlightCard, hideOthers);
-		//return bewegung(highlightCard, hideOthers);
 	};
 
 	let animation: Bewegung | undefined;
