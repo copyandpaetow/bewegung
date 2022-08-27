@@ -15,6 +15,7 @@ export const addOverrideStyles = (
 	const existingStyle: Partial<CSSStyleDeclaration> = {};
 
 	elementProperties.some((entry) => {
+		//TODO: this needs to be more advanced
 		if (entry.computedStyle.display !== "inline" || tagName !== "SPAN") {
 			return false;
 		}

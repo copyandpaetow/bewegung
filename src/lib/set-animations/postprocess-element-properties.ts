@@ -1,6 +1,6 @@
 import { calculatedElementProperties } from "../types";
 
-const isEntryVisible = (entry: calculatedElementProperties) =>
+export const isEntryVisible = (entry: calculatedElementProperties) =>
 	entry.computedStyle.display !== "none" &&
 	entry.dimensions.height !== 0 &&
 	entry.dimensions.width !== 0;

@@ -105,7 +105,6 @@ export const calculateDimensionDifferences = (
 		xDifference: save(xDifference, 0),
 		yDifference: save(yDifference, 0),
 		offset: currentEntry.offset,
-		//TODO: this should also export an optional clipPath
 	};
 };
 
