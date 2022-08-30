@@ -19,13 +19,6 @@ const initCards = () => {
 			{
 				width: ["30%", "100%", "55%"],
 				height: ["50vh", "25vh", "65vh"],
-				// transform: [
-				// 	"translate(0px, 0px) rotate(0deg)",
-				// 	"translate(-100px, -100px) rotate(45deg)",
-				// 	"translate(100px, 100px) rotate(-45deg)",
-				// ],
-				// order: "-1",
-				// height: "60vh",",
 			},
 			{ duration: 4000, easing: "ease" },
 		];
@@ -33,10 +26,8 @@ const initCards = () => {
 		const hideOthers: CustomKeyframeEffect = [
 			[...cards].filter((_, index) => index !== activeIndex),
 			{
-				//width: "",
-				//transform: "",
-				// order: "",
-				// height: "",
+				width: "",
+				height: "",
 			},
 			{ duration: 4000, easing: "ease-in" },
 		];
@@ -51,7 +42,6 @@ const initCards = () => {
 		if (!animation) {
 			animation = highlight();
 		}
-		console.log(animation.playState);
 		animation.playState !== "running" ? animation.play() : animation.pause();
 		paused && animation.pause();
 		animation.finished.then(() => {

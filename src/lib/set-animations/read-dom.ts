@@ -4,6 +4,7 @@ import {
 	Context,
 	calculatedElementProperties,
 	DomChanges,
+	CssRuleName,
 } from "../types";
 import { getDomRect, getComputedStylings } from "./read-element-properties";
 
@@ -24,10 +25,15 @@ const applyClasses = (element: HTMLElement, classes: string[]) =>
 const applyAttributes = (element: HTMLElement, attributes: string[]) => {
 	attributes.forEach((attribute) => {
 		const [key, value] = attribute.split("=");
-		if (!Boolean(key)) {
+
+		if (value) {
+			element.setAttribute(key, value);
 			return;
 		}
-		element.setAttribute(key, value);
+
+		element.hasAttribute(key)
+			? element.removeAttribute(key)
+			: element.setAttribute(key, "");
 	});
 };
 
@@ -48,7 +54,6 @@ export const applyCSSStyles = (
 	if (attributes.length) {
 		applyAttributes(element, attributes);
 	}
-	return true;
 };
 
 export const filterMatchingStyleFromKeyframes = (
@@ -75,19 +80,21 @@ export const filterMatchingStyleFromKeyframes = (
 			...styles
 		} = keyframe;
 
+		console.log({ cssClass, attribute });
+
 		resultingStyle = {
 			...resultingStyle,
-			...((timing === undefined || !transform) && {
+			...(transform && {
 				transform: transform as string,
 			}),
 			...styles,
 		};
 
 		if (Boolean(cssClass)) {
-			classes.push(cssClass as string);
+			classes.push(...(cssClass as string).split(" "));
 		}
 		if (Boolean(attribute)) {
-			attributes.push(attribute as string);
+			attributes.push(...(attribute as string).split(" "));
 		}
 	});
 
@@ -95,10 +102,11 @@ export const filterMatchingStyleFromKeyframes = (
 };
 
 const saveOriginalStyle = (element: HTMLElement) => {
-	const allAttributes = new Map<string, string>();
+	const allAttributes = new Map<string, string>([["style", ""]]);
 	element.getAttributeNames().forEach((attribute) => {
 		allAttributes.set(attribute, element.getAttribute(attribute)!);
 	});
+
 	return allAttributes;
 };
 
@@ -106,8 +114,19 @@ export const restoreOriginalStyle = (
 	element: HTMLElement,
 	savedAttributes: Map<string, string>
 ) => {
+	const currentAttributes = new Set(element.getAttributeNames());
+
 	savedAttributes.forEach((value, key) => {
 		element.setAttribute(key, value);
+
+		if (!currentAttributes.has(key)) {
+			return;
+		}
+		currentAttributes.delete(key);
+	});
+
+	currentAttributes.forEach((attribute) => {
+		element.removeAttribute(attribute);
 	});
 };
 
@@ -122,6 +141,8 @@ export const readDomChanges = (
 		calculatedElementProperties[]
 	>();
 	const { changeTimings, changeProperties } = context;
+
+	console.log({ changeProperties });
 
 	changeTimings.forEach((timing, index, array) => {
 		if (index === 0) {

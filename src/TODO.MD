@@ -9,6 +9,7 @@
 - prefer reduced motion
 - update docs
 - improve the playState setting
+- filter unaffected Elements
 
 ## test
 
