@@ -1,6 +1,6 @@
 import { logCalculationTime } from "./logger";
 import { normalizeProps } from "./normalize-props/props";
-import { callbackState } from "./prepare-input/callback-state";
+import { getCallbackState } from "./prepare-input/callback-state";
 import { getChunkState, mapKeysToChunks } from "./prepare-input/chunk-state";
 import { calculateContext } from "./prepare-input/context";
 import {
@@ -8,6 +8,7 @@ import {
 	getElementState,
 } from "./prepare-input/element-state";
 import { normalizeChunks } from "./prepare-input/normalize-chunks";
+import { getPlayState, PlayState } from "./prepare-input/play-state";
 import { getAnimations } from "./set-animations/animations";
 import {
 	readDomChanges,
@@ -18,13 +19,15 @@ import {
 	postprocessProperties,
 } from "./set-animations/style-state";
 import {
-	BewegungProps,
 	BewegungAPI,
+	BewegungProps,
+	CallbackState,
 	Chunks,
 	ChunkState,
 	Context,
 	ElementState,
 	StyleState,
+	ValueOf,
 } from "./types";
 import { watchChanges } from "./watch/all-changes";
 
@@ -37,17 +40,17 @@ export class Bewegung implements BewegungAPI {
 	}
 
 	//required
-	#input: Chunks[] = [];
-	#animations: Animation[] = [];
-	#disconnectReactivity: VoidFunction = () => {};
-	#beforeAnimationCallbacks = callbackState();
-	#afterAnimationCallbacks = callbackState();
+	#input: Chunks[];
+	#animations: Animation[];
+	#disconnectReactivity: VoidFunction;
 
 	//recalc friendly
 	#context: Context;
 	#elementState: ElementState;
 	#chunkState: ChunkState;
 	#styleState: StyleState;
+	#callbackState: CallbackState;
+	#playState: PlayState;
 
 	#currentTime = 0;
 	#progressTime = 0;
@@ -82,24 +85,34 @@ export class Bewegung implements BewegungAPI {
 		);
 
 		this.#animations = animations;
-		this.#beforeAnimationCallbacks.set(runBeforeAnimation);
-		this.#afterAnimationCallbacks.set(runAfterAnimation);
+		this.#callbackState = getCallbackState(
+			runBeforeAnimation,
+			runAfterAnimation
+		);
 
-		logCalculationTime(this.#now);
 		this.#setCallbacks();
-
-		queueMicrotask(() => {
-			this.#makeReactive();
-		});
 	}
 
 	#setCallbacks() {
+		this.#playState = getPlayState({
+			animations: this.#animations,
+			callbackState: this.#callbackState,
+			updateFinishPromise: (promise: Promise<Animation[]>) =>
+				(this.finished = promise),
+			updatePlayState: (state: AnimationPlayState) => (this.playState = state),
+		});
 		this.finished = Promise.all(
 			this.#animations.map((animation) => animation.finished)
 		);
 
+		logCalculationTime(this.#now);
+
+		queueMicrotask(() => {
+			this.#makeReactive();
+		});
+
 		this.finished.then(() => {
-			this.#afterAnimationCallbacks.execute();
+			this.#callbackState.executeAfterAnimationEnds();
 			this.playState = "finished";
 		});
 	}
@@ -122,14 +135,14 @@ export class Bewegung implements BewegungAPI {
 			this.#disconnectReactivity?.();
 			if (this.playState !== "idle") {
 				this.#keepProgress();
-				this.#afterAnimationCallbacks.execute();
+				this.#callbackState.executeAfterAnimationEnds();
 				this.#cancelExistingAnimations();
 			}
 
 			recalculation();
 
 			if (this.playState !== "idle") {
-				this.#beforeAnimationCallbacks.execute();
+				this.#callbackState.executeBeforeAnimationStart();
 			}
 			this.#setAnimationProgress();
 		};
@@ -182,7 +195,7 @@ export class Bewegung implements BewegungAPI {
 	play() {
 		this.playState = "running";
 		this.#disconnectReactivity?.();
-		this.#beforeAnimationCallbacks.execute();
+		this.#callbackState.executeBeforeAnimationStart();
 
 		this.#animations.forEach((waapi) => {
 			waapi.play();
@@ -192,7 +205,7 @@ export class Bewegung implements BewegungAPI {
 	scroll() {
 		this.playState = "running";
 		this.#disconnectReactivity?.();
-		this.#beforeAnimationCallbacks.execute();
+		this.#callbackState.executeBeforeAnimationStart();
 
 		return (progress: number, done?: boolean) => {
 			if (done) {
@@ -223,7 +236,7 @@ export class Bewegung implements BewegungAPI {
 	reverse() {
 		this.playState = "running";
 		this.#disconnectReactivity?.();
-		this.#beforeAnimationCallbacks.execute();
+		this.#callbackState.executeBeforeAnimationStart();
 
 		this.#animations.forEach((waapi) => {
 			waapi.reverse();
@@ -232,7 +245,7 @@ export class Bewegung implements BewegungAPI {
 	cancel() {
 		this.playState = "finished";
 		this.#elementState
-			.getAllElements()
+			.getMainElements()
 			.forEach((element) =>
 				restoreOriginalStyle(
 					element,
@@ -246,9 +259,9 @@ export class Bewegung implements BewegungAPI {
 	}
 	commitStyles() {
 		this.playState = "finished";
-		this.#animations.forEach((waapi) => {
-			waapi.commitStyles();
-		});
+		this.#callbackState.executeBeforeAnimationStart();
+		this.#callbackState.executeAfterAnimationEnds();
+		this.finished = Promise.resolve([]);
 	}
 	finish() {
 		this.playState = "finished";

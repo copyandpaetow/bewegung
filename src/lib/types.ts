@@ -111,8 +111,8 @@ export interface ChunkState {
 }
 
 export interface CallbackState {
-	set(allCallbacks: VoidFunction[]): void;
-	execute(): void;
+	executeBeforeAnimationStart(): void;
+	executeAfterAnimationEnds(): void;
 }
 
 export interface ElementState {

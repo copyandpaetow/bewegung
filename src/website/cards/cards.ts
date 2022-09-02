@@ -42,7 +42,7 @@ const initCards = () => {
 		if (!animation) {
 			animation = highlight();
 		}
-		animation.playState !== "running" ? animation.play() : animation.pause();
+		animation.playState !== "running" ? animation.finish() : animation.pause();
 		paused && animation.pause();
 		animation.finished.then(() => {
 			animation = undefined;

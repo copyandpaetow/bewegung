@@ -15,12 +15,9 @@
 
 ## test
 
-- iterations
-- can clip-path pass through?
-- other media elements like video
-- transform-origin
-- filter
-- pseudo-elements
+- create test page
+  - seperated into inputs, return methods + properties, css-properties
+  - test media (image + video) and text in addition to a simple box, maybe even a pseudoelement
 
 ## Questions
 

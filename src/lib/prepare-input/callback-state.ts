@@ -42,18 +42,20 @@ export const afterAnimationCallback = (
 	});
 };
 
-export const callbackState = (): CallbackState => {
-	const queue = new Set<VoidFunction>();
-
+export const getCallbackState = (
+	before: VoidFunction[],
+	after: VoidFunction[]
+): CallbackState => {
+	const beforeQueue = new Set<VoidFunction>(before);
+	const afterQueue = new Set<VoidFunction>(after);
 	return {
-		set(allCallbacks: VoidFunction[]) {
-			allCallbacks.forEach((callback) => {
-				queue.add(callback);
-			});
+		executeBeforeAnimationStart() {
+			beforeQueue.forEach((callback) => callback());
+			beforeQueue.clear();
 		},
-		execute() {
-			queue.forEach((callback) => callback());
-			queue.clear();
+		executeAfterAnimationEnds() {
+			afterQueue.forEach((callback) => callback());
+			afterQueue.clear();
 		},
 	};
 };
