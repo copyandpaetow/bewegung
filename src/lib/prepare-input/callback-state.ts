@@ -1,7 +1,8 @@
 import {
 	applyCSSStyles,
 	filterMatchingStyleFromKeyframes,
-} from "../set-animations/style-state";
+	applyStyleObject,
+} from "../set-animations/read-dom";
 import { ChunkState, ElementState, StyleState, CallbackState } from "../types";
 
 export const beforeAnimationCallback = (
@@ -18,8 +19,7 @@ export const beforeAnimationCallback = (
 		}
 
 		applyCSSStyles(element, {
-			...(isMainElement &&
-				filterMatchingStyleFromKeyframes(chunkState.getKeyframes(element)!)),
+			...filterMatchingStyleFromKeyframes(chunkState.getKeyframes(element)!),
 			...(overrides && overrides.override),
 		});
 	});
@@ -36,7 +36,7 @@ export const afterAnimationCallback = (
 			return;
 		}
 
-		applyCSSStyles(element, {
+		applyStyleObject(element, {
 			...overrides.existingStyle,
 		});
 	});

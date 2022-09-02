@@ -1,8 +1,8 @@
 import { emptyImageSrc } from "../constants";
 import { highestNumber } from "../prepare-input/context";
-import { calculatedElementProperties, StyleState, Context } from "../types";
+import { calculatedElementProperties, Context, StyleState } from "../types";
 import { save } from "./calculate-dimension-differences";
-import { applyCSSStyles } from "./style-state";
+import { applyStyleObject } from "./read-dom";
 
 const calculateBorderRadius = (
 	borderRadius: string,
@@ -19,17 +19,15 @@ const calculateBorderRadius = (
 	return `${(100 * parsedRadius) / width}% / ${(100 * parsedRadius) / height}%`;
 };
 
-const getPlaceholderElement = (element: HTMLImageElement) => {
-	const placeholderImage = element.cloneNode() as HTMLImageElement;
-	placeholderImage.src = false ? emptyImageSrc : element.src;
-	placeholderImage.style.opacity = "0";
-
-	return placeholderImage;
-};
+const getPlaceholderElement = (element: HTMLImageElement) =>
+	Object.assign(element.cloneNode() as HTMLImageElement, {
+		src: emptyImageSrc,
+		style: "opacity: 0;",
+	});
 
 const getWrapperElement = (wrapperStyle: Partial<CSSStyleDeclaration>) => {
 	const wrapper = document.createElement("div");
-	applyCSSStyles(wrapper, wrapperStyle);
+	applyStyleObject(wrapper, wrapperStyle);
 	return wrapper;
 };
 
@@ -185,6 +183,7 @@ export const calculateImageAnimation = (
 	const rootStyleMap = styleState.getElementProperties(document.body)!;
 	const maxDimensions = getMaximumDimensions(styleMap);
 
+	const elementStyle = element.style.cssText;
 	const parentElement = element.parentElement;
 	const placeholderImage = getPlaceholderElement(element);
 	const wrapper = getWrapperElement(
@@ -234,7 +233,7 @@ export const calculateImageAnimation = (
 				placeholderImage.remove();
 			}
 
-			element.style.cssText = styleState.getOriginalStyle(element)!;
+			element.style.cssText = elementStyle;
 			wrapper.remove();
 		},
 	};

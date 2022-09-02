@@ -3,6 +3,11 @@ import { ObserveDimensionChange } from "./dimensions";
 import { ObserveDomMutations } from "./dom-mutations";
 import { ObserveBrowserResize } from "./resizes";
 
+if (typeof window !== "undefined") {
+	// @ts-expect-error polyfill for requestIdleCallback
+	window.requestIdleCallback ||= window.requestAnimationFrame;
+}
+
 interface ChangeCallbacks {
 	recalcInput: (changes: Chunks[]) => void;
 	recalcAnimations: VoidFunction;

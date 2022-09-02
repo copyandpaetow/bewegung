@@ -5,22 +5,53 @@ import {
 	DimensionalDifferences,
 	ElementState,
 } from "../types";
+import { isEntryVisible } from "./postprocess-element-properties";
+
+/*
+	diagonal values can be the same but this is mostly only for the top-right and bottom-left corner true: 5px 10px 2px => 5px 10px 2px 10px
+*/
+
+const normalizeBorderRadius = (
+	radii: string,
+	dimensions: { height: number; width: number }
+) => {
+	const radius = radii.split(" ");
+	const widthEntries: string[] = [];
+	const heightEntries: string[] = [];
+
+	if (radius.length === 3) {
+		radius.push(radius[1]);
+	}
+
+	radius.forEach((value) => {
+		if (value.includes("%") || value === "0px") {
+			widthEntries.push(value);
+			heightEntries.push(value);
+			return;
+		}
+		const parsedValue = parseFloat(value);
+		widthEntries.push(`${(100 * parsedValue) / dimensions.width}%`);
+		heightEntries.push(`${(100 * parsedValue) / dimensions.height}%`);
+	});
+
+	return `${widthEntries.join(" ")} / ${heightEntries.join(" ")}`;
+};
 
 const calculateBorderRadius = (
 	styleEntry: calculatedElementProperties
 ): string => {
-	const numHeight = parseFloat(styleEntry.computedStyle.height!);
-	const numWidth = parseFloat(styleEntry.computedStyle.width!);
-	const parsedRadius = parseFloat(styleEntry.computedStyle.borderRadius!);
+	const radius = styleEntry.computedStyle.borderRadius!;
+	const normalized = normalizeBorderRadius(radius, {
+		width: styleEntry.dimensions.width,
+		height: styleEntry.dimensions.height,
+	});
 
-	if (isNaN(parsedRadius)) {
+	if (radius.includes("/")) {
 		//TODO: handle more complex border radius
 		return "0px";
 	}
 
-	return `${(100 * parsedRadius) / numWidth}% / ${
-		(100 * parsedRadius) / numHeight
-	}%`;
+	return normalized;
 };
 
 export const getBorderRadius = (
@@ -34,12 +65,13 @@ export const getBorderRadius = (
 		return;
 	}
 
-	const styleTable = {};
+	const styleTable: Record<number, string> = {};
 
-	calculatedProperties.forEach(
-		//@ts-expect-error ts thinks numbers cant be keys
-		(style) => (styleTable[style.offset] = calculateBorderRadius(style))
-	);
+	calculatedProperties.forEach((style) => {
+		styleTable[style.offset] = isEntryVisible(style)
+			? calculateBorderRadius(style)
+			: "0px";
+	});
 
 	return styleTable;
 };
@@ -53,11 +85,10 @@ export const getOpacity = (
 		return;
 	}
 
-	const styleTable = {};
+	const styleTable: Record<number, string> = {};
 
 	calculatedProperties.forEach(
-		//@ts-expect-error ts thinks numbers cant be keys
-		(style) => (styleTable[style.offset] = style.computedStyle.opacity)
+		(style) => (styleTable[style.offset] = style.computedStyle.opacity!)
 	);
 
 	return styleTable;
@@ -72,11 +103,10 @@ export const getFilter = (
 		return;
 	}
 
-	const styleTable = {};
+	const styleTable: Record<number, string> = {};
 
 	calculatedProperties.forEach(
-		//@ts-expect-error ts thinks numbers cant be keys
-		(style) => (styleTable[style.offset] = style.computedStyle.filter)
+		(style) => (styleTable[style.offset] = style.computedStyle.filter!)
 	);
 
 	return styleTable;
@@ -87,11 +117,10 @@ export const getUserTransforms = (
 	changeTimings: number[],
 	keyframes?: ComputedKeyframe[]
 ): Record<number, string> | undefined => {
-	const styleTable = {};
+	const styleTable: Record<number, string> = {};
 
 	if (element.style.transform) {
 		changeTimings.forEach((timing) => {
-			//@ts-expect-error ts thinks numbers cant be keys
 			styleTable[timing] = element.style.transform;
 		});
 	}
@@ -100,8 +129,7 @@ export const getUserTransforms = (
 		if (!style.transform) {
 			return;
 		}
-		//@ts-expect-error ts thinks numbers cant be keys
-		styleTable[style.offset as number] = style.transform;
+		styleTable[style.offset as number] = style.transform as string;
 	});
 
 	if (

@@ -3,12 +3,15 @@
 ## upcoming tasks
 
 - callbacks need to be reversable? How to handle on reverse, iterations etc
-- enable addtion/removal or classes and attributes?
 - custom properties?
 - background images
 - prefer reduced motion
 - update docs
 - improve the playState setting
+  - reset finish promise
+- filter unaffected Elements
+  - since the code is reactive we dont need the weakmap approach anymore, at least not the element as keys
+  - maybe something that gets garbage collected when filtered out of the allElements
 
 ## test
 
