@@ -100,6 +100,7 @@ export class Bewegung implements BewegungAPI {
 
 		this.finished.then(() => {
 			this.#afterAnimationCallbacks.execute();
+			this.playState = "finished";
 		});
 	}
 
@@ -223,6 +224,7 @@ export class Bewegung implements BewegungAPI {
 		this.playState = "running";
 		this.#disconnectReactivity?.();
 		this.#beforeAnimationCallbacks.execute();
+
 		this.#animations.forEach((waapi) => {
 			waapi.reverse();
 		});

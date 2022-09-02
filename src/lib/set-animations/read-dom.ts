@@ -1,12 +1,11 @@
 import {
-	ChunkState,
-	ElementState,
-	Context,
 	calculatedElementProperties,
+	ChunkState,
+	Context,
 	DomChanges,
-	CssRuleName,
+	ElementState,
 } from "../types";
-import { getDomRect, getComputedStylings } from "./read-element-properties";
+import { getComputedStylings, getDomRect } from "./read-element-properties";
 
 interface StyleChangePossibilities {
 	attributes: string[];
@@ -75,12 +74,10 @@ export const filterMatchingStyleFromKeyframes = (
 			computedOffset,
 			easing,
 			transform,
-			cssClass,
+			class: cssClass,
 			attribute,
 			...styles
 		} = keyframe;
-
-		console.log({ cssClass, attribute });
 
 		resultingStyle = {
 			...resultingStyle,
@@ -141,8 +138,6 @@ export const readDomChanges = (
 		calculatedElementProperties[]
 	>();
 	const { changeTimings, changeProperties } = context;
-
-	console.log({ changeProperties });
 
 	changeTimings.forEach((timing, index, array) => {
 		if (index === 0) {

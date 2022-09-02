@@ -67,7 +67,7 @@ export const getBorderRadius = (
 
 	const styleTable: Record<number, string> = {};
 
-	calculatedProperties.forEach((style, index, array) => {
+	calculatedProperties.forEach((style) => {
 		styleTable[style.offset] = isEntryVisible(style)
 			? calculateBorderRadius(style)
 			: "0px";

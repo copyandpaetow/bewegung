@@ -17,7 +17,7 @@ export type CustomKeyframeArrayValueSyntax = Partial<
 >;
 
 export type NonCSSEntries = {
-	cssClass: string;
+	class: string;
 	attribute: string;
 	callback: VoidFunction;
 	offset: number;

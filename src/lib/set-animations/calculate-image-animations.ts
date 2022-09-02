@@ -19,13 +19,11 @@ const calculateBorderRadius = (
 	return `${(100 * parsedRadius) / width}% / ${(100 * parsedRadius) / height}%`;
 };
 
-const getPlaceholderElement = (element: HTMLImageElement) => {
-	const placeholderImage = element.cloneNode() as HTMLImageElement;
-	placeholderImage.src = false ? emptyImageSrc : element.src;
-	placeholderImage.style.opacity = "0";
-
-	return placeholderImage;
-};
+const getPlaceholderElement = (element: HTMLImageElement) =>
+	Object.assign(element.cloneNode() as HTMLImageElement, {
+		src: emptyImageSrc,
+		style: "opacity: 0;",
+	});
 
 const getWrapperElement = (wrapperStyle: Partial<CSSStyleDeclaration>) => {
 	const wrapper = document.createElement("div");
