@@ -1,4 +1,10 @@
-import { calculatedElementProperties } from "../types";
+import {
+	calculatedElementProperties,
+	DomChanges,
+	DomStates,
+	ElementKey,
+} from "../types";
+import { addOverrideStyles } from "./style-state";
 
 export const isEntryVisible = (entry: calculatedElementProperties) =>
 	entry.computedStyle.display !== "none" &&
@@ -30,4 +36,36 @@ export const recalculateDisplayNoneValues = (
 			dimensions: { ...nextEntryDimensions, width: 0, height: 0 },
 		};
 	});
+};
+
+export const postprocessProperties = ({
+	originalStyle,
+	elementProperties,
+	elementState,
+	chunkState,
+}: DomChanges): DomStates => {
+	const elementStyleOverrides = new WeakMap<
+		ElementKey,
+		{
+			existingStyle: Partial<CSSStyleDeclaration>;
+			override: Partial<CSSStyleDeclaration>;
+		}
+	>();
+
+	elementState.getAllKeys().forEach((key) => {
+		const properties = elementProperties.get(key)!;
+
+		elementProperties.set(key, recalculateDisplayNoneValues(properties));
+
+		const overrideStyle = addOverrideStyles(
+			properties,
+			chunkState.getKeyframes(key) ?? [],
+			elementState.getDomElement(key).tagName
+		);
+		if (overrideStyle) {
+			elementStyleOverrides.set(key, overrideStyle);
+		}
+	});
+
+	return { originalStyle, elementProperties, elementStyleOverrides };
 };

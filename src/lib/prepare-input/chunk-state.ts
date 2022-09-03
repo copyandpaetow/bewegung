@@ -1,19 +1,30 @@
-import { Chunks, ChunkOption, Callbacks, ChunkState } from "../types";
+import {
+	Chunks,
+	ChunkOption,
+	Callbacks,
+	ChunkState,
+	ElementState,
+	ElementKey,
+} from "../types";
 
 interface ChunkKeyValues {
-	chunkKeys: WeakMap<HTMLElement, symbol[]>;
+	chunkKeys: WeakMap<ElementKey, symbol[]>;
 	chunkValues: Map<symbol, Chunks>;
 }
 
-export const mapKeysToChunks = (chunks: Chunks[]): ChunkKeyValues => {
-	const chunkKeys = new WeakMap<HTMLElement, symbol[]>();
+export const mapKeysToChunks = (
+	chunks: Chunks[],
+	elementState: ElementState
+): ChunkKeyValues => {
+	const chunkKeys = new WeakMap<ElementKey, symbol[]>();
 	const chunkValues = new Map<symbol, Chunks>();
 
 	chunks.forEach((chunk) => {
 		const key = Symbol("chunkKey");
 		chunkValues.set(key, chunk);
 		chunk.target.forEach((element) => {
-			chunkKeys.set(element, (chunkKeys.get(element) || []).concat(key));
+			const elementKey = elementState.getKey(element);
+			chunkKeys.set(elementKey, (chunkKeys.get(elementKey) || []).concat(key));
 		});
 	});
 
@@ -25,28 +36,28 @@ export const getChunkState = ({
 	chunkValues,
 }: ChunkKeyValues): ChunkState => {
 	return {
-		getKeyframes(element: HTMLElement) {
+		getKeyframes(key: ElementKey) {
 			return chunkKeys
-				.get(element)
+				.get(key)
 				?.map((chunkKey) => chunkValues.get(chunkKey)!.keyframes)
 				.flat();
 		},
-		getCallbacks(element: HTMLElement) {
+		getCallbacks(key: ElementKey) {
 			return chunkKeys
-				.get(element)
+				.get(key)
 				?.map((chunkKey) => chunkValues.get(chunkKey)!.callbacks)
 				.flat()
 				.filter(Boolean) as Callbacks[] | undefined;
 		},
-		getOptions(element: HTMLElement) {
+		getOptions(key: ElementKey) {
 			return chunkKeys
-				.get(element)
+				.get(key)
 				?.map((chunkKey) => chunkValues.get(chunkKey)!.options)
 				.flat();
 		},
-		getSelector(element: HTMLElement) {
+		getSelector(key: ElementKey) {
 			return chunkKeys
-				.get(element)
+				.get(key)
 				?.flatMap((chunkKey) => chunkValues.get(chunkKey)!.selector)
 				.filter(Boolean) as string[] | undefined;
 		},
@@ -63,16 +74,6 @@ export const getChunkState = ({
 				allOptions.push(options);
 			});
 			return allOptions;
-		},
-		getAllTargetElements() {
-			const elements = new Set<HTMLElement>();
-
-			chunkValues.forEach(({ target }) => {
-				target.forEach((targetElement) => {
-					elements.add(targetElement);
-				});
-			});
-			return elements;
 		},
 	};
 };

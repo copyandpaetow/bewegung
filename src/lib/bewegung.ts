@@ -9,14 +9,12 @@ import {
 } from "./prepare-input/element-state";
 import { normalizeChunks } from "./prepare-input/normalize-chunks";
 import { getAnimations } from "./set-animations/animations";
+import { postprocessProperties } from "./set-animations/postprocess-element-properties";
 import {
 	readDomChanges,
 	restoreOriginalStyle,
 } from "./set-animations/read-dom";
-import {
-	getStyleState,
-	postprocessProperties,
-} from "./set-animations/style-state";
+import { getStyleState } from "./set-animations/style-state";
 import {
 	BewegungProps,
 	BewegungAPI,
@@ -58,9 +56,12 @@ export class Bewegung implements BewegungAPI {
 	#prepareInput(chunks: Chunks[]) {
 		this.#context = calculateContext(chunks);
 		this.#input = normalizeChunks(chunks, this.#context.totalRuntime);
-		this.#chunkState = getChunkState(mapKeysToChunks(this.#input));
+
 		this.#elementState = getElementState(
 			findAffectedAndDependencyElements(this.#input)
+		);
+		this.#chunkState = getChunkState(
+			mapKeysToChunks(this.#input, this.#elementState)
 		);
 		this.#setAnimations();
 	}
@@ -232,11 +233,11 @@ export class Bewegung implements BewegungAPI {
 	cancel() {
 		this.playState = "finished";
 		this.#elementState
-			.getAllElements()
-			.forEach((element) =>
+			.getAllKeys()
+			.forEach((key) =>
 				restoreOriginalStyle(
-					element,
-					this.#styleState.getOriginalStyle(element)!
+					this.#elementState.getDomElement(key),
+					this.#styleState.getOriginalStyle(key)!
 				)
 			);
 

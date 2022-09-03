@@ -1,6 +1,7 @@
 import {
 	calculatedElementProperties,
 	ChunkState,
+	ElementKey,
 	ElementState,
 	StyleState,
 } from "../types";
@@ -53,23 +54,21 @@ export const ObserveDimensionChange = (
 	styleState: StyleState,
 	callback: () => void
 ) => {
-	let allIntersectionObserver = new WeakMap<
-		HTMLElement,
-		IntersectionObserver
-	>();
+	let allIntersectionObserver = new WeakMap<ElementKey, IntersectionObserver>();
 
-	elementState.getAllElements().forEach((element) => {
-		allIntersectionObserver.get(element)?.disconnect();
+	elementState.getAllKeys().forEach((key) => {
+		allIntersectionObserver.get(key)?.disconnect();
+		const domElement = elementState.getDomElement(key);
 
-		const mainElements = elementState.isMainElement(element)
-			? [element]
-			: [...elementState.getDependecyElements(element)!];
+		const mainKeys = key.mainElement
+			? [key]
+			: [...elementState.getDependecyKeys(key)!];
 
-		const allSelectors = mainElements.flatMap(
-			(mainElement) => chunkState.getSelector(mainElement)!
+		const allSelectors = mainKeys.flatMap(
+			(key) => chunkState.getSelector(key)!
 		);
 
-		const rootElement = getRootElement(element, allSelectors);
+		const rootElement = getRootElement(domElement, allSelectors);
 
 		let firstTime = true;
 		const observer = new IntersectionObserver(
@@ -85,24 +84,21 @@ export const ObserveDimensionChange = (
 				threshold: [0.2, 0.4, 0.6, 0.8, 1],
 				rootMargin: calculateRootMargin(
 					rootElement,
-					styleState.getElementProperties(element)!
+					styleState.getElementProperties(key)!
 				),
 			}
 		);
 
-		observer.observe(element);
-		allIntersectionObserver.set(element, observer);
+		observer.observe(domElement);
+		allIntersectionObserver.set(key, observer);
 	});
 
 	return {
 		disconnect: () => {
-			elementState.getAllElements().forEach((element) => {
-				allIntersectionObserver.get(element)?.disconnect();
+			elementState.getAllKeys().forEach((key) => {
+				allIntersectionObserver.get(key)?.disconnect();
 			});
-			allIntersectionObserver = new WeakMap<
-				HTMLElement,
-				IntersectionObserver
-			>();
+			allIntersectionObserver = new WeakMap<ElementKey, IntersectionObserver>();
 		},
 	};
 };

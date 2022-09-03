@@ -3,6 +3,7 @@ import {
 	calculatedElementProperties,
 	ChunkState,
 	DimensionalDifferences,
+	ElementKey,
 	ElementState,
 } from "../types";
 import { isEntryVisible } from "./postprocess-element-properties";
@@ -143,15 +144,15 @@ export const getUserTransforms = (
 };
 
 export const getDependecyOptions = (
-	element: HTMLElement,
+	key: ElementKey,
 	elementState: ElementState,
 	chunkState: ChunkState
 ): ComputedEffectTiming[] => {
 	const options = new Set<ComputedEffectTiming>();
 
-	elementState.getDependecyElements(element)?.forEach((dependencyElement) => {
+	elementState.getDependecyKeys(key)?.forEach((dependencyKey) => {
 		chunkState
-			.getOptions(dependencyElement)
+			.getOptions(dependencyKey)
 			?.forEach((option) => options.add(option));
 	});
 	return [...options];

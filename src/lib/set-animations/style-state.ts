@@ -2,6 +2,7 @@ import {
 	calculatedElementProperties,
 	DomChanges,
 	DomStates,
+	ElementKey,
 	StyleState,
 } from "../types";
 import { recalculateDisplayNoneValues } from "./postprocess-element-properties";
@@ -47,52 +48,20 @@ export const addOverrideStyles = (
 	return { existingStyle, override };
 };
 
-export const postprocessProperties = ({
-	originalStyle,
-	elementProperties,
-	elementState,
-	chunkState,
-}: DomChanges): DomStates => {
-	const elementStyleOverrides = new WeakMap<
-		HTMLElement,
-		{
-			existingStyle: Partial<CSSStyleDeclaration>;
-			override: Partial<CSSStyleDeclaration>;
-		}
-	>();
-
-	elementState.getAllElements().forEach((element) => {
-		const properties = elementProperties.get(element)!;
-
-		elementProperties.set(element, recalculateDisplayNoneValues(properties));
-
-		const overrideStyle = addOverrideStyles(
-			properties,
-			chunkState.getKeyframes(element) ?? [],
-			element.tagName
-		);
-		if (overrideStyle) {
-			elementStyleOverrides.set(element, overrideStyle);
-		}
-	});
-
-	return { originalStyle, elementProperties, elementStyleOverrides };
-};
-
 export const getStyleState = ({
 	originalStyle,
 	elementProperties,
 	elementStyleOverrides,
 }: DomStates): StyleState => {
 	return {
-		getOriginalStyle(element: HTMLElement) {
-			return originalStyle.get(element);
+		getOriginalStyle(key: ElementKey) {
+			return originalStyle.get(key);
 		},
-		getElementProperties(element: HTMLElement) {
-			return elementProperties.get(element);
+		getElementProperties(key: ElementKey) {
+			return elementProperties.get(key);
 		},
-		getStyleOverrides(element: HTMLElement) {
-			return elementStyleOverrides.get(element);
+		getStyleOverrides(key: ElementKey) {
+			return elementStyleOverrides.get(key);
 		},
 	};
 };

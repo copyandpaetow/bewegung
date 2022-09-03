@@ -51,7 +51,7 @@ export const watchChanges = (
 	});
 
 	const observeResize = ObserveBrowserResize(
-		elementState.getAllElements(),
+		elementState.getAllKeys().map((key) => elementState.getDomElement(key)),
 		() => {
 			priorityMap.set("recalcAnimation", callbacks.recalcAnimations);
 

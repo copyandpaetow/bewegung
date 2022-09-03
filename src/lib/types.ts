@@ -101,13 +101,12 @@ export type differenceArray = [
 ];
 
 export interface ChunkState {
-	getCallbacks(element: HTMLElement): Callbacks[] | undefined;
-	getKeyframes(element: HTMLElement): ComputedKeyframe[] | undefined;
-	getOptions(element: HTMLElement): ChunkOption[] | undefined;
-	getSelector(element: HTMLElement): string[] | undefined;
+	getCallbacks(key: ElementKey): Callbacks[] | undefined;
+	getKeyframes(key: ElementKey): ComputedKeyframe[] | undefined;
+	getOptions(key: ElementKey): ChunkOption[] | undefined;
+	getSelector(key: ElementKey): string[] | undefined;
 	getAllKeyframes(): ComputedKeyframe[][];
 	getAllOptions(): ChunkOption[];
-	getAllTargetElements(): Set<HTMLElement>;
 }
 
 export interface CallbackState {
@@ -115,19 +114,22 @@ export interface CallbackState {
 	execute(): void;
 }
 
+export type ElementKey = Record<string, boolean>;
 export interface ElementState {
-	getMainElements(): Set<HTMLElement>;
-	isMainElement(element: HTMLElement): boolean;
-	getAllElements(): HTMLElement[];
-	getDependecyElements(element: HTMLElement): Set<HTMLElement> | undefined;
+	getMainKeys(): ElementKey[];
+	getAllKeys(): ElementKey[];
+	getDependecyKeys(key: ElementKey): ElementKey[] | undefined;
+	getDomElement(key: ElementKey): HTMLElement;
+	getKey(element: HTMLElement): ElementKey;
+	hasKey(element: HTMLElement): boolean;
 }
 
 export interface StyleState {
-	getOriginalStyle(element: HTMLElement): Map<string, string> | undefined;
+	getOriginalStyle(key: ElementKey): Map<string, string> | undefined;
 	getElementProperties(
-		element: HTMLElement
+		key: ElementKey
 	): calculatedElementProperties[] | undefined;
-	getStyleOverrides(element: HTMLElement):
+	getStyleOverrides(key: ElementKey):
 		| {
 				existingStyle: Partial<CSSStyleDeclaration>;
 				override: Partial<CSSStyleDeclaration>;
@@ -136,17 +138,17 @@ export interface StyleState {
 }
 
 export interface DomChanges {
-	originalStyle: WeakMap<HTMLElement, Map<string, string>>;
-	elementProperties: WeakMap<HTMLElement, calculatedElementProperties[]>;
+	originalStyle: WeakMap<ElementKey, Map<string, string>>;
+	elementProperties: WeakMap<ElementKey, calculatedElementProperties[]>;
 	elementState: ElementState;
 	chunkState: ChunkState;
 }
 
 export interface DomStates {
-	originalStyle: WeakMap<HTMLElement, Map<string, string>>;
-	elementProperties: WeakMap<HTMLElement, calculatedElementProperties[]>;
+	originalStyle: WeakMap<ElementKey, Map<string, string>>;
+	elementProperties: WeakMap<ElementKey, calculatedElementProperties[]>;
 	elementStyleOverrides: WeakMap<
-		HTMLElement,
+		ElementKey,
 		{
 			existingStyle: Partial<CSSStyleDeclaration>;
 			override: Partial<CSSStyleDeclaration>;

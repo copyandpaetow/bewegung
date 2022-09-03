@@ -3,6 +3,7 @@ import {
 	ChunkState,
 	Context,
 	DomChanges,
+	ElementKey,
 	ElementState,
 } from "../types";
 import { getComputedStylings, getDomRect } from "./read-element-properties";
@@ -132,48 +133,52 @@ export const readDomChanges = (
 	elementState: ElementState,
 	context: Context
 ): DomChanges => {
-	const originalStyle = new WeakMap<HTMLElement, Map<string, string>>();
+	const originalStyle = new WeakMap<ElementKey, Map<string, string>>();
 	const elementProperties = new WeakMap<
-		HTMLElement,
+		ElementKey,
 		calculatedElementProperties[]
 	>();
 	const { changeTimings, changeProperties } = context;
 
 	changeTimings.forEach((timing, index, array) => {
 		if (index === 0) {
-			elementState.getMainElements().forEach((element) => {
-				originalStyle.set(element, saveOriginalStyle(element));
+			elementState.getMainKeys().forEach((key) => {
+				originalStyle.set(
+					key,
+					saveOriginalStyle(elementState.getDomElement(key))
+				);
 			});
 		}
 
 		elementState
-			.getMainElements()
-			.forEach((element) =>
+			.getMainKeys()
+			.forEach((key) =>
 				applyCSSStyles(
-					element,
+					elementState.getDomElement(key),
 					filterMatchingStyleFromKeyframes(
-						chunkState.getKeyframes(element)!,
+						chunkState.getKeyframes(key)!,
 						timing
 					)
 				)
 			);
-		elementState
-			.getAllElements()
-			.concat(document.body)
-			.forEach((element) => {
-				const newCalculation: calculatedElementProperties = {
-					dimensions: getDomRect(element),
-					offset: timing,
-					computedStyle: getComputedStylings(changeProperties, element),
-				};
-				elementProperties.set(
-					element,
-					(elementProperties.get(element) || []).concat(newCalculation)
-				);
-			});
+		elementState.getAllKeys().forEach((key) => {
+			const domElement = elementState.getDomElement(key);
+			const newCalculation: calculatedElementProperties = {
+				dimensions: getDomRect(domElement),
+				offset: timing,
+				computedStyle: getComputedStylings(changeProperties, domElement),
+			};
+			elementProperties.set(
+				key,
+				(elementProperties.get(key) || []).concat(newCalculation)
+			);
+		});
 		if (index === array.length - 1) {
-			elementState.getMainElements().forEach((element) => {
-				restoreOriginalStyle(element, originalStyle.get(element)!);
+			elementState.getMainKeys().forEach((key) => {
+				restoreOriginalStyle(
+					elementState.getDomElement(key),
+					originalStyle.get(key)!
+				);
 			});
 		}
 	});

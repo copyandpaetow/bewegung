@@ -1,6 +1,11 @@
 import { emptyImageSrc } from "../constants";
 import { highestNumber } from "../prepare-input/context";
-import { calculatedElementProperties, Context, StyleState } from "../types";
+import {
+	calculatedElementProperties,
+	Context,
+	ElementKey,
+	StyleState,
+} from "../types";
 import { save } from "./calculate-dimension-differences";
 import { applyStyleObject } from "./read-dom";
 
@@ -33,10 +38,11 @@ const getWrapperElement = (wrapperStyle: Partial<CSSStyleDeclaration>) => {
 
 const getWrapperStyle = (
 	styleMap: calculatedElementProperties[],
-	rootStyleMap: calculatedElementProperties[],
 	maxValues: { width: number; height: number }
 ) => {
-	const { top: rootTop, left: rootLeft } = rootStyleMap?.at(-1)?.dimensions!;
+	//* if this is imperformant or makes issues, turn back
+	const { top: rootTop, left: rootLeft } =
+		document.body.getBoundingClientRect();
 
 	return {
 		position: "absolute",
@@ -162,6 +168,7 @@ const getWrapperKeyframes = (
 };
 
 interface CalculateImageAnimationProps {
+	key: ElementKey;
 	element: HTMLImageElement;
 	styleState: StyleState;
 	context: Context;
@@ -177,18 +184,15 @@ interface CalculateImageAnimation {
 export const calculateImageAnimation = (
 	props: CalculateImageAnimationProps
 ): CalculateImageAnimation => {
-	const { element, styleState, context, calculateEasing } = props;
+	const { key, element, styleState, context, calculateEasing } = props;
 
-	const styleMap = styleState.getElementProperties(element)!;
-	const rootStyleMap = styleState.getElementProperties(document.body)!;
+	const styleMap = styleState.getElementProperties(key)!;
 	const maxDimensions = getMaximumDimensions(styleMap);
 
 	const elementStyle = element.style.cssText;
 	const parentElement = element.parentElement;
 	const placeholderImage = getPlaceholderElement(element);
-	const wrapper = getWrapperElement(
-		getWrapperStyle(styleMap, rootStyleMap, maxDimensions)
-	);
+	const wrapper = getWrapperElement(getWrapperStyle(styleMap, maxDimensions));
 
 	const originalImageRatio = element.naturalWidth / element.naturalHeight;
 

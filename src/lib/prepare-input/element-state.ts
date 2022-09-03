@@ -1,34 +1,41 @@
-import { Chunks, ElementState } from "../types";
+import { Chunks, ElementKey, ElementState } from "../types";
+import { BiMap } from "./bimap";
 import { findAffectedDOMElements } from "./find-affected-elements";
 
 interface StatefulElements {
-	mainElements: Set<HTMLElement>;
-	affectedElements: Set<HTMLElement>;
-	dependencyElements: WeakMap<HTMLElement, Set<HTMLElement>>;
+	mainElements: BiMap<ElementKey, HTMLElement>;
+	affectedElements: BiMap<ElementKey, HTMLElement>;
+	dependencyElements: WeakMap<ElementKey, ElementKey[]>;
 }
 
 export const findAffectedAndDependencyElements = (
 	chunks: Chunks[]
 ): StatefulElements => {
-	const mainElements = new Set<HTMLElement>();
-	const affectedElements = new Set<HTMLElement>();
-	const dependencyElements = new WeakMap<HTMLElement, Set<HTMLElement>>();
+	const mainElements = new BiMap<ElementKey, HTMLElement>();
+	const affectedElements = new BiMap<ElementKey, HTMLElement>();
+
+	const dependencyElements = new WeakMap<ElementKey, ElementKey[]>();
 
 	chunks.forEach(({ target }) => {
-		target.forEach((element) => mainElements.add(element));
+		target.forEach((element) =>
+			mainElements.set({ mainElement: true }, element)
+		);
 	});
 
 	chunks.forEach(({ target, options }) => {
-		target.forEach((element) => {
-			findAffectedDOMElements(element, options?.rootSelector).forEach(
+		target.forEach((mainElement) => {
+			findAffectedDOMElements(mainElement, options?.rootSelector).forEach(
 				(affectedElement) => {
 					if (mainElements.has(affectedElement)) {
 						return;
 					}
-					affectedElements.add(affectedElement);
+					const affectedKey = { mainElement: false };
+					const mainKey = mainElements.get(mainElement)!;
+					affectedElements.set(affectedKey, affectedElement);
+
 					dependencyElements.set(
-						affectedElement,
-						(dependencyElements.get(affectedElement) || new Set()).add(element)
+						affectedKey,
+						(dependencyElements.get(affectedKey) || []).concat(mainKey)
 					);
 				}
 			);
@@ -44,17 +51,37 @@ export const getElementState = ({
 	dependencyElements,
 }: StatefulElements): ElementState => {
 	return {
-		getMainElements() {
-			return mainElements;
+		getMainKeys() {
+			return mainElements.keys();
 		},
-		isMainElement(element: HTMLElement) {
-			return mainElements.has(element);
+		getAllKeys() {
+			return mainElements.keys().concat(affectedElements.keys());
 		},
-		getAllElements() {
-			return [...mainElements, ...affectedElements];
+		getDependecyKeys(key: ElementKey) {
+			return dependencyElements.get(key);
 		},
-		getDependecyElements(element: HTMLElement) {
-			return dependencyElements.get(element);
+		getDomElement(key: ElementKey): HTMLElement {
+			const domElement = mainElements.get(key) || affectedElements.get(key);
+
+			if (!domElement) {
+				throw new Error("key element translation is out of sync");
+			}
+
+			return domElement;
+		},
+		hasKey(element: HTMLElement) {
+			return Boolean(
+				mainElements.get(element) || affectedElements.get(element)
+			);
+		},
+		getKey(element: HTMLElement) {
+			const key = mainElements.get(element) || affectedElements.get(element);
+
+			if (!key) {
+				throw new Error("key element translation is out of sync");
+			}
+
+			return key;
 		},
 	};
 };

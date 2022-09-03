@@ -10,16 +10,16 @@ export const beforeAnimationCallback = (
 	elementState: ElementState,
 	styleState: StyleState
 ) => {
-	elementState.getAllElements().forEach((element) => {
-		const overrides = styleState.getStyleOverrides(element);
-		const isMainElement = elementState.isMainElement(element);
+	elementState.getAllKeys().forEach((key) => {
+		const overrides = styleState.getStyleOverrides(key);
+		const isMainElement = key.mainElement;
 
 		if (!overrides && !isMainElement) {
 			return;
 		}
 
-		applyCSSStyles(element, {
-			...filterMatchingStyleFromKeyframes(chunkState.getKeyframes(element)!),
+		applyCSSStyles(elementState.getDomElement(key), {
+			...filterMatchingStyleFromKeyframes(chunkState.getKeyframes(key)!),
 			...(overrides && overrides.override),
 		});
 	});
@@ -29,14 +29,14 @@ export const afterAnimationCallback = (
 	elementState: ElementState,
 	styleState: StyleState
 ) => {
-	elementState.getAllElements().forEach((element) => {
-		const overrides = styleState.getStyleOverrides(element);
+	elementState.getAllKeys().forEach((key) => {
+		const overrides = styleState.getStyleOverrides(key);
 
 		if (!overrides) {
 			return;
 		}
 
-		applyStyleObject(element, {
+		applyStyleObject(elementState.getDomElement(key), {
 			...overrides.existingStyle,
 		});
 	});
