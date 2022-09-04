@@ -139,6 +139,7 @@ export const readDomChanges = (
 		calculatedElementProperties[]
 	>();
 	const { changeTimings, changeProperties } = context;
+	let rootDimensions!: DOMRect;
 
 	changeTimings.forEach((timing, index, array) => {
 		if (index === 0) {
@@ -180,6 +181,7 @@ export const readDomChanges = (
 					originalStyle.get(key)!
 				);
 			});
+			rootDimensions = getDomRect(document.body);
 		}
 	});
 
@@ -188,5 +190,6 @@ export const readDomChanges = (
 		elementProperties,
 		elementState,
 		chunkState,
+		rootDimensions,
 	};
 };

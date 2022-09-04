@@ -43,6 +43,7 @@ export const postprocessProperties = ({
 	elementProperties,
 	elementState,
 	chunkState,
+	rootDimensions,
 }: DomChanges): DomStates => {
 	const elementStyleOverrides = new WeakMap<
 		ElementKey,
@@ -67,5 +68,10 @@ export const postprocessProperties = ({
 		}
 	});
 
-	return { originalStyle, elementProperties, elementStyleOverrides };
+	return {
+		originalStyle,
+		elementProperties,
+		elementStyleOverrides,
+		rootDimensions,
+	};
 };

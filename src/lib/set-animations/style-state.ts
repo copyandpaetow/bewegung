@@ -1,11 +1,9 @@
 import {
 	calculatedElementProperties,
-	DomChanges,
 	DomStates,
 	ElementKey,
 	StyleState,
 } from "../types";
-import { recalculateDisplayNoneValues } from "./postprocess-element-properties";
 
 export const addOverrideStyles = (
 	elementProperties: calculatedElementProperties[],
@@ -52,6 +50,7 @@ export const getStyleState = ({
 	originalStyle,
 	elementProperties,
 	elementStyleOverrides,
+	rootDimensions,
 }: DomStates): StyleState => {
 	return {
 		getOriginalStyle(key: ElementKey) {
@@ -62,6 +61,9 @@ export const getStyleState = ({
 		},
 		getStyleOverrides(key: ElementKey) {
 			return elementStyleOverrides.get(key);
+		},
+		getRootDimensions() {
+			return rootDimensions;
 		},
 	};
 };

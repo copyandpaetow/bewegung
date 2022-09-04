@@ -1,6 +1,6 @@
-export class BiMap<Key, Value> {
+export class BiMap<Key extends Object, Value extends Object> {
 	#keyMap: Map<Key, Value>;
-	#valueMap: Map<Value, Key>;
+	#valueMap: WeakMap<Value, Set<Key>>;
 
 	constructor(entries: [Key, Value][] = []) {
 		this.#keyMap = new Map();
@@ -12,52 +12,62 @@ export class BiMap<Key, Value> {
 	}
 
 	set(key: Key, value: Value) {
-		this.delete(key);
-		this.delete(value);
-		this.#keyMap.set(key, value);
-		this.#valueMap.set(value, key);
-	}
-
-	get(keyOrValue: Key): Value | undefined;
-	get(keyOrValue: Value): Key | undefined;
-	get(keyOrValue: Key | Value): Key | Value | undefined {
-		return (
-			this.#keyMap.get(keyOrValue as Key) ||
-			this.#valueMap.get(keyOrValue as Value)
-		);
-	}
-
-	has(keyOrValue: Key | Value) {
-		return (
-			this.#keyMap.has(keyOrValue as Key) ||
-			this.#valueMap.has(keyOrValue as Value)
-		);
-	}
-
-	delete(keyOrValue: Key | Value): Boolean {
-		//@ts-expect-error
-		const returnValue = this.get(keyOrValue);
-
-		if (returnValue !== undefined) {
-			this.#keyMap.delete(returnValue as Key);
-			this.#valueMap.delete(returnValue as Value);
+		if (this.#keyMap.has(key)) {
+			throw new Error("keys need to be unique");
 		}
 
-		return [
-			this.#keyMap.delete(keyOrValue as Key),
-			this.#valueMap.delete(keyOrValue as Value),
-		].some(Boolean);
+		this.#keyMap.set(key, value);
+		this.#valueMap.set(
+			value,
+			(this.#valueMap.get(value) || new Set()).add(key)
+		);
 	}
 
-	forEach(callbackFn: (value: Value, key: Key, map: Map<Key, Value>) => void) {
+	getByKey(key: Key) {
+		return this.#keyMap.get(key);
+	}
+
+	getByValue(valueKey: Value) {
+		return this.#valueMap.has(valueKey)
+			? Array.from(this.#valueMap.get(valueKey)!)
+			: undefined;
+	}
+
+	hasByKey(key: Key) {
+		return this.#keyMap.has(key);
+	}
+
+	hasByValue(value: Value) {
+		return this.#valueMap.has(value);
+	}
+
+	deleteByKey(key: Key) {
+		const value = this.getByKey(key);
+
+		if (value !== undefined) {
+			this.#valueMap.get(value)?.delete(key);
+		}
+
+		return this.#keyMap.delete(key);
+	}
+
+	deleteByValue(value: Value): Boolean {
+		const key = this.getByValue(value);
+
+		if (key !== undefined) {
+			key.forEach((entry) => this.#keyMap.delete(entry));
+		}
+
+		return this.#valueMap.delete(value);
+	}
+
+	forEachKey(
+		callbackFn: (value: Value, key: Key, map: Map<Key, Value>) => void
+	) {
 		this.#keyMap.forEach(callbackFn);
 	}
 
 	keys() {
 		return Array.from(this.#keyMap.keys());
-	}
-
-	values() {
-		return Array.from(this.#valueMap.keys());
 	}
 }

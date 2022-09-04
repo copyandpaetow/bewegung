@@ -7,7 +7,7 @@ import {
 	StyleState,
 } from "../types";
 import { save } from "./calculate-dimension-differences";
-import { applyStyleObject } from "./read-dom";
+import { applyStyleObject, restoreOriginalStyle } from "./read-dom";
 
 const calculateBorderRadius = (
 	borderRadius: string,
@@ -24,11 +24,17 @@ const calculateBorderRadius = (
 	return `${(100 * parsedRadius) / width}% / ${(100 * parsedRadius) / height}%`;
 };
 
-const getPlaceholderElement = (element: HTMLImageElement) =>
-	Object.assign(element.cloneNode() as HTMLImageElement, {
-		src: emptyImageSrc,
-		style: "opacity: 0;",
+const getPlaceholderElement = (element: HTMLImageElement) => {
+	const placeholder = document.createElement("img");
+
+	element.getAttributeNames().forEach((attribute) => {
+		placeholder.setAttribute(attribute, element.getAttribute(attribute)!);
 	});
+	placeholder.src = emptyImageSrc;
+	placeholder.style.opacity = "0";
+
+	return placeholder;
+};
 
 const getWrapperElement = (wrapperStyle: Partial<CSSStyleDeclaration>) => {
 	const wrapper = document.createElement("div");
@@ -38,22 +44,18 @@ const getWrapperElement = (wrapperStyle: Partial<CSSStyleDeclaration>) => {
 
 const getWrapperStyle = (
 	styleMap: calculatedElementProperties[],
+	rootDimensions: DOMRect,
 	maxValues: { width: number; height: number }
-) => {
-	//* if this is imperformant or makes issues, turn back
-	const { top: rootTop, left: rootLeft } =
-		document.body.getBoundingClientRect();
-
-	return {
+) =>
+	({
 		position: "absolute",
-		top: `${styleMap.at(-1)?.dimensions.top! - rootTop}px`,
-		left: `${styleMap.at(-1)?.dimensions.left! - rootLeft}px`,
+		top: `${styleMap.at(-1)?.dimensions.top! - rootDimensions.top}px`,
+		left: `${styleMap.at(-1)?.dimensions.left! - rootDimensions.left}px`,
 		height: `${maxValues.height}px`,
 		width: `${maxValues.width}px`,
 		pointerEvents: "none",
 		overflow: "hidden",
-	} as Partial<CSSStyleDeclaration>;
-};
+	} as Partial<CSSStyleDeclaration>);
 
 interface MaximumDimensions {
 	width: number;
@@ -192,7 +194,9 @@ export const calculateImageAnimation = (
 	const elementStyle = element.style.cssText;
 	const parentElement = element.parentElement;
 	const placeholderImage = getPlaceholderElement(element);
-	const wrapper = getWrapperElement(getWrapperStyle(styleMap, maxDimensions));
+	const wrapper = getWrapperElement(
+		getWrapperStyle(styleMap, styleState.getRootDimensions(), maxDimensions)
+	);
 
 	const originalImageRatio = element.naturalWidth / element.naturalHeight;
 
