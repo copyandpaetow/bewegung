@@ -133,6 +133,7 @@ export interface StyleState {
 				override: Partial<CSSStyleDeclaration>;
 		  }
 		| undefined;
+	getRootDimensions(): DOMRect;
 }
 
 export interface DomChanges {
@@ -140,6 +141,7 @@ export interface DomChanges {
 	elementProperties: WeakMap<HTMLElement, calculatedElementProperties[]>;
 	elementState: ElementState;
 	chunkState: ChunkState;
+	rootDimensions: DOMRect;
 }
 
 export interface DomStates {
@@ -152,4 +154,5 @@ export interface DomStates {
 			override: Partial<CSSStyleDeclaration>;
 		}
 	>;
+	rootDimensions: DOMRect;
 }

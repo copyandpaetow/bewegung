@@ -52,6 +52,7 @@ export const postprocessProperties = ({
 	elementProperties,
 	elementState,
 	chunkState,
+	rootDimensions,
 }: DomChanges): DomStates => {
 	const elementStyleOverrides = new WeakMap<
 		HTMLElement,
@@ -76,13 +77,19 @@ export const postprocessProperties = ({
 		}
 	});
 
-	return { originalStyle, elementProperties, elementStyleOverrides };
+	return {
+		originalStyle,
+		elementProperties,
+		elementStyleOverrides,
+		rootDimensions,
+	};
 };
 
 export const getStyleState = ({
 	originalStyle,
 	elementProperties,
 	elementStyleOverrides,
+	rootDimensions,
 }: DomStates): StyleState => {
 	return {
 		getOriginalStyle(element: HTMLElement) {
@@ -93,6 +100,9 @@ export const getStyleState = ({
 		},
 		getStyleOverrides(element: HTMLElement) {
 			return elementStyleOverrides.get(element);
+		},
+		getRootDimensions() {
+			return rootDimensions;
 		},
 	};
 };

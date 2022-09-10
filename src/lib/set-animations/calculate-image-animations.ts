@@ -19,11 +19,17 @@ const calculateBorderRadius = (
 	return `${(100 * parsedRadius) / width}% / ${(100 * parsedRadius) / height}%`;
 };
 
-const getPlaceholderElement = (element: HTMLImageElement) =>
-	Object.assign(element.cloneNode() as HTMLImageElement, {
-		src: emptyImageSrc,
-		style: "opacity: 0;",
+const getPlaceholderElement = (element: HTMLImageElement) => {
+	const placeholder = document.createElement("img");
+
+	element.getAttributeNames().forEach((attribute) => {
+		placeholder.setAttribute(attribute, element.getAttribute(attribute)!);
 	});
+	placeholder.src = emptyImageSrc;
+	placeholder.style.opacity = "0";
+
+	return placeholder;
+};
 
 const getWrapperElement = (wrapperStyle: Partial<CSSStyleDeclaration>) => {
 	const wrapper = document.createElement("div");
@@ -33,10 +39,10 @@ const getWrapperElement = (wrapperStyle: Partial<CSSStyleDeclaration>) => {
 
 const getWrapperStyle = (
 	styleMap: calculatedElementProperties[],
-	rootStyleMap: calculatedElementProperties[],
+	rootDimensions: DOMRect,
 	maxValues: { width: number; height: number }
 ) => {
-	const { top: rootTop, left: rootLeft } = rootStyleMap?.at(-1)?.dimensions!;
+	const { top: rootTop, left: rootLeft } = rootDimensions;
 
 	return {
 		position: "absolute",
@@ -180,14 +186,13 @@ export const calculateImageAnimation = (
 	const { element, styleState, context, calculateEasing } = props;
 
 	const styleMap = styleState.getElementProperties(element)!;
-	const rootStyleMap = styleState.getElementProperties(document.body)!;
 	const maxDimensions = getMaximumDimensions(styleMap);
 
 	const elementStyle = element.style.cssText;
 	const parentElement = element.parentElement;
 	const placeholderImage = getPlaceholderElement(element);
 	const wrapper = getWrapperElement(
-		getWrapperStyle(styleMap, rootStyleMap, maxDimensions)
+		getWrapperStyle(styleMap, styleState.getRootDimensions(), maxDimensions)
 	);
 
 	const originalImageRatio = element.naturalWidth / element.naturalHeight;
