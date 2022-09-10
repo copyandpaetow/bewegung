@@ -49,26 +49,20 @@ const calculateRootMargin = (
 };
 
 export const ObserveDimensionChange = (
-	chunkState: ChunkState,
 	elementState: ElementState,
 	styleState: StyleState,
 	callback: () => void
 ) => {
 	let allIntersectionObserver = new WeakMap<ElementKey, IntersectionObserver>();
 
-	elementState.getAllKeys().forEach((key) => {
+	elementState.forEach((element, key) => {
 		allIntersectionObserver.get(key)?.disconnect();
-		const domElement = elementState.getDomElement(key);
 
-		const mainKeys = key.mainElement
-			? [key]
-			: [...elementState.getDependecyKeys(key)!];
+		const allSelectors = key.mainElement
+			? elementState.getSelectors(element)
+			: elementState.getDependecySelectors(element);
 
-		const allSelectors = mainKeys.flatMap(
-			(key) => chunkState.getSelector(key)!
-		);
-
-		const rootElement = getRootElement(domElement, allSelectors);
+		const rootElement = getRootElement(element, allSelectors);
 
 		let firstTime = true;
 		const observer = new IntersectionObserver(
@@ -89,13 +83,13 @@ export const ObserveDimensionChange = (
 			}
 		);
 
-		observer.observe(domElement);
+		observer.observe(element);
 		allIntersectionObserver.set(key, observer);
 	});
 
 	return {
 		disconnect: () => {
-			elementState.getAllKeys().forEach((key) => {
+			elementState.forEach((_, key) => {
 				allIntersectionObserver.get(key)?.disconnect();
 			});
 			allIntersectionObserver = new WeakMap<ElementKey, IntersectionObserver>();

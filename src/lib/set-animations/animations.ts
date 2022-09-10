@@ -1,31 +1,30 @@
 import {
-	beforeAnimationCallback,
 	afterAnimationCallback,
+	beforeAnimationCallback,
 } from "../prepare-input/callback-state";
 import {
-	ChunkState,
 	calculatedElementProperties,
-	StyleState,
+	Callbacks,
 	Context,
-	ElementState,
 	differenceArray,
 	DimensionalDifferences,
 	ElementKey,
+	ElementState,
+	StyleState,
 } from "../types";
 import {
-	emptyCalculatedProperties,
-	checkForTextNode,
 	calculateDimensionDifferences,
+	checkForTextNode,
+	emptyCalculatedProperties,
 } from "./calculate-dimension-differences";
 import { calculateEasingMap } from "./calculate-easings";
 import { calculateImageAnimation } from "./calculate-image-animations";
 import {
-	getBorderRadius,
-	getOpacity,
-	getFilter,
-	getUserTransforms,
 	constructKeyframes,
-	getDependecyOptions,
+	getBorderRadius,
+	getFilter,
+	getOpacity,
+	getUserTransforms,
 } from "./construct-keyframes";
 
 const getTransformValues = (
@@ -44,12 +43,11 @@ const getTransformValues = (
 };
 
 export const getCallbackAnimations = (
-	key: ElementKey,
 	element: HTMLElement,
-	chunkState: ChunkState,
+	callbacks: Callbacks[],
 	totalRuntime: number
 ) =>
-	(chunkState.getCallbacks(key) ?? []).map(({ offset, callback }) => {
+	callbacks.map(({ offset, callback }) => {
 		const animation: Animation = new Animation(
 			new KeyframeEffect(element, [], offset * totalRuntime)
 		);
@@ -73,8 +71,8 @@ const calculateAdditionalKeyframeTables = (
 
 interface CalculateMainAnimationProps {
 	key: ElementKey;
+	element: HTMLElement;
 	elementState: ElementState;
-	chunkState: ChunkState;
 	styleState: StyleState;
 	calculateEasing: Record<number, string>;
 	context: Context;
@@ -83,36 +81,28 @@ interface CalculateMainAnimationProps {
 const calculateMainAnimation = (
 	props: CalculateMainAnimationProps
 ): Animation => {
-	const {
-		key,
-		elementState,
-		chunkState,
-		styleState,
-		calculateEasing,
-		context,
-	} = props;
+	const { key, element, elementState, styleState, calculateEasing, context } =
+		props;
 	const { changeProperties, changeTimings } = context;
-	const domElement = elementState.getDomElement(key);
 
 	const additionalTables = calculateAdditionalKeyframeTables(
-		domElement,
+		element,
 		styleState.getElementProperties(key)!,
 		context.changeTimings,
-		chunkState.getKeyframes(key)
+		elementState.getKeyframes(element)
 	);
 
 	const styles = styleState.getElementProperties(key)!;
-	const parentStyles = elementState.hasKey(domElement.parentElement!)
-		? styleState.getElementProperties(
-				elementState.getKey(domElement.parentElement!)
-		  )!
+	const parentKeys = elementState.getKey(element.parentElement!);
+	const parentStyles = parentKeys
+		? styleState.getElementProperties(parentKeys[0])!
 		: emptyCalculatedProperties(changeProperties, changeTimings);
 
 	return new Animation(
 		new KeyframeEffect(
-			domElement,
+			element,
 			constructKeyframes(
-				getTransformValues(styles, parentStyles, checkForTextNode(domElement)),
+				getTransformValues(styles, parentStyles, checkForTextNode(element)),
 				{
 					easingTable: calculateEasing,
 					...additionalTables,
@@ -131,33 +121,32 @@ interface GetAnimations {
 
 interface GetAnimationsProps {
 	elementState: ElementState;
-	chunkState: ChunkState;
 	styleState: StyleState;
 	context: Context;
 }
 
 export const getAnimations = (props: GetAnimationsProps): GetAnimations => {
-	const { elementState, chunkState, styleState, context } = props;
+	const { elementState, styleState, context } = props;
 
 	const animations: Animation[] = [];
 	const runBeforeAnimation: VoidFunction[] = [
-		() => beforeAnimationCallback(chunkState, elementState, styleState),
+		() => beforeAnimationCallback(elementState, styleState),
 	];
 	const runAfterAnimation: VoidFunction[] = [];
 
-	elementState.getAllKeys().forEach((key) => {
+	elementState.forEach((element, key) => {
 		const calculateEasing = calculateEasingMap(
-			chunkState.getOptions(key) ??
-				getDependecyOptions(key, elementState, chunkState),
+			key.mainElement
+				? elementState.getOptions(element)
+				: elementState.getDependecyOptions(element),
 			context.totalRuntime
 		);
-		const domElement = elementState.getDomElement(key);
 
-		if (domElement.tagName === "IMG") {
+		if (element.tagName === "IMG") {
 			const { imageAnimation, beforeImageCallback, afterImageCallback } =
 				calculateImageAnimation({
 					key,
-					element: domElement as HTMLImageElement,
+					element: element as HTMLImageElement,
 					styleState,
 					context,
 					calculateEasing,
@@ -169,9 +158,9 @@ export const getAnimations = (props: GetAnimationsProps): GetAnimations => {
 			animations.push(
 				calculateMainAnimation({
 					key,
+					element,
 					elementState,
 					styleState,
-					chunkState,
 					context,
 					calculateEasing,
 				})
@@ -180,9 +169,8 @@ export const getAnimations = (props: GetAnimationsProps): GetAnimations => {
 
 		animations.push(
 			...getCallbackAnimations(
-				key,
-				domElement,
-				chunkState,
+				element,
+				elementState.getCallbacks(element),
 				context.totalRuntime
 			)
 		);

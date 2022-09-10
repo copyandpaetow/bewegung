@@ -42,7 +42,6 @@ export const postprocessProperties = ({
 	originalStyle,
 	elementProperties,
 	elementState,
-	chunkState,
 	rootDimensions,
 }: DomChanges): DomStates => {
 	const elementStyleOverrides = new WeakMap<
@@ -53,15 +52,15 @@ export const postprocessProperties = ({
 		}
 	>();
 
-	elementState.getAllKeys().forEach((key) => {
+	elementState.forEach((element, key) => {
 		const properties = elementProperties.get(key)!;
 
 		elementProperties.set(key, recalculateDisplayNoneValues(properties));
 
 		const overrideStyle = addOverrideStyles(
 			properties,
-			chunkState.getKeyframes(key) ?? [],
-			elementState.getDomElement(key).tagName
+			elementState.getKeyframes(element),
+			element.tagName
 		);
 		if (overrideStyle) {
 			elementStyleOverrides.set(key, overrideStyle);

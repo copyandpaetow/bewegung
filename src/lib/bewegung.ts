@@ -1,7 +1,6 @@
 import { logCalculationTime } from "./logger";
 import { normalizeProps } from "./normalize-props/props";
 import { callbackState } from "./prepare-input/callback-state";
-import { getChunkState, mapKeysToChunks } from "./prepare-input/chunk-state";
 import { calculateContext } from "./prepare-input/context";
 import {
 	findAffectedAndDependencyElements,
@@ -16,10 +15,9 @@ import {
 } from "./set-animations/read-dom";
 import { getStyleState } from "./set-animations/style-state";
 import {
-	BewegungProps,
 	BewegungAPI,
+	BewegungProps,
 	Chunks,
-	ChunkState,
 	Context,
 	ElementState,
 	StyleState,
@@ -44,7 +42,7 @@ export class Bewegung implements BewegungAPI {
 	//recalc friendly
 	#context: Context;
 	#elementState: ElementState;
-	#chunkState: ChunkState;
+	// #chunkState: ChunkState;
 	#styleState: StyleState;
 
 	#currentTime = 0;
@@ -60,24 +58,19 @@ export class Bewegung implements BewegungAPI {
 		this.#elementState = getElementState(
 			findAffectedAndDependencyElements(this.#input)
 		);
-		this.#chunkState = getChunkState(
-			mapKeysToChunks(this.#input, this.#elementState)
-		);
+
 		this.#setAnimations();
 	}
 
 	#setAnimations() {
 		this.#styleState = getStyleState(
-			postprocessProperties(
-				readDomChanges(this.#chunkState, this.#elementState, this.#context)
-			)
+			postprocessProperties(readDomChanges(this.#elementState, this.#context))
 		);
 
 		const { animations, runAfterAnimation, runBeforeAnimation } = getAnimations(
 			{
 				context: this.#context,
 				elementState: this.#elementState,
-				chunkState: this.#chunkState,
 				styleState: this.#styleState,
 			}
 		);
@@ -139,7 +132,6 @@ export class Bewegung implements BewegungAPI {
 			{
 				input: this.#input,
 				elementState: this.#elementState,
-				chunkState: this.#chunkState,
 				styleState: this.#styleState,
 			},
 			{
@@ -232,14 +224,9 @@ export class Bewegung implements BewegungAPI {
 	}
 	cancel() {
 		this.playState = "finished";
-		this.#elementState
-			.getAllKeys()
-			.forEach((key) =>
-				restoreOriginalStyle(
-					this.#elementState.getDomElement(key),
-					this.#styleState.getOriginalStyle(key)!
-				)
-			);
+		this.#elementState.forEach((element, key) =>
+			restoreOriginalStyle(element, this.#styleState.getOriginalStyle(key)!)
+		);
 
 		this.#animations.forEach((waapi) => {
 			waapi.cancel();

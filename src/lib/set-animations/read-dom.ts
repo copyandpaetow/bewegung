@@ -1,6 +1,5 @@
 import {
 	calculatedElementProperties,
-	ChunkState,
 	Context,
 	DomChanges,
 	ElementKey,
@@ -129,7 +128,6 @@ export const restoreOriginalStyle = (
 };
 
 export const readDomChanges = (
-	chunkState: ChunkState,
 	elementState: ElementState,
 	context: Context
 ): DomChanges => {
@@ -143,31 +141,27 @@ export const readDomChanges = (
 
 	changeTimings.forEach((timing, index, array) => {
 		if (index === 0) {
-			elementState.getMainKeys().forEach((key) => {
-				originalStyle.set(
-					key,
-					saveOriginalStyle(elementState.getDomElement(key))
-				);
+			elementState.forEachMain((element, key) => {
+				originalStyle.set(key, saveOriginalStyle(element));
 			});
 		}
 
-		elementState
-			.getMainKeys()
-			.forEach((key) =>
-				applyCSSStyles(
-					elementState.getDomElement(key),
-					filterMatchingStyleFromKeyframes(
-						chunkState.getKeyframes(key)!,
-						timing
-					)
+		//TODO this will get multiples of one chunk, because the element is
+		elementState.forEachMain((element) =>
+			applyCSSStyles(
+				element,
+				filterMatchingStyleFromKeyframes(
+					elementState.getKeyframes(element)!,
+					timing
 				)
-			);
-		elementState.getAllKeys().forEach((key) => {
-			const domElement = elementState.getDomElement(key);
+			)
+		);
+
+		elementState.forEach((element, key) => {
 			const newCalculation: calculatedElementProperties = {
-				dimensions: getDomRect(domElement),
+				dimensions: getDomRect(element),
 				offset: timing,
-				computedStyle: getComputedStylings(changeProperties, domElement),
+				computedStyle: getComputedStylings(changeProperties, element),
 			};
 			elementProperties.set(
 				key,
@@ -175,11 +169,8 @@ export const readDomChanges = (
 			);
 		});
 		if (index === array.length - 1) {
-			elementState.getMainKeys().forEach((key) => {
-				restoreOriginalStyle(
-					elementState.getDomElement(key),
-					originalStyle.get(key)!
-				);
+			elementState.forEachMain((element, key) => {
+				restoreOriginalStyle(element, originalStyle.get(key)!);
 			});
 			rootDimensions = getDomRect(document.body);
 		}
@@ -189,7 +180,6 @@ export const readDomChanges = (
 		originalStyle,
 		elementProperties,
 		elementState,
-		chunkState,
 		rootDimensions,
 	};
 };

@@ -12,6 +12,7 @@
 - filter unaffected Elements
   - since the code is reactive we dont need the weakmap approach anymore, at least not the element as keys
   - maybe something that gets garbage collected when filtered out of the allElements
+- since one element can be in multiple animation blocks, they can have the same property with different values... How to handle?
 
 ## test
 

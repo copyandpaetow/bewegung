@@ -1,16 +1,15 @@
 import {
 	applyCSSStyles,
-	filterMatchingStyleFromKeyframes,
 	applyStyleObject,
+	filterMatchingStyleFromKeyframes,
 } from "../set-animations/read-dom";
-import { ChunkState, ElementState, StyleState, CallbackState } from "../types";
+import { CallbackState, ElementState, StyleState } from "../types";
 
 export const beforeAnimationCallback = (
-	chunkState: ChunkState,
 	elementState: ElementState,
 	styleState: StyleState
 ) => {
-	elementState.getAllKeys().forEach((key) => {
+	elementState.forEach((element, key) => {
 		const overrides = styleState.getStyleOverrides(key);
 		const isMainElement = key.mainElement;
 
@@ -18,8 +17,8 @@ export const beforeAnimationCallback = (
 			return;
 		}
 
-		applyCSSStyles(elementState.getDomElement(key), {
-			...filterMatchingStyleFromKeyframes(chunkState.getKeyframes(key)!),
+		applyCSSStyles(element, {
+			...filterMatchingStyleFromKeyframes(elementState.getKeyframes(element)),
 			...(overrides && overrides.override),
 		});
 	});
@@ -29,14 +28,14 @@ export const afterAnimationCallback = (
 	elementState: ElementState,
 	styleState: StyleState
 ) => {
-	elementState.getAllKeys().forEach((key) => {
+	elementState.forEach((element, key) => {
 		const overrides = styleState.getStyleOverrides(key);
 
 		if (!overrides) {
 			return;
 		}
 
-		applyStyleObject(elementState.getDomElement(key), {
+		applyStyleObject(element, {
 			...overrides.existingStyle,
 		});
 	});

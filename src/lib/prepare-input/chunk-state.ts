@@ -1,45 +1,62 @@
 import {
-	Chunks,
-	ChunkOption,
 	Callbacks,
+	ChunkOption,
+	Chunks,
 	ChunkState,
-	ElementState,
 	ElementKey,
+	ElementState,
 } from "../types";
 
-interface ChunkKeyValues {
-	chunkKeys: WeakMap<ElementKey, symbol[]>;
-	chunkValues: Map<symbol, Chunks>;
-}
+/*
+! this cant be a bimap, it stores the keys strongly, so they would need to be deleted here as well 
+! from chunks to keys is not needed
+*/
 
+interface MapKeysToChunks {
+	keyChunkMap: WeakMap<ElementKey, Chunks>;
+	elementKeyMap: WeakMap<HTMLElement, ElementKey[]>;
+}
 export const mapKeysToChunks = (
 	chunks: Chunks[],
 	elementState: ElementState
-): ChunkKeyValues => {
-	const chunkKeys = new WeakMap<ElementKey, symbol[]>();
-	const chunkValues = new Map<symbol, Chunks>();
+): MapKeysToChunks => {
+	const keyChunkMap = new WeakMap<ElementKey, Chunks>();
+	const elementKeyMap = new WeakMap<HTMLElement, ElementKey[]>();
 
 	chunks.forEach((chunk) => {
-		const key = Symbol("chunkKey");
-		chunkValues.set(key, chunk);
 		chunk.target.forEach((element) => {
-			const elementKey = elementState.getKey(element);
-			chunkKeys.set(elementKey, (chunkKeys.get(elementKey) || []).concat(key));
+			elementState.getKeys(element).forEach((key) => {
+				keyChunkMap.set(key, chunk);
+			});
 		});
 	});
 
-	return { chunkKeys, chunkValues };
+	return { keyChunkMap, elementKeyMap };
 };
 
 export const getChunkState = ({
-	chunkKeys,
-	chunkValues,
-}: ChunkKeyValues): ChunkState => {
+	keyChunkMap,
+	elementKeyMap,
+}: MapKeysToChunks): ChunkState => {
+	console.log({ keyChunkMap, elementKeyMap });
+
+	const getChunks = (keys: ElementKey[]) => {
+		const chunks = new Set<Chunks>();
+
+		keys.forEach((key) => {
+			if (!keyChunkMap.has(key)) {
+				return;
+			}
+			chunks.add(keyChunkMap.get(key)!);
+		});
+
+		return Array.from(chunks);
+	};
+
 	return {
-		getKeyframes(key: ElementKey) {
-			return chunkKeys
-				.get(key)
-				?.map((chunkKey) => chunkValues.get(chunkKey)!.keyframes)
+		getKeyframes(keys: ElementKey[]) {
+			return getChunks(keys)
+				.map((chunk) => chunk.keyframes)
 				.flat();
 		},
 		getCallbacks(key: ElementKey) {

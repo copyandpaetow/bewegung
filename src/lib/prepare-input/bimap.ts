@@ -61,9 +61,7 @@ export class BiMap<Key extends Object, Value extends Object> {
 		return this.#valueMap.delete(value);
 	}
 
-	forEachKey(
-		callbackFn: (value: Value, key: Key, map: Map<Key, Value>) => void
-	) {
+	forEach(callbackFn: (value: Value, key: Key, map: Map<Key, Value>) => void) {
 		this.#keyMap.forEach(callbackFn);
 	}
 

@@ -15,7 +15,6 @@ interface ChangeCallbacks {
 
 interface WatchChangesProps {
 	input: Chunks[];
-	chunkState: ChunkState;
 	elementState: ElementState;
 	styleState: StyleState;
 }
@@ -24,7 +23,7 @@ export const watchChanges = (
 	props: WatchChangesProps,
 	callbacks: ChangeCallbacks
 ): VoidFunction => {
-	const { input, chunkState, elementState, styleState } = props;
+	const { input, elementState, styleState } = props;
 
 	let resizeIdleCallback: NodeJS.Timeout | undefined;
 	const priorityMap = new Map<
@@ -50,17 +49,16 @@ export const watchChanges = (
 		throttledCallback();
 	});
 
-	const observeResize = ObserveBrowserResize(
-		elementState.getAllKeys().map((key) => elementState.getDomElement(key)),
-		() => {
-			priorityMap.set("recalcAnimation", callbacks.recalcAnimations);
+	const allElements: HTMLElement[] = [];
+	elementState.forEach((element) => allElements.push(element));
 
-			throttledCallback();
-		}
-	);
+	const observeResize = ObserveBrowserResize(allElements, () => {
+		priorityMap.set("recalcAnimation", callbacks.recalcAnimations);
+
+		throttledCallback();
+	});
 
 	const observeDimensions = ObserveDimensionChange(
-		chunkState,
 		elementState,
 		styleState,
 		() => {

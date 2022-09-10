@@ -102,7 +102,7 @@ export type differenceArray = [
 
 export interface ChunkState {
 	getCallbacks(key: ElementKey): Callbacks[] | undefined;
-	getKeyframes(key: ElementKey): ComputedKeyframe[] | undefined;
+	getKeyframes(keys: ElementKey[]): ComputedKeyframe[] | undefined;
 	getOptions(key: ElementKey): ChunkOption[] | undefined;
 	getSelector(key: ElementKey): string[] | undefined;
 	getAllKeyframes(): ComputedKeyframe[][];
@@ -114,16 +114,20 @@ export interface CallbackState {
 	execute(): void;
 }
 
+export type ElementCallback = (value: HTMLElement, key: ElementKey) => void;
 export type ElementKey = Record<string, boolean>;
-export interface ElementState {
-	getMainKeys(): ElementKey[];
-	getAllKeys(): ElementKey[];
-	getDependecyKeys(key: ElementKey): ElementKey[] | undefined;
-	getDomElement(key: ElementKey): HTMLElement;
-	getKey(element: HTMLElement): ElementKey;
-	hasKey(element: HTMLElement): boolean;
-}
 
+export interface ElementState {
+	forEachMain(callback: ElementCallback): void;
+	forEach(callback: ElementCallback): void;
+	getDependecyOptions(element: HTMLElement): ChunkOption[];
+	getOptions(element: HTMLElement): ChunkOption[];
+	getKeyframes(element: HTMLElement): ComputedKeyframe[];
+	getCallbacks(element: HTMLElement): Callbacks[];
+	getSelectors(element: HTMLElement): string[];
+	getDependecySelectors(element: HTMLElement): string[];
+	getKey(element: HTMLElement): ElementKey[] | undefined;
+}
 export interface StyleState {
 	getOriginalStyle(key: ElementKey): Map<string, string> | undefined;
 	getElementProperties(
@@ -135,13 +139,14 @@ export interface StyleState {
 				override: Partial<CSSStyleDeclaration>;
 		  }
 		| undefined;
+	getRootDimensions(): DOMRect;
 }
 
 export interface DomChanges {
 	originalStyle: WeakMap<ElementKey, Map<string, string>>;
 	elementProperties: WeakMap<ElementKey, calculatedElementProperties[]>;
 	elementState: ElementState;
-	chunkState: ChunkState;
+	rootDimensions: DOMRect;
 }
 
 export interface DomStates {
@@ -154,4 +159,5 @@ export interface DomStates {
 			override: Partial<CSSStyleDeclaration>;
 		}
 	>;
+	rootDimensions: DOMRect;
 }

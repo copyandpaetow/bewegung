@@ -24,7 +24,7 @@ const initCards = () => {
 		];
 
 		const hideOthers: CustomKeyframeEffect = [
-			[...cards].filter((_, index) => index !== activeIndex),
+			cards,
 			{
 				width: "",
 				height: "",
@@ -32,7 +32,7 @@ const initCards = () => {
 			{ duration: 4000, easing: "ease-in" },
 		];
 
-		return new Bewegung(highlightCard, hideOthers);
+		return new Bewegung(hideOthers, highlightCard);
 	};
 
 	let animation: Bewegung | undefined;
