@@ -1,5 +1,6 @@
 import { Bewegung } from "../../lib/bewegung";
-import { CustomKeyframeEffect } from "../../lib/types";
+import { CustomKeyframeEffect } from "../../lib2/types";
+import { Bewegung2 } from "../../lib2/bewegung";
 
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
@@ -32,33 +33,34 @@ const initCards = () => {
 			{ duration: 4000, easing: "ease-in" },
 		];
 
-		return new Bewegung(highlightCard, hideOthers);
+		return new Bewegung2(highlightCard, hideOthers);
 	};
 
-	let animation: Bewegung | undefined;
+	let animation;
 	let paused = false;
 
 	cardsPlayButton?.addEventListener("click", () => {
-		if (!animation) {
-			animation = highlight();
-		}
-		animation.playState !== "running" ? animation.play() : animation.pause();
-		paused && animation.pause();
-		animation.finished.then(() => {
-			animation = undefined;
-			updateIndex(+1);
-			console.log("finished");
-		});
+		highlight();
+		// if (!animation) {
+		// 	animation = highlight();
+		// }
+		// animation.playState !== "running" ? animation.play() : animation.pause();
+		// paused && animation.pause();
+		// animation.finished.then(() => {
+		// 	animation = undefined;
+		// 	updateIndex(+1);
+		// 	console.log("finished");
+		// });
 	});
-	cardsPauseButton?.addEventListener("click", () => {
-		paused = !paused;
-		cardsPauseButton.innerHTML = `start paused: ${paused}`;
-	});
-	cardsAbortButton?.addEventListener("click", () => {
-		animation?.cancel();
-		updateIndex(+1);
-		animation = undefined;
-	});
+	// cardsPauseButton?.addEventListener("click", () => {
+	// 	paused = !paused;
+	// 	cardsPauseButton.innerHTML = `start paused: ${paused}`;
+	// });
+	// cardsAbortButton?.addEventListener("click", () => {
+	// 	animation?.cancel();
+	// 	updateIndex(+1);
+	// 	animation = undefined;
+	// });
 };
 
 const initAdditionalImages = () => {

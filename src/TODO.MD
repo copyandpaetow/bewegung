@@ -12,6 +12,7 @@
 - filter unaffected Elements
   - since the code is reactive we dont need the weakmap approach anymore, at least not the element as keys
   - maybe something that gets garbage collected when filtered out of the allElements
+- values for the same element in different chunks can be merged. In an edge case it might be difficult (e.g chunk1 animate width of element in 1s with ease, chunk2 animate hight of element in 2s with linear)
 
 ## test
 
