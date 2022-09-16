@@ -1,13 +1,10 @@
-import { CssRuleName } from "../types";
+import { CssRuleName, PartialDomRect } from "../types";
 
 export const getComputedStylings = (
 	changeProperties: CssRuleName[],
-	element?: HTMLElement
+	element: HTMLElement
 ): Partial<CSSStyleDeclaration> => {
-	const computedElementStyle =
-		element && document.body.contains(element)
-			? window.getComputedStyle(element)
-			: window.getComputedStyle(document.head); //an empty element that is mounted in the DOM
+	const computedElementStyle = window.getComputedStyle(element);
 
 	const relevantStyles: Partial<CSSStyleDeclaration> = {};
 
@@ -19,8 +16,8 @@ export const getComputedStylings = (
 	return relevantStyles;
 };
 
-export const getDomRect = (domElement: HTMLElement): DOMRect => {
-	const { top, right, bottom, left, width, height, x, y, toJSON } =
+export const getDomRect = (domElement: HTMLElement): PartialDomRect => {
+	const { top, right, bottom, left, width, height } =
 		domElement.getBoundingClientRect();
-	return { top, right, bottom, left, width, height, x, y, toJSON };
+	return { top, right, bottom, left, width, height };
 };

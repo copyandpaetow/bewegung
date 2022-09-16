@@ -1,45 +1,34 @@
+import { calculatedElementProperties, ElementKey } from "../types";
+
 export const calculateOverwriteStyles = (
-	elementProperties: calculatedElementProperties[],
-	keyframes: ComputedKeyframe[]
+	calculatedProperties: calculatedElementProperties[],
+	element: ElementKey
 ) => {
-	const override: Partial<CSSStyleDeclaration> = {};
-	const existingStyle: Partial<CSSStyleDeclaration> = {};
-	const tagName = elementProperties.some((entry) => {
+	const overwrite: Partial<CSSStyleDeclaration> = {};
+
+	calculatedProperties.some((entry) => {
 		//TODO: this needs to be more advanced
-		if (entry.computedStyle.display !== "inline" || tagName !== "SPAN") {
+		if (
+			entry.computedStyle.display !== "inline" ||
+			element.tagName !== "SPAN"
+		) {
 			return false;
 		}
-		existingStyle.display = (keyframes
-			.filter((keyframe) => keyframe?.display)
-			.at(-1) ?? "") as string;
 
-		override.display = "inline-block";
+		overwrite["display"] = "inline-block";
+
 		return true;
 	});
 
-	elementProperties.some((entry) => {
+	calculatedProperties.some((entry) => {
 		if (entry.computedStyle.borderRadius === "0px") {
 			return false;
 		}
 
-		existingStyle.borderRadius = (keyframes
-			.filter((keyframe) => keyframe?.borderRadius)
-			.at(-1) ?? "") as string;
-
-		override.borderRadius = "0px";
+		overwrite["borderRadius"] = "0px";
 
 		return true;
 	});
 
-	if (Object.keys(override).length === 0) {
-		return;
-	}
-	return { existingStyle, override };
+	return overwrite;
 };
-
-interface calculatedKeyframe {
-	target: string;
-	keyframes: ComputedKeyframe[];
-	options: ComputedEffectTiming;
-	overwrites?: Partial<CSSStyleDeclaration>;
-}

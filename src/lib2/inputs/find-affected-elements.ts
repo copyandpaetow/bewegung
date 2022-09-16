@@ -13,20 +13,17 @@ const getSiblings = (element: HTMLElement): HTMLElement[] => {
 
 const traverseDomUp = (
 	element: HTMLElement,
-	rootSelector?: string,
+	rootElement: HTMLElement,
 	elementMap?: HTMLElement[]
 ): HTMLElement[] => {
 	const parent = getParent(element);
 	const elements = (elementMap || []).concat(element);
 
-	if (
-		(rootSelector && element.matches(rootSelector)) ||
-		parent.tagName === "BODY"
-	) {
+	if (rootElement === element) {
 		return elements;
 	}
 
-	return traverseDomUp(parent, rootSelector, elements);
+	return traverseDomUp(parent, rootElement, elements);
 };
 
 export const traverseDomDown = (element: HTMLElement): HTMLElement[] => {
@@ -35,9 +32,9 @@ export const traverseDomDown = (element: HTMLElement): HTMLElement[] => {
 
 export const findAffectedDOMElements = (
 	element: HTMLElement,
-	rootSelector?: string
+	rootElement: HTMLElement
 ): HTMLElement[] => {
-	const parents = traverseDomUp(element, rootSelector).flatMap(
+	const parents = traverseDomUp(element, rootElement).flatMap(
 		(relatedElement) => getSiblings(relatedElement)
 	);
 

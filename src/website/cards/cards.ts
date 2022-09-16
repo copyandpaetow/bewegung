@@ -40,7 +40,11 @@ const initCards = () => {
 	let paused = false;
 
 	cardsPlayButton?.addEventListener("click", () => {
-		highlight();
+		const animation = highlight();
+
+		animation.play();
+		//animation.pause();
+
 		// if (!animation) {
 		// 	animation = highlight();
 		// }

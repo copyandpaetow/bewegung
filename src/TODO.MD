@@ -14,6 +14,13 @@
   - maybe something that gets garbage collected when filtered out of the allElements
 - values for the same element in different chunks can be merged. In an edge case it might be difficult (e.g chunk1 animate width of element in 1s with ease, chunk2 animate hight of element in 2s with linear)
 
+## shift to web worker
+
+- optimize key creation
+- every time a map/array is created, it can be moved to the web worker on an item based fashion instead of
+  waiting all do be done and move everything all at once (e.g chunks)
+- move callbacks or just keep them down
+
 ## test
 
 - iterations

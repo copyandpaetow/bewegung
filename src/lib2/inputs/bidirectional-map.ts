@@ -13,7 +13,14 @@ export class BidirectionalMap<Key, Value> {
 
 	set(key: Key, value: Value) {
 		if (this.has(key) || this.has(value)) {
-			throw new Error("keys need to be unique");
+			const keyValue = this.#keyMap.get(key);
+			const valueKey = this.#valueMap.get(value);
+
+			if (key === valueKey && value === keyValue) {
+				return;
+			}
+
+			throw new Error("can not re-assign keys");
 		}
 
 		this.#keyMap.set(key, value);

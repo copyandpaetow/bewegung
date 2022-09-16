@@ -1,5 +1,5 @@
 import { defaultChangeProperties } from "../constants";
-import { CssRuleName, Chunks } from "../types";
+import { CssRuleName, Chunks, ChunkOption } from "../types";
 
 export const highestNumber = (numbers: number[]) =>
 	numbers.reduce((largest, current) => Math.max(largest, current));
@@ -41,14 +41,22 @@ const updateChangeProperties = (allKeyframes: ComputedKeyframe[][]) => {
 	return Array.from(changeProperties);
 };
 
-export const calculateContext = (chunks: Chunks[]) => {
-	const keyframes = chunks.map((chunk) => chunk.keyframes);
-	const options = chunks.map((chunk) => chunk.options);
-	const totalRuntime = highestNumber(options.map((option) => option.endTime!));
+export const calculateContext = (chunkState: Map<string, Chunks>) => {
+	const allOptions: ChunkOption[] = [];
+	const allKeyframes: ComputedKeyframe[][] = [];
+
+	chunkState.forEach(({ options, keyframes }) => {
+		allOptions.push(options);
+		allKeyframes.push(keyframes);
+	});
+
+	const totalRuntime = highestNumber(
+		allOptions.map((option) => option.endTime!)
+	);
 
 	return {
 		totalRuntime,
-		changeTimings: updateChangeTimings(keyframes, options, totalRuntime),
-		changeProperties: updateChangeProperties(keyframes),
+		changeTimings: updateChangeTimings(allKeyframes, allOptions, totalRuntime),
+		changeProperties: updateChangeProperties(allKeyframes),
 	};
 };

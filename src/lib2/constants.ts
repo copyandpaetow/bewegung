@@ -1,15 +1,12 @@
-import { CssRuleName } from "./types";
+import { CssRuleName, PartialDomRect } from "./types";
 
-export const emptyNonZeroDOMRect: DOMRect = {
+export const emptyNonZeroDOMRect: PartialDomRect = {
 	width: 1,
 	height: 1,
-	x: 0,
-	y: 0,
 	top: 0,
 	right: 0,
 	bottom: 0,
 	left: 0,
-	toJSON: () => undefined,
 };
 
 export const defaultChangeProperties: CssRuleName[] = [

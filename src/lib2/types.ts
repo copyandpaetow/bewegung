@@ -47,7 +47,6 @@ export interface ChunkOption extends ComputedEffectTiming {
 	pseudoElement?: string | null;
 }
 export type Chunks = {
-	target: string[];
 	keyframes: ComputedKeyframe[];
 	callbacks: Callbacks[] | null;
 	options: ChunkOption;
@@ -70,8 +69,64 @@ export interface Context {
 }
 
 export type calculatedElementProperties = {
-	dimensions: DOMRect;
+	dimensions: PartialDomRect;
 	computedStyle: Partial<CSSStyleDeclaration>;
 	offset: number;
 	naturalRatio?: number;
 };
+
+export type ValueOf<T> = T[keyof T];
+
+export type PartialDomRect = {
+	top: number;
+	right: number;
+	bottom: number;
+	left: number;
+	width: number;
+	height: number;
+};
+
+export type ElementKey = {
+	isMainElement: boolean;
+	isTextNode: boolean;
+	tagName: string;
+	dependsOn: Set<string>;
+	parent: string;
+	root: string;
+};
+
+export type PreChunk = {
+	keyframes: CustomKeyframe | CustomKeyframe[] | CustomKeyframeArrayValueSyntax;
+	options: number | ChunkOption | undefined;
+};
+
+export interface FormatChunks {
+	keyedChunkMap: Map<string, PreChunk>;
+	keyedElementMap: Map<string, ElementKey>;
+}
+
+export interface TimelineEntry {
+	start: number;
+	end: number;
+	easing: string | string[];
+}
+export type Timeline = TimelineEntry[];
+
+export type PreAnimation = {
+	keyframes: Keyframe[];
+	options: number;
+	overwrite: Partial<CSSStyleDeclaration>;
+};
+
+export interface DimensionalDifferences {
+	heightDifference: number;
+	widthDifference: number;
+	xDifference: number;
+	yDifference: number;
+	offset: number;
+}
+
+export type differenceArray = [
+	calculatedElementProperties,
+	calculatedElementProperties
+];
