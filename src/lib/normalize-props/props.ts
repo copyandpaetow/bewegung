@@ -1,42 +1,63 @@
 import { defaultOptions } from "../constants";
-import { Callbacks, Chunks, CustomKeyframeEffect } from "../types";
+import {
+	Callbacks,
+	Chunks,
+	CustomKeyframeEffect,
+	CustomKeyframe,
+} from "../types";
 import { formatKeyframes } from "./keyframes";
 import { normalizeElements } from "./elements";
+
+const convertToCustomKeyframe = (kfe: KeyframeEffect): CustomKeyframeEffect => {
+	const {
+		target,
+		getKeyframes,
+		getComputedTiming,
+		composite,
+		pseudoElement,
+		iterationComposite,
+	} = kfe;
+
+	if (!target || !pseudoElement) {
+		throw new Error("nothing to animate");
+	}
+
+	return [
+		target as HTMLElement,
+		getKeyframes() as CustomKeyframe[],
+		{ ...getComputedTiming(), composite, pseudoElement, iterationComposite },
+	];
+};
 
 export const arrayifyInputs = (
 	animationInput:
 		| CustomKeyframeEffect
 		| KeyframeEffect
 		| (CustomKeyframeEffect | KeyframeEffect)[]
-): (CustomKeyframeEffect | KeyframeEffect)[] => {
+): CustomKeyframeEffect[] => {
+	if (animationInput instanceof KeyframeEffect) {
+		return [convertToCustomKeyframe(animationInput)];
+	}
+
 	if (
-		animationInput instanceof KeyframeEffect ||
 		animationInput.some(
 			(prop) => !Array.isArray(prop) && !(prop instanceof KeyframeEffect)
 		)
 	) {
-		return [animationInput] as (CustomKeyframeEffect | KeyframeEffect)[];
+		return [animationInput] as CustomKeyframeEffect[];
 	}
-	return animationInput as (CustomKeyframeEffect | KeyframeEffect)[];
+
+	return (animationInput as (CustomKeyframeEffect | KeyframeEffect)[]).map(
+		(subAnimation) => {
+			if (subAnimation instanceof KeyframeEffect) {
+				return convertToCustomKeyframe(subAnimation);
+			}
+			return subAnimation;
+		}
+	);
 };
 
-export const normalizeTarget = (
-	input: CustomKeyframeEffect | KeyframeEffect
-) => {
-	return input instanceof KeyframeEffect
-		? new Set([input.target] as HTMLElement[])
-		: normalizeElements(input[0]);
-};
-
-export const normalizeKeyframes = (
-	input: CustomKeyframeEffect | KeyframeEffect
-) => {
-	if (input instanceof KeyframeEffect) {
-		return {
-			keyframes: input.getKeyframes(),
-			callbacks: null,
-		};
-	}
+export const normalizeKeyframes = (input: CustomKeyframeEffect) => {
 	const options = new KeyframeEffect(null, null, input[2] || defaultOptions);
 	const easing = options.getComputedTiming().easing!;
 	const composite = options.composite;
@@ -70,19 +91,8 @@ export const normalizeKeyframes = (
 	return {
 		keyframes,
 		callbacks,
+		options: options.getComputedTiming(),
 	};
-};
-
-export const normalizeOptions = (
-	input: CustomKeyframeEffect | KeyframeEffect
-) => {
-	return input instanceof KeyframeEffect
-		? input.getComputedTiming()
-		: new KeyframeEffect(
-				null,
-				null,
-				input[2] || defaultOptions
-		  ).getComputedTiming();
 };
 
 export const normalizeProps = (
@@ -91,15 +101,11 @@ export const normalizeProps = (
 		| (CustomKeyframeEffect | KeyframeEffect)[]
 ): Chunks[] =>
 	arrayifyInputs(animationInput).map((input) => {
-		const target = normalizeTarget(input);
-		const { keyframes, callbacks } = normalizeKeyframes(input);
-		const options = normalizeOptions(input);
+		const target = normalizeElements(input[0]);
+		const { keyframes, callbacks, options } = normalizeKeyframes(input);
 		//TODO: composite is missing
 
-		const selector =
-			input instanceof KeyframeEffect || typeof input[0] !== "string"
-				? null
-				: input[0];
+		const selector = typeof input[0] === "string" ? input[0] : null;
 
 		return { target, keyframes, callbacks, options, selector };
 	});

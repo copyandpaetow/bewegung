@@ -1,3 +1,5 @@
+import { BidirectionalMap } from "./prepare-input/bidirectional-map";
+
 export type ElementOrSelector =
 	| HTMLElement
 	| Element
@@ -52,6 +54,8 @@ export type Chunks = {
 	selector: string | null;
 };
 
+export type Chunk = Omit<Chunks, "target">;
+
 export interface TimelineEntry {
 	start: number;
 	end: number;
@@ -63,6 +67,7 @@ export type calculatedElementProperties = {
 	dimensions: DOMRect;
 	computedStyle: Partial<CSSStyleDeclaration>;
 	offset: number;
+	naturalRatio?: number;
 };
 export interface DimensionalDifferences {
 	heightDifference: number;
@@ -123,36 +128,43 @@ export interface ElementState {
 }
 
 export interface StyleState {
-	getOriginalStyle(element: HTMLElement): Map<string, string> | undefined;
+	getOriginalStyle(stringId: string): Map<string, string> | undefined;
 	getElementProperties(
-		element: HTMLElement
+		stringId: string
 	): calculatedElementProperties[] | undefined;
-	getStyleOverrides(element: HTMLElement):
+	getStyleOverrides(stringId: string):
 		| {
 				existingStyle: Partial<CSSStyleDeclaration>;
 				override: Partial<CSSStyleDeclaration>;
 		  }
 		| undefined;
-	getRootDimensions(): DOMRect;
 }
 
 export interface DomChanges {
-	originalStyle: WeakMap<HTMLElement, Map<string, string>>;
-	elementProperties: WeakMap<HTMLElement, calculatedElementProperties[]>;
-	elementState: ElementState;
-	chunkState: ChunkState;
-	rootDimensions: DOMRect;
+	originalStyle: Map<string, Map<string, string>>;
+	elementProperties: Map<string, calculatedElementProperties[]>;
+	keyElementMap: BidirectionalMap<HTMLElement, string>;
+	elementState: Map<string, ElementKey>;
+	chunkState: Map<string, Chunk>;
 }
 
 export interface DomStates {
-	originalStyle: WeakMap<HTMLElement, Map<string, string>>;
-	elementProperties: WeakMap<HTMLElement, calculatedElementProperties[]>;
-	elementStyleOverrides: WeakMap<
-		HTMLElement,
+	originalStyle: Map<string, Map<string, string>>;
+	elementProperties: Map<string, calculatedElementProperties[]>;
+	elementStyleOverrides: Map<
+		string,
 		{
 			existingStyle: Partial<CSSStyleDeclaration>;
 			override: Partial<CSSStyleDeclaration>;
 		}
 	>;
-	rootDimensions: DOMRect;
 }
+
+export type ElementKey = {
+	isMainElement: boolean;
+	isTextNode: boolean;
+	tagName: string;
+	dependsOn: Set<string>;
+	parent: string;
+	root: string;
+};

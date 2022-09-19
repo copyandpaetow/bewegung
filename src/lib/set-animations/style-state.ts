@@ -50,30 +50,35 @@ export const addOverrideStyles = (
 export const postprocessProperties = ({
 	originalStyle,
 	elementProperties,
+	keyElementMap,
 	elementState,
 	chunkState,
-	rootDimensions,
 }: DomChanges): DomStates => {
-	const elementStyleOverrides = new WeakMap<
-		HTMLElement,
+	const elementStyleOverrides = new Map<
+		string,
 		{
 			existingStyle: Partial<CSSStyleDeclaration>;
 			override: Partial<CSSStyleDeclaration>;
 		}
 	>();
 
-	elementState.getAllElements().forEach((element) => {
-		const properties = elementProperties.get(element)!;
+	keyElementMap.forEach((stringId) => {
+		const properties = elementProperties.get(stringId)!;
+		elementProperties.set(stringId, recalculateDisplayNoneValues(properties));
 
-		elementProperties.set(element, recalculateDisplayNoneValues(properties));
+		const elementKey = elementState.get(stringId)!;
+		const allKeyframes: ComputedKeyframe[] = [];
+		elementKey.dependsOn.forEach((chunkId) => {
+			allKeyframes.push(...chunkState.get(chunkId)?.keyframes!);
+		});
 
 		const overrideStyle = addOverrideStyles(
 			properties,
-			chunkState.getKeyframes(element) ?? [],
-			element.tagName
+			allKeyframes,
+			elementKey.tagName
 		);
 		if (overrideStyle) {
-			elementStyleOverrides.set(element, overrideStyle);
+			elementStyleOverrides.set(stringId, overrideStyle);
 		}
 	});
 
@@ -81,7 +86,6 @@ export const postprocessProperties = ({
 		originalStyle,
 		elementProperties,
 		elementStyleOverrides,
-		rootDimensions,
 	};
 };
 
@@ -89,20 +93,16 @@ export const getStyleState = ({
 	originalStyle,
 	elementProperties,
 	elementStyleOverrides,
-	rootDimensions,
 }: DomStates): StyleState => {
 	return {
-		getOriginalStyle(element: HTMLElement) {
-			return originalStyle.get(element);
+		getOriginalStyle(stringId: string) {
+			return originalStyle.get(stringId);
 		},
-		getElementProperties(element: HTMLElement) {
-			return elementProperties.get(element);
+		getElementProperties(stringId: string) {
+			return elementProperties.get(stringId);
 		},
-		getStyleOverrides(element: HTMLElement) {
-			return elementStyleOverrides.get(element);
-		},
-		getRootDimensions() {
-			return rootDimensions;
+		getStyleOverrides(stringId: string) {
+			return elementStyleOverrides.get(stringId);
 		},
 	};
 };

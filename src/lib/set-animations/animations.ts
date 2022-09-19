@@ -1,3 +1,4 @@
+import { BidirectionalMap } from "../prepare-input/bidirectional-map";
 import {
 	beforeAnimationCallback,
 	afterAnimationCallback,
@@ -10,6 +11,8 @@ import {
 	ElementState,
 	differenceArray,
 	DimensionalDifferences,
+	Chunk,
+	ElementKey,
 } from "../types";
 import {
 	emptyCalculatedProperties,
@@ -115,8 +118,9 @@ interface GetAnimations {
 }
 
 interface GetAnimationsProps {
-	elementState: ElementState;
-	chunkState: ChunkState;
+	keyElementMap: BidirectionalMap<HTMLElement, string>;
+	elementState: Map<string, ElementKey>;
+	chunkState: Map<string, Chunk>;
 	styleState: StyleState;
 	context: Context;
 }

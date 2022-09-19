@@ -1,12 +1,9 @@
 import { logCalculationTime } from "./logger";
 import { normalizeProps } from "./normalize-props/props";
+import { BidirectionalMap } from "./prepare-input/bidirectional-map";
 import { callbackState } from "./prepare-input/callback-state";
-import { getChunkState, mapKeysToChunks } from "./prepare-input/chunk-state";
 import { calculateContext } from "./prepare-input/context";
-import {
-	findAffectedAndDependencyElements,
-	getElementState,
-} from "./prepare-input/element-state";
+import { createStates } from "./prepare-input/create-states";
 import { normalizeChunks } from "./prepare-input/normalize-chunks";
 import { getAnimations } from "./set-animations/animations";
 import {
@@ -25,6 +22,8 @@ import {
 	Context,
 	ElementState,
 	StyleState,
+	Chunk,
+	ElementKey,
 } from "./types";
 import { watchChanges } from "./watch/all-changes";
 
@@ -45,8 +44,9 @@ export class Bewegung implements BewegungAPI {
 
 	//recalc friendly
 	#context: Context;
-	#elementState: ElementState;
-	#chunkState: ChunkState;
+	#elementKeyMap: BidirectionalMap<HTMLElement, string>;
+	#elementState: Map<string, ElementKey>;
+	#chunkState: Map<string, Chunk>;
 	#styleState: StyleState;
 
 	#currentTime = 0;
@@ -58,26 +58,36 @@ export class Bewegung implements BewegungAPI {
 	#prepareInput(chunks: Chunks[]) {
 		this.#context = calculateContext(chunks);
 		this.#input = normalizeChunks(chunks, this.#context.totalRuntime);
-		this.#chunkState = getChunkState(mapKeysToChunks(this.#input));
-		this.#elementState = getElementState(
-			findAffectedAndDependencyElements(this.#input)
+
+		const { elementKeyMap, elementState, chunkState } = createStates(
+			this.#input
 		);
+
+		this.#chunkState = chunkState;
+		this.#elementState = elementState;
+		this.#elementKeyMap = elementKeyMap;
 		this.#setAnimations();
 	}
 
 	#setAnimations() {
 		this.#styleState = getStyleState(
 			postprocessProperties(
-				readDomChanges(this.#chunkState, this.#elementState, this.#context)
+				readDomChanges(
+					this.#elementKeyMap,
+					this.#elementState,
+					this.#chunkState,
+					this.#context
+				)
 			)
 		);
 
 		const { animations, runAfterAnimation, runBeforeAnimation } = getAnimations(
 			{
-				context: this.#context,
+				elementKeyMap: this.#elementKeyMap,
 				elementState: this.#elementState,
 				chunkState: this.#chunkState,
 				styleState: this.#styleState,
+				context: this.#context,
 			}
 		);
 

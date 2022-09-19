@@ -1,9 +1,10 @@
+import { BidirectionalMap } from "../prepare-input/bidirectional-map";
 import {
 	calculatedElementProperties,
-	ChunkState,
+	Chunk,
 	Context,
 	DomChanges,
-	ElementState,
+	ElementKey,
 } from "../types";
 import { getComputedStylings, getDomRect } from "./read-element-properties";
 
@@ -128,63 +129,75 @@ export const restoreOriginalStyle = (
 };
 
 export const readDomChanges = (
-	chunkState: ChunkState,
-	elementState: ElementState,
+	keyElementMap: BidirectionalMap<HTMLElement, string>,
+	elementState: Map<string, ElementKey>,
+	chunkState: Map<string, Chunk>,
 	context: Context
 ): DomChanges => {
-	const originalStyle = new WeakMap<HTMLElement, Map<string, string>>();
-	const elementProperties = new WeakMap<
-		HTMLElement,
-		calculatedElementProperties[]
-	>();
+	const originalStyle = new Map<string, Map<string, string>>();
+	const elementProperties = new Map<string, calculatedElementProperties[]>();
 	const { changeTimings, changeProperties } = context;
-	let rootDimensions!: DOMRect;
 
 	changeTimings.forEach((timing, index, array) => {
 		if (index === 0) {
-			elementState.getMainElements().forEach((element) => {
-				originalStyle.set(element, saveOriginalStyle(element));
+			elementState.forEach((_, idString) => {
+				const element = keyElementMap.get(idString)!;
+				originalStyle.set(idString, saveOriginalStyle(element));
 			});
 		}
 
-		elementState
-			.getMainElements()
-			.forEach((element) =>
-				applyCSSStyles(
-					element,
-					filterMatchingStyleFromKeyframes(
-						chunkState.getKeyframes(element)!,
-						timing
-					)
-				)
+		elementState.forEach((elementKey, idString) => {
+			if (!elementKey.isMainElement) {
+				return;
+			}
+			const element = keyElementMap.get(idString)!;
+			const allKeyframes: ComputedKeyframe[] = [];
+			elementKey.dependsOn.forEach((chunkId) => {
+				const keyframes = chunkState.get(chunkId)?.keyframes;
+				if (!keyframes) {
+					return;
+				}
+				allKeyframes.push(...keyframes);
+			});
+			applyCSSStyles(
+				element,
+				filterMatchingStyleFromKeyframes(allKeyframes, timing)
 			);
-		elementState
-			.getAllElements()
-			.concat(document.body)
-			.forEach((element) => {
-				const newCalculation: calculatedElementProperties = {
-					dimensions: getDomRect(element),
-					offset: timing,
-					computedStyle: getComputedStylings(changeProperties, element),
-				};
-				elementProperties.set(
-					element,
-					(elementProperties.get(element) || []).concat(newCalculation)
-				);
-			});
+		});
+		elementState.forEach((_, idString) => {
+			const element = keyElementMap.get(idString)!;
+			const newCalculation: calculatedElementProperties = {
+				dimensions: getDomRect(element),
+				offset: timing,
+				computedStyle: getComputedStylings(changeProperties, element),
+				naturalRatio:
+					element.tagName !== "img"
+						? undefined
+						: (element as HTMLImageElement).naturalWidth /
+						  (element as HTMLImageElement).naturalHeight,
+			};
+			elementProperties.set(
+				idString,
+				(elementProperties.get(idString) || []).concat(newCalculation)
+			);
+		});
+
 		if (index === array.length - 1) {
-			elementState.getMainElements().forEach((element) => {
-				restoreOriginalStyle(element, originalStyle.get(element)!);
+			elementState.forEach((elementKey, idString) => {
+				if (!elementKey.isMainElement) {
+					return;
+				}
+				const element = keyElementMap.get(idString)!;
+				restoreOriginalStyle(element, originalStyle.get(idString)!);
 			});
-			rootDimensions = getDomRect(document.body);
 		}
 	});
 
 	return {
 		originalStyle,
+		keyElementMap,
 		elementProperties,
 		elementState,
 		chunkState,
-		rootDimensions,
 	};
 };
