@@ -33,6 +33,7 @@ export class Bewegung implements BewegungAPI {
 
 	constructor(...bewegungProps: BewegungProps) {
 		this.#now = performance.now();
+		console.log(JSON.stringify(bewegungProps));
 		this.#prepareInput(normalizeProps(...bewegungProps));
 	}
 

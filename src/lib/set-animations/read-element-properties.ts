@@ -16,7 +16,7 @@ export const getComputedStylings = (
 		relevantStyles[cssRule] = computedElementStyle[cssRule];
 	});
 
-	return relevantStyles;
+	return computedElementStyle;
 };
 
 export const getDomRect = (domElement: HTMLElement): DOMRect => {

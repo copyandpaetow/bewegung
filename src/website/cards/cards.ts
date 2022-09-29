@@ -1,5 +1,6 @@
 import { Bewegung } from "../../lib/bewegung";
 import { CustomKeyframeEffect } from "../../lib/types";
+import { test } from "../../test";
 
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
@@ -110,6 +111,7 @@ document.addEventListener(
 	() => {
 		initCards();
 		initAdditionalImages();
+		test();
 	},
 	false
 );
