@@ -1,5 +1,7 @@
 import { Bewegung } from "../../lib/bewegung";
-import { CustomKeyframeEffect } from "../../lib/types";
+import { bewegung } from "../../lib2/bewegung";
+import { CustomKeyframeEffect } from "../../lib2/types";
+
 import { test } from "../../test";
 
 const initCards = () => {
@@ -19,7 +21,8 @@ const initCards = () => {
 			cards[activeIndex],
 			{
 				width: ["30%", "100%", "55%"],
-				height: ["50vh", "25vh", "65vh"],
+				height: ["50vh", "25vh", "70vh", "60vh"],
+				callback: [() => console.log("cb1")],
 			},
 			{ duration: 4000, easing: "ease" },
 		];
@@ -29,14 +32,16 @@ const initCards = () => {
 			{
 				width: "",
 				height: "",
+				callback: () => console.log("cb2"),
 			},
 			{ duration: 4000, easing: "ease-in" },
 		];
 
-		return new Bewegung(highlightCard, hideOthers);
+		return new bewegung(highlightCard, hideOthers);
+		//return new Bewegung(highlightCard, hideOthers);
 	};
 
-	let animation: Bewegung | undefined;
+	let animation: bewegung | undefined;
 	let paused = false;
 
 	cardsPlayButton?.addEventListener("click", () => {
@@ -111,7 +116,6 @@ document.addEventListener(
 	() => {
 		initCards();
 		initAdditionalImages();
-		test();
 	},
 	false
 );

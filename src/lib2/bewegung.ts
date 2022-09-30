@@ -1,12 +1,15 @@
 import { getAnimations } from "./animation";
+import { normalizeProps } from "./normalize/structure";
 import { AnimationsAPI, BewegungAPI, BewegungProps } from "./types";
-import { normalizeProps } from "./normalize";
 
 export class bewegung implements BewegungAPI {
 	#animation: AnimationsAPI;
+	#now: number;
 
 	constructor(...bewegungProps: BewegungProps) {
+		this.#now = performance.now();
 		this.#animation = getAnimations(normalizeProps(...bewegungProps));
+		console.log(`calculation took ${performance.now() - this.#now}ms`);
 	}
 
 	get playState() {

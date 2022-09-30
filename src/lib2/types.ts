@@ -7,6 +7,8 @@ export type ElementOrSelector =
 	| HTMLCollection
 	| string;
 
+export type ValueOf<T> = T[keyof T];
+
 export type CssRuleName = "cssOffset" | keyof CSSStyleDeclaration;
 
 export type CustomKeyframeArrayValueSyntax = Partial<
@@ -27,11 +29,23 @@ export type CustomKeyframe = Partial<
 	Record<CssRuleName, string | number> & NonCSSEntries
 >;
 
+export type EveryKeyframeSyntax =
+	| CustomKeyframe
+	| CustomKeyframe[]
+	| CustomKeyframeArrayValueSyntax;
+
+export type EveryOptionSyntax = number | KeyframeEffectOptions | undefined;
+
 export type CustomKeyframeEffect = [
 	target: ElementOrSelector,
-	keyframes: CustomKeyframe | CustomKeyframe[] | CustomKeyframeArrayValueSyntax,
-	options?: number | KeyframeEffectOptions
+	keyframes: EveryKeyframeSyntax,
+	options: EveryOptionSyntax
 ];
+
+export type Callbacks = {
+	callback: VoidFunction;
+	offset: number;
+};
 
 export interface BewegungAPI {
 	play: () => void;
@@ -55,3 +69,17 @@ export interface AnimationsAPI {
 	playState: AnimationPlayState;
 	finished: Promise<void>;
 }
+
+export interface StructureOfChunks {
+	elements: HTMLElement[][];
+	keyframes: CustomKeyframe[][];
+	callbacks: (Callbacks[] | null)[];
+	options: KeyframeEffectOptions[];
+	selectors: (string | null)[];
+}
+
+export type SoA = {
+	targetArray: ElementOrSelector[];
+	keyframeArray: EveryKeyframeSyntax[];
+	optionsArray: EveryOptionSyntax[];
+};
