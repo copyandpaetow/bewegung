@@ -14,7 +14,9 @@ export type CssRuleName = "cssOffset" | keyof CSSStyleDeclaration;
 export type CustomKeyframeArrayValueSyntax = Partial<
 	Record<CssRuleName, string[] | number[]> & {
 		callback: VoidFunction[];
-		offset: number | number[];
+		offset: number[];
+		class: string[];
+		attribute: string[];
 	}
 >;
 
@@ -34,7 +36,13 @@ export type EveryKeyframeSyntax =
 	| CustomKeyframe[]
 	| CustomKeyframeArrayValueSyntax;
 
-export type EveryOptionSyntax = number | KeyframeEffectOptions | undefined;
+export interface BewegungsOptions
+	extends KeyframeEffectOptions,
+		ComputedEffectTiming {
+	rootSelector?: string;
+}
+
+export type EveryOptionSyntax = number | BewegungsOptions | undefined;
 
 export type CustomKeyframeEffect = [
 	target: ElementOrSelector,
@@ -73,9 +81,9 @@ export interface AnimationsAPI {
 export interface StructureOfChunks {
 	elements: HTMLElement[][];
 	keyframes: CustomKeyframe[][];
-	callbacks: (Callbacks[] | null)[];
+	callbacks: Callbacks[][];
 	options: KeyframeEffectOptions[];
-	selectors: (string | null)[];
+	selectors: string[];
 }
 
 export type SoA = {
@@ -83,3 +91,8 @@ export type SoA = {
 	keyframeArray: EveryKeyframeSyntax[];
 	optionsArray: EveryOptionSyntax[];
 };
+
+export interface QueueApi {
+	enqueue: (...fn: Function[]) => void;
+	run: () => Promise<void>;
+}

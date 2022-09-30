@@ -1,32 +1,57 @@
-export interface Queue {
-	enqueue: (fn: Function) => void;
-	run: VoidFunction;
-}
+import { QueueApi } from "./types";
 
-export const queue = (): Queue => {
-	const tasks: Function[] = [];
-	let currentCallbackId = 0;
+// export const deferred = <T>() => {
+// 	let resolveFn: (value: T | PromiseLike<T>) => void = () => ({});
+// 	let rejectFn: (reason?: any) => void = () => ({});
+// 	const promise = new Promise<T>((resolve, reject) => {
+// 		resolveFn = resolve;
+// 		rejectFn = reject;
+// 	});
 
-	const work = (deadline: IdleDeadline) => {
+// 	return {
+// 		promise,
+// 		resolveFn,
+// 		rejectFn,
+// 	};
+// };
+
+export class Queue implements QueueApi {
+	#tasks: Function[] = [];
+	#currentCallbackId = 0;
+
+	constructor() {
+		this.#tasks = [];
+		this.#currentCallbackId = 0;
+	}
+
+	#work(deadline: IdleDeadline) {
 		while (
 			(deadline.timeRemaining() > 0 || deadline.didTimeout) &&
-			tasks.length > 0
+			this.#tasks.length > 0
 		) {
-			tasks.shift()?.();
+			this.#tasks.shift()?.();
 		}
+		console.log(this);
 
-		currentCallbackId = tasks.length > 0 ? requestIdleCallback(work) : 0;
-	};
+		this.#currentCallbackId =
+			this.#tasks.length > 0
+				? requestIdleCallback((deadline) => this.#work(deadline))
+				: 0;
+	}
 
-	return {
-		enqueue(...fn) {
-			tasks.push(...fn);
-		},
-		run() {
-			if (!tasks.length || !currentCallbackId) {
-				return;
+	enqueue(...fn) {
+		this.#tasks.push(...fn);
+		console.log(this.#tasks);
+		return this;
+	}
+	async run() {
+		return new Promise<void>((resolve) => {
+			this.#tasks.push(resolve);
+			if (!this.#currentCallbackId) {
+				this.#currentCallbackId = requestIdleCallback((deadline) =>
+					this.#work(deadline)
+				);
 			}
-			currentCallbackId = requestIdleCallback(work);
-		},
-	};
-};
+		});
+	}
+}

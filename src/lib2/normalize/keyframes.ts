@@ -1,4 +1,5 @@
 import {
+	BewegungsOptions,
 	Callbacks,
 	CustomKeyframe,
 	CustomKeyframeArrayValueSyntax,
@@ -105,7 +106,7 @@ export const formatKeyframes = (
 
 export const addIndividualEasing = (
 	keyframes: CustomKeyframe[],
-	options: KeyframeEffectOptions
+	options: BewegungsOptions
 ) => {
 	const { easing, composite } = options;
 	return keyframes.map((keyframe) => {

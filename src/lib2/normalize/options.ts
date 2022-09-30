@@ -1,14 +1,14 @@
 import { defaultTimings } from "../constants";
-import { EveryOptionSyntax } from "../types";
+import { BewegungsOptions, EveryOptionSyntax } from "../types";
 
 export const normalizeOptions = (
 	option: EveryOptionSyntax
-): KeyframeEffectOptions => {
+): BewegungsOptions => {
 	if (!option) {
 		return defaultTimings;
 	}
 	if (option === "number") {
 		return { ...defaultTimings, duration: option as number };
 	}
-	return { ...defaultTimings, ...(option as KeyframeEffectOptions) };
+	return { ...defaultTimings, ...(option as BewegungsOptions) };
 };
