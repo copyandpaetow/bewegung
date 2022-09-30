@@ -21,9 +21,11 @@ const convertToElementArray = (element: HTMLElement): HTMLElement[] => {
 };
 
 export const normalizeElements = (
-	elementOrElements: ElementOrSelector
+	elementOrElements: ElementOrSelector,
+	sideEffect: (selector: string) => void
 ): HTMLElement[] => {
 	if (typeof elementOrElements === "string") {
+		sideEffect(elementOrElements);
 		return findElementsByString(elementOrElements);
 	}
 

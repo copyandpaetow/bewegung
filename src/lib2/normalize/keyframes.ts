@@ -103,18 +103,13 @@ export const formatKeyframes = (
 	throw new Error("No mixing between array and object syntax");
 };
 
-export const separateKeyframesAndCallbacks = (
-	allKeyframes: CustomKeyframe[],
+export const addIndividualEasing = (
+	keyframes: CustomKeyframe[],
 	options: KeyframeEffectOptions
 ) => {
 	const { easing, composite } = options;
-	const callbacks: Callbacks[] = [];
-	const keyframes: CustomKeyframe[] = allKeyframes.map((keyframe) => {
-		const { callback, offset, ...styles } = keyframe;
-
-		if (callback) {
-			callbacks.push({ callback, offset: offset! });
-		}
+	return keyframes.map((keyframe) => {
+		const { offset, ...styles } = keyframe;
 
 		const individualEasing =
 			styles.animationTimingFunction ??
@@ -129,9 +124,19 @@ export const separateKeyframesAndCallbacks = (
 			...styles,
 		};
 	});
+};
 
-	return {
-		keyframes,
-		callbacks,
-	};
+export const separateKeyframesAndCallbacks = (
+	keyframes: CustomKeyframe[],
+	sideEffect: (callback: Callbacks) => void
+): CustomKeyframe[] => {
+	return keyframes.map((keyframe) => {
+		const { callback, offset } = keyframe;
+
+		if (callback) {
+			sideEffect({ callback, offset: offset! });
+		}
+
+		return keyframe;
+	});
 };

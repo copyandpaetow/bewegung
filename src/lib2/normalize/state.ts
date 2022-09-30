@@ -8,7 +8,11 @@ import {
 	StructureOfChunks,
 } from "../types";
 import { normalizeElements } from "./elements";
-import { formatKeyframes, separateKeyframesAndCallbacks } from "./keyframes";
+import {
+	addIndividualEasing,
+	formatKeyframes,
+	separateKeyframesAndCallbacks,
+} from "./keyframes";
 import { normalizeOptions } from "./options";
 
 export const toSoA = (props: CustomKeyframeEffect[]): SoA => {
@@ -30,27 +34,27 @@ export const makeMainState = ({
 	keyframeArray,
 	optionsArray,
 }: SoA): StructureOfChunks => {
-	const empty = new Array(targetArray.length).fill(null) as null[];
-	const selectors: (string | null)[] = empty;
-	const callbacks: (Callbacks[] | null)[] = empty;
-	const elements = targetArray.map((target, index) => {
-		if (typeof target === "string") {
-			selectors[index] = target;
-		}
-		return normalizeElements(target);
-	});
+	const selectors: string[] = new Array(targetArray.length).fill("");
+	const callbacks: Callbacks[][] = [];
+	const elements = targetArray.map((target, index) =>
+		normalizeElements(
+			target,
+			(selector: string) => (selectors[index] = selector)
+		)
+	);
 	const options = optionsArray.map(normalizeOptions);
 	const keyframes = keyframeArray
 		.map(formatKeyframes)
-		.map((keyframe, index) => {
-			const { keyframes, callbacks: possibleCallbacks } =
-				separateKeyframesAndCallbacks(keyframe, options[index]);
-			if (possibleCallbacks.length) {
-				callbacks[index] = possibleCallbacks;
-			}
+		.map((keyframes, index) => addIndividualEasing(keyframes, options[index]))
+		.map((keyframe, index) =>
+			separateKeyframesAndCallbacks(keyframe, (callback: Callbacks) => {
+				if (!callbacks[index]) {
+					callbacks[index] = [];
+				}
 
-			return keyframes;
-		});
+				callbacks[index].push(callback);
+			})
+		);
 
 	return { elements, keyframes, callbacks, options, selectors };
 };
