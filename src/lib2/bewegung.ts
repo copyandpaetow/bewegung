@@ -8,6 +8,7 @@ export class bewegung implements BewegungAPI {
 
 	constructor(...bewegungProps: BewegungProps) {
 		this.#now = performance.now();
+
 		this.#animation = getAnimations(normalizeProps(...bewegungProps));
 		console.log(`calculation took ${performance.now() - this.#now}ms`);
 	}

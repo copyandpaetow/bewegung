@@ -1,3 +1,4 @@
+import { scheduleCallback } from "../scheduler";
 import {
 	Callbacks,
 	CustomKeyframeEffect,
@@ -15,46 +16,68 @@ import {
 } from "./keyframes";
 import { normalizeOptions } from "./options";
 
-export const toSoA = (props: CustomKeyframeEffect[]): SoA => {
-	const targetArray: ElementOrSelector[] = [];
-	const keyframeArray: EveryKeyframeSyntax[] = [];
-	const optionsArray: EveryOptionSyntax[] = [];
+const makeState = (): StructureOfChunks => ({
+	elements: [],
+	keyframes: [],
+	callbacks: [],
+	options: [],
+	selectors: [],
+});
 
-	props.forEach((propEntry) => {
-		targetArray.push(propEntry[0]);
-		keyframeArray.push(propEntry[1]);
-		optionsArray.push(propEntry[2]);
-	});
+export const fillState = (props: CustomKeyframeEffect[]) =>
+	new Promise<StructureOfChunks>((resolve) => {
+		const targetArray: ElementOrSelector[] = [];
+		const keyframeArray: EveryKeyframeSyntax[] = [];
+		const optionsArray: EveryOptionSyntax[] = [];
 
-	return { targetArray, keyframeArray, optionsArray };
-};
-
-export const makeMainState = ({
-	targetArray,
-	keyframeArray,
-	optionsArray,
-}: SoA): StructureOfChunks => {
-	const selectors: string[] = new Array(targetArray.length).fill("");
-	const callbacks: Callbacks[][] = [];
-	const elements = targetArray.map((target, index) =>
-		normalizeElements(
-			target,
-			(selector: string) => (selectors[index] = selector)
-		)
-	);
-	const options = optionsArray.map(normalizeOptions);
-	const keyframes = keyframeArray
-		.map(formatKeyframes)
-		.map((keyframes, index) => addIndividualEasing(keyframes, options[index]))
-		.map((keyframe, index) =>
-			separateKeyframesAndCallbacks(keyframe, (callback: Callbacks) => {
-				if (!callbacks[index]) {
-					callbacks[index] = [];
-				}
-
-				callbacks[index].push(callback);
+		scheduleCallback(() =>
+			props.forEach((propEntry) => {
+				targetArray.push(propEntry[0]);
+				keyframeArray.push(propEntry[1]);
+				optionsArray.push(propEntry[2]);
 			})
 		);
 
-	return { elements, keyframes, callbacks, options, selectors };
+		scheduleCallback(() =>
+			makeMainState({ targetArray, keyframeArray, optionsArray }, resolve)
+		);
+	});
+
+export const makeMainState = (
+	sortedProps: SoA,
+	resolve: (value: StructureOfChunks | PromiseLike<StructureOfChunks>) => void
+) => {
+	const emptyState = makeState();
+	const { targetArray, keyframeArray, optionsArray } = sortedProps;
+
+	targetArray.forEach((target) =>
+		scheduleCallback(() => {
+			emptyState.elements.push(normalizeElements(target));
+			emptyState.selectors.push(typeof target === "string" ? target : "");
+		})
+	);
+
+	optionsArray.forEach((option) => {
+		scheduleCallback(() => {
+			emptyState.options.push(normalizeOptions(option));
+		});
+	});
+
+	scheduleCallback(() => {
+		keyframeArray
+			.map(formatKeyframes)
+			.map((keyframes, index) =>
+				addIndividualEasing(keyframes, emptyState.options[index])
+			)
+			.forEach((keyframe) => {
+				const { keyframes: newKeyframes, callbacks: newCallbacks } =
+					separateKeyframesAndCallbacks(keyframe);
+				emptyState.keyframes.push(newKeyframes);
+				emptyState.callbacks.push(newCallbacks);
+			});
+	});
+
+	scheduleCallback(() => {
+		resolve(emptyState);
+	});
 };

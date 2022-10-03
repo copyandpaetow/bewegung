@@ -1,8 +1,8 @@
 import { getAffectedElements } from "./prepare/affected-elements";
 import { defaultTimings } from "./constants";
-import { makeMainState, toSoA } from "./normalize/state";
+import { fillState } from "./normalize/state";
 import { calculateTotalRuntime } from "./prepare/runtime";
-import { Queue } from "./shared";
+
 import {
 	AnimationsAPI,
 	CustomKeyframeEffect,
@@ -12,37 +12,50 @@ import {
 	updateCallbackOffsets,
 	updateKeyframeOffsets,
 } from "./prepare/offsets";
+import { scheduleCallback } from "./scheduler";
 
 export const getAnimations = (props: CustomKeyframeEffect[]): AnimationsAPI => {
-	const tasks = new Queue();
 	let state: StructureOfChunks;
 	let secondaryElements: HTMLElement[][];
 	let totalRuntime = defaultTimings.duration as number;
+	let now = performance.now();
 
-	tasks
-		.enqueue(
-			() => (state = makeMainState(toSoA(props))),
-			() =>
-				(secondaryElements = getAffectedElements(
-					state.elements,
-					state.options
-				)),
-			() => (totalRuntime = calculateTotalRuntime(state.options)),
+	const init = async () => {
+		state = await fillState(props);
+		secondaryElements = await getAffectedElements(
+			state.elements,
+			state.options
+		);
+		scheduleCallback(
+			() => (totalRuntime = calculateTotalRuntime(state.options))
+		);
+		scheduleCallback(
 			() =>
 				(state.keyframes = updateKeyframeOffsets(
 					state.keyframes,
 					state.options,
 					totalRuntime
-				)),
+				))
+		);
+		scheduleCallback(
 			() =>
 				(state.callbacks = updateCallbackOffsets(
 					state.callbacks,
 					state.options,
 					totalRuntime
-				)),
-			() => console.log({ state, secondaryElements, totalRuntime })
-		)
-		.run();
+				))
+		);
+		scheduleCallback(() =>
+			console.log({
+				state,
+				secondaryElements,
+				totalRuntime,
+				duration: performance.now() - now,
+			})
+		);
+	};
+
+	init();
 
 	return {
 		play() {},

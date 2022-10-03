@@ -1,3 +1,4 @@
+import { scheduleCallback } from "../scheduler";
 import { BewegungsOptions } from "../types";
 
 const getParent = (element: HTMLElement) =>
@@ -49,19 +50,27 @@ export const findAffectedDOMElements = (
 export const getAffectedElements = (
 	mainElements: HTMLElement[][],
 	options: BewegungsOptions[]
-): HTMLElement[][] => {
-	const allMainElements = mainElements.flat();
+): Promise<HTMLElement[][]> =>
+	new Promise((resolve) => {
+		const allMainElements = mainElements.flat();
+		const affectedElements: HTMLElement[][] = [];
 
-	return mainElements.map((mainElementArray, index) => {
-		const elementSet = new Set(
-			mainElementArray.flatMap((element) =>
-				findAffectedDOMElements(element, options[index].rootSelector)
-			)
-		);
-		allMainElements.forEach((element) => {
-			elementSet.has(element) && elementSet.delete(element);
+		mainElements.forEach((mainElementArray, index, array) => {
+			scheduleCallback(() => {
+				const elementSet = new Set(
+					mainElementArray.flatMap((element) =>
+						findAffectedDOMElements(element, options[index].rootSelector)
+					)
+				);
+				allMainElements.forEach((element) => {
+					elementSet.has(element) && elementSet.delete(element);
+				});
+
+				affectedElements.push(Array.from(elementSet));
+
+				if (index === array.length - 1) {
+					resolve(affectedElements);
+				}
+			});
 		});
-
-		return Array.from(elementSet);
 	});
-};

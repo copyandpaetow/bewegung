@@ -128,16 +128,22 @@ export const addIndividualEasing = (
 };
 
 export const separateKeyframesAndCallbacks = (
-	keyframes: CustomKeyframe[],
-	sideEffect: (callback: Callbacks) => void
-): CustomKeyframe[] => {
-	return keyframes.map((keyframe) => {
-		const { callback, offset } = keyframe;
+	AllKeyframes: CustomKeyframe[]
+) => {
+	const keyframes: CustomKeyframe[] = [];
+	const callbacks: Callbacks[] = [];
+
+	AllKeyframes.forEach((unfilteredKeyframes) => {
+		const { callback, offset, ...rest } = unfilteredKeyframes;
 
 		if (callback) {
-			sideEffect({ callback, offset: offset! });
+			callbacks.push({ callback, offset: offset! });
 		}
-
-		return keyframe;
+		keyframes.push({ ...rest, offset: offset! });
 	});
+
+	return {
+		keyframes,
+		callbacks,
+	};
 };

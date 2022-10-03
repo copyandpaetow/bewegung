@@ -2,8 +2,6 @@ import { Bewegung } from "../../lib/bewegung";
 import { bewegung } from "../../lib2/bewegung";
 import { CustomKeyframeEffect } from "../../lib2/types";
 
-import { test } from "../../test";
-
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
 	const cardsPlayButton = document.querySelector(".cards__button--play");
