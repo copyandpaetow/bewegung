@@ -22,7 +22,7 @@ const initCards = () => {
 				height: ["50vh", "25vh", "70vh", "60vh"],
 				callback: [() => console.log("cb1")],
 			},
-			{ duration: 4000, easing: "ease" },
+			{ duration: 2000, easing: "ease" },
 		];
 
 		const hideOthers: CustomKeyframeEffect = [
@@ -67,38 +67,22 @@ const initCards = () => {
 
 const initAdditionalImages = () => {
 	const imageWrappers = document.querySelectorAll(".additional__image");
-	const imageExpandedState = Array.from(
-		Array(imageWrappers.length),
-		() => false
-	);
+	const imageExpandedState = Array.from(Array(imageWrappers.length), () => false);
 
 	imageWrappers.forEach((element, index) => {
 		element.addEventListener("click", () => {
-			const image =
-				element.querySelector("img")! || element.querySelector("div")!;
+			const image = element.querySelector("img")! || element.querySelector("div")!;
 
 			if (imageExpandedState[index]) {
 				const animation = new Bewegung(
-					[
-						element,
-						{ height: "", width: "" },
-						{ duration: 4000, easing: "ease-in" },
-					],
-					[
-						image,
-						{ height: "", width: "" },
-						{ duration: 4000, easing: "ease-in" },
-					]
+					[element, { height: "", width: "" }, { duration: 4000, easing: "ease-in" }],
+					[image, { height: "", width: "" }, { duration: 4000, easing: "ease-in" }]
 				);
 				animation.play();
 				imageExpandedState[index] = false;
 			} else {
 				const animation = new Bewegung(
-					[
-						element,
-						{ height: "20vh", width: "30vh" },
-						{ duration: 4000, easing: "ease-in" },
-					],
+					[element, { height: "20vh", width: "30vh" }, { duration: 4000, easing: "ease-in" }],
 					[image, { width: "20vh" }, { duration: 4000, easing: "ease-in" }]
 				);
 				animation.play();

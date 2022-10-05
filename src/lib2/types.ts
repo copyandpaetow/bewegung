@@ -73,9 +73,10 @@ export interface AnimationsAPI {
 }
 
 export type MainType = HTMLElement[][];
+export type MainKeyframe = CustomKeyframe[][];
 export interface StructureOfChunks {
 	elements: MainType;
-	keyframes: CustomKeyframe[][];
+	keyframes: MainKeyframe;
 	callbacks: Callbacks[][];
 	options: KeyframeEffectOptions[];
 	selectors: string[];

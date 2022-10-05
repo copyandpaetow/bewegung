@@ -20,16 +20,11 @@ export const updateKeyframeOffsets = (
 ) => {
 	keyframes.forEach(
 		(frames, index) =>
-			(keyframes[index] = frames.map((frame) => {
-				return updateKeyframeTiming(frame, options[index], totalRuntime);
-			}))
+			(keyframes[index] = frames.map((frame) =>
+				updateKeyframeTiming(frame, options[index], totalRuntime)
+			))
 	);
 };
-
-/*
-callbacks =[[],[],[{offset: 1, callback: ()=>void}, {...}]]
-
-*/
 
 export const updateCallbackOffsets = (
 	callbacks: Callbacks[][],
@@ -41,8 +36,8 @@ export const updateCallbackOffsets = (
 			return;
 		}
 		//@ts-expect-error ts weirdness
-		callbacks[index] = frames.map((frame) => {
-			return updateKeyframeTiming(frame, options[index], totalRuntime);
-		});
+		callbacks[index] = frames.map((frame) =>
+			updateKeyframeTiming(frame, options[index], totalRuntime)
+		);
 	});
 };

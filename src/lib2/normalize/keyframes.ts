@@ -104,7 +104,6 @@ export const addIndividualEasing = (keyframes: CustomKeyframe[], options: Bewegu
 
 		return {
 			offset,
-			computedOffset: offset,
 			easing: individualEasing,
 			composite,
 			...styles,

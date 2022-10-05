@@ -6,6 +6,7 @@ import {
 	ComputedState,
 	CssRuleName,
 	CustomKeyframe,
+	MainKeyframe,
 	StructureOfChunks,
 } from "../types";
 import {
@@ -38,6 +39,17 @@ const calculateChangeProperties = (allKeyframes: CustomKeyframe[][]) => {
 };
 
 //TODO: filter elements
+//* this could be used to filter the elements, but it could lead to bugs because everything is tied to the index and they would be off
+//* unless everything is filtered with this (mainElements, secondaryELement, calculations, resets)
+// const getRelevantIndices = (keyframes: MainKeyframe, timing: number) =>
+// 	keyframes.reduce((indexAccumulator, currentkeyframes, index) => {
+// 		if (timing === 0 || currentkeyframes.some((frame) => frame.offset === timing)) {
+// 			indexAccumulator.push(index);
+// 		}
+
+// 		return indexAccumulator;
+// 	}, [] as number[]);
+
 export const fillCalculations = (
 	calculations: Calculations,
 	state: StructureOfChunks,
@@ -48,6 +60,8 @@ export const fillCalculations = (
 
 	changeTimings.forEach((timing) => {
 		scheduleCallback(() => {
+			const calculationMap = new WeakMap<HTMLElement, CalculatedElementProperties>();
+
 			state.elements.forEach((row, index) => {
 				row.forEach((mainElement) => {
 					applyCSSStyles(
@@ -57,39 +71,27 @@ export const fillCalculations = (
 				});
 			});
 
-			const calculationMap = new WeakMap<HTMLElement, CalculatedElementProperties>();
-
 			state.elements
 				.concat(computedState.secondaryElements)
 				.flat()
-				.forEach((mainElement) => {
-					if (calculationMap.has(mainElement)) {
+				.forEach((element) => {
+					if (calculationMap.has(element)) {
 						return;
 					}
-					calculationMap.set(mainElement, getCalculations(mainElement, timing, changeProperties));
+					calculationMap.set(element, getCalculations(element, timing, changeProperties));
 				});
 
 			state.elements.forEach((row, rowIndex) => {
-				if (!calculations.primary[rowIndex]) {
-					calculations.primary[rowIndex] = [];
-				}
 				row.forEach((mainElement, index) => {
-					if (!calculations.primary[rowIndex][index]) {
-						calculations.primary[rowIndex][index] = {};
-					}
-					calculations.primary[rowIndex][index][timing] = calculationMap.get(mainElement)!;
+					((calculations.primary[rowIndex] ??= [])[index] ??= {})[timing] =
+						calculationMap.get(mainElement)!;
 				});
 			});
 
 			computedState.secondaryElements.forEach((row, rowIndex) => {
-				if (!calculations.secondary[rowIndex]) {
-					calculations.secondary[rowIndex] = [];
-				}
 				row.forEach((secondaryElement, index) => {
-					if (!calculations.secondary[rowIndex][index]) {
-						calculations.secondary[rowIndex][index] = {};
-					}
-					calculations.secondary[rowIndex][index][timing] = calculationMap.get(secondaryElement)!;
+					((calculations.secondary[rowIndex] ??= [])[index] ??= {})[timing] =
+						calculationMap.get(secondaryElement)!;
 				});
 			});
 
