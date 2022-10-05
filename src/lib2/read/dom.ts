@@ -41,14 +41,14 @@ const calculateChangeProperties = (allKeyframes: CustomKeyframe[][]) => {
 //TODO: filter elements
 //* this could be used to filter the elements, but it could lead to bugs because everything is tied to the index and they would be off
 //* unless everything is filtered with this (mainElements, secondaryELement, calculations, resets)
-// const getRelevantIndices = (keyframes: MainKeyframe, timing: number) =>
-// 	keyframes.reduce((indexAccumulator, currentkeyframes, index) => {
-// 		if (timing === 0 || currentkeyframes.some((frame) => frame.offset === timing)) {
-// 			indexAccumulator.push(index);
-// 		}
+const getRelevantIndices = (keyframes: MainKeyframe, timing: number) =>
+	keyframes.reduce((indexAccumulator, currentkeyframes, index) => {
+		if (timing === 0 || currentkeyframes.some((frame) => frame.offset === timing)) {
+			indexAccumulator.push(index);
+		}
 
-// 		return indexAccumulator;
-// 	}, [] as number[]);
+		return indexAccumulator;
+	}, [] as number[]);
 
 export const fillCalculations = (
 	calculations: Calculations,
@@ -61,8 +61,13 @@ export const fillCalculations = (
 	changeTimings.forEach((timing) => {
 		scheduleCallback(() => {
 			const calculationMap = new WeakMap<HTMLElement, CalculatedElementProperties>();
+			const relevantIndices = getRelevantIndices(state.keyframes, timing);
 
 			state.elements.forEach((row, index) => {
+				if (!relevantIndices.includes(index)) {
+					return;
+				}
+
 				row.forEach((mainElement) => {
 					applyCSSStyles(
 						mainElement,
@@ -71,17 +76,22 @@ export const fillCalculations = (
 				});
 			});
 
-			state.elements
-				.concat(computedState.secondaryElements)
-				.flat()
-				.forEach((element) => {
+			state.elements.forEach((row, index) => {
+				if (!relevantIndices.includes(index)) {
+					return;
+				}
+				row.concat(computedState.secondaryElements[index]).forEach((element) => {
 					if (calculationMap.has(element)) {
 						return;
 					}
 					calculationMap.set(element, getCalculations(element, timing, changeProperties));
 				});
+			});
 
 			state.elements.forEach((row, rowIndex) => {
+				if (!relevantIndices.includes(rowIndex)) {
+					return;
+				}
 				row.forEach((mainElement, index) => {
 					((calculations.primary[rowIndex] ??= [])[index] ??= {})[timing] =
 						calculationMap.get(mainElement)!;
@@ -89,6 +99,9 @@ export const fillCalculations = (
 			});
 
 			computedState.secondaryElements.forEach((row, rowIndex) => {
+				if (!relevantIndices.includes(rowIndex)) {
+					return;
+				}
 				row.forEach((secondaryElement, index) => {
 					((calculations.secondary[rowIndex] ??= [])[index] ??= {})[timing] =
 						calculationMap.get(secondaryElement)!;
@@ -96,6 +109,9 @@ export const fillCalculations = (
 			});
 
 			state.elements.forEach((row, rowIndex) => {
+				if (!relevantIndices.includes(rowIndex)) {
+					return;
+				}
 				row.forEach((mainElement, index) => {
 					restoreOriginalStyle(mainElement, computedState.cssStyleReset[rowIndex][index]);
 				});
