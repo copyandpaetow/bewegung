@@ -32,19 +32,5 @@ export const defaultOptions: Partial<KeyframeEffectOptions> = {
 	easing: "ease",
 };
 
-const getDefaultTimingsFromKeyframe = (): KeyframeEffectOptions => {
-	const kfe = new KeyframeEffect(null, null, defaultOptions);
-	const { composite, pseudoElement, iterationComposite } = kfe;
-
-	return {
-		...kfe.getComputedTiming(),
-		composite,
-		pseudoElement,
-		iterationComposite,
-	};
-};
-
-export const defaultTimings = getDefaultTimingsFromKeyframe();
-
 export const emptyImageSrc =
 	"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";

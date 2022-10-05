@@ -47,30 +47,25 @@ export const findAffectedDOMElements = (
 	return [...traverseDomDown(element), ...parents] as HTMLElement[];
 };
 
-export const getAffectedElements = (
+export const fillAffectedElements = (
+	secondaryElements: HTMLElement[][],
 	mainElements: HTMLElement[][],
 	options: BewegungsOptions[]
-): Promise<HTMLElement[][]> =>
-	new Promise((resolve) => {
-		const allMainElements = mainElements.flat();
-		const affectedElements: HTMLElement[][] = [];
+) => {
+	const allMainElements = mainElements.flat();
 
-		mainElements.forEach((mainElementArray, index, array) => {
-			scheduleCallback(() => {
-				const elementSet = new Set(
-					mainElementArray.flatMap((element) =>
-						findAffectedDOMElements(element, options[index].rootSelector)
-					)
-				);
-				allMainElements.forEach((element) => {
-					elementSet.has(element) && elementSet.delete(element);
-				});
-
-				affectedElements.push(Array.from(elementSet));
-
-				if (index === array.length - 1) {
-					resolve(affectedElements);
-				}
+	mainElements.forEach((mainElementArray, index) => {
+		scheduleCallback(() => {
+			const elementSet = new Set(
+				mainElementArray.flatMap((element) =>
+					findAffectedDOMElements(element, options[index].rootSelector)
+				)
+			);
+			allMainElements.forEach((element) => {
+				elementSet.has(element) && elementSet.delete(element);
 			});
+
+			secondaryElements.push(Array.from(elementSet));
 		});
 	});
+};

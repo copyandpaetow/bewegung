@@ -50,7 +50,6 @@ const performWorkUntilDeadline = () => {
 		//? can this just be 0?
 		const previousLevel = nesting;
 		nesting = level + 1;
-		console.log({ nesting });
 		callback();
 		nesting = previousLevel;
 	}
@@ -82,11 +81,12 @@ export const scheduleCallback = (callback: VoidFunction) => {
 			queue.unshift({ callback, level: nesting });
 		} else {
 			//if there are already nested callbacks, we want to add to the end of it
-			queue.splice(lastIndex, 0, { callback, level: nesting });
+			queue.splice(lastIndex + 1, 0, { callback, level: nesting });
 		}
 	}
 
 	if (!isMessageLoopRunning) {
+		nesting = 0;
 		isMessageLoopRunning = true;
 		scheduleNextWork();
 	}

@@ -96,3 +96,9 @@ export interface QueueApi {
 	enqueue: (...fn: Function[]) => void;
 	run: () => Promise<void>;
 }
+
+export interface Context {
+	// changeTimings: number[];
+	// changeProperties: CssRuleName[];
+	totalRuntime: number;
+}
