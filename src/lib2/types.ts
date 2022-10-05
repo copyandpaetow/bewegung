@@ -27,18 +27,14 @@ export type NonCSSEntries = {
 	offset: number;
 };
 
-export type CustomKeyframe = Partial<
-	Record<CssRuleName, string | number> & NonCSSEntries
->;
+export type CustomKeyframe = Partial<Record<CssRuleName, string | number> & NonCSSEntries>;
 
 export type EveryKeyframeSyntax =
 	| CustomKeyframe
 	| CustomKeyframe[]
 	| CustomKeyframeArrayValueSyntax;
 
-export interface BewegungsOptions
-	extends KeyframeEffectOptions,
-		ComputedEffectTiming {
+export interface BewegungsOptions extends KeyframeEffectOptions, ComputedEffectTiming {
 	rootSelector?: string;
 }
 
@@ -68,9 +64,7 @@ export interface BewegungAPI {
 	playState: AnimationPlayState;
 }
 
-export type BewegungProps =
-	| CustomKeyframeEffect
-	| (CustomKeyframeEffect | KeyframeEffect)[];
+export type BewegungProps = CustomKeyframeEffect | (CustomKeyframeEffect | KeyframeEffect)[];
 
 export interface AnimationsAPI {
 	play: VoidFunction;
@@ -78,13 +72,19 @@ export interface AnimationsAPI {
 	finished: Promise<void>;
 }
 
+export type MainType = HTMLElement[][];
 export interface StructureOfChunks {
-	elements: HTMLElement[][];
+	elements: MainType;
 	keyframes: CustomKeyframe[][];
 	callbacks: Callbacks[][];
 	options: KeyframeEffectOptions[];
 	selectors: string[];
 }
+
+export type ComputedState = {
+	cssStyleReset: Map<string, string>[][];
+	secondaryElements: MainType;
+};
 
 export type SoA = {
 	targetArray: ElementOrSelector[];
@@ -102,3 +102,40 @@ export interface Context {
 	// changeProperties: CssRuleName[];
 	totalRuntime: number;
 }
+
+export type CalculatedElementProperties = {
+	dimensions: PartialDomRect;
+	computedStyle: Partial<CSSStyleDeclaration>;
+	offset: number;
+	naturalRatio: number | undefined;
+};
+
+export type PartialDomRect = {
+	top: number;
+	right: number;
+	bottom: number;
+	left: number;
+	width: number;
+	height: number;
+};
+
+export type Calculations = {
+	primary: Record<number, CalculatedElementProperties>[][];
+	secondary: Record<number, CalculatedElementProperties>[][];
+};
+
+export type Override = {
+	existingStyle: Partial<CSSStyleDeclaration>;
+	override: Partial<CSSStyleDeclaration>;
+};
+
+export type Overrides = {
+	primary: Override[][];
+	secondary: Override[][];
+};
+
+export type StyleChangePossibilities = {
+	style: Partial<CSSStyleDeclaration>;
+	classes: string[];
+	attributes: string[];
+};

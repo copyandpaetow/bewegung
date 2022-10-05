@@ -5,11 +5,7 @@ const updateKeyframeTiming = (
 	options: ComputedEffectTiming,
 	totalRuntime: number
 ) => {
-	const { delay: start, endTime } = options;
-
-	const absoluteTiming =
-		//@ts-expect-error stupid typescript
-		(endTime! * frame.offset + start!) / totalRuntime;
+	const absoluteTiming = ((options.endTime as number) * frame.offset!) / totalRuntime;
 
 	return {
 		...frame,

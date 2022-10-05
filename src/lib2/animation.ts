@@ -1,26 +1,22 @@
-import { fillAffectedElements } from "./prepare/affected-elements";
-import { fillState } from "./normalize/state";
-import { calculateTotalRuntime } from "./prepare/runtime";
-
-import { AnimationsAPI, Context, CustomKeyframeEffect, StructureOfChunks } from "./types";
-import { updateCallbackOffsets, updateKeyframeOffsets } from "./prepare/offsets";
-import { scheduleCallback } from "./scheduler";
 import { defaultOptions } from "./constants";
-
-const makeState = (): StructureOfChunks =>
-	Object.freeze({
-		elements: [],
-		keyframes: [],
-		callbacks: [],
-		options: [],
-		selectors: [],
-	});
+import { fillState } from "./normalize/state";
+import { fillAffectedElements } from "./prepare/affected-elements";
+import { updateCallbackOffsets, updateKeyframeOffsets } from "./prepare/offsets";
+import { fillResets } from "./prepare/resets";
+import { calculateTotalRuntime } from "./prepare/runtime";
+import { makeCaluclations, makeComputedState, makeOverrides, makeState } from "./prepare/state";
+import { fillCalculations } from "./read/dom";
+import { scheduleCallback } from "./scheduler";
+import { AnimationsAPI, Context, CustomKeyframeEffect } from "./types";
 
 export const getAnimations = (props: CustomKeyframeEffect[]): AnimationsAPI => {
-	const state = makeState();
-	const secondaryElements: HTMLElement[][] = [];
-	const context: Context = { totalRuntime: defaultOptions.duration as number };
 	let now = performance.now();
+
+	const state = makeState();
+	const computedState = makeComputedState();
+	const calculations = makeCaluclations();
+	const overrides = makeOverrides();
+	const context: Context = { totalRuntime: defaultOptions.duration as number };
 
 	function init() {
 		const tasks = [
@@ -28,14 +24,24 @@ export const getAnimations = (props: CustomKeyframeEffect[]): AnimationsAPI => {
 			() => calculateTotalRuntime(context, state.options),
 			() => updateKeyframeOffsets(state.keyframes, state.options, context.totalRuntime),
 			() => updateCallbackOffsets(state.callbacks, state.options, context.totalRuntime),
-			getSecondaryStructures,
+			computed,
 		];
 
 		tasks.forEach(scheduleCallback);
 	}
 
-	function getSecondaryStructures() {
-		const tasks = [() => fillAffectedElements(secondaryElements, state.elements, state.options)];
+	function computed() {
+		const tasks = [
+			() => fillAffectedElements(computedState.secondaryElements, state.elements, state.options),
+			() => fillResets(computedState.cssStyleReset, state.elements),
+			read,
+		];
+
+		tasks.forEach(scheduleCallback);
+	}
+
+	function read() {
+		const tasks = [() => fillCalculations(calculations, state, computedState)];
 
 		tasks.forEach(scheduleCallback);
 	}
@@ -45,7 +51,8 @@ export const getAnimations = (props: CustomKeyframeEffect[]): AnimationsAPI => {
 	scheduleCallback(() =>
 		console.log({
 			state,
-			secondaryElements,
+			computedState,
+			calculations,
 			totalRuntime: context.totalRuntime,
 			duration: performance.now() - now,
 		})

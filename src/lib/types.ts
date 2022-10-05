@@ -23,9 +23,7 @@ export type NonCSSEntries = {
 	offset: number;
 };
 
-export type CustomKeyframe = Partial<
-	Record<CssRuleName, string | number> & NonCSSEntries
->;
+export type CustomKeyframe = Partial<Record<CssRuleName, string | number> & NonCSSEntries>;
 
 export type CustomKeyframeEffect = [
 	target: ElementOrSelector,
@@ -85,9 +83,7 @@ export interface BewegungAPI {
 	playState: AnimationPlayState;
 }
 
-export type BewegungProps =
-	| CustomKeyframeEffect
-	| (CustomKeyframeEffect | KeyframeEffect)[];
+export type BewegungProps = CustomKeyframeEffect | (CustomKeyframeEffect | KeyframeEffect)[];
 
 export interface Context {
 	changeTimings: number[];
@@ -95,10 +91,7 @@ export interface Context {
 	totalRuntime: number;
 }
 
-export type differenceArray = [
-	calculatedElementProperties,
-	calculatedElementProperties
-];
+export type differenceArray = [calculatedElementProperties, calculatedElementProperties];
 
 export interface ChunkState {
 	getCallbacks(element: HTMLElement): Callbacks[] | undefined;
@@ -124,9 +117,7 @@ export interface ElementState {
 
 export interface StyleState {
 	getOriginalStyle(element: HTMLElement): Map<string, string> | undefined;
-	getElementProperties(
-		element: HTMLElement
-	): calculatedElementProperties[] | undefined;
+	getElementProperties(element: HTMLElement): calculatedElementProperties[] | undefined;
 	getStyleOverrides(element: HTMLElement):
 		| {
 				existingStyle: Partial<CSSStyleDeclaration>;

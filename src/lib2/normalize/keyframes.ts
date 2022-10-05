@@ -16,9 +16,7 @@ const calculateOffsets = (offsets: (number | undefined)[]): number[] => {
 	}
 
 	if (offsets.every((offset) => offset === undefined)) {
-		return offsets.map((_, index, array) =>
-			index === 0 ? 0 : index / (array.length - 1)
-		);
+		return offsets.map((_, index, array) => (index === 0 ? 0 : index / (array.length - 1)));
 	}
 
 	return offsets.map((offset, index, array) => {
@@ -47,17 +45,13 @@ const formatArraySyntax = (
 		0
 	);
 
-	const { offset: keyframeOffset, ...keyframeWithoutOffset } =
-		keyframeWithArraySyntax;
+	const { offset: keyframeOffset, ...keyframeWithoutOffset } = keyframeWithArraySyntax;
 
 	const offsetArray = new Array(amountOfObjects)
 		.fill(undefined)
-		.map(
-			(_, index) => (keyframeOffset?.[index] as number | undefined) ?? undefined
-		);
+		.map((_, index) => (keyframeOffset?.[index] as number | undefined) ?? undefined);
 
 	const allOffsets = calculateOffsets(offsetArray);
-	console.log({ amountOfObjects, keyframeOffset, offsetArray, allOffsets });
 
 	const newKeyframes: CustomKeyframe[] = [];
 
@@ -76,12 +70,8 @@ const formatArraySyntax = (
 	return newKeyframes;
 };
 
-const addKeyframeOffset = (
-	allKeyframes: CustomKeyframe[]
-): CustomKeyframe[] => {
-	const offsets = calculateOffsets(
-		allKeyframes.map((keyframe) => keyframe.offset)
-	);
+const addKeyframeOffset = (allKeyframes: CustomKeyframe[]): CustomKeyframe[] => {
+	const offsets = calculateOffsets(allKeyframes.map((keyframe) => keyframe.offset));
 
 	return allKeyframes.map((keyframe, index) => {
 		keyframe.offset = offsets[index];
@@ -104,18 +94,13 @@ export const formatKeyframes = (
 	throw new Error("No mixing between array and object syntax");
 };
 
-export const addIndividualEasing = (
-	keyframes: CustomKeyframe[],
-	options: BewegungsOptions
-) => {
+export const addIndividualEasing = (keyframes: CustomKeyframe[], options: BewegungsOptions) => {
 	const { easing, composite } = options;
 	return keyframes.map((keyframe) => {
 		const { offset, ...styles } = keyframe;
 
 		const individualEasing =
-			styles.animationTimingFunction ??
-			styles.transitionTimingFunction ??
-			easing;
+			styles.animationTimingFunction ?? styles.transitionTimingFunction ?? easing;
 
 		return {
 			offset,
@@ -127,9 +112,7 @@ export const addIndividualEasing = (
 	});
 };
 
-export const separateKeyframesAndCallbacks = (
-	AllKeyframes: CustomKeyframe[]
-) => {
+export const separateKeyframesAndCallbacks = (AllKeyframes: CustomKeyframe[]) => {
 	const keyframes: CustomKeyframe[] = [];
 	const callbacks: Callbacks[] = [];
 
