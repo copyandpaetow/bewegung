@@ -31,12 +31,13 @@ const isThereStilltimeToWork = (deadline: number) => {
 	return true;
 };
 
-const performWorkUntilDeadline = () => {
+const workUntilDeadline = () => {
 	if (queue.length === 0) {
 		isMessageLoopRunning = false;
 		nesting = 0;
 		return;
 	}
+
 	const deadline = performance.now() + Math.min(5, getRefreshIntervall() / 2);
 
 	while (queue.length && isThereStilltimeToWork(deadline)) {
@@ -56,7 +57,7 @@ const performWorkUntilDeadline = () => {
 	nesting = 0;
 };
 
-port1.onmessage = performWorkUntilDeadline;
+port1.onmessage = workUntilDeadline;
 const scheduleNextWork = () => {
 	port2.postMessage(null);
 };

@@ -1,4 +1,4 @@
-import { CalculatedElementProperties, CssRuleName, PartialDomRect } from "../types";
+import { ElementReadouts, CssRuleName, PartialDomRect } from "../types";
 
 const getComputedStylings = (
 	changeProperties: CssRuleName[],
@@ -25,7 +25,7 @@ export const getCalculations = (
 	element: HTMLElement,
 	timing: number,
 	changeProperties: CssRuleName[]
-): CalculatedElementProperties => ({
+): ElementReadouts => ({
 	dimensions: getDomRect(element),
 	offset: timing,
 	computedStyle: getComputedStylings(changeProperties, element),

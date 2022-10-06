@@ -4,8 +4,16 @@ import { fillAffectedElements } from "./prepare/affected-elements";
 import { updateCallbackOffsets, updateKeyframeOffsets } from "./prepare/offsets";
 import { fillResets } from "./prepare/resets";
 import { calculateTotalRuntime } from "./prepare/runtime";
-import { makeCaluclations, makeComputedState, makeOverrides, makeState } from "./prepare/state";
-import { fillCalculations } from "./read/dom";
+import {
+	makeCaluclations,
+	makeComputedState,
+	makeOverrides,
+	makeReadouts,
+	makeState,
+} from "./prepare/state";
+import { fillCalculations } from "./read/calculate-keyframes";
+import { fillReadouts } from "./read/dom";
+import { adjustForDisplayNone } from "./read/update-calculations";
 import { scheduleCallback } from "./scheduler";
 import { AnimationsAPI, Context, CustomKeyframeEffect } from "./types";
 
@@ -14,7 +22,6 @@ export const getAnimations = (props: CustomKeyframeEffect[]): AnimationsAPI => {
 
 	const state = makeState();
 	const computedState = makeComputedState();
-	const calculations = makeCaluclations();
 	const overrides = makeOverrides();
 	const context: Context = { totalRuntime: defaultOptions.duration as number };
 
@@ -41,7 +48,14 @@ export const getAnimations = (props: CustomKeyframeEffect[]): AnimationsAPI => {
 	}
 
 	function read() {
-		const tasks = [() => fillCalculations(calculations, state, computedState)];
+		const readouts = makeReadouts();
+		const calculations = makeCaluclations();
+
+		const tasks = [
+			() => fillReadouts(readouts, state, computedState),
+			() => adjustForDisplayNone(readouts),
+			() => fillCalculations(calculations, readouts),
+		];
 
 		tasks.forEach(scheduleCallback);
 	}
@@ -52,7 +66,6 @@ export const getAnimations = (props: CustomKeyframeEffect[]): AnimationsAPI => {
 		console.log({
 			state,
 			computedState,
-			calculations,
 			totalRuntime: context.totalRuntime,
 			duration: performance.now() - now,
 		})

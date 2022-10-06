@@ -1,12 +1,12 @@
 import { defaultChangeProperties } from "../constants";
 import { scheduleCallback } from "../scheduler";
 import {
-	CalculatedElementProperties,
-	Calculations,
 	ComputedState,
 	CssRuleName,
 	CustomKeyframe,
+	ElementReadouts,
 	MainKeyframe,
+	Readouts,
 	StructureOfChunks,
 } from "../types";
 import {
@@ -47,8 +47,8 @@ const getRelevantIndices = (keyframes: MainKeyframe, timing: number) =>
 		return indexAccumulator;
 	}, [] as number[]);
 
-export const fillCalculations = (
-	calculations: Calculations,
+export const fillReadouts = (
+	readouts: Readouts,
 	state: StructureOfChunks,
 	computedState: ComputedState
 ) => {
@@ -57,7 +57,7 @@ export const fillCalculations = (
 
 	changeTimings.forEach((timing) => {
 		scheduleCallback(() => {
-			const calculationMap = new WeakMap<HTMLElement, CalculatedElementProperties>();
+			const readoutMap = new WeakMap<HTMLElement, ElementReadouts>();
 			const relevantIndices = getRelevantIndices(state.keyframes, timing);
 
 			const tasks: ((row: HTMLElement[], rowIndex: number) => void)[] = [
@@ -70,20 +70,20 @@ export const fillCalculations = (
 					}),
 				(row, rowIndex) =>
 					row.concat(computedState.secondaryElements[rowIndex]).forEach((element) => {
-						if (calculationMap.has(element)) {
+						if (readoutMap.has(element)) {
 							return;
 						}
-						calculationMap.set(element, getCalculations(element, timing, changeProperties));
+						readoutMap.set(element, getCalculations(element, timing, changeProperties));
 					}),
 				(row, rowIndex) =>
 					row.forEach((mainElement, index) => {
-						((calculations.primary[rowIndex] ??= [])[index] ??= {})[timing] =
-							calculationMap.get(mainElement)!;
+						((readouts.primary[rowIndex] ??= [])[index] ??= {})[timing] =
+							readoutMap.get(mainElement)!;
 					}),
 				(_, rowIndex) =>
 					computedState.secondaryElements[rowIndex].forEach((secondaryElement, index) => {
-						((calculations.secondary[rowIndex] ??= [])[index] ??= {})[timing] =
-							calculationMap.get(secondaryElement)!;
+						((readouts.secondary[rowIndex] ??= [])[index] ??= {})[timing] =
+							readoutMap.get(secondaryElement)!;
 					}),
 				(row, rowIndex) =>
 					row.forEach((mainElement, index) => {

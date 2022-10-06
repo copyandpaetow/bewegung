@@ -104,12 +104,14 @@ export interface Context {
 	totalRuntime: number;
 }
 
-export type CalculatedElementProperties = {
+export type ElementReadouts = {
 	dimensions: PartialDomRect;
 	computedStyle: Partial<CSSStyleDeclaration>;
 	offset: number;
 	naturalRatio: number | undefined;
 };
+
+export type DifferenceArray = [ElementReadouts, ElementReadouts];
 
 export type PartialDomRect = {
 	top: number;
@@ -121,8 +123,13 @@ export type PartialDomRect = {
 };
 
 export type Calculations = {
-	primary: Record<number, CalculatedElementProperties>[][];
-	secondary: Record<number, CalculatedElementProperties>[][];
+	primary: Record<number, DimensionalDifferences>[][];
+	secondary: Record<number, DimensionalDifferences>[][];
+};
+
+export type Readouts = {
+	primary: Record<number, ElementReadouts>[][];
+	secondary: Record<number, ElementReadouts>[][];
 };
 
 export type Override = {
@@ -140,3 +147,11 @@ export type StyleChangePossibilities = {
 	classes: string[];
 	attributes: string[];
 };
+
+export interface DimensionalDifferences {
+	heightDifference: number;
+	widthDifference: number;
+	xDifference: number;
+	yDifference: number;
+	offset: number;
+}

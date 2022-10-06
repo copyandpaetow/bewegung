@@ -1,4 +1,4 @@
-import { StructureOfChunks, ComputedState, Calculations, Overrides } from "../types";
+import { StructureOfChunks, ComputedState, Calculations, Overrides, Readouts } from "../types";
 
 export const makeState = (): StructureOfChunks =>
 	Object.freeze({
@@ -16,6 +16,12 @@ export const makeComputedState = (): ComputedState =>
 	});
 
 export const makeCaluclations = (): Calculations =>
+	Object.freeze({
+		primary: [],
+		secondary: [],
+	});
+
+export const makeReadouts = (): Readouts =>
 	Object.freeze({
 		primary: [],
 		secondary: [],
