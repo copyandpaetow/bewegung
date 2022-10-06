@@ -4,7 +4,7 @@ const { port1, port2 } = new MessageChannel();
 
 let refreshIntervall = 16;
 let isMessageLoopRunning = false;
-let scope = 0;
+let nesting = 0;
 
 const getRefreshIntervall = () => refreshIntervall;
 
@@ -18,9 +18,7 @@ const getRepaintInterval = () => {
 	});
 };
 
-getRepaintInterval().then(
-	(intervall) => (refreshIntervall = Math.floor(intervall))
-);
+getRepaintInterval().then((intervall) => (refreshIntervall = Math.floor(intervall)));
 
 const isThereStilltimeToWork = (deadline: number) => {
 	//@ts-expect-error only for chrome / opera
@@ -33,10 +31,6 @@ const isThereStilltimeToWork = (deadline: number) => {
 	return true;
 };
 
-let nesting = 0;
-
-// [1,2 [11,22,[111,222,333], 33],3,4]
-
 const performWorkUntilDeadline = () => {
 	if (queue.length === 0) {
 		isMessageLoopRunning = false;
@@ -47,7 +41,6 @@ const performWorkUntilDeadline = () => {
 
 	while (queue.length && isThereStilltimeToWork(deadline)) {
 		const { callback, level } = queue.shift()!;
-		//? can this just be 0?
 		const previousLevel = nesting;
 		nesting = level + 1;
 		callback();

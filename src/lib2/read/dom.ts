@@ -38,9 +38,6 @@ const calculateChangeProperties = (allKeyframes: CustomKeyframe[][]) => {
 	return Array.from(changeProperties);
 };
 
-//TODO: filter elements
-//* this could be used to filter the elements, but it could lead to bugs because everything is tied to the index and they would be off
-//* unless everything is filtered with this (mainElements, secondaryELement, calculations, resets)
 const getRelevantIndices = (keyframes: MainKeyframe, timing: number) =>
 	keyframes.reduce((indexAccumulator, currentkeyframes, index) => {
 		if (timing === 0 || currentkeyframes.some((frame) => frame.offset === timing)) {
@@ -63,57 +60,43 @@ export const fillCalculations = (
 			const calculationMap = new WeakMap<HTMLElement, CalculatedElementProperties>();
 			const relevantIndices = getRelevantIndices(state.keyframes, timing);
 
-			state.elements.forEach((row, index) => {
-				if (!relevantIndices.includes(index)) {
-					return;
-				}
+			const tasks: ((row: HTMLElement[], rowIndex: number) => void)[] = [
+				(row, rowIndex) =>
+					row.forEach((mainElement) => {
+						applyCSSStyles(
+							mainElement,
+							filterMatchingStyleFromKeyframes(state.keyframes[rowIndex], timing)
+						);
+					}),
+				(row, rowIndex) =>
+					row.concat(computedState.secondaryElements[rowIndex]).forEach((element) => {
+						if (calculationMap.has(element)) {
+							return;
+						}
+						calculationMap.set(element, getCalculations(element, timing, changeProperties));
+					}),
+				(row, rowIndex) =>
+					row.forEach((mainElement, index) => {
+						((calculations.primary[rowIndex] ??= [])[index] ??= {})[timing] =
+							calculationMap.get(mainElement)!;
+					}),
+				(_, rowIndex) =>
+					computedState.secondaryElements[rowIndex].forEach((secondaryElement, index) => {
+						((calculations.secondary[rowIndex] ??= [])[index] ??= {})[timing] =
+							calculationMap.get(secondaryElement)!;
+					}),
+				(row, rowIndex) =>
+					row.forEach((mainElement, index) => {
+						restoreOriginalStyle(mainElement, computedState.cssStyleReset[rowIndex][index]);
+					}),
+			];
 
-				row.forEach((mainElement) => {
-					applyCSSStyles(
-						mainElement,
-						filterMatchingStyleFromKeyframes(state.keyframes[index], timing)
-					);
-				});
-			});
-
-			state.elements.forEach((row, index) => {
-				if (!relevantIndices.includes(index)) {
-					return;
-				}
-				row.concat(computedState.secondaryElements[index]).forEach((element) => {
-					if (calculationMap.has(element)) {
+			tasks.forEach((task) => {
+				state.elements.forEach((row, rowIndex) => {
+					if (!relevantIndices.includes(rowIndex)) {
 						return;
 					}
-					calculationMap.set(element, getCalculations(element, timing, changeProperties));
-				});
-			});
-
-			state.elements.forEach((row, rowIndex) => {
-				if (!relevantIndices.includes(rowIndex)) {
-					return;
-				}
-				row.forEach((mainElement, index) => {
-					((calculations.primary[rowIndex] ??= [])[index] ??= {})[timing] =
-						calculationMap.get(mainElement)!;
-				});
-			});
-
-			computedState.secondaryElements.forEach((row, rowIndex) => {
-				if (!relevantIndices.includes(rowIndex)) {
-					return;
-				}
-				row.forEach((secondaryElement, index) => {
-					((calculations.secondary[rowIndex] ??= [])[index] ??= {})[timing] =
-						calculationMap.get(secondaryElement)!;
-				});
-			});
-
-			state.elements.forEach((row, rowIndex) => {
-				if (!relevantIndices.includes(rowIndex)) {
-					return;
-				}
-				row.forEach((mainElement, index) => {
-					restoreOriginalStyle(mainElement, computedState.cssStyleReset[rowIndex][index]);
+					task(row, rowIndex);
 				});
 			});
 		});
