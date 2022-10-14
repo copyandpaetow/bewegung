@@ -1,14 +1,10 @@
 import { scheduleCallback } from "../scheduler";
 import { BewegungsOptions } from "../types";
 
-const getParent = (element: HTMLElement) =>
-	element.parentElement || document.body;
+const getParent = (element: HTMLElement) => element.parentElement || document.body;
 
 const getSiblings = (element: HTMLElement): HTMLElement[] => {
-	if (
-		!element?.parentElement?.children ||
-		element?.parentElement.tagName === "BODY"
-	) {
+	if (!element?.parentElement?.children || element?.parentElement.tagName === "BODY") {
 		return [];
 	}
 	return Array.from(element.parentElement.children) as HTMLElement[];
@@ -22,10 +18,7 @@ const traverseDomUp = (
 	const parent = getParent(element);
 	const elements = (elementMap || []).concat(element);
 
-	if (
-		(rootSelector && element.matches(rootSelector)) ||
-		parent.tagName === "BODY"
-	) {
+	if ((rootSelector && element.matches(rootSelector)) || parent.tagName === "BODY") {
 		return elements;
 	}
 
@@ -40,32 +33,34 @@ export const findAffectedDOMElements = (
 	element: HTMLElement,
 	rootSelector?: string
 ): HTMLElement[] => {
-	const parents = traverseDomUp(element, rootSelector).flatMap(
-		(relatedElement) => getSiblings(relatedElement)
+	const parents = traverseDomUp(element, rootSelector).flatMap((relatedElement) =>
+		getSiblings(relatedElement)
 	);
 
 	return [...traverseDomDown(element), ...parents] as HTMLElement[];
 };
 
 export const fillAffectedElements = (
-	secondaryElements: HTMLElement[][],
+	secondaryElements: Map<HTMLElement, number[]>,
 	mainElements: HTMLElement[][],
 	options: BewegungsOptions[]
 ) => {
 	const allMainElements = mainElements.flat();
 
-	mainElements.forEach((mainElementArray, index) => {
+	mainElements.forEach((row, index) => {
 		scheduleCallback(() => {
 			const elementSet = new Set(
-				mainElementArray.flatMap((element) =>
-					findAffectedDOMElements(element, options[index].rootSelector)
-				)
+				row.flatMap((element) => findAffectedDOMElements(element, options[index].rootSelector))
 			);
 			allMainElements.forEach((element) => {
 				elementSet.has(element) && elementSet.delete(element);
 			});
 
-			secondaryElements.push(Array.from(elementSet));
+			elementSet.forEach((element) => {
+				const affectedIndices = secondaryElements.get(element)?.concat(index) ?? [index];
+
+				secondaryElements.set(element, affectedIndices);
+			});
 		});
 	});
 };

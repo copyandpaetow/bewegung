@@ -1,15 +1,5 @@
 import { DimensionalDifferences, ElementReadouts, DifferenceArray } from "../types";
 
-export const checkForTextNode = (element: HTMLElement) => {
-	const childNodes = Array.from(element.childNodes);
-
-	if (childNodes.length === 0) {
-		return false;
-	}
-
-	return childNodes.every((node) => Boolean(node.textContent?.trim()));
-};
-
 export const save = (value: number, alternative: number): number => {
 	return value === Infinity || value === -Infinity || isNaN(value) ? alternative : value;
 };

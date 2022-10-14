@@ -1,28 +1,28 @@
 import { defaultOptions } from "./constants";
-import { fillState } from "./normalize/state";
+import { fillState, makeState } from "./normalize/state";
 import { fillAffectedElements } from "./prepare/affected-elements";
 import { updateCallbackOffsets, updateKeyframeOffsets } from "./prepare/offsets";
 import { fillResets } from "./prepare/resets";
 import { calculateTotalRuntime } from "./prepare/runtime";
-import {
-	makeCaluclations,
-	makeComputedState,
-	makeOverrides,
-	makeReadouts,
-	makeState,
-} from "./prepare/state";
 import { fillCalculations } from "./read/calculate-keyframes";
 import { fillReadouts } from "./read/dom";
 import { adjustForDisplayNone } from "./read/update-calculations";
 import { scheduleCallback } from "./scheduler";
-import { AnimationsAPI, Context, CustomKeyframeEffect } from "./types";
+import {
+	AnimationsAPI,
+	Context,
+	CustomKeyframeEffect,
+	DimensionalDifferences,
+	ElementReadouts,
+} from "./types";
 
 export const getAnimations = (props: CustomKeyframeEffect[]): AnimationsAPI => {
 	let now = performance.now();
 
 	const state = makeState();
-	const computedState = makeComputedState();
-	const overrides = makeOverrides();
+	const cssStyleReset = new WeakMap<HTMLElement, Map<string, string>>();
+	const secondaryElements = new Map<HTMLElement, number[]>();
+
 	const context: Context = { totalRuntime: defaultOptions.duration as number };
 
 	function init() {
@@ -39,8 +39,8 @@ export const getAnimations = (props: CustomKeyframeEffect[]): AnimationsAPI => {
 
 	function computed() {
 		const tasks = [
-			() => fillAffectedElements(computedState.secondaryElements, state.elements, state.options),
-			() => fillResets(computedState.cssStyleReset, state.elements),
+			() => fillAffectedElements(secondaryElements, state.elements, state.options),
+			() => fillResets(cssStyleReset, state.elements),
 			read,
 		];
 
@@ -48,11 +48,18 @@ export const getAnimations = (props: CustomKeyframeEffect[]): AnimationsAPI => {
 	}
 
 	function read() {
-		const readouts = makeReadouts();
-		const calculations = makeCaluclations();
+		//These could be a map<Element, Calculation[]> because they are iterable
+		const readouts = new Map<HTMLElement, ElementReadouts[]>();
+		const calculations = new Map<HTMLElement, DimensionalDifferences[]>();
 
 		const tasks = [
-			() => fillReadouts(readouts, state, computedState),
+			() =>
+				fillReadouts(
+					readouts,
+					{ main: state.elements, secondary: Array.from(secondaryElements.keys()) },
+					{ keyframes: state.keyframes, resets: cssStyleReset }
+				),
+			//filter elements here
 			() => adjustForDisplayNone(readouts),
 			() => fillCalculations(calculations, readouts),
 		];
@@ -65,7 +72,7 @@ export const getAnimations = (props: CustomKeyframeEffect[]): AnimationsAPI => {
 	scheduleCallback(() =>
 		console.log({
 			state,
-			computedState,
+
 			totalRuntime: context.totalRuntime,
 			duration: performance.now() - now,
 		})

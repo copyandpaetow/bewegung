@@ -1,4 +1,3 @@
-import { scheduleCallback } from "../scheduler";
 import { MainType } from "../types";
 
 const saveOriginalStyle = (element: HTMLElement) => {
@@ -10,8 +9,11 @@ const saveOriginalStyle = (element: HTMLElement) => {
 	return allAttributes;
 };
 
-export const fillResets = (cssStyleReset: Map<string, string>[][], mainElements: MainType) => {
-	mainElements.forEach((row, index) => {
-		cssStyleReset[index] = row.map((element) => saveOriginalStyle(element));
-	});
+export const fillResets = (
+	cssStyleReset: WeakMap<HTMLElement, Map<string, string>>,
+	mainElements: MainType
+) => {
+	new Set(mainElements.flat()).forEach((element) =>
+		cssStyleReset.set(element, saveOriginalStyle(element))
+	);
 };

@@ -122,24 +122,9 @@ export type PartialDomRect = {
 	height: number;
 };
 
-export type Calculations = {
-	primary: Record<number, DimensionalDifferences>[][];
-	secondary: Record<number, DimensionalDifferences>[][];
-};
-
-export type Readouts = {
-	primary: Record<number, ElementReadouts>[][];
-	secondary: Record<number, ElementReadouts>[][];
-};
-
 export type Override = {
 	existingStyle: Partial<CSSStyleDeclaration>;
 	override: Partial<CSSStyleDeclaration>;
-};
-
-export type Overrides = {
-	primary: Override[][];
-	secondary: Override[][];
 };
 
 export type StyleChangePossibilities = {

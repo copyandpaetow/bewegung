@@ -8,17 +8,19 @@ import {
 	StructureOfChunks,
 } from "../types";
 import { normalizeElements } from "./elements";
-import {
-	addIndividualEasing,
-	formatKeyframes,
-	separateKeyframesAndCallbacks,
-} from "./keyframes";
+import { addIndividualEasing, formatKeyframes, separateKeyframesAndCallbacks } from "./keyframes";
 import { normalizeOptions } from "./options";
 
-export const fillState = (
-	state: StructureOfChunks,
-	props: CustomKeyframeEffect[]
-) => {
+export const makeState = (): StructureOfChunks =>
+	Object.freeze({
+		elements: [],
+		keyframes: [],
+		callbacks: [],
+		options: [],
+		selectors: [],
+	});
+
+export const fillState = (state: StructureOfChunks, props: CustomKeyframeEffect[]) => {
 	const targetArray: ElementOrSelector[] = [];
 	const keyframeArray: EveryKeyframeSyntax[] = [];
 	const optionsArray: EveryOptionSyntax[] = [];
@@ -31,9 +33,7 @@ export const fillState = (
 		})
 	);
 
-	scheduleCallback(() =>
-		makeMainState(state, { targetArray, keyframeArray, optionsArray })
-	);
+	scheduleCallback(() => makeMainState(state, { targetArray, keyframeArray, optionsArray }));
 };
 
 export const makeMainState = (state: StructureOfChunks, sortedProps: SoA) => {
@@ -55,9 +55,7 @@ export const makeMainState = (state: StructureOfChunks, sortedProps: SoA) => {
 	scheduleCallback(() => {
 		keyframeArray
 			.map(formatKeyframes)
-			.map((keyframes, index) =>
-				addIndividualEasing(keyframes, state.options[index])
-			)
+			.map((keyframes, index) => addIndividualEasing(keyframes, state.options[index]))
 			.forEach((keyframe) => {
 				const { keyframes: newKeyframes, callbacks: newCallbacks } =
 					separateKeyframesAndCallbacks(keyframe);

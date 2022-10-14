@@ -1,14 +1,5 @@
 import { defaultChangeProperties } from "../constants";
-import { scheduleCallback } from "../scheduler";
-import {
-	ComputedState,
-	CssRuleName,
-	CustomKeyframe,
-	ElementReadouts,
-	MainKeyframe,
-	Readouts,
-	StructureOfChunks,
-} from "../types";
+import { CssRuleName, CustomKeyframe, ElementReadouts, MainKeyframe } from "../types";
 import {
 	applyCSSStyles,
 	filterMatchingStyleFromKeyframes,
@@ -38,67 +29,37 @@ const calculateChangeProperties = (allKeyframes: CustomKeyframe[][]) => {
 	return Array.from(changeProperties);
 };
 
-const getRelevantIndices = (keyframes: MainKeyframe, timing: number) =>
-	keyframes.reduce((indexAccumulator, currentkeyframes, index) => {
-		if (timing === 0 || currentkeyframes.some((frame) => frame.offset === timing)) {
-			indexAccumulator.push(index);
-		}
-
-		return indexAccumulator;
-	}, [] as number[]);
-
 export const fillReadouts = (
-	readouts: Readouts,
-	state: StructureOfChunks,
-	computedState: ComputedState
+	readouts: Map<HTMLElement, ElementReadouts[]>,
+	elements: { main: HTMLElement[][]; secondary: HTMLElement[] },
+	styles: { keyframes: MainKeyframe; resets: WeakMap<HTMLElement, Map<string, string>> }
 ) => {
-	const changeTimings = calculateChangeTimings(state.keyframes);
-	const changeProperties = calculateChangeProperties(state.keyframes);
+	const changeTimings = calculateChangeTimings(styles.keyframes);
+	const changeProperties = calculateChangeProperties(styles.keyframes);
+
+	const keyframesMap = new Map<HTMLElement, CustomKeyframe[]>();
+
+	elements.main.forEach((row, rowIndex) => {
+		row.forEach((element) => {
+			const relevantKeyframes =
+				keyframesMap.get(element)?.concat(styles.keyframes[rowIndex]) ?? styles.keyframes[rowIndex];
+			keyframesMap.set(element, relevantKeyframes);
+		});
+	});
 
 	changeTimings.forEach((timing) => {
-		scheduleCallback(() => {
-			const readoutMap = new WeakMap<HTMLElement, ElementReadouts>();
-			const relevantIndices = getRelevantIndices(state.keyframes, timing);
+		const mainElements = elements.main.flat();
 
-			const tasks: ((row: HTMLElement[], rowIndex: number) => void)[] = [
-				(row, rowIndex) =>
-					row.forEach((mainElement) => {
-						applyCSSStyles(
-							mainElement,
-							filterMatchingStyleFromKeyframes(state.keyframes[rowIndex], timing)
-						);
-					}),
-				(row, rowIndex) =>
-					row.concat(computedState.secondaryElements[rowIndex]).forEach((element) => {
-						if (readoutMap.has(element)) {
-							return;
-						}
-						readoutMap.set(element, getCalculations(element, timing, changeProperties));
-					}),
-				(row, rowIndex) =>
-					row.forEach((mainElement, index) => {
-						((readouts.primary[rowIndex] ??= [])[index] ??= {})[timing] =
-							readoutMap.get(mainElement)!;
-					}),
-				(_, rowIndex) =>
-					computedState.secondaryElements[rowIndex].forEach((secondaryElement, index) => {
-						((readouts.secondary[rowIndex] ??= [])[index] ??= {})[timing] =
-							readoutMap.get(secondaryElement)!;
-					}),
-				(row, rowIndex) =>
-					row.forEach((mainElement, index) => {
-						restoreOriginalStyle(mainElement, computedState.cssStyleReset[rowIndex][index]);
-					}),
-			];
+		keyframesMap.forEach((keyframes, element) =>
+			applyCSSStyles(element, filterMatchingStyleFromKeyframes(keyframes, timing))
+		);
 
-			tasks.forEach((task) => {
-				state.elements.forEach((row, rowIndex) => {
-					if (!relevantIndices.includes(rowIndex)) {
-						return;
-					}
-					task(row, rowIndex);
-				});
-			});
+		mainElements.concat(elements.secondary).forEach((element) => {
+			const calculation = getCalculations(element, timing, changeProperties);
+			const allCalculation = readouts.get(element)?.concat(calculation) ?? [calculation];
+			readouts.set(element, allCalculation);
 		});
+
+		mainElements.forEach((element) => restoreOriginalStyle(element, styles.resets.get(element)!));
 	});
 };

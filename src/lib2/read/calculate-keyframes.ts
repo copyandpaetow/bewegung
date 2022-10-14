@@ -1,28 +1,40 @@
 import { scheduleCallback } from "../scheduler";
-import { Calculations, DimensionalDifferences, ElementReadouts, Readouts } from "../types";
+import { DifferenceArray, DimensionalDifferences, ElementReadouts } from "../types";
+import { calculateDimensionDifferences } from "./calculate-dimension-differences";
 
-const calcualtionsFromReadouts = (
-	readout: Record<number, ElementReadouts>
-): Record<number, DimensionalDifferences> => {
-	return Object.fromEntries(
-		Object.entries(readout).map((entry, index, array) => {
-			const [offset, readout] = entry;
-			const [_, lastReadout] = array.at(-1)!;
+const checkForTextNode = (element: HTMLElement) => {
+	const childNodes = Array.from(element.childNodes);
 
-			//? how to geht the parent readouts in here?
-		})
-	);
+	if (childNodes.length === 0) {
+		return false;
+	}
+
+	return childNodes.every((node) => Boolean(node.textContent?.trim()));
 };
 
-export const fillCalculations = (calculations: Calculations, readouts: Readouts) => {
-	scheduleCallback(() => {
-		readouts.primary.forEach((row) => {
-			calculations.primary.push(row.map((entry) => calcualtionsFromReadouts(entry)));
-		});
+const calcualtionsFromReadouts = (
+	readouts: ElementReadouts[],
+	parentReadouts: ElementReadouts[],
+	isTextNode: boolean
+): DimensionalDifferences[] => {
+	return readouts.map((readout, index, array) => {
+		const child: DifferenceArray = [readout, array.at(-1)!];
+		const parent: DifferenceArray = [parentReadouts[index], parentReadouts.at(-1)!];
+		return calculateDimensionDifferences(child, parent, isTextNode);
 	});
-	scheduleCallback(() => {
-		readouts.secondary.forEach((row) => {
-			calculations.secondary.push(row.map((entry) => calcualtionsFromReadouts(entry)));
+};
+
+export const fillCalculations = (
+	calculations: Map<HTMLElement, DimensionalDifferences[]>,
+	allReadouts: Map<HTMLElement, ElementReadouts[]>
+) => {
+	allReadouts.forEach((readouts, element) => {
+		scheduleCallback(() => {
+			const parentReadouts = allReadouts.get(element.parentElement!) ?? readouts;
+			calculations.set(
+				element,
+				calcualtionsFromReadouts(readouts, parentReadouts, checkForTextNode(element))
+			);
 		});
 	});
 };
