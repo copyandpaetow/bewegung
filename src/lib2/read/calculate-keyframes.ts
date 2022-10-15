@@ -18,6 +18,8 @@ const calcualtionsFromReadouts = (
 	isTextNode: boolean
 ): DimensionalDifferences[] => {
 	console.log(readouts, parentReadouts);
+
+	//TODO: maybe here the filtering could take place and only locally and for the child so the entries are not affected but stuff will not get calculated multiple times
 	return readouts.map((readout, index, array) => {
 		const child: DifferenceArray = [readout, array.at(-1)!];
 		const parent: DifferenceArray = [parentReadouts[index], parentReadouts.at(-1)!];
