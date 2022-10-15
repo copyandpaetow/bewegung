@@ -4,11 +4,6 @@ TODOS:
 - how to include RAF in the scheduler for DOM work? currently it will delay everything or increase the calculation duration by a lot
 ? maybe the current implementation still works fine without raf for the dom work
 
-- there are serveral ways to fill a newly formed structure. We should choose one and stick to it (currently we use serveral implementations)
-- it would be nice (if the data needs to be iterated) that it gets concatinated and then iterated and split up again
-like
-[[1,2,3], [4,5,6]] becomes [1,2,3,4,5,6] for the iteration
-
 - it would be nice to separate the initial state into their own blocks, but its unclear if it is feasible 
 
 

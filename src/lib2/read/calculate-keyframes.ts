@@ -17,6 +17,7 @@ const calcualtionsFromReadouts = (
 	parentReadouts: ElementReadouts[],
 	isTextNode: boolean
 ): DimensionalDifferences[] => {
+	console.log(readouts, parentReadouts);
 	return readouts.map((readout, index, array) => {
 		const child: DifferenceArray = [readout, array.at(-1)!];
 		const parent: DifferenceArray = [parentReadouts[index], parentReadouts.at(-1)!];
@@ -31,6 +32,7 @@ export const fillCalculations = (
 	allReadouts.forEach((readouts, element) => {
 		scheduleCallback(() => {
 			const parentReadouts = allReadouts.get(element.parentElement!) ?? readouts;
+
 			calculations.set(
 				element,
 				calcualtionsFromReadouts(readouts, parentReadouts, checkForTextNode(element))

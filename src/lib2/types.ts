@@ -140,3 +140,17 @@ export interface DimensionalDifferences {
 	yDifference: number;
 	offset: number;
 }
+
+export type Overrides =
+	| {
+			existingStyle: Partial<CSSStyleDeclaration>;
+			override: Partial<CSSStyleDeclaration>;
+	  }
+	| undefined;
+
+export interface TimelineEntry {
+	start: number;
+	end: number;
+	easing: string | string[];
+}
+export type Timeline = TimelineEntry[];
