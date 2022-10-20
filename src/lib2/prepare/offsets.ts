@@ -1,43 +1,45 @@
 import { BewegungsOptions, Callbacks, CustomKeyframe } from "../types";
 
-const updateKeyframeTiming = (
-	frame: CustomKeyframe | Callbacks,
-	options: ComputedEffectTiming,
-	totalRuntime: number
-) => {
-	const absoluteTiming = ((options.endTime as number) * frame.offset!) / totalRuntime;
-
-	return {
-		...frame,
-		offset: absoluteTiming,
-	};
-};
-
-export const updateKeyframeOffsets = (
-	keyframes: CustomKeyframe[][],
+const updateOffsets = (
+	entry: CustomKeyframe[] | Callbacks[],
 	options: BewegungsOptions[],
 	totalRuntime: number
+) =>
+	entry.map((frame, index) => {
+		const absoluteTiming = ((options[index].endTime as number) * frame.offset!) / totalRuntime;
+
+		return {
+			...frame,
+			offset: absoluteTiming,
+		};
+	});
+
+export const updateKeyframeOffsets = (
+	keyframes: WeakMap<HTMLElement, CustomKeyframe[][]>,
+	mainElements: Set<HTMLElement>,
+	options: WeakMap<HTMLElement, BewegungsOptions[]>,
+	totalRuntime: number
 ) => {
-	keyframes.forEach(
-		(frames, index) =>
-			(keyframes[index] = frames.map((frame) =>
-				updateKeyframeTiming(frame, options[index], totalRuntime)
-			))
-	);
+	mainElements.forEach((element) => {
+		const option = options.get(element)!;
+		const currentValue = keyframes
+			.get(element)!
+			.map((frame) => updateOffsets(frame, option, totalRuntime));
+		keyframes.set(element, currentValue);
+	});
 };
 
 export const updateCallbackOffsets = (
-	callbacks: Callbacks[][],
-	options: BewegungsOptions[],
+	callbacks: WeakMap<HTMLElement, Callbacks[][]>,
+	mainElements: Set<HTMLElement>,
+	options: WeakMap<HTMLElement, BewegungsOptions[]>,
 	totalRuntime: number
 ) => {
-	callbacks.forEach((frames, index) => {
-		if (frames.length === 0) {
-			return;
-		}
-		//@ts-expect-error ts weirdness
-		callbacks[index] = frames.map((frame) =>
-			updateKeyframeTiming(frame, options[index], totalRuntime)
-		);
+	mainElements.forEach((element) => {
+		const option = options.get(element)!;
+		const currentValue = callbacks
+			.get(element)!
+			.map((callback) => updateOffsets(callback, option, totalRuntime));
+		callbacks.set(element, currentValue);
 	});
 };

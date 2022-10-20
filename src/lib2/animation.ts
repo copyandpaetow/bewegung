@@ -1,50 +1,66 @@
 import { defaultOptions } from "./constants";
-import { fillState, makeState } from "./normalize/state";
-import { fillAffectedElements } from "./prepare/affected-elements";
+import { computeSecondaryElements } from "./prepare/affected-elements";
 import { updateCallbackOffsets, updateKeyframeOffsets } from "./prepare/offsets";
-import { fillResets } from "./prepare/resets";
-import { calculateTotalRuntime } from "./prepare/runtime";
-import { fillCalculations } from "./read/calculate-keyframes";
-import { fillReadouts } from "./read/dom";
-import { filterReadouts } from "./read/filter-readouts";
-import { adjustForDisplayNone } from "./read/update-calculations";
+import { calculateTotalRuntime, runtime } from "./prepare/runtime";
+import { fillMainElements, fillResets, fillState } from "./prepare/state";
 import { scheduleCallback } from "./scheduler";
 import {
+	AnimationEntry,
 	AnimationsAPI,
-	Context,
-	CustomKeyframeEffect,
+	BewegungsOptions,
+	Callbacks,
+	CustomKeyframe,
 	DimensionalDifferences,
 	ElementReadouts,
 	Overrides,
 } from "./types";
+import { map } from "./utils";
 
-export const getAnimations = (props: CustomKeyframeEffect[]): AnimationsAPI => {
+export const getAnimations = (props: AnimationEntry[]): AnimationsAPI => {
 	let now = performance.now();
 
-	const state = makeState();
-	const cssStyleReset = new WeakMap<HTMLElement, Map<string, string>>();
-	const secondaryElements = new Map<HTMLElement, number[]>();
-	const animations: Animation[] = [];
+	//TODO: maybe the props normalization needs to be in here as well or changed to use the scheduleCallback
 
-	const context: Context = { totalRuntime: defaultOptions.duration as number };
+	const mainElements = new Set<HTMLElement>();
+	const keyframes = new WeakMap<HTMLElement, CustomKeyframe[][]>();
+	const callbacks = new WeakMap<HTMLElement, Callbacks[][]>();
+	const options = new WeakMap<HTMLElement, BewegungsOptions[]>();
+	const selectors = new WeakMap<HTMLElement, string[]>();
+
+	const rootElement = new WeakMap<HTMLElement, HTMLElement>();
+	const secondaryElements = new Set<HTMLElement>();
+	const totalRuntime = runtime(defaultOptions.duration as number);
+	const cssStyleReset = new WeakMap<HTMLElement, Map<string, string>>();
 
 	function init() {
 		const tasks = [
-			() => fillState(state, props),
-			//TODO: these should be separate, so they can be recalculated independently from the state
-			() => calculateTotalRuntime(context, state.options),
-			() => updateKeyframeOffsets(state.keyframes, state.options, context.totalRuntime),
-			() => updateCallbackOffsets(state.callbacks, state.options, context.totalRuntime),
-			computed,
+			() => fillMainElements(mainElements, props),
+			() => fillState(keyframes, "keyframes", props),
+			() => fillState(callbacks, "callbacks", props),
+			() => fillState(options, "options", props),
+			() => fillState(selectors, "selector", props),
+			computeRemainingState,
 		];
 
 		tasks.forEach(scheduleCallback);
 	}
 
-	function computed() {
+	function computeRemainingState() {
+		let didTheRuntimeChange = true;
 		const tasks = [
-			() => fillAffectedElements(secondaryElements, state.elements, state.options),
-			() => fillResets(cssStyleReset, state.elements),
+			() => computeSecondaryElements(secondaryElements, mainElements, options, rootElement),
+			() =>
+				(didTheRuntimeChange = calculateTotalRuntime(
+					map(mainElements, (element) => options.get(element)!),
+					totalRuntime
+				)),
+			() =>
+				didTheRuntimeChange &&
+				updateKeyframeOffsets(keyframes, mainElements, options, totalRuntime()),
+			() =>
+				didTheRuntimeChange &&
+				updateCallbackOffsets(callbacks, mainElements, options, totalRuntime()),
+			() => fillResets(cssStyleReset, mainElements),
 			read,
 		];
 
@@ -58,21 +74,20 @@ export const getAnimations = (props: CustomKeyframeEffect[]): AnimationsAPI => {
 		const overrides = new WeakMap<HTMLElement, Overrides>();
 
 		const tasks = [
-			() =>
-				fillReadouts(
-					readouts,
-					{ main: state.elements, secondary: Array.from(secondaryElements.keys()) },
-					{ keyframes: state.keyframes, resets: cssStyleReset }
-				),
-			//() => filterReadouts(readouts, (element) => secondaryElements.delete(element)),
-			() => adjustForDisplayNone(readouts),
-			//TODO this only needs to happen for the non-image elements,
-			() => fillCalculations(defaultCalculations, readouts),
+			// () =>
+			// 	fillReadouts(
+			// 		readouts,
+			// 		{ main: mainElements, secondary: secondaryElements },
+			// 		{ keyframes: state.keyframes, resets: cssStyleReset }
+			// 	),
+			// //() => filterReadouts(readouts, (element) => secondaryElements.delete(element)),
+			// () => adjustForDisplayNone(readouts),
+			// //TODO this only needs to happen for the non-image elements,
+			// () => fillCalculations(defaultCalculations, readouts),
 		];
 
 		tasks.forEach(scheduleCallback);
 	}
-
 	init();
 
 	scheduleCallback(() =>

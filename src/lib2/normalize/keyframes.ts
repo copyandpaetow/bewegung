@@ -3,6 +3,7 @@ import {
 	Callbacks,
 	CustomKeyframe,
 	CustomKeyframeArrayValueSyntax,
+	EveryKeyframeSyntax,
 	ValueOf,
 } from "../types";
 
@@ -79,9 +80,7 @@ const addKeyframeOffset = (allKeyframes: CustomKeyframe[]): CustomKeyframe[] => 
 	});
 };
 
-export const formatKeyframes = (
-	keyframe: CustomKeyframe | CustomKeyframe[] | CustomKeyframeArrayValueSyntax
-): CustomKeyframe[] => {
+export const unifyKeyframeStructure = (keyframe: EveryKeyframeSyntax): CustomKeyframe[] => {
 	if (Array.isArray(keyframe)) {
 		return addKeyframeOffset(keyframe);
 	}

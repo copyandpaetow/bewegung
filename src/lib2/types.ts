@@ -35,7 +35,7 @@ export type EveryKeyframeSyntax =
 	| CustomKeyframeArrayValueSyntax;
 
 export interface BewegungsOptions extends KeyframeEffectOptions, ComputedEffectTiming {
-	rootSelector?: string;
+	rootSelector: string;
 }
 
 export type EveryOptionSyntax = number | BewegungsOptions | undefined;
@@ -78,7 +78,7 @@ export interface StructureOfChunks {
 	elements: MainType;
 	keyframes: MainKeyframe;
 	callbacks: Callbacks[][];
-	options: KeyframeEffectOptions[];
+	options: BewegungsOptions[];
 	selectors: string[];
 }
 
@@ -154,3 +154,11 @@ export interface TimelineEntry {
 	easing: string | string[];
 }
 export type Timeline = TimelineEntry[];
+
+export type AnimationEntry = {
+	target: HTMLElement[];
+	keyframes: CustomKeyframe[];
+	callbacks: Callbacks[];
+	options: BewegungsOptions;
+	selector: string;
+};
