@@ -162,3 +162,15 @@ export type AnimationEntry = {
 	options: BewegungsOptions;
 	selector: string;
 };
+
+export interface State {
+	mainElements: Set<HTMLElement>;
+	secondaryElements: Set<HTMLElement>;
+	keyframes: WeakMap<HTMLElement, CustomKeyframe[][]>;
+	callbacks: WeakMap<HTMLElement, Callbacks[][]>;
+	options: WeakMap<HTMLElement, BewegungsOptions[]>;
+	selectors: WeakMap<HTMLElement, string[]>;
+	totalRuntime: number;
+	rootElement: WeakMap<HTMLElement, HTMLElement>;
+	cssStyleReset: WeakMap<HTMLElement, Map<string, string>>;
+}

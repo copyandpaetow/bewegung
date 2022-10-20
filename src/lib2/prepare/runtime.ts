@@ -1,30 +1,14 @@
-import { BewegungsOptions, Context } from "../types";
+import { BewegungsOptions, Context, State } from "../types";
 
 export const highestNumber = (numbers: number[]) =>
 	numbers.reduce((largest, current) => Math.max(largest, current));
 
-export const calculateTotalRuntime = (
-	options: BewegungsOptions[],
-	totalRuntime: (update?: number | undefined) => number
-): boolean => {
-	const currentRuntime = totalRuntime();
-	const highestRuntime = highestNumber(options.map((option) => option.endTime!));
+export const calculateTotalRuntime = (state: State) => {
+	const { options, mainElements } = state;
 
-	if (highestRuntime <= currentRuntime) {
-		return false;
-	}
-	totalRuntime(highestRuntime);
-	return true;
-};
+	const allRuntimes = Array.from(mainElements)
+		.flatMap((element) => options.get(element)!)
+		.map((option) => option.endTime!);
 
-export const runtime = (value: number) => {
-	let innerValue = value;
-
-	return (update?: number): number => {
-		if (update) {
-			innerValue = update;
-		}
-
-		return innerValue;
-	};
+	state.totalRuntime = highestNumber(allRuntimes);
 };

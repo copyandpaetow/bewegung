@@ -1,5 +1,5 @@
 import { scheduleCallback } from "../scheduler";
-import { BewegungsOptions } from "../types";
+import { BewegungsOptions, State } from "../types";
 
 const DOM = {
 	parent(element: HTMLElement) {
@@ -57,12 +57,9 @@ const getRootElement = (rootSelectors: string[]): HTMLElement => {
 	return root as HTMLElement;
 };
 
-export const computeSecondaryElements = (
-	secondaryElements: Set<HTMLElement>,
-	mainElements: Set<HTMLElement>,
-	options: WeakMap<HTMLElement, BewegungsOptions[]>,
-	rootElement: WeakMap<HTMLElement, HTMLElement>
-) => {
+export const computeSecondaryProperties = (state: State) => {
+	const { mainElements, secondaryElements, options, rootElement } = state;
+
 	mainElements.forEach((mainElement) => {
 		const root = getRootElement(options.get(mainElement)!.map((option) => option.rootSelector));
 
@@ -86,28 +83,3 @@ export const computeSecondaryElements = (
 		});
 	});
 };
-
-// export const fillAffectedElements = (
-// 	secondaryElements: Map<HTMLElement, number[]>,
-// 	mainElements: HTMLElement[][],
-// 	options: BewegungsOptions[]
-// ) => {
-// 	const allMainElements = mainElements.flat();
-
-// 	mainElements.forEach((row, index) => {
-// 		scheduleCallback(() => {
-// 			const elementSet = new Set(
-// 				row.flatMap((element) => findAffectedDOMElements(element, options[index].rootSelector))
-// 			);
-// 			allMainElements.forEach((element) => {
-// 				elementSet.has(element) && elementSet.delete(element);
-// 			});
-
-// 			elementSet.forEach((element) => {
-// 				const affectedIndices = secondaryElements.get(element)?.concat(index) ?? [index];
-
-// 				secondaryElements.set(element, affectedIndices);
-// 			});
-// 		});
-// 	});
-// };

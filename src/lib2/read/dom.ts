@@ -1,5 +1,5 @@
 import { defaultChangeProperties } from "../constants";
-import { CssRuleName, CustomKeyframe, ElementReadouts, MainKeyframe } from "../types";
+import { CssRuleName, CustomKeyframe, ElementReadouts, MainKeyframe, State } from "../types";
 import {
 	applyCSSStyles,
 	filterMatchingStyleFromKeyframes,
@@ -29,37 +29,25 @@ const calculateChangeProperties = (allKeyframes: CustomKeyframe[][]) => {
 	return Array.from(changeProperties);
 };
 
-export const fillReadouts = (
-	readouts: Map<HTMLElement, ElementReadouts[]>,
-	elements: { main: HTMLElement[][]; secondary: HTMLElement[] },
-	styles: { keyframes: MainKeyframe; resets: WeakMap<HTMLElement, Map<string, string>> }
-) => {
-	const changeTimings = calculateChangeTimings(styles.keyframes);
-	const changeProperties = calculateChangeProperties(styles.keyframes);
+export const fillReadouts = (readouts: Map<HTMLElement, ElementReadouts[]>, state: State) => {
+	const { mainElements, secondaryElements, keyframes, cssStyleReset } = state;
 
-	const keyframesMap = new Map<HTMLElement, CustomKeyframe[]>();
-
-	elements.main.forEach((row, rowIndex) => {
-		row.forEach((element) => {
-			const relevantKeyframes =
-				keyframesMap.get(element)?.concat(styles.keyframes[rowIndex]) ?? styles.keyframes[rowIndex];
-			keyframesMap.set(element, relevantKeyframes);
-		});
-	});
+	const allKeyframes = Array.from(mainElements).flatMap((element) => keyframes.get(element)!);
+	const changeTimings = calculateChangeTimings(allKeyframes);
+	const changeProperties = calculateChangeProperties(allKeyframes);
 
 	changeTimings.forEach((timing) => {
-		const mainElements = elements.main.flat();
-
-		keyframesMap.forEach((keyframes, element) =>
-			applyCSSStyles(element, filterMatchingStyleFromKeyframes(keyframes, timing))
-		);
-
-		mainElements.concat(elements.secondary).forEach((element) => {
+		mainElements.forEach((element) => {
+			keyframes.get(element)!.forEach((keyframe) => {
+				applyCSSStyles(element, filterMatchingStyleFromKeyframes(keyframe, timing));
+			});
+		});
+		[...mainElements, ...secondaryElements].forEach((element) => {
 			const calculation = getCalculations(element, timing, changeProperties);
 			const allCalculation = readouts.get(element)?.concat(calculation) ?? [calculation];
 			readouts.set(element, allCalculation);
 		});
 
-		mainElements.forEach((element) => restoreOriginalStyle(element, styles.resets.get(element)!));
+		mainElements.forEach((element) => restoreOriginalStyle(element, cssStyleReset.get(element)!));
 	});
 };

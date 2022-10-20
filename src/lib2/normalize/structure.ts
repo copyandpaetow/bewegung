@@ -39,8 +39,8 @@ const unifyPropStructure = (...props: BewegungProps): CustomKeyframeEffect[] => 
 	);
 };
 
-export const normalizeProps = (...props: BewegungProps): AnimationEntry[] => {
-	return unifyPropStructure(...props).map((entry) => {
+export const normalizeProps = (entries: AnimationEntry[], ...props: BewegungProps) => {
+	unifyPropStructure(...props).forEach((entry) => {
 		const target = normalizeElements(entry[0]);
 		const { keyframes, callbacks } = separateKeyframesAndCallbacks(
 			unifyKeyframeStructure(entry[1])
@@ -49,6 +49,6 @@ export const normalizeProps = (...props: BewegungProps): AnimationEntry[] => {
 		const updatedKeyframes = addIndividualEasing(keyframes, options);
 		const selector = typeof entry[0] === "string" ? entry[0] : "";
 
-		return { target, keyframes: updatedKeyframes, callbacks, options, selector };
+		entries.push({ target, keyframes: updatedKeyframes, callbacks, options, selector });
 	});
 };

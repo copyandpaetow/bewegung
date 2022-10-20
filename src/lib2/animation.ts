@@ -1,66 +1,31 @@
-import { defaultOptions } from "./constants";
-import { computeSecondaryElements } from "./prepare/affected-elements";
-import { updateCallbackOffsets, updateKeyframeOffsets } from "./prepare/offsets";
-import { calculateTotalRuntime, runtime } from "./prepare/runtime";
-import { fillMainElements, fillResets, fillState } from "./prepare/state";
+import { normalizeProps } from "./normalize/structure";
+import { initialState, setState } from "./prepare/state";
+import { fillReadouts } from "./read/dom";
+import { adjustForDisplayNone } from "./read/update-calculations";
 import { scheduleCallback } from "./scheduler";
 import {
 	AnimationEntry,
 	AnimationsAPI,
-	BewegungsOptions,
-	Callbacks,
-	CustomKeyframe,
+	BewegungProps,
 	DimensionalDifferences,
 	ElementReadouts,
 	Overrides,
 } from "./types";
-import { map } from "./utils";
 
-export const getAnimations = (props: AnimationEntry[]): AnimationsAPI => {
+export const getAnimations = (...props: BewegungProps): AnimationsAPI => {
 	let now = performance.now();
 
-	//TODO: maybe the props normalization needs to be in here as well or changed to use the scheduleCallback
+	//TODO: maybe the props normalization needs to use the scheduleCallback
+	//?: currently the functions all have a lot of arguments, maybe it makes more sense to nest the state? Maybe State, Elements, Context?
+	//?: Maybe extends the Sets/Maps/WeakMaps to have better functionality
 
-	const mainElements = new Set<HTMLElement>();
-	const keyframes = new WeakMap<HTMLElement, CustomKeyframe[][]>();
-	const callbacks = new WeakMap<HTMLElement, Callbacks[][]>();
-	const options = new WeakMap<HTMLElement, BewegungsOptions[]>();
-	const selectors = new WeakMap<HTMLElement, string[]>();
-
-	const rootElement = new WeakMap<HTMLElement, HTMLElement>();
-	const secondaryElements = new Set<HTMLElement>();
-	const totalRuntime = runtime(defaultOptions.duration as number);
-	const cssStyleReset = new WeakMap<HTMLElement, Map<string, string>>();
+	const state = initialState();
 
 	function init() {
+		const animtionEntries: AnimationEntry[] = [];
 		const tasks = [
-			() => fillMainElements(mainElements, props),
-			() => fillState(keyframes, "keyframes", props),
-			() => fillState(callbacks, "callbacks", props),
-			() => fillState(options, "options", props),
-			() => fillState(selectors, "selector", props),
-			computeRemainingState,
-		];
-
-		tasks.forEach(scheduleCallback);
-	}
-
-	function computeRemainingState() {
-		let didTheRuntimeChange = true;
-		const tasks = [
-			() => computeSecondaryElements(secondaryElements, mainElements, options, rootElement),
-			() =>
-				(didTheRuntimeChange = calculateTotalRuntime(
-					map(mainElements, (element) => options.get(element)!),
-					totalRuntime
-				)),
-			() =>
-				didTheRuntimeChange &&
-				updateKeyframeOffsets(keyframes, mainElements, options, totalRuntime()),
-			() =>
-				didTheRuntimeChange &&
-				updateCallbackOffsets(callbacks, mainElements, options, totalRuntime()),
-			() => fillResets(cssStyleReset, mainElements),
+			() => normalizeProps(animtionEntries, ...props),
+			() => setState(state, animtionEntries),
 			read,
 		];
 
@@ -74,14 +39,9 @@ export const getAnimations = (props: AnimationEntry[]): AnimationsAPI => {
 		const overrides = new WeakMap<HTMLElement, Overrides>();
 
 		const tasks = [
-			// () =>
-			// 	fillReadouts(
-			// 		readouts,
-			// 		{ main: mainElements, secondary: secondaryElements },
-			// 		{ keyframes: state.keyframes, resets: cssStyleReset }
-			// 	),
-			// //() => filterReadouts(readouts, (element) => secondaryElements.delete(element)),
-			// () => adjustForDisplayNone(readouts),
+			() => fillReadouts(readouts, state),
+			//() => filterReadouts(readouts, (element) => secondaryElements.delete(element)),
+			() => adjustForDisplayNone(readouts),
 			// //TODO this only needs to happen for the non-image elements,
 			// () => fillCalculations(defaultCalculations, readouts),
 		];

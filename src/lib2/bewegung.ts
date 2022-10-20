@@ -6,10 +6,11 @@ export class bewegung implements BewegungAPI {
 	#animation: AnimationsAPI;
 	#now: number;
 
+	//? maybe playState could be handled here?
 	constructor(...bewegungProps: BewegungProps) {
 		this.#now = performance.now();
 
-		this.#animation = getAnimations(normalizeProps(...bewegungProps));
+		this.#animation = getAnimations(...bewegungProps);
 		console.log(`calculation took ${performance.now() - this.#now}ms`);
 	}
 

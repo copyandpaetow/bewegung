@@ -1,6 +1,3 @@
-export const highestNumber = (numbers: number[]) =>
-	numbers.reduce((largest, current) => Math.max(largest, current));
-
 // export class Store<Value> extends Set<Value> {
 // 	add(...values: Value[]): this {
 // 		values.forEach((value) => {

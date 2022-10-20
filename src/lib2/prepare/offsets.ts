@@ -1,4 +1,4 @@
-import { BewegungsOptions, Callbacks, CustomKeyframe } from "../types";
+import { BewegungsOptions, Callbacks, CustomKeyframe, State } from "../types";
 
 const updateOffsets = (
 	entry: CustomKeyframe[] | Callbacks[],
@@ -14,12 +14,9 @@ const updateOffsets = (
 		};
 	});
 
-export const updateKeyframeOffsets = (
-	keyframes: WeakMap<HTMLElement, CustomKeyframe[][]>,
-	mainElements: Set<HTMLElement>,
-	options: WeakMap<HTMLElement, BewegungsOptions[]>,
-	totalRuntime: number
-) => {
+export const updateKeyframeOffsets = (state: State) => {
+	const { mainElements, options, keyframes, totalRuntime } = state;
+
 	mainElements.forEach((element) => {
 		const option = options.get(element)!;
 		const currentValue = keyframes
@@ -29,12 +26,9 @@ export const updateKeyframeOffsets = (
 	});
 };
 
-export const updateCallbackOffsets = (
-	callbacks: WeakMap<HTMLElement, Callbacks[][]>,
-	mainElements: Set<HTMLElement>,
-	options: WeakMap<HTMLElement, BewegungsOptions[]>,
-	totalRuntime: number
-) => {
+export const updateCallbackOffsets = (state: State) => {
+	const { mainElements, options, callbacks, totalRuntime } = state;
+
 	mainElements.forEach((element) => {
 		const option = options.get(element)!;
 		const currentValue = callbacks
