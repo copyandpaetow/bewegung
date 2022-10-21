@@ -1,3 +1,4 @@
+import { scheduleCallback } from "../scheduler";
 import { AnimationEntry, BewegungProps, CustomKeyframe, CustomKeyframeEffect } from "../types";
 import { normalizeElements } from "./elements";
 import {
@@ -39,16 +40,27 @@ const unifyPropStructure = (...props: BewegungProps): CustomKeyframeEffect[] => 
 	);
 };
 
+const initalAnimationEntry = (): AnimationEntry => ({
+	target: [],
+	keyframes: [],
+	callbacks: [],
+	selector: "",
+	options: { rootSelector: "" },
+});
+
 export const normalizeProps = (entries: AnimationEntry[], ...props: BewegungProps) => {
 	unifyPropStructure(...props).forEach((entry) => {
-		const target = normalizeElements(entry[0]);
-		const { keyframes, callbacks } = separateKeyframesAndCallbacks(
-			unifyKeyframeStructure(entry[1])
-		);
-		const options = normalizeOptions(entry[2]);
-		const updatedKeyframes = addIndividualEasing(keyframes, options);
-		const selector = typeof entry[0] === "string" ? entry[0] : "";
+		const animationEntry = initalAnimationEntry();
 
-		entries.push({ target, keyframes: updatedKeyframes, callbacks, options, selector });
+		const tasks = [
+			() => (animationEntry.target = normalizeElements(entry[0])),
+			() => (animationEntry.options = normalizeOptions(entry[2])),
+			() => (animationEntry.selector = typeof entry[0] === "string" ? animationEntry.selector : ""),
+			() => separateKeyframesAndCallbacks(animationEntry, unifyKeyframeStructure(entry[1])),
+			() => addIndividualEasing(animationEntry),
+			() => entries.push(animationEntry),
+		];
+
+		tasks.forEach(scheduleCallback);
 	});
 };

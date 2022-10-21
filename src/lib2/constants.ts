@@ -1,4 +1,4 @@
-import { Calculations, ComputedState, CssRuleName, Overrides, StructureOfChunks } from "./types";
+import { CssRuleName } from "./types";
 
 export const emptyNonZeroDOMRect: DOMRect = {
 	width: 1,

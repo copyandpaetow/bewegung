@@ -1,6 +1,24 @@
+import { defaultOptions } from "../constants";
 import { scheduleCallback } from "../scheduler";
-import { DifferenceArray, DimensionalDifferences, ElementReadouts } from "../types";
+import {
+	AnimationState,
+	CalculationState,
+	DifferenceArray,
+	ElementReadouts,
+	State,
+} from "../types";
+import { calculateAdditionalKeyframeTables } from "./additional-tables";
 import { calculateDimensionDifferences } from "./calculate-dimension-differences";
+import { calculateEasingMap } from "./calculate-easings";
+
+const initialCalculationState = (): CalculationState => ({
+	calculations: [],
+	easingTable: {},
+	borderRadiusTable: {},
+	opacityTable: {},
+	filterTable: {},
+	userTransformTable: {},
+});
 
 const checkForTextNode = (element: HTMLElement) => {
 	const childNodes = Array.from(element.childNodes);
@@ -13,30 +31,80 @@ const checkForTextNode = (element: HTMLElement) => {
 };
 
 const calcualtionsFromReadouts = (
+	calculationState: CalculationState,
 	readouts: ElementReadouts[],
 	parentReadouts: ElementReadouts[],
 	isTextNode: boolean
-): DimensionalDifferences[] => {
+) => {
+	const { calculations } = calculationState;
 	//TODO: maybe here the filtering could take place and only locally and for the child so the entries are not affected but stuff will not get calculated multiple times
-	return readouts.map((readout, index, array) => {
+
+	readouts.forEach((readout, index, array) => {
 		const child: DifferenceArray = [readout, array.at(-1)!];
 		const parent: DifferenceArray = [parentReadouts[index], parentReadouts.at(-1)!];
-		return calculateDimensionDifferences(child, parent, isTextNode);
+		calculations.push(calculateDimensionDifferences(child, parent, isTextNode));
 	});
 };
 
-export const fillCalculations = (
-	calculations: Map<HTMLElement, DimensionalDifferences[]>,
-	allReadouts: Map<HTMLElement, ElementReadouts[]>
+const createAnimation = (
+	element: HTMLElement,
+	calculationState: CalculationState,
+	totalRuntime: number
 ) => {
-	allReadouts.forEach((readouts, element) => {
-		scheduleCallback(() => {
-			const parentReadouts = allReadouts.get(element.parentElement!) ?? readouts;
+	const {
+		calculations,
+		easingTable,
+		borderRadiusTable,
+		opacityTable,
+		filterTable,
+		userTransformTable,
+	} = calculationState;
 
-			calculations.set(
-				element,
-				calcualtionsFromReadouts(readouts, parentReadouts, checkForTextNode(element))
-			);
-		});
+	const keyframes = calculations.map(
+		({ xDifference, yDifference, widthDifference, heightDifference, offset }) =>
+			({
+				offset,
+				composite: "auto",
+				easing: easingTable[offset] ?? defaultOptions.easing,
+				transform: `translate(${xDifference}px, ${yDifference}px) scale(${widthDifference}, ${heightDifference}) ${
+					userTransformTable[offset] ? userTransformTable[offset] : ""
+				} `,
+				...(borderRadiusTable[offset] && {
+					clipPath: `inset(0px round ${borderRadiusTable[offset]})`,
+				}),
+				...(opacityTable[offset] && {
+					opacity: `${opacityTable[offset]}`,
+				}),
+				...(filterTable[offset] && {
+					filter: `${filterTable[offset]}`,
+				}),
+			} as Keyframe)
+	);
+
+	return new Animation(new KeyframeEffect(element, keyframes, totalRuntime));
+};
+
+export const setDefaultCalculations = (animationState: AnimationState, state: State) => {
+	const { totalRuntime, options, animations } = state;
+	const { readouts } = animationState;
+
+	readouts.forEach((readout, element) => {
+		const parentReadouts = readouts.get(element.parentElement!) ?? readout;
+		const calculationState = initialCalculationState();
+
+		const tasks = [
+			() =>
+				calcualtionsFromReadouts(
+					calculationState,
+					readout,
+					parentReadouts,
+					checkForTextNode(element)
+				),
+			() => calculateAdditionalKeyframeTables(calculationState, readout),
+			() => calculateEasingMap(calculationState, options.get(element)!, totalRuntime),
+			() => animations.set(element, createAnimation(element, calculationState, totalRuntime)),
+		];
+
+		tasks.forEach(scheduleCallback);
 	});
 };

@@ -22,6 +22,7 @@ export const initialState = (): State => ({
 	totalRuntime: defaultOptions.duration as number,
 	rootElement: new WeakMap<HTMLElement, HTMLElement>(),
 	cssStyleReset: new WeakMap<HTMLElement, Map<string, string>>(),
+	animations: new Map<HTMLElement, Animation>(),
 });
 
 const saveOriginalStyle = (element: HTMLElement) => {

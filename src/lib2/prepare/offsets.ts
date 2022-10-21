@@ -2,11 +2,11 @@ import { BewegungsOptions, Callbacks, CustomKeyframe, State } from "../types";
 
 const updateOffsets = (
 	entry: CustomKeyframe[] | Callbacks[],
-	options: BewegungsOptions[],
+	options: BewegungsOptions,
 	totalRuntime: number
 ) =>
-	entry.map((frame, index) => {
-		const absoluteTiming = ((options[index].endTime as number) * frame.offset!) / totalRuntime;
+	entry.map((frame) => {
+		const absoluteTiming = ((options.endTime as number) * frame.offset!) / totalRuntime;
 
 		return {
 			...frame,
@@ -21,7 +21,7 @@ export const updateKeyframeOffsets = (state: State) => {
 		const option = options.get(element)!;
 		const currentValue = keyframes
 			.get(element)!
-			.map((frame) => updateOffsets(frame, option, totalRuntime));
+			.map((frame, index) => updateOffsets(frame, option[index], totalRuntime));
 		keyframes.set(element, currentValue);
 	});
 };
@@ -33,7 +33,7 @@ export const updateCallbackOffsets = (state: State) => {
 		const option = options.get(element)!;
 		const currentValue = callbacks
 			.get(element)!
-			.map((callback) => updateOffsets(callback, option, totalRuntime));
+			.map((callback, index) => updateOffsets(callback, option[index], totalRuntime));
 		callbacks.set(element, currentValue);
 	});
 };

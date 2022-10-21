@@ -1,4 +1,4 @@
-import { BewegungsOptions, Context, State } from "../types";
+import { State } from "../types";
 
 export const highestNumber = (numbers: number[]) =>
 	numbers.reduce((largest, current) => Math.max(largest, current));

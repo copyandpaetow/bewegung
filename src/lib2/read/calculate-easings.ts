@@ -1,4 +1,4 @@
-import { Timeline, TimelineEntry } from "../types";
+import { CalculationState, Timeline, TimelineEntry } from "../types";
 
 export const toArray = <MaybeArrayType>(
 	maybeArray: MaybeArrayType | MaybeArrayType[]
@@ -103,11 +103,10 @@ export const getTimelineFractions = (
 };
 
 export const calculateEasingMap = (
+	calculationState: CalculationState,
 	mainElementOptions: ComputedEffectTiming[],
 	totalRuntime: number
 ) => {
-	const easingTable: Record<number, string> = {};
-
 	const timings: Timeline = mainElementOptions.map(({ delay, duration, easing }) => ({
 		start: (delay as number) / totalRuntime,
 		end: (duration as number) / totalRuntime,
@@ -118,7 +117,6 @@ export const calculateEasingMap = (
 		const { start } = entry;
 		const easing = array[index].easing as string;
 
-		easingTable[start] = easing;
+		calculationState.easingTable[start] = easing;
 	});
-	return easingTable;
 };

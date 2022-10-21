@@ -74,35 +74,6 @@ export interface AnimationsAPI {
 
 export type MainType = HTMLElement[][];
 export type MainKeyframe = CustomKeyframe[][];
-export interface StructureOfChunks {
-	elements: MainType;
-	keyframes: MainKeyframe;
-	callbacks: Callbacks[][];
-	options: BewegungsOptions[];
-	selectors: string[];
-}
-
-export type ComputedState = {
-	cssStyleReset: Map<string, string>[][];
-	secondaryElements: MainType;
-};
-
-export type SoA = {
-	targetArray: ElementOrSelector[];
-	keyframeArray: EveryKeyframeSyntax[];
-	optionsArray: EveryOptionSyntax[];
-};
-
-export interface QueueApi {
-	enqueue: (...fn: Function[]) => void;
-	run: () => Promise<void>;
-}
-
-export interface Context {
-	// changeTimings: number[];
-	// changeProperties: CssRuleName[];
-	totalRuntime: number;
-}
 
 export type ElementReadouts = {
 	dimensions: PartialDomRect;
@@ -173,4 +144,20 @@ export interface State {
 	totalRuntime: number;
 	rootElement: WeakMap<HTMLElement, HTMLElement>;
 	cssStyleReset: WeakMap<HTMLElement, Map<string, string>>;
+	animations: Map<HTMLElement, Animation>;
+}
+
+export interface AnimationState {
+	readouts: Map<HTMLElement, ElementReadouts[]>;
+	imageReadouts: Map<HTMLElement, ElementReadouts[]>;
+	overrides: Map<HTMLElement, Overrides[]>;
+}
+
+export interface CalculationState {
+	calculations: DimensionalDifferences[];
+	easingTable: Record<number, string>;
+	borderRadiusTable: Record<number, string>;
+	opacityTable: Record<number, string>;
+	filterTable: Record<number, string>;
+	userTransformTable: Record<number, string>;
 }

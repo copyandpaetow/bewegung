@@ -1,6 +1,8 @@
 import { normalizeProps } from "./normalize/structure";
 import { initialState, setState } from "./prepare/state";
-import { fillReadouts } from "./read/dom";
+import { setImageCalculations } from "./read/calculate-images";
+import { setDefaultCalculations } from "./read/calculate-keyframes";
+import { initialAnimationState, setReadouts } from "./read/dom";
 import { adjustForDisplayNone } from "./read/update-calculations";
 import { scheduleCallback } from "./scheduler";
 import {
@@ -14,10 +16,6 @@ import {
 
 export const getAnimations = (...props: BewegungProps): AnimationsAPI => {
 	let now = performance.now();
-
-	//TODO: maybe the props normalization needs to use the scheduleCallback
-	//?: currently the functions all have a lot of arguments, maybe it makes more sense to nest the state? Maybe State, Elements, Context?
-	//?: Maybe extends the Sets/Maps/WeakMaps to have better functionality
 
 	const state = initialState();
 
@@ -33,17 +31,14 @@ export const getAnimations = (...props: BewegungProps): AnimationsAPI => {
 	}
 
 	function read() {
-		const readouts = new Map<HTMLElement, ElementReadouts[]>();
-		const defaultCalculations = new Map<HTMLElement, DimensionalDifferences[]>();
-		const imageCalculations = new Map<HTMLElement, DimensionalDifferences[]>();
-		const overrides = new WeakMap<HTMLElement, Overrides>();
+		const animationState = initialAnimationState();
 
 		const tasks = [
-			() => fillReadouts(readouts, state),
-			//() => filterReadouts(readouts, (element) => secondaryElements.delete(element)),
-			() => adjustForDisplayNone(readouts),
-			// //TODO this only needs to happen for the non-image elements,
-			// () => fillCalculations(defaultCalculations, readouts),
+			() => setReadouts(animationState, state),
+			() => adjustForDisplayNone(animationState),
+			//TODO add override styles here,
+			() => setDefaultCalculations(animationState, state),
+			() => setImageCalculations(animationState, state),
 		];
 
 		tasks.forEach(scheduleCallback);
@@ -53,6 +48,7 @@ export const getAnimations = (...props: BewegungProps): AnimationsAPI => {
 	scheduleCallback(() =>
 		console.log({
 			duration: performance.now() - now,
+			state,
 		})
 	);
 

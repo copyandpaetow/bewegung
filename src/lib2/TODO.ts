@@ -65,9 +65,6 @@ recalculate
 /*
 TODOS
 
-- change structure again to match the above vision, but keep the scheduling and the task layout
-- try to use as few "global"weakmap stores as possible
-- think about filtering some more. Currently, they are just Arrays of {..., offset}. They could also be a SoA or a map with offsets as keys
-
+- think about what to pass back to the Bewegungs class... Should it return an animation array and handle everything else itself or should everything happen inside of the function?
 - think about making the final animations list not only one array but maybe a map or 2 arrays to handle callbacks better
 */

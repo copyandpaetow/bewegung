@@ -1,5 +1,5 @@
 import { scheduleCallback } from "../scheduler";
-import { ElementReadouts } from "../types";
+import { AnimationState, ElementReadouts } from "../types";
 
 export const isEntryVisible = (entry: ElementReadouts) =>
 	entry.computedStyle.display !== "none" &&
@@ -31,10 +31,12 @@ export const recalculateDisplayNoneValues = (readout: ElementReadouts[]): Elemen
 	});
 };
 
-export const adjustForDisplayNone = (allReadouts: Map<HTMLElement, ElementReadouts[]>) => {
-	allReadouts.forEach((readouts, element) => {
+export const adjustForDisplayNone = (animationState: AnimationState) => {
+	const { readouts } = animationState;
+
+	readouts.forEach((readout, element) => {
 		scheduleCallback(() => {
-			allReadouts.set(element, recalculateDisplayNoneValues(readouts));
+			readouts.set(element, recalculateDisplayNoneValues(readout));
 		});
 	});
 };

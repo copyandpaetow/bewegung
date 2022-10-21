@@ -1,5 +1,14 @@
 import { defaultChangeProperties } from "../constants";
-import { CssRuleName, CustomKeyframe, ElementReadouts, MainKeyframe, State } from "../types";
+import {
+	AnimationState,
+	CssRuleName,
+	CustomKeyframe,
+	DimensionalDifferences,
+	ElementReadouts,
+	MainKeyframe,
+	Overrides,
+	State,
+} from "../types";
 import {
 	applyCSSStyles,
 	filterMatchingStyleFromKeyframes,
@@ -29,7 +38,8 @@ const calculateChangeProperties = (allKeyframes: CustomKeyframe[][]) => {
 	return Array.from(changeProperties);
 };
 
-export const fillReadouts = (readouts: Map<HTMLElement, ElementReadouts[]>, state: State) => {
+export const setReadouts = (animationState: AnimationState, state: State) => {
+	const { readouts, imageReadouts } = animationState;
 	const { mainElements, secondaryElements, keyframes, cssStyleReset } = state;
 
 	const allKeyframes = Array.from(mainElements).flatMap((element) => keyframes.get(element)!);
@@ -45,9 +55,16 @@ export const fillReadouts = (readouts: Map<HTMLElement, ElementReadouts[]>, stat
 		[...mainElements, ...secondaryElements].forEach((element) => {
 			const calculation = getCalculations(element, timing, changeProperties);
 			const allCalculation = readouts.get(element)?.concat(calculation) ?? [calculation];
-			readouts.set(element, allCalculation);
+
+			(element.tagName === "IMG" ? imageReadouts : readouts).set(element, allCalculation);
 		});
 
 		mainElements.forEach((element) => restoreOriginalStyle(element, cssStyleReset.get(element)!));
 	});
 };
+
+export const initialAnimationState = (): AnimationState => ({
+	readouts: new Map<HTMLElement, ElementReadouts[]>(),
+	imageReadouts: new Map<HTMLElement, ElementReadouts[]>(),
+	overrides: new Map<HTMLElement, Overrides[]>(),
+});

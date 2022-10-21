@@ -1,4 +1,5 @@
 import {
+	AnimationEntry,
 	BewegungsOptions,
 	Callbacks,
 	CustomKeyframe,
@@ -93,9 +94,11 @@ export const unifyKeyframeStructure = (keyframe: EveryKeyframeSyntax): CustomKey
 	throw new Error("No mixing between array and object syntax");
 };
 
-export const addIndividualEasing = (keyframes: CustomKeyframe[], options: BewegungsOptions) => {
-	const { easing, composite } = options;
-	return keyframes.map((keyframe) => {
+export const addIndividualEasing = (animationEntry: AnimationEntry) => {
+	const { easing, composite } = animationEntry.options;
+
+	//TODO: replacing the whole entry here would prevent us from using Object.freeze (like the runtime) / could be less performant in general => maybe replace by index?
+	animationEntry.keyframes = animationEntry.keyframes.map((keyframe) => {
 		const { offset, ...styles } = keyframe;
 
 		const individualEasing =
@@ -110,9 +113,11 @@ export const addIndividualEasing = (keyframes: CustomKeyframe[], options: Bewegu
 	});
 };
 
-export const separateKeyframesAndCallbacks = (AllKeyframes: CustomKeyframe[]) => {
-	const keyframes: CustomKeyframe[] = [];
-	const callbacks: Callbacks[] = [];
+export const separateKeyframesAndCallbacks = (
+	AnimationEntry: AnimationEntry,
+	AllKeyframes: CustomKeyframe[]
+) => {
+	const { keyframes, callbacks } = AnimationEntry;
 
 	AllKeyframes.forEach((unfilteredKeyframes) => {
 		const { callback, offset, ...rest } = unfilteredKeyframes;
@@ -122,9 +127,4 @@ export const separateKeyframesAndCallbacks = (AllKeyframes: CustomKeyframe[]) =>
 		}
 		keyframes.push({ ...rest, offset: offset! });
 	});
-
-	return {
-		keyframes,
-		callbacks,
-	};
 };
