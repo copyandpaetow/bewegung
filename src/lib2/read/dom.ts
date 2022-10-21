@@ -3,9 +3,7 @@ import {
 	AnimationState,
 	CssRuleName,
 	CustomKeyframe,
-	DimensionalDifferences,
 	ElementReadouts,
-	MainKeyframe,
 	Overrides,
 	State,
 } from "../types";
@@ -65,6 +63,7 @@ export const setReadouts = (animationState: AnimationState, state: State) => {
 
 export const initialAnimationState = (): AnimationState => ({
 	readouts: new Map<HTMLElement, ElementReadouts[]>(),
-	imageReadouts: new Map<HTMLElement, ElementReadouts[]>(),
-	overrides: new Map<HTMLElement, Overrides[]>(),
+	imageReadouts: new Map<HTMLImageElement, ElementReadouts[]>(),
+	beforeCallbacks: new WeakMap<HTMLElement, VoidFunction[]>(),
+	afterCallbacks: new WeakMap<HTMLElement, VoidFunction[]>(),
 });

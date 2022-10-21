@@ -149,8 +149,9 @@ export interface State {
 
 export interface AnimationState {
 	readouts: Map<HTMLElement, ElementReadouts[]>;
-	imageReadouts: Map<HTMLElement, ElementReadouts[]>;
-	overrides: Map<HTMLElement, Overrides[]>;
+	imageReadouts: Map<HTMLImageElement, ElementReadouts[]>;
+	beforeCallbacks: WeakMap<HTMLElement, VoidFunction[]>;
+	afterCallbacks: WeakMap<HTMLElement, VoidFunction[]>;
 }
 
 export interface CalculationState {
@@ -160,4 +161,9 @@ export interface CalculationState {
 	opacityTable: Record<number, string>;
 	filterTable: Record<number, string>;
 	userTransformTable: Record<number, string>;
+}
+
+export interface MaximumDimensions {
+	width: number;
+	height: number;
 }

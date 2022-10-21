@@ -1,7 +1,8 @@
 import { CustomKeyframe, StyleChangePossibilities } from "../types";
 
-export const applyStyleObject = (element: HTMLElement, style: Partial<CSSStyleDeclaration>) =>
+export const applyStyleObject = (element: HTMLElement, style: Partial<CSSStyleDeclaration>) => {
 	Object.assign(element.style, style);
+};
 
 const applyClasses = (element: HTMLElement, classes: string[]) =>
 	classes.forEach((classEntry) => element.classList.toggle(classEntry));
@@ -38,13 +39,17 @@ export const applyCSSStyles = (
 	}
 };
 
+const styleUpdates = (): StyleChangePossibilities => ({
+	style: {},
+	classes: [],
+	attributes: [],
+});
+
 export const filterMatchingStyleFromKeyframes = (
 	keyframes: CustomKeyframe[],
 	timing?: number
 ): StyleChangePossibilities => {
-	let resultingStyle: Partial<CSSStyleDeclaration> = {};
-	const classes: string[] = [];
-	const attributes: string[] = [];
+	const updates = styleUpdates();
 
 	keyframes?.forEach((keyframe) => {
 		if (timing !== undefined && timing !== keyframe.offset) {
@@ -54,8 +59,8 @@ export const filterMatchingStyleFromKeyframes = (
 		const { offset, transform, class: cssClass, attribute, ...styles } = keyframe;
 
 		//@ts-expect-error ts weirdness
-		resultingStyle = {
-			...resultingStyle,
+		updates.style = {
+			...updates.style,
 			...(transform && {
 				transform: transform as string,
 			}),
@@ -63,14 +68,14 @@ export const filterMatchingStyleFromKeyframes = (
 		};
 
 		if (Boolean(cssClass)) {
-			classes.push(...(cssClass as string).split(" "));
+			updates.classes.push(...(cssClass as string).split(" "));
 		}
 		if (Boolean(attribute)) {
-			attributes.push(...(attribute as string).split(" "));
+			updates.attributes.push(...(attribute as string).split(" "));
 		}
 	});
 
-	return { style: resultingStyle, classes, attributes };
+	return updates;
 };
 
 export const restoreOriginalStyle = (

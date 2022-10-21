@@ -1,4 +1,5 @@
 import { CalculationState, Timeline, TimelineEntry } from "../types";
+import { ImageState } from "./animation-image";
 
 export const toArray = <MaybeArrayType>(
 	maybeArray: MaybeArrayType | MaybeArrayType[]
@@ -103,7 +104,7 @@ export const getTimelineFractions = (
 };
 
 export const calculateEasingMap = (
-	calculationState: CalculationState,
+	calculationState: CalculationState | ImageState,
 	mainElementOptions: ComputedEffectTiming[],
 	totalRuntime: number
 ) => {
