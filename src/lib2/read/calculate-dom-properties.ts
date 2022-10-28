@@ -13,11 +13,12 @@ const getComputedStylings = (
 		relevantStyles[cssRule] = computedElementStyle[cssRule];
 	});
 
-	return window.getComputedStyle(element);
+	return relevantStyles;
 };
 
 const getDomRect = (domElement: HTMLElement): PartialDomRect => {
 	const { top, right, bottom, left, width, height } = domElement.getBoundingClientRect();
+
 	return { top, right, bottom, left, width, height };
 };
 

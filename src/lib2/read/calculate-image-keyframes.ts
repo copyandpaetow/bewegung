@@ -1,10 +1,12 @@
 import { highestNumber } from "../prepare/runtime";
-import { ElementReadouts, MaximumDimensions } from "../types";
+import { ElementReadouts } from "../types";
 import { ImageState } from "./animation-image";
 import { save } from "./calculate-dimension-differences";
 
 export const calculateImageKeyframes = (imageState: ImageState, readouts: ElementReadouts[]) => {
 	const { maxWidth, maxHeight, ratio, easingTable, keyframes } = imageState;
+
+	//TODO: for very tall images (aspectRatio < 1 (current case 0.66)) this is not perfect, the image is smaller than its wrapper box
 
 	readouts.forEach((entry) => {
 		let scaleWidth: number = entry.dimensions.width / maxWidth;
@@ -69,9 +71,8 @@ export const getWrapperKeyframes = (imageState: ImageState, readouts: ElementRea
 		const horizontalInset = (maxWidth - entry.dimensions.width) / 2;
 		const verticalInset = (maxHeight - entry.dimensions.height) / 2;
 
-		const deltaTop = entry.dimensions.top - (array.at(-1)?.dimensions.top || entry.dimensions.top);
-		const deltaLeft =
-			entry.dimensions.left - (array.at(-1)?.dimensions.left || entry.dimensions.left);
+		const deltaTop = entry.dimensions.top - array.at(-1)!.dimensions.top;
+		const deltaLeft = entry.dimensions.left - array.at(-1)!.dimensions.left;
 		const translateX = -1 * horizontalInset + deltaLeft;
 		const translateY = -1 * verticalInset + deltaTop;
 
@@ -94,14 +95,16 @@ export const getWrapperStyle = (
 	rootReadouts: ElementReadouts[]
 ) => {
 	const { maxHeight, maxWidth } = imageState;
+
 	return {
 		position: "absolute",
-		top: `${readouts.at(-1)?.dimensions.top! - rootReadouts.at(-1)?.dimensions.top!}px`,
-		left: `${readouts.at(-1)?.dimensions.left! - rootReadouts.at(-1)?.dimensions.left!}px`,
+		top: `${readouts.at(-1)!.dimensions.top! - rootReadouts.at(-1)!.dimensions.top!}px`,
+		left: `${readouts.at(-1)!.dimensions.left! - rootReadouts.at(-1)!.dimensions.left!}px`,
 		height: `${maxHeight}px`,
 		width: `${maxWidth}px`,
 		pointerEvents: "none",
 		overflow: "hidden",
+		gridArea: "1/1/2/2", //if the root element is a grid element, it will be absolutly positioned from its dedicated area and not from the edge of the element
 	} as Partial<CSSStyleDeclaration>;
 };
 

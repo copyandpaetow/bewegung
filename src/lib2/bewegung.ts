@@ -1,29 +1,90 @@
+import { type } from "os";
 import { getAnimations } from "./animation";
 import { normalizeProps } from "./normalize/structure";
-import { AnimationsAPI, BewegungAPI, BewegungProps } from "./types";
+import { AnimationsAPI, BewegungAPI, BewegungProps, Result } from "./types";
+
+type ExtendedPlayStates = "scrolling" | "reversing";
+type AllPlayStates = AnimationPlayState | ExtendedPlayStates;
 
 export class bewegung implements BewegungAPI {
-	#animation: AnimationsAPI;
 	#now: number;
+	#state: Promise<Result>;
+	#playState: AnimationPlayState = "idle";
 
-	//? maybe playState could be handled here?
 	constructor(...bewegungProps: BewegungProps) {
 		this.#now = performance.now();
+		this.#state = getAnimations(...bewegungProps);
+		this.#setOnAnimationEnd();
+	}
 
-		this.#animation = getAnimations(...bewegungProps);
+	async #setOnAnimationEnd() {
+		const { animations, onEnd } = await this.#state;
 		console.log(`calculation took ${performance.now() - this.#now}ms`);
+
+		animations.forEach((animation, element) => (animation.onfinish = () => onEnd(element)));
+	}
+
+	async #updatePlayState(newState: AllPlayStates) {
+		const { animations, onStart } = await this.#state;
+
+		switch (this.#playState) {
+			case "idle":
+				switch (newState) {
+					case "running":
+						this.#playState = "running";
+						animations.forEach((animation, element) => {
+							onStart(element);
+							animation.play();
+							animation.pause();
+						});
+						break;
+					case "reversing":
+						animations.forEach((animation, element) => {
+							onStart(element);
+							animation.reverse();
+						});
+
+					default:
+						break;
+				}
+				break;
+
+			case "paused":
+				switch (newState) {
+					case "running":
+						this.#playState = "paused";
+						animations.forEach((animation) => {
+							animation.pause();
+						});
+						break;
+
+					default:
+						break;
+				}
+				break;
+
+			default:
+				break;
+		}
 	}
 
 	get playState() {
-		return this.#animation.playState;
+		return this.#playState;
 	}
 
 	get finished() {
-		return this.#animation.finished;
+		const awaitAnimations = async () => {
+			const state = await this.#state;
+			await Promise.all(
+				Array.from(state.animations.values()).map((animation) => animation.finished)
+			);
+			return;
+		};
+		return awaitAnimations();
 	}
 
 	play() {
-		this.#animation.play();
+		this.#updatePlayState("running");
 	}
 	pause() {}
 	scroll() {}

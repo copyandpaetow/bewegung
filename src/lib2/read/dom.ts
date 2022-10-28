@@ -23,6 +23,7 @@ const calculateChangeTimings = (allKeyframes: CustomKeyframe[][]) => {
 			newTimings.add(offset ?? 1);
 		});
 	});
+
 	return Array.from(newTimings).sort((a, b) => a - b);
 };
 
@@ -48,17 +49,22 @@ export const setReadouts = (animationState: AnimationState, state: State) => {
 	changeTimings.forEach((timing) => {
 		scheduleCallback(() => {
 			mainElements.forEach((element) => {
-				keyframes.get(element)!.forEach((keyframe) => {
+				keyframes.get(element)?.forEach((keyframe) => {
 					applyCSSStyles(element, filterMatchingStyleFromKeyframes(keyframe, timing));
 				});
 			});
-			[...mainElements, ...secondaryElements].forEach((element) => {
+			[...mainElements, ...secondaryElements].forEach((element, index) => {
 				const calculation = getCalculations(element, timing, changeProperties);
-				const allCalculation = readouts.get(element)?.concat(calculation) ?? [calculation];
 
-				(element.tagName === "IMG" ? imageReadouts : readouts).set(element, allCalculation);
+				const currentReadout = element.tagName === "IMG" ? imageReadouts : readouts;
+				const existingCalculations = currentReadout.get(element)?.concat(calculation) ?? [
+					calculation,
+				];
+				currentReadout.set(element as HTMLImageElement, existingCalculations);
 			});
 
+			//!resetting the elements after each step is causing bugs
+			//!the filtered Keyframes are just for a keyframe and not every keyframe until that timing
 			mainElements.forEach((element) => restoreOriginalStyle(element, cssStyleReset.get(element)!));
 		});
 	});
@@ -67,6 +73,4 @@ export const setReadouts = (animationState: AnimationState, state: State) => {
 export const initialAnimationState = (): AnimationState => ({
 	readouts: new Map<HTMLElement, ElementReadouts[]>(),
 	imageReadouts: new Map<HTMLImageElement, ElementReadouts[]>(),
-	beforeCallbacks: new WeakMap<HTMLElement, VoidFunction[]>(),
-	afterCallbacks: new WeakMap<HTMLElement, VoidFunction[]>(),
 });

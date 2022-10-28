@@ -1,6 +1,6 @@
 import { emptyImageSrc } from "../constants";
 import { scheduleCallback } from "../scheduler";
-import { AnimationState, MaximumDimensions, State } from "../types";
+import { AnimationState, State } from "../types";
 import { applyStyleObject } from "./apply-styles";
 import { calculateEasingMap } from "./calculate-easings";
 import {
@@ -59,30 +59,29 @@ const initialImageState = (element: HTMLImageElement): ImageState => ({
 	keyframes: [],
 });
 
-const getBeforeCallback = (
+const setOnStartCallbacks = (
+	onStart: WeakMap<HTMLElement, VoidFunction[]>,
 	imageState: ImageState,
-	beforeCallbacks: WeakMap<HTMLElement, VoidFunction[]>
+	rootElement: WeakMap<HTMLElement, HTMLElement>
 ) => {
 	const { element, parent, sibling, maxHeight, maxWidth, wrapper, placeholder } = imageState;
-	beforeCallbacks.set(
+
+	onStart.set(
 		element,
-		(beforeCallbacks.get(element) ?? []).concat(() => {
+		(onStart.get(element) ?? []).concat(() => {
 			sibling ? parent.insertBefore(placeholder, sibling) : parent.appendChild(placeholder);
 
 			element.style.cssText = `all: initial; height: ${maxHeight}px; width: ${maxWidth}px; pointer-events: none;`;
 
 			wrapper.appendChild(element);
-			document.body.appendChild(wrapper);
+			(rootElement.get(element) ?? document.body).appendChild(wrapper);
 		})
 	);
 };
 
-const getAfterCallback = (
-	imageState: ImageState,
-	afterCallbacks: WeakMap<HTMLElement, VoidFunction[]>
-) => {
+const setOnEndCallbacks = (onEnd: WeakMap<HTMLElement, VoidFunction[]>, imageState: ImageState) => {
 	const { element, parent, originalStyle, wrapper, placeholder } = imageState;
-	afterCallbacks.set(wrapper, [
+	onEnd.set(wrapper, [
 		() => {
 			try {
 				parent.replaceChild(element, placeholder);
@@ -111,8 +110,8 @@ const createImageAnimations = (
 };
 
 export const setImageCalculations = (animationState: AnimationState, state: State) => {
-	const { animations, totalRuntime, rootElement, options } = state;
-	const { imageReadouts, readouts, afterCallbacks, beforeCallbacks } = animationState;
+	const { animations, totalRuntime, rootElement, options, onEnd, onStart } = state;
+	const { imageReadouts, readouts } = animationState;
 
 	imageReadouts.forEach((readout, element) => {
 		const imageState = initialImageState(element);
@@ -127,8 +126,8 @@ export const setImageCalculations = (animationState: AnimationState, state: Stat
 			() => getWrapperKeyframes(imageState, readout),
 			() => calculateImageKeyframes(imageState, readout),
 			() => createImageAnimations(animations, imageState, totalRuntime),
-			() => getBeforeCallback(imageState, beforeCallbacks),
-			() => getAfterCallback(imageState, afterCallbacks),
+			() => setOnStartCallbacks(onStart, imageState, rootElement),
+			() => setOnEndCallbacks(onEnd, imageState),
 		];
 
 		tasks.forEach(scheduleCallback);

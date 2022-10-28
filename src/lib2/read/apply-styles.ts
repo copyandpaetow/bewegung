@@ -47,12 +47,12 @@ const styleUpdates = (): StyleChangePossibilities => ({
 
 export const filterMatchingStyleFromKeyframes = (
 	keyframes: CustomKeyframe[],
-	timing?: number
+	timing: number
 ): StyleChangePossibilities => {
 	const updates = styleUpdates();
 
 	keyframes?.forEach((keyframe) => {
-		if (timing !== undefined && timing !== keyframe.offset) {
+		if (timing < keyframe.offset!) {
 			return;
 		}
 

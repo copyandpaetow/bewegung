@@ -6,11 +6,13 @@ import { initialState, setState } from "./prepare/state";
 import { setCallbackAnimations } from "./read/animation-callbacks";
 import { setDefaultCalculations } from "./read/animation-default";
 import { setImageCalculations } from "./read/animation-image";
+import { restoreOriginalStyle } from "./read/apply-styles";
 import { initialAnimationState, setReadouts } from "./read/dom";
 import { addStyleCallback } from "./read/style-callback";
 import { adjustForDisplayNone } from "./read/update-calculations";
 import { scheduleCallback } from "./scheduler";
-import { AnimationEntry, AnimationsAPI, BewegungProps } from "./types";
+import { AnimationEntry, AnimationsAPI, BewegungProps, Result } from "./types";
+import { observeMutations } from "./watch/mutations";
 
 /*
 TODO: in here calculate the animations only, if they are done they will get back to the class
@@ -22,81 +24,91 @@ TODO: in here calculate the animations only, if they are done they will get back
 
 */
 
-interface Result {
-	animations: Map<HTMLElement, Animation>;
-	callbackAnimations: Map<HTMLElement, Animation>;
-	resetElementStyle: (element: HTMLElement) => void;
-	onStart: (element: HTMLElement) => void;
-	onEnd: (element: HTMLElement) => void;
-	observe: () => void;
-	unobserve: () => void;
-}
+export const getAnimations = (...props: BewegungProps) =>
+	new Promise<Result>((resolve, reject) => {
+		const state = initialState();
 
-export const getAnimations = (...props: BewegungProps): AnimationsAPI => {
-	let now = performance.now();
+		function init() {
+			const animtionEntries: AnimationEntry[] = [];
+			const tasks = [
+				() => normalizeProps(animtionEntries, ...props),
+				() => setState(state, animtionEntries),
+				prepare,
+			];
 
-	const state = initialState();
+			tasks.forEach(scheduleCallback);
+		}
 
-	function init() {
-		const animtionEntries: AnimationEntry[] = [];
-		const tasks = [
-			() => normalizeProps(animtionEntries, ...props),
-			() => setState(state, animtionEntries),
-			prepare,
-		];
+		//TODO: put these code blocks into try catch blocks and try to come up with a fallback like animation with only applying styles
+		//TODO: this could then also work for prefer reduced motion
+		function prepare() {
+			const { totalRuntime } = state;
 
-		tasks.forEach(scheduleCallback);
-	}
+			const tasks = [
+				() => computeSecondaryProperties(state),
+				() => calculateTotalRuntime(state),
+				() => updateKeyframeOffsets(state, totalRuntime),
+				() => updateCallbackOffsets(state, totalRuntime),
+				read,
+			];
 
-	function prepare() {
-		const { totalRuntime } = state;
+			tasks.forEach(scheduleCallback);
+		}
 
-		const tasks = [
-			() => computeSecondaryProperties(state),
-			() => calculateTotalRuntime(state),
-			() => updateKeyframeOffsets(state, totalRuntime),
-			() => updateCallbackOffsets(state, totalRuntime),
-			read,
-		];
+		function read() {
+			const animationState = initialAnimationState();
 
-		tasks.forEach(scheduleCallback);
-	}
+			//if we are reacting and calculate entries again, we need to replace instead of push
+			const tasks = [
+				() => setReadouts(animationState, state),
+				() => adjustForDisplayNone(animationState),
+				() => addStyleCallback(animationState, state),
+				() => setDefaultCalculations(animationState, state),
+				() => setImageCalculations(animationState, state),
+				() => setCallbackAnimations(state),
+				complete,
+			];
 
-	function read() {
-		const animationState = initialAnimationState();
+			tasks.forEach(scheduleCallback);
+		}
 
-		//if we are reacting and calculate entries again, we need to replace instead of push
-		const tasks = [
-			() => setReadouts(animationState, state),
-			() => adjustForDisplayNone(animationState),
-			() => addStyleCallback(animationState, state),
-			() => setDefaultCalculations(animationState, state),
-			() => setImageCalculations(animationState, state),
-			() => setCallbackAnimations(state),
-		];
+		function complete() {
+			resolve({
+				animations: state.animations,
+				callbackAnimations: state.animations,
+				resetStyle: (element: HTMLElement) =>
+					restoreOriginalStyle(element, state.cssStyleReset.get(element)!),
+				onStart: (element: HTMLElement) =>
+					state.onStart.get(element)?.forEach((callback) => callback()),
+				onEnd: (element: HTMLElement) =>
+					state.onEnd.get(element)?.forEach((callback) => callback()),
+				observe: (playState: AnimationPlayState) => watch(playState),
+				unobserve: () => {
+					const { mainElements, secondaryElements, IO, RO, MO } = state;
+					MO.get(document.body)?.disconnect();
+					mainElements.forEach((element) => {
+						IO.get(element)?.disconnect();
+						RO.get(element)?.disconnect();
+					});
+					secondaryElements.forEach((element) => {
+						IO.get(element)?.disconnect();
+						RO.get(element)?.disconnect();
+					});
+				},
+			});
+		}
 
-		tasks.forEach(scheduleCallback);
-	}
+		function watch(playState: AnimationPlayState) {
+			//TODO: maybe it would make sense to also prohibit this funtion to be called again while its still working
+			if (playState !== "idle" && playState !== "paused") {
+				return;
+			}
 
-	function watch() {
-		//if a placestate is not init anymore return early
-		//if a mutation occurs check if the
-		// it should return a function to start and one to end the watching
-		// since the animation list needs to be updated in need we cant garbage collect here so we can lean into the closure even more
-		//TODO return a connect and a disconnect function (or function that returns the other again and again)
-	}
+			//TODO: add the other observers
+			const tasks = [() => observeMutations(state, { partial: read, full: prepare })];
 
-	init();
+			tasks.forEach(scheduleCallback);
+		}
 
-	scheduleCallback(() =>
-		console.log({
-			duration: performance.now() - now,
-		})
-	);
-
-	return {
-		play() {},
-		playState: "idle",
-		finished: Promise.resolve(),
-	};
-};
+		init();
+	});

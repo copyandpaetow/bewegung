@@ -33,8 +33,8 @@ const checkForOverrideStyles = (
 
 //TODO: this needs a revision
 export const addStyleCallback = (animationState: AnimationState, state: State) => {
-	const { keyframes } = state;
-	const { readouts, beforeCallbacks, afterCallbacks } = animationState;
+	const { keyframes, onEnd, onStart } = state;
+	const { readouts } = animationState;
 
 	readouts.forEach((readout, element) => {
 		const keyframe = keyframes.get(element)?.flat();
@@ -42,7 +42,7 @@ export const addStyleCallback = (animationState: AnimationState, state: State) =
 		const afterCallbackArray: VoidFunction[] = [];
 
 		if (keyframe) {
-			const changes = filterMatchingStyleFromKeyframes(keyframe);
+			const changes = filterMatchingStyleFromKeyframes(keyframe, 1);
 			const changeOverrides = checkForOverrideStyles([changes.style], element);
 
 			beforeCallbackArray.push(() => applyCSSStyles(element, changes));
@@ -63,14 +63,11 @@ export const addStyleCallback = (animationState: AnimationState, state: State) =
 		}
 
 		if (beforeCallbackArray.length) {
-			beforeCallbacks.set(
-				element,
-				(beforeCallbacks.get(element) ?? []).concat(beforeCallbackArray)
-			);
+			onStart.set(element, (onStart.get(element) ?? []).concat(beforeCallbackArray));
 		}
 
 		if (afterCallbackArray.length) {
-			afterCallbacks.set(element, (afterCallbacks.get(element) ?? []).concat(afterCallbackArray));
+			onEnd.set(element, (onEnd.get(element) ?? []).concat(afterCallbackArray));
 		}
 	});
 };

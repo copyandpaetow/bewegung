@@ -10,8 +10,6 @@ export const setCallbackAnimations = (state: State) => {
 
 	mainElements.forEach((element) => {
 		const callback = callbacks.get(element);
-
-		console.log(callback);
 	});
 
 	// const animation = new Animation(new KeyframeEffect(element, [], offset * totalRuntime));

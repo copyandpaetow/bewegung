@@ -20,6 +20,11 @@ export const initialState = (): State => ({
 	rootElement: new WeakMap<HTMLElement, HTMLElement>(),
 	cssStyleReset: new WeakMap<HTMLElement, Map<string, string>>(),
 	animations: new Map<HTMLElement, Animation>(),
+	IO: new WeakMap<HTMLElement, IntersectionObserver>(),
+	RO: new WeakMap<HTMLElement, ResizeObserver>(),
+	MO: new WeakMap<HTMLElement, MutationObserver>(),
+	onStart: new WeakMap<HTMLElement, VoidFunction[]>(),
+	onEnd: new WeakMap<HTMLElement, VoidFunction[]>(),
 });
 
 const saveOriginalStyle = (element: HTMLElement) => {

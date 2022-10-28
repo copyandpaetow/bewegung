@@ -35,7 +35,7 @@ export type EveryKeyframeSyntax =
 	| CustomKeyframeArrayValueSyntax;
 
 export interface BewegungsOptions extends KeyframeEffectOptions, ComputedEffectTiming {
-	rootSelector: string;
+	rootSelector?: string;
 }
 
 export type EveryOptionSyntax = number | BewegungsOptions | undefined;
@@ -60,8 +60,8 @@ export interface BewegungAPI {
 	commitStyles: () => void;
 	finish: () => void;
 	updatePlaybackRate: (newPlaybackRate: number) => void;
-	finished: Promise<void>;
-	playState: AnimationPlayState;
+	readonly finished: Promise<void>;
+	readonly playState: AnimationPlayState;
 }
 
 export type BewegungProps = CustomKeyframeEffect | (CustomKeyframeEffect | KeyframeEffect)[];
@@ -144,13 +144,16 @@ export interface State {
 	rootElement: WeakMap<HTMLElement, HTMLElement>;
 	cssStyleReset: WeakMap<HTMLElement, Map<string, string>>;
 	animations: Map<HTMLElement, Animation>;
+	IO: WeakMap<HTMLElement, IntersectionObserver>;
+	RO: WeakMap<HTMLElement, ResizeObserver>;
+	MO: WeakMap<HTMLElement, MutationObserver>;
+	onStart: WeakMap<HTMLElement, VoidFunction[]>;
+	onEnd: WeakMap<HTMLElement, VoidFunction[]>;
 }
 
 export interface AnimationState {
 	readouts: Map<HTMLElement, ElementReadouts[]>;
 	imageReadouts: Map<HTMLImageElement, ElementReadouts[]>;
-	beforeCallbacks: WeakMap<HTMLElement, VoidFunction[]>;
-	afterCallbacks: WeakMap<HTMLElement, VoidFunction[]>;
 }
 
 export interface CalculationState {
@@ -165,4 +168,14 @@ export interface CalculationState {
 export interface MaximumDimensions {
 	width: number;
 	height: number;
+}
+
+export interface Result {
+	animations: Map<HTMLElement, Animation>;
+	callbackAnimations: Map<HTMLElement, Animation>;
+	resetStyle: (element: HTMLElement) => void;
+	onStart: (element: HTMLElement) => void;
+	onEnd: (element: HTMLElement) => void;
+	observe: (playState: AnimationPlayState) => void;
+	unobserve: () => void;
 }

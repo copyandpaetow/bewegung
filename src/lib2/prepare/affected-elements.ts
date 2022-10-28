@@ -61,7 +61,7 @@ export const computeSecondaryProperties = (state: State) => {
 	const { mainElements, secondaryElements, options, rootElement } = state;
 
 	mainElements.forEach((mainElement) => {
-		const root = getRootElement(options.get(mainElement)!.map((option) => option.rootSelector));
+		const root = getRootElement(options.get(mainElement)!.map((option) => option.rootSelector!));
 
 		rootElement.set(mainElement, root);
 

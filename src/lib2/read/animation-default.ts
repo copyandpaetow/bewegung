@@ -42,6 +42,7 @@ const calcualtionsFromReadouts = (
 	readouts.forEach((readout, index, array) => {
 		const child: DifferenceArray = [readout, array.at(-1)!];
 		const parent: DifferenceArray = [parentReadouts[index], parentReadouts.at(-1)!];
+
 		calculations.push(calculateDimensionDifferences(child, parent, isTextNode));
 	});
 };
