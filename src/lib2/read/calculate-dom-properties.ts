@@ -13,7 +13,7 @@ const getComputedStylings = (
 		relevantStyles[cssRule] = computedElementStyle[cssRule];
 	});
 
-	return relevantStyles;
+	return window.getComputedStyle(element);
 };
 
 const getDomRect = (domElement: HTMLElement): PartialDomRect => {
@@ -29,8 +29,4 @@ export const getCalculations = (
 	dimensions: getDomRect(element),
 	offset: timing,
 	computedStyle: getComputedStylings(changeProperties, element),
-	naturalRatio:
-		element.tagName !== "IMG"
-			? undefined
-			: (element as HTMLImageElement).naturalWidth / (element as HTMLImageElement).naturalHeight,
 });

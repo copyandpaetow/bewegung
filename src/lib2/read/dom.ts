@@ -1,4 +1,5 @@
 import { defaultChangeProperties } from "../constants";
+import { scheduleCallback } from "../scheduler";
 import {
 	AnimationState,
 	CssRuleName,
@@ -45,19 +46,21 @@ export const setReadouts = (animationState: AnimationState, state: State) => {
 	const changeProperties = calculateChangeProperties(allKeyframes);
 
 	changeTimings.forEach((timing) => {
-		mainElements.forEach((element) => {
-			keyframes.get(element)!.forEach((keyframe) => {
-				applyCSSStyles(element, filterMatchingStyleFromKeyframes(keyframe, timing));
+		scheduleCallback(() => {
+			mainElements.forEach((element) => {
+				keyframes.get(element)!.forEach((keyframe) => {
+					applyCSSStyles(element, filterMatchingStyleFromKeyframes(keyframe, timing));
+				});
 			});
-		});
-		[...mainElements, ...secondaryElements].forEach((element) => {
-			const calculation = getCalculations(element, timing, changeProperties);
-			const allCalculation = readouts.get(element)?.concat(calculation) ?? [calculation];
+			[...mainElements, ...secondaryElements].forEach((element) => {
+				const calculation = getCalculations(element, timing, changeProperties);
+				const allCalculation = readouts.get(element)?.concat(calculation) ?? [calculation];
 
-			(element.tagName === "IMG" ? imageReadouts : readouts).set(element, allCalculation);
-		});
+				(element.tagName === "IMG" ? imageReadouts : readouts).set(element, allCalculation);
+			});
 
-		mainElements.forEach((element) => restoreOriginalStyle(element, cssStyleReset.get(element)!));
+			mainElements.forEach((element) => restoreOriginalStyle(element, cssStyleReset.get(element)!));
+		});
 	});
 };
 

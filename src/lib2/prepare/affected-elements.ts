@@ -76,7 +76,7 @@ export const computeSecondaryProperties = (state: State) => {
 				compareRootElements(root, rootElement.get(secondaryElement))
 			);
 
-			//TODO this currently causes the secondary elements to have a lot of duplicates
+			//TODO this currently causes the secondary elements to have a lot of duplicates, so it could be a set
 			options.set(
 				secondaryElement,
 				(options.get(secondaryElement) ?? []).concat(options.get(mainElement)!)

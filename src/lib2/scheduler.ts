@@ -23,9 +23,9 @@ getRepaintInterval().then((intervall) => (refreshIntervall = Math.floor(interval
 const isThereStilltimeToWork = (deadline: number) => {
 	//@ts-expect-error only for chrome / opera
 	if (navigator?.scheduling?.isInputPending?.()) {
-		false;
+		return false;
 	}
-	if (performance.now() >= deadline) {
+	if (Date.now() >= deadline) {
 		return false;
 	}
 	return true;
@@ -38,7 +38,7 @@ const workUntilDeadline = () => {
 		return;
 	}
 
-	const deadline = performance.now() + Math.min(5, getRefreshIntervall() / 2);
+	const deadline = Date.now() + getRefreshIntervall() / 2;
 
 	while (queue.length && isThereStilltimeToWork(deadline)) {
 		const { callback, level } = queue.shift()!;

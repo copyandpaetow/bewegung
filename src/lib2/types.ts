@@ -79,7 +79,6 @@ export type ElementReadouts = {
 	dimensions: PartialDomRect;
 	computedStyle: Partial<CSSStyleDeclaration>;
 	offset: number;
-	naturalRatio: number | undefined;
 };
 
 export type DifferenceArray = [ElementReadouts, ElementReadouts];

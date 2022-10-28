@@ -1,19 +1,16 @@
 import { normalizeProps } from "./normalize/structure";
+import { computeSecondaryProperties } from "./prepare/affected-elements";
+import { updateCallbackOffsets, updateKeyframeOffsets } from "./prepare/offsets";
+import { calculateTotalRuntime } from "./prepare/runtime";
 import { initialState, setState } from "./prepare/state";
-import { setImageCalculations } from "./read/animation-image";
+import { setCallbackAnimations } from "./read/animation-callbacks";
 import { setDefaultCalculations } from "./read/animation-default";
+import { setImageCalculations } from "./read/animation-image";
 import { initialAnimationState, setReadouts } from "./read/dom";
 import { addStyleCallback } from "./read/style-callback";
 import { adjustForDisplayNone } from "./read/update-calculations";
 import { scheduleCallback } from "./scheduler";
-import {
-	AnimationEntry,
-	AnimationsAPI,
-	BewegungProps,
-	DimensionalDifferences,
-	ElementReadouts,
-	Overrides,
-} from "./types";
+import { AnimationEntry, AnimationsAPI, BewegungProps } from "./types";
 
 /*
 TODO: in here calculate the animations only, if they are done they will get back to the class
@@ -27,21 +24,38 @@ TODO: in here calculate the animations only, if they are done they will get back
 
 interface Result {
 	animations: Map<HTMLElement, Animation>;
-	cssResets: WeakMap<HTMLElement, Map<string, string>>;
-	callbacks: VoidFunction; // before and after speparated or together? Maybe even a reset callback as well?
+	callbackAnimations: Map<HTMLElement, Animation>;
+	resetElementStyle: (element: HTMLElement) => void;
+	onStart: (element: HTMLElement) => void;
+	onEnd: (element: HTMLElement) => void;
+	observe: () => void;
+	unobserve: () => void;
 }
 
 export const getAnimations = (...props: BewegungProps): AnimationsAPI => {
 	let now = performance.now();
 
 	const state = initialState();
-	//maybe a const result = initalResult()
 
 	function init() {
 		const animtionEntries: AnimationEntry[] = [];
 		const tasks = [
 			() => normalizeProps(animtionEntries, ...props),
 			() => setState(state, animtionEntries),
+			prepare,
+		];
+
+		tasks.forEach(scheduleCallback);
+	}
+
+	function prepare() {
+		const { totalRuntime } = state;
+
+		const tasks = [
+			() => computeSecondaryProperties(state),
+			() => calculateTotalRuntime(state),
+			() => updateKeyframeOffsets(state, totalRuntime),
+			() => updateCallbackOffsets(state, totalRuntime),
 			read,
 		];
 
@@ -51,23 +65,32 @@ export const getAnimations = (...props: BewegungProps): AnimationsAPI => {
 	function read() {
 		const animationState = initialAnimationState();
 
+		//if we are reacting and calculate entries again, we need to replace instead of push
 		const tasks = [
 			() => setReadouts(animationState, state),
 			() => adjustForDisplayNone(animationState),
 			() => addStyleCallback(animationState, state),
 			() => setDefaultCalculations(animationState, state),
 			() => setImageCalculations(animationState, state),
-			//TODO: callback animations
+			() => setCallbackAnimations(state),
 		];
 
 		tasks.forEach(scheduleCallback);
 	}
+
+	function watch() {
+		//if a placestate is not init anymore return early
+		//if a mutation occurs check if the
+		// it should return a function to start and one to end the watching
+		// since the animation list needs to be updated in need we cant garbage collect here so we can lean into the closure even more
+		//TODO return a connect and a disconnect function (or function that returns the other again and again)
+	}
+
 	init();
 
 	scheduleCallback(() =>
 		console.log({
 			duration: performance.now() - now,
-			state,
 		})
 	);
 

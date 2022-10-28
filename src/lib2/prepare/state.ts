@@ -8,9 +8,6 @@ import {
 	State,
 	ValueOf,
 } from "../types";
-import { computeSecondaryProperties } from "./affected-elements";
-import { updateCallbackOffsets, updateKeyframeOffsets } from "./offsets";
-import { calculateTotalRuntime } from "./runtime";
 
 export const initialState = (): State => ({
 	mainElements: new Set<HTMLElement>(),
@@ -67,10 +64,6 @@ export const setState = (state: State, animationEntries: AnimationEntry[]) => {
 		() => fillState(state.options, "options", animationEntries),
 		() => fillState(state.selectors, "selector", animationEntries),
 		() => fillResets(state.cssStyleReset, state.mainElements),
-		() => computeSecondaryProperties(state),
-		() => calculateTotalRuntime(state),
-		() => updateKeyframeOffsets(state),
-		() => updateCallbackOffsets(state),
 	];
 
 	tasks.forEach(scheduleCallback);
