@@ -1,7 +1,7 @@
 import { highestNumber } from "../prepare/runtime";
-import { ElementReadouts } from "../types";
+import { DifferenceArray, ElementReadouts } from "../types";
 import { ImageState } from "./animation-image";
-import { save } from "./calculate-dimension-differences";
+import { calculateDimensionDifferences, save } from "./calculate-dimension-differences";
 
 export const calculateImageKeyframes = (imageState: ImageState, readouts: ElementReadouts[]) => {
 	const { maxWidth, maxHeight, ratio, easingTable, keyframes } = imageState;
@@ -65,26 +65,39 @@ const calculateBorderRadius = (borderRadius: string, height: number, width: numb
 	return `${(100 * parsedRadius) / width}% / ${(100 * parsedRadius) / height}%`;
 };
 
-export const getWrapperKeyframes = (imageState: ImageState, readouts: ElementReadouts[]) => {
+export const getWrapperKeyframes = (
+	imageState: ImageState,
+	readouts: ElementReadouts[],
+	rootReadouts: ElementReadouts[]
+) => {
 	const { maxWidth, maxHeight, easingTable, wrapperKeyframes } = imageState;
-	readouts.forEach((entry, _, array) => {
-		const horizontalInset = (maxWidth - entry.dimensions.width) / 2;
-		const verticalInset = (maxHeight - entry.dimensions.height) / 2;
+	readouts.forEach((readout, index) => {
+		const horizontalInset = (maxWidth - readout.dimensions.width) / 2;
+		const verticalInset = (maxHeight - readout.dimensions.height) / 2;
 
-		const deltaTop = entry.dimensions.top - array.at(-1)!.dimensions.top;
-		const deltaLeft = entry.dimensions.left - array.at(-1)!.dimensions.left;
-		const translateX = -1 * horizontalInset + deltaLeft;
-		const translateY = -1 * verticalInset + deltaTop;
+		const child: DifferenceArray = [readout, readouts.at(-1)!];
+		const parent: DifferenceArray = [rootReadouts[index], rootReadouts.at(-1)!];
+		const { heightDifference, widthDifference, leftDifference, topDifference } =
+			calculateDimensionDifferences(child, parent, false);
+
+		const deltaTop = readout.dimensions.top - readouts.at(-1)!.dimensions.top;
+		const deltaLeft = readout.dimensions.left - readouts.at(-1)!.dimensions.left;
+		const translateX = -1 * horizontalInset + leftDifference;
+		const translateY = -1 * verticalInset + topDifference;
+
+		//TODO: since the root is scaled, the images as children of the root will be affected as well
+		//? maybe it is enough to get the root scale and apply it to the delta values and add it as scale
+		console.log({ heightDifference });
 
 		wrapperKeyframes.push({
-			offset: entry.offset,
+			offset: readout.offset,
 			clipPath: `inset(${verticalInset}px ${horizontalInset}px round ${calculateBorderRadius(
-				entry.computedStyle.borderRadius!,
+				readout.computedStyle.borderRadius!,
 				maxHeight,
 				maxWidth
 			)})`,
-			transform: `translate(${translateX}px, ${translateY}px)`,
-			easing: easingTable[entry.offset] ?? "ease",
+			transform: `translate(${translateX}px, ${translateY}px) scale(${widthDifference}, ${heightDifference})`,
+			easing: easingTable[readout.offset] ?? "ease",
 		});
 	});
 };
@@ -95,6 +108,8 @@ export const getWrapperStyle = (
 	rootReadouts: ElementReadouts[]
 ) => {
 	const { maxHeight, maxWidth } = imageState;
+
+	//TODO: either we include the root but need to calculate stuff here or we dont include it but need to calculate it somehow still
 
 	return {
 		position: "absolute",

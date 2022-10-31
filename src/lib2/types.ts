@@ -106,8 +106,8 @@ export type StyleChangePossibilities = {
 export interface DimensionalDifferences {
 	heightDifference: number;
 	widthDifference: number;
-	xDifference: number;
-	yDifference: number;
+	leftDifference: number;
+	topDifference: number;
 	offset: number;
 }
 

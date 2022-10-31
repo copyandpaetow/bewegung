@@ -1,5 +1,4 @@
-import { scheduleCallback } from "../scheduler";
-import { BewegungsOptions, State } from "../types";
+import { State } from "../types";
 
 const DOM = {
 	parent(element: HTMLElement) {
@@ -9,7 +8,7 @@ const DOM = {
 		return Array.from(DOM.parent(element).children) as HTMLElement[];
 	},
 	decendants(element: HTMLElement) {
-		return Array.from(element.querySelectorAll("*")) as HTMLElement[];
+		return (Array.from(element.querySelectorAll("*")) as HTMLElement[]).concat(element);
 	},
 	ancestors(element: HTMLElement, rootElement: HTMLElement, elementMap: HTMLElement[] = []) {
 		if (rootElement === element) {
@@ -24,11 +23,11 @@ export const findAffectedDOMElements = (
 	rootElement: HTMLElement
 ): HTMLElement[] => {
 	//TODO this could be done with ":has() as well if support gets better"
-	const parents = DOM.ancestors(DOM.parent(element), rootElement).flatMap((relatedElement) =>
-		DOM.siblings(relatedElement)
+	const relatives = new Set(
+		DOM.ancestors(element, rootElement).flatMap(DOM.siblings).flatMap(DOM.decendants)
 	);
 
-	return [...DOM.decendants(element), ...parents] as HTMLElement[];
+	return [...relatives] as HTMLElement[];
 };
 
 const compareRootElements = (current: HTMLElement, previous: HTMLElement | undefined) => {
@@ -83,4 +82,5 @@ export const computeSecondaryProperties = (state: State) => {
 			);
 		});
 	});
+	console.log(mainElements, secondaryElements);
 };

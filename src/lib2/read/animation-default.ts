@@ -1,3 +1,4 @@
+import { JwkKeyExportOptions } from "crypto";
 import { defaultOptions } from "../constants";
 import { scheduleCallback } from "../scheduler";
 import {
@@ -31,17 +32,20 @@ const checkForTextNode = (element: HTMLElement) => {
 };
 
 const calcualtionsFromReadouts = (
+	element: HTMLElement,
 	calculationState: CalculationState,
 	readouts: ElementReadouts[],
-	parentReadouts: ElementReadouts[],
-	isTextNode: boolean
+	parentReadouts: ElementReadouts[] | undefined
 ) => {
 	const { calculations } = calculationState;
+	const isTextNode = checkForTextNode(element);
 	//TODO: maybe here the filtering could take place and only locally and for the child so the entries are not affected but stuff will not get calculated multiple times
 
 	readouts.forEach((readout, index, array) => {
 		const child: DifferenceArray = [readout, array.at(-1)!];
-		const parent: DifferenceArray = [parentReadouts[index], parentReadouts.at(-1)!];
+		const parent: DifferenceArray | [undefined, undefined] = parentReadouts
+			? [parentReadouts[index], parentReadouts.at(-1)!]
+			: [undefined, undefined];
 
 		calculations.push(calculateDimensionDifferences(child, parent, isTextNode));
 	});
@@ -62,12 +66,12 @@ const createAnimation = (
 	} = calculationState;
 
 	const keyframes = calculations.map(
-		({ xDifference, yDifference, widthDifference, heightDifference, offset }) =>
+		({ leftDifference, topDifference, widthDifference, heightDifference, offset }) =>
 			({
 				offset,
 				composite: "auto",
 				easing: easingTable[offset] ?? defaultOptions.easing,
-				transform: `translate(${xDifference}px, ${yDifference}px) scale(${widthDifference}, ${heightDifference}) ${
+				transform: `translate(${leftDifference}px, ${topDifference}px) scale(${widthDifference}, ${heightDifference}) ${
 					userTransformTable[offset] ? userTransformTable[offset] : ""
 				} `,
 				...(borderRadiusTable[offset] && {
@@ -90,17 +94,11 @@ export const setDefaultCalculations = (animationState: AnimationState, state: St
 	const { readouts } = animationState;
 
 	readouts.forEach((readout, element) => {
-		const parentReadouts = readouts.get(element.parentElement!) ?? readout;
+		const parentReadouts = readouts.get(element.parentElement ?? element);
 		const calculationState = initialCalculationState();
 
 		const tasks = [
-			() =>
-				calcualtionsFromReadouts(
-					calculationState,
-					readout,
-					parentReadouts,
-					checkForTextNode(element)
-				),
+			() => calcualtionsFromReadouts(element, calculationState, readout, parentReadouts),
 			() => calculateAdditionalKeyframeTables(calculationState, readout),
 			() => calculateEasingMap(calculationState, options.get(element)!, totalRuntime),
 			() => animations.set(element, createAnimation(element, calculationState, totalRuntime)),

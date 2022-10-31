@@ -1,6 +1,6 @@
 import { emptyImageSrc } from "../constants";
 import { scheduleCallback } from "../scheduler";
-import { AnimationState, State } from "../types";
+import { AnimationState, ElementReadouts, State } from "../types";
 import { applyStyleObject } from "./apply-styles";
 import { calculateEasingMap } from "./calculate-easings";
 import {
@@ -10,7 +10,7 @@ import {
 	getWrapperStyle,
 } from "./calculate-image-keyframes";
 
-const getPlaceholderElement = (imageState: ImageState) => {
+const getPlaceholderElement = (imageState: ImageState, readouts: ElementReadouts[]) => {
 	const { element } = imageState;
 	const placeholder = document.createElement("img");
 
@@ -19,6 +19,8 @@ const getPlaceholderElement = (imageState: ImageState) => {
 	});
 	placeholder.src = emptyImageSrc;
 	placeholder.style.opacity = "0";
+	placeholder.style.height = readouts.at(-1)!.dimensions.height + "px";
+	placeholder.style.width = readouts.at(-1)!.dimensions.width + "px";
 
 	imageState.placeholder = placeholder;
 };
@@ -74,7 +76,7 @@ const setOnStartCallbacks = (
 			element.style.cssText = `all: initial; height: ${maxHeight}px; width: ${maxWidth}px; pointer-events: none;`;
 
 			wrapper.appendChild(element);
-			(rootElement.get(element) ?? document.body).appendChild(wrapper);
+			rootElement.get(element)!.appendChild(wrapper);
 		})
 	);
 };
@@ -119,11 +121,11 @@ export const setImageCalculations = (animationState: AnimationState, state: Stat
 			imageReadouts.get(rootElement.get(element)! as HTMLImageElement))!;
 
 		const tasks = [
-			() => getPlaceholderElement(imageState),
+			() => getPlaceholderElement(imageState, readout),
 			() => getMaximumDimensions(imageState, readout),
 			() => getWrapperElement(imageState, getWrapperStyle(imageState, readout, rootReadout)),
 			() => calculateEasingMap(imageState, options.get(element)!, totalRuntime),
-			() => getWrapperKeyframes(imageState, readout),
+			() => getWrapperKeyframes(imageState, readout, rootReadout),
 			() => calculateImageKeyframes(imageState, readout),
 			() => createImageAnimations(animations, imageState, totalRuntime),
 			() => setOnStartCallbacks(onStart, imageState, rootElement),

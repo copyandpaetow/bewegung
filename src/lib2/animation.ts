@@ -66,6 +66,7 @@ export const getAnimations = (...props: BewegungProps) =>
 				() => setDefaultCalculations(animationState, state),
 				() => setImageCalculations(animationState, state),
 				() => setCallbackAnimations(state),
+				() => console.log({ animationState, state }),
 				complete,
 			];
 

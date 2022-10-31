@@ -53,9 +53,10 @@ export const setReadouts = (animationState: AnimationState, state: State) => {
 					applyCSSStyles(element, filterMatchingStyleFromKeyframes(keyframe, timing));
 				});
 			});
-			[...mainElements, ...secondaryElements].forEach((element, index) => {
+			[...mainElements, ...secondaryElements].forEach((element) => {
 				const calculation = getCalculations(element, timing, changeProperties);
 
+				//TODO: without the filtering it looks perfect, with it is slightly off
 				const currentReadout = element.tagName === "IMG" ? imageReadouts : readouts;
 				const existingCalculations = currentReadout.get(element)?.concat(calculation) ?? [
 					calculation,
@@ -63,8 +64,6 @@ export const setReadouts = (animationState: AnimationState, state: State) => {
 				currentReadout.set(element as HTMLImageElement, existingCalculations);
 			});
 
-			//!resetting the elements after each step is causing bugs
-			//!the filtered Keyframes are just for a keyframe and not every keyframe until that timing
 			mainElements.forEach((element) => restoreOriginalStyle(element, cssStyleReset.get(element)!));
 		});
 	});

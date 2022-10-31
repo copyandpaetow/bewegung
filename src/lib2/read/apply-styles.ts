@@ -58,6 +58,7 @@ export const filterMatchingStyleFromKeyframes = (
 
 		const { offset, transform, class: cssClass, attribute, ...styles } = keyframe;
 
+		//TODO: this will override what was before, if composite is something other than "replace" it needs to be done here
 		//@ts-expect-error ts weirdness
 		updates.style = {
 			...updates.style,
@@ -74,6 +75,7 @@ export const filterMatchingStyleFromKeyframes = (
 			updates.attributes.push(...(attribute as string).split(" "));
 		}
 	});
+	console.log(timing, updates);
 
 	return updates;
 };

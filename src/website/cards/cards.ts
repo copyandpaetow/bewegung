@@ -18,25 +18,34 @@ const initCards = () => {
 		const highlightCard: CustomKeyframeEffect = [
 			cards[activeIndex],
 			{
-				width: ["30%", "100%", "55%"],
-				height: ["50vh", "25vh", "70vh", "60vh"],
-				callback: [() => console.log("cb1")],
+				//width: "100%",
+				height: "70vh",
 			},
-			{ duration: 2000, easing: "ease", rootSelector: "main" },
+			{ duration: 2000, easing: "ease" },
 		];
 
-		const hideOthers: CustomKeyframeEffect = [
-			[...cards].filter((_, index) => index !== activeIndex),
-			{
-				width: "",
-				height: "",
-				callback: () => console.log("cb2"),
-			},
-			{ duration: 4000, easing: "ease-in", rootSelector: "main" },
-		];
+		// const highlightCard: CustomKeyframeEffect = [
+		// 	cards[activeIndex],
+		// 	{
+		// 		width: ["30%", "100%", "55%"],
+		// 		height: ["50vh", "25vh", "70vh", "60vh"],
+		// 		callback: [() => console.log("cb1")],
+		// 	},
+		// 	{ duration: 2000, easing: "ease", rootSelector: "main" },
+		// ];
 
-		return new bewegung(highlightCard, hideOthers);
-		//return new Bewegung(highlightCard, hideOthers);
+		// const hideOthers: CustomKeyframeEffect = [
+		// 	[...cards].filter((_, index) => index !== activeIndex),
+		// 	{
+		// 		width: "",
+		// 		height: "",
+		// 		callback: () => console.log("cb2"),
+		// 	},
+		// 	{ duration: 4000, easing: "ease-in", rootSelector: "main" },
+		// ];
+
+		return new bewegung(highlightCard);
+		//return new Bewegung(highlightCard);
 	};
 
 	let animation: bewegung | undefined;
