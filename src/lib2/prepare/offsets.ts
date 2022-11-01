@@ -4,17 +4,19 @@ const updateOffsets = (
 	entry: CustomKeyframe[] | Callbacks[],
 	options: BewegungsOptions,
 	totalRuntime: number
-) =>
-	entry.map((frame) => {
-		//TODO: endtime includes iterations, should we use start + duration + enddelay instead?
-		//? or do we want that? What happens if two animationEntrys have different iterations?
-		const absoluteTiming = ((options.endTime as number) * frame.offset!) / totalRuntime;
+) => {
+	const { duration, delay: start, endDelay } = options;
+
+	return entry.map((frame) => {
+		const absoluteTiming =
+			(start! + (duration as number) * frame.offset! + endDelay!) / totalRuntime;
 
 		return {
 			...frame,
 			offset: absoluteTiming,
 		};
 	});
+};
 
 export const updateKeyframeOffsets = (state: State, previousRuntime: number) => {
 	const { mainElements, options, keyframes, totalRuntime } = state;
