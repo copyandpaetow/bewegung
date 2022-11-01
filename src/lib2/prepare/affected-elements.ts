@@ -82,5 +82,4 @@ export const computeSecondaryProperties = (state: State) => {
 			);
 		});
 	});
-	console.log(mainElements, secondaryElements);
 };

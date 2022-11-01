@@ -32,6 +32,7 @@ const checkForOverrideStyles = (
 };
 
 //TODO: this needs a revision
+//? since it is element based, we could create 2 style objects to apply to it before and after the animation
 export const addStyleCallback = (animationState: AnimationState, state: State) => {
 	const { keyframes, onEnd, onStart } = state;
 	const { readouts } = animationState;
@@ -43,11 +44,14 @@ export const addStyleCallback = (animationState: AnimationState, state: State) =
 
 		if (keyframe) {
 			const changes = filterMatchingStyleFromKeyframes(keyframe, 1);
+			console.log({ element, keyframe, changes });
+
 			const changeOverrides = checkForOverrideStyles([changes.style], element);
 
 			beforeCallbackArray.push(() => applyCSSStyles(element, changes));
 
 			if (Object.keys(changeOverrides).length) {
+				//TODO: this is not right, the overwrite styles should be applied before the animations
 				afterCallbackArray.push(() => applyStyleObject(element, changeOverrides));
 			}
 		}

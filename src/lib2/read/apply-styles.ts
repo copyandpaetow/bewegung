@@ -75,7 +75,6 @@ export const filterMatchingStyleFromKeyframes = (
 			updates.attributes.push(...(attribute as string).split(" "));
 		}
 	});
-	console.log(timing, updates);
 
 	return updates;
 };

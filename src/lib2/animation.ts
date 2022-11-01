@@ -11,18 +11,8 @@ import { initialAnimationState, setReadouts } from "./read/dom";
 import { addStyleCallback } from "./read/style-callback";
 import { adjustForDisplayNone } from "./read/update-calculations";
 import { scheduleCallback } from "./scheduler";
-import { AnimationEntry, AnimationsAPI, BewegungProps, Result } from "./types";
+import { AnimationEntry, BewegungProps, Result } from "./types";
 import { observeMutations } from "./watch/mutations";
-
-/*
-TODO: in here calculate the animations only, if they are done they will get back to the class
-- we resolve a promise with the result so we know when it is done
-- we try and catch here and possibliy reject the promise
-
-? what do we need to give the class? A handle to reset the elements, to stop the reactivity, the callbacks
-
-
-*/
 
 export const getAnimations = (...props: BewegungProps) =>
 	new Promise<Result>((resolve, reject) => {
