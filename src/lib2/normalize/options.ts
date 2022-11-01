@@ -1,6 +1,7 @@
 import { defaultOptions } from "../constants";
 import { BewegungsOptions, EveryOptionSyntax } from "../types";
 
+//TODO: delays are not recognized
 const getTimingsFromKeyframe = (timing: Partial<BewegungsOptions>): BewegungsOptions => {
 	const kfe = new KeyframeEffect(null, null, timing);
 	const { composite, pseudoElement, iterationComposite } = kfe;

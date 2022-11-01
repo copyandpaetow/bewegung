@@ -23,21 +23,15 @@ const parseTransformOrigin = (entry: ElementReadouts | undefined) => {
 	return calculated;
 };
 
-export const calculateDimensionDifferences = (
+export const getTranslates = (
 	child: DifferenceArray,
-	parent: DifferenceArray | [undefined, undefined],
-	isTextNode: boolean
-): DimensionalDifferences => {
+	parent: DifferenceArray | [undefined, undefined]
+) => {
 	const [currentEntry, referenceEntry] = child;
 	const [parentCurrentEntry, parentReferenceEntry] = parent;
 
 	const current = currentEntry.dimensions;
 	const reference = referenceEntry.dimensions;
-
-	const parentCurrentWidth = parentCurrentEntry?.dimensions.width ?? 1;
-	const parentCurrentHeight = parentCurrentEntry?.dimensions.height ?? 1;
-	const parentReferenceWidth = parentReferenceEntry?.dimensions.width ?? 1;
-	const parentReferenceHeight = parentReferenceEntry?.dimensions.height ?? 1;
 
 	const parentCurrentLeft = parentCurrentEntry?.dimensions.left ?? 0;
 	const parentCurrentTop = parentCurrentEntry?.dimensions.top ?? 0;
@@ -52,6 +46,40 @@ export const calculateDimensionDifferences = (
 	const [originParentCurrentLeft, originParentCurrentTop] =
 		parseTransformOrigin(parentCurrentEntry);
 
+	const currentLeftDifference =
+		current.left + originCurrentLeft - (parentCurrentLeft + originParentCurrentLeft);
+	const referenceLeftDifference =
+		reference.left + originReferenceLeft - (parentReferenceLeft + originParentReferenceLeft);
+
+	const currentTopDifference =
+		current.top + originCurrentTop - (parentCurrentTop + originParentCurrentTop);
+	const referenceTopDifference =
+		reference.top + originReferenceTop - (parentReferenceTop + originParentReferenceTop);
+
+	return {
+		currentLeftDifference,
+		referenceLeftDifference,
+		currentTopDifference,
+		referenceTopDifference,
+	};
+};
+
+const getScales = (
+	child: DifferenceArray,
+	parent: DifferenceArray | [undefined, undefined],
+	isTextNode: boolean
+) => {
+	const [currentEntry, referenceEntry] = child;
+	const [parentCurrentEntry, parentReferenceEntry] = parent;
+
+	const current = currentEntry.dimensions;
+	const reference = referenceEntry.dimensions;
+
+	const parentCurrentWidth = parentCurrentEntry?.dimensions.width ?? 1;
+	const parentCurrentHeight = parentCurrentEntry?.dimensions.height ?? 1;
+	const parentReferenceWidth = parentReferenceEntry?.dimensions.width ?? 1;
+	const parentReferenceHeight = parentReferenceEntry?.dimensions.height ?? 1;
+
 	const parentWidthDifference = parentCurrentWidth / parentReferenceWidth;
 	const parentHeightDifference = parentCurrentHeight / parentReferenceHeight;
 	const childWidthDifference = current.width / reference.width;
@@ -60,23 +88,46 @@ export const calculateDimensionDifferences = (
 	const heightDifference = (isTextNode ? 1 : childHeightDifference) / parentHeightDifference;
 	const widthDifference = (isTextNode ? 1 : childWidthDifference) / parentWidthDifference;
 
-	const currentLeftDifference =
-		current.left + originCurrentLeft - (parentCurrentLeft + originParentCurrentLeft);
-	const referenceXDifference =
-		reference.left + originReferenceLeft - (parentReferenceLeft + originParentReferenceLeft);
-
-	const currentTopDifference =
-		current.top + originCurrentTop - (parentCurrentTop + originParentCurrentTop);
-	const referenceYDifference =
-		reference.top + originReferenceTop - (parentReferenceTop + originParentReferenceTop);
-
-	const positionCorrection = isTextNode
+	const textCorrection = isTextNode
 		? (parentCurrentWidth - parentReferenceWidth) / 2 / parentWidthDifference
 		: 0;
 
+	return {
+		parentWidthDifference,
+		parentHeightDifference,
+		heightDifference,
+		widthDifference,
+		textCorrection,
+	};
+};
+
+//TODO: if the animation is executed and scrolled down, the values are wrong, it shifts down as well
+
+export const calculateDimensionDifferences = (
+	child: DifferenceArray,
+	parent: DifferenceArray | [undefined, undefined],
+	isTextNode: boolean
+): DimensionalDifferences => {
+	const [currentEntry] = child;
+
+	const {
+		currentLeftDifference,
+		referenceLeftDifference,
+		currentTopDifference,
+		referenceTopDifference,
+	} = getTranslates(child, parent);
+
+	const {
+		parentWidthDifference,
+		parentHeightDifference,
+		heightDifference,
+		widthDifference,
+		textCorrection,
+	} = getScales(child, parent, isTextNode);
+
 	const leftDifference =
-		currentLeftDifference / parentWidthDifference - referenceXDifference - positionCorrection;
-	const topDifference = currentTopDifference / parentHeightDifference - referenceYDifference;
+		currentLeftDifference / parentWidthDifference - referenceLeftDifference - textCorrection;
+	const topDifference = currentTopDifference / parentHeightDifference - referenceTopDifference;
 
 	return {
 		heightDifference: save(heightDifference, 1),

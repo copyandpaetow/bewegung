@@ -35,7 +35,10 @@ export class bewegung implements BewegungAPI {
 						animations.forEach((animation, element) => {
 							onStart(element);
 							animation.play();
-							animation.pause();
+
+							setTimeout(() => {
+								animation.pause();
+							}, 0);
 						});
 						break;
 					case "reversing":

@@ -1,12 +1,17 @@
 import { highestNumber } from "../prepare/runtime";
 import { DifferenceArray, ElementReadouts } from "../types";
 import { ImageState } from "./animation-image";
-import { calculateDimensionDifferences, save } from "./calculate-dimension-differences";
+import {
+	calculateDimensionDifferences,
+	getTranslates,
+	save,
+} from "./calculate-dimension-differences";
 
 export const calculateImageKeyframes = (imageState: ImageState, readouts: ElementReadouts[]) => {
 	const { maxWidth, maxHeight, ratio, easingTable, keyframes } = imageState;
 
 	//TODO: for very tall images (aspectRatio < 1 (current case 0.66)) this is not perfect, the image is smaller than its wrapper box
+	//TODO: of the images goes from big to small, it stays in the middle and doesnt stick to the bottom (how it should be)
 
 	readouts.forEach((entry) => {
 		let scaleWidth: number = entry.dimensions.width / maxWidth;
@@ -54,6 +59,7 @@ export const calculateImageKeyframes = (imageState: ImageState, readouts: Elemen
 	});
 };
 
+//TODO: this is still needed because the more sophisticated function returns a different result
 const calculateBorderRadius = (borderRadius: string, height: number, width: number): string => {
 	const parsedRadius = parseFloat(borderRadius);
 
@@ -70,24 +76,49 @@ export const getWrapperKeyframes = (
 	readouts: ElementReadouts[],
 	rootReadouts: ElementReadouts[]
 ) => {
-	const { maxWidth, maxHeight, easingTable, wrapperKeyframes } = imageState;
+	const { maxWidth, maxHeight, easingTable, wrapperKeyframes, element } = imageState;
 	readouts.forEach((readout, index) => {
-		const horizontalInset = (maxWidth - readout.dimensions.width) / 2;
-		const verticalInset = (maxHeight - readout.dimensions.height) / 2;
+		const parentScaleY =
+			rootReadouts[index].dimensions.height / rootReadouts.at(-1)!.dimensions.height;
+		const parentScaleX =
+			rootReadouts[index].dimensions.width / rootReadouts.at(-1)!.dimensions.width;
 
 		const child: DifferenceArray = [readout, readouts.at(-1)!];
 		const parent: DifferenceArray = [rootReadouts[index], rootReadouts.at(-1)!];
-		const { heightDifference, widthDifference, leftDifference, topDifference } =
-			calculateDimensionDifferences(child, parent, false);
 
-		const deltaTop = readout.dimensions.top - readouts.at(-1)!.dimensions.top;
-		const deltaLeft = readout.dimensions.left - readouts.at(-1)!.dimensions.left;
-		const translateX = -1 * horizontalInset + leftDifference;
-		const translateY = -1 * verticalInset + topDifference;
+		const {
+			currentLeftDifference,
+			referenceLeftDifference,
+			currentTopDifference,
+			referenceTopDifference,
+		} = getTranslates(child, parent);
 
-		//TODO: since the root is scaled, the images as children of the root will be affected as well
-		//? maybe it is enough to get the root scale and apply it to the delta values and add it as scale
-		console.log({ heightDifference });
+		const horizontalInset = (maxWidth - readout.dimensions.width) / 2;
+		const verticalInset = (maxHeight - readout.dimensions.height) / 2;
+
+		const referenceHorizontalInset = (maxWidth - readouts.at(-1)!.dimensions.width) / 2;
+		const referenceVerticalInset = (maxHeight - readouts.at(-1)!.dimensions.height) / 2;
+
+		/*
+		TODO: this is still not perfect, the vertical achis is not right (by only 1-2%)
+		? however, reworking to this is perfect for the vertical achis but not for the horizontal one (by 30%)
+		const leftDifference =
+			currentLeftDifference / parentScaleX - referenceLeftDifference + referenceHorizontalInset;
+		const topDifference =
+			currentTopDifference / parentScaleY - referenceTopDifference + referenceVerticalInset;
+		*/
+
+		const leftDifference =
+			(currentLeftDifference + horizontalInset) / parentScaleX -
+			referenceLeftDifference -
+			referenceHorizontalInset;
+		const topDifference =
+			(currentTopDifference + verticalInset) / parentScaleY -
+			referenceTopDifference -
+			referenceVerticalInset;
+
+		const translateX = leftDifference - (maxWidth - readout.dimensions.width) / 2;
+		const translateY = topDifference - (maxHeight - readout.dimensions.height) / 2;
 
 		wrapperKeyframes.push({
 			offset: readout.offset,
@@ -96,7 +127,9 @@ export const getWrapperKeyframes = (
 				maxHeight,
 				maxWidth
 			)})`,
-			transform: `translate(${translateX}px, ${translateY}px) scale(${widthDifference}, ${heightDifference})`,
+			transform: `translate(${translateX}px, ${translateY}px) scale(${1 / parentScaleX}, ${
+				1 / parentScaleY
+			})`,
 			easing: easingTable[readout.offset] ?? "ease",
 		});
 	});
@@ -108,8 +141,6 @@ export const getWrapperStyle = (
 	rootReadouts: ElementReadouts[]
 ) => {
 	const { maxHeight, maxWidth } = imageState;
-
-	//TODO: either we include the root but need to calculate stuff here or we dont include it but need to calculate it somehow still
 
 	return {
 		position: "absolute",

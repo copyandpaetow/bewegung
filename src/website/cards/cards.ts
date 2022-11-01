@@ -17,10 +17,20 @@ const initCards = () => {
 	const highlight = () => {
 		const highlightCard: CustomKeyframeEffect = [
 			cards[activeIndex],
-			{
-				//width: "100%",
-				height: "70vh",
-			},
+			[
+				{
+					width: "",
+					height: "",
+				},
+				{
+					width: "100%",
+					height: "70vh",
+				},
+				{
+					width: "55%",
+					height: "60vh",
+				},
+			],
 			{ duration: 2000, easing: "ease" },
 		];
 
@@ -31,7 +41,7 @@ const initCards = () => {
 		// 		height: ["50vh", "25vh", "70vh", "60vh"],
 		// 		callback: [() => console.log("cb1")],
 		// 	},
-		// 	{ duration: 2000, easing: "ease", rootSelector: "main" },
+		// 	{ duration: 8000, easing: "ease", rootSelector: "main" },
 		// ];
 
 		// const hideOthers: CustomKeyframeEffect = [
