@@ -50,13 +50,14 @@ export const setReadouts = (animationState: AnimationState, state: State) => {
 		scheduleCallback(() => {
 			mainElements.forEach((element) => {
 				keyframes.get(element)?.forEach((keyframe) => {
+					//TODO: this can be calculated beforehand to reduce calculation time here
 					applyCSSStyles(element, filterMatchingStyleFromKeyframes(keyframe, timing));
 				});
 			});
 			[...mainElements, ...secondaryElements].forEach((element) => {
 				const calculation = getCalculations(element, timing, changeProperties);
 
-				//TODO: without the filtering it looks perfect, with it is slightly off
+				//TODO: The elements dont need to be treated like this if the image doesnt change in scale (and is just moved around)
 				const currentReadout = element.tagName === "IMG" ? imageReadouts : readouts;
 				const existingCalculations = currentReadout.get(element)?.concat(calculation) ?? [
 					calculation,

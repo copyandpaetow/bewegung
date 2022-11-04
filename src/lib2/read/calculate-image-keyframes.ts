@@ -12,6 +12,7 @@ export const calculateImageKeyframes = (imageState: ImageState, readouts: Elemen
 
 	//TODO: for very tall images (aspectRatio < 1 (current case 0.66)) this is not perfect, the image is smaller than its wrapper box
 	//TODO: of the images goes from big to small, it stays in the middle and doesnt stick to the bottom (how it should be)
+	//? so after the maxHeight has been reached
 
 	readouts.forEach((entry) => {
 		let scaleWidth: number = entry.dimensions.width / maxWidth;

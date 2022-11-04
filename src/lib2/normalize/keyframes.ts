@@ -97,7 +97,6 @@ export const unifyKeyframeStructure = (keyframe: EveryKeyframeSyntax): CustomKey
 export const addIndividualEasing = (animationEntry: AnimationEntry) => {
 	const { easing, composite } = animationEntry.options;
 
-	//TODO: replacing the whole entry here would prevent us from using Object.freeze (like the runtime) / could be less performant in general => maybe replace by index?
 	animationEntry.keyframes = animationEntry.keyframes.map((keyframe) => {
 		const { offset, ...styles } = keyframe;
 
