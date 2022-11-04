@@ -144,11 +144,15 @@ export interface State {
 	rootElement: WeakMap<HTMLElement, HTMLElement>;
 	cssStyleReset: WeakMap<HTMLElement, Map<string, string>>;
 	animations: Map<HTMLElement, Animation>;
-	IO: WeakMap<HTMLElement, IntersectionObserver>;
-	RO: WeakMap<HTMLElement, ResizeObserver>;
-	MO: WeakMap<HTMLElement, MutationObserver>;
+
 	onStart: WeakMap<HTMLElement, VoidFunction[]>;
 	onEnd: WeakMap<HTMLElement, VoidFunction[]>;
+}
+
+export interface WatchState {
+	IO: WeakMap<HTMLElement, IntersectionObserver>;
+	RO: WeakMap<HTMLElement, ResizeObserver>;
+	MO: MutationObserver | undefined;
 }
 
 export interface AnimationState {
@@ -176,6 +180,5 @@ export interface Result {
 	resetStyle: (element: HTMLElement) => void;
 	onStart: (element: HTMLElement) => void;
 	onEnd: (element: HTMLElement) => void;
-	observe: (playState: AnimationPlayState) => void;
-	unobserve: () => void;
+	observe: (playState: AnimationPlayState) => VoidFunction;
 }

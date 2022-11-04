@@ -1,5 +1,6 @@
 import { State } from "../types";
 
+//TODO: implement callbacks
 export const setCallbackAnimations = (state: State) => {
 	const { animations, callbacks, mainElements, totalRuntime } = state;
 

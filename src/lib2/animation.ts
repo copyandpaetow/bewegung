@@ -2,7 +2,7 @@ import { normalizeProps } from "./normalize/structure";
 import { computeSecondaryProperties } from "./prepare/affected-elements";
 import { updateCallbackOffsets, updateKeyframeOffsets } from "./prepare/offsets";
 import { calculateTotalRuntime } from "./prepare/runtime";
-import { initialState, setState } from "./prepare/state";
+import { initialState, setState, initialWatchState } from "./prepare/state";
 import { setCallbackAnimations } from "./read/animation-callbacks";
 import { setDefaultCalculations } from "./read/animation-default";
 import { setImageCalculations } from "./read/animation-image";
@@ -12,7 +12,14 @@ import { addStyleCallback } from "./read/style-callback";
 import { adjustForDisplayNone } from "./read/update-calculations";
 import { scheduleCallback } from "./scheduler";
 import { AnimationEntry, BewegungProps, Result } from "./types";
+import { observerDimensions } from "./watch/dimensions";
 import { observeMutations } from "./watch/mutations";
+import { observeResizes } from "./watch/resizes";
+
+if (typeof window !== "undefined") {
+	// @ts-expect-error polyfill for requestIdleCallback
+	window.requestIdleCallback ||= window.requestAnimationFrame;
+}
 
 export const getAnimations = (...props: BewegungProps) =>
 	new Promise<Result>((resolve, reject) => {
@@ -74,31 +81,50 @@ export const getAnimations = (...props: BewegungProps) =>
 				onEnd: (element: HTMLElement) =>
 					state.onEnd.get(element)?.forEach((callback) => callback()),
 				observe: (playState: AnimationPlayState) => watch(playState),
-				unobserve: () => {
-					const { mainElements, secondaryElements, IO, RO, MO } = state;
-					MO.get(document.body)?.disconnect();
-					mainElements.forEach((element) => {
-						IO.get(element)?.disconnect();
-						RO.get(element)?.disconnect();
-					});
-					secondaryElements.forEach((element) => {
-						IO.get(element)?.disconnect();
-						RO.get(element)?.disconnect();
-					});
-				},
 			});
 		}
 
 		function watch(playState: AnimationPlayState) {
 			//TODO: maybe it would make sense to also prohibit this funtion to be called again while its still working
 			if (playState !== "idle" && playState !== "paused") {
-				return;
+				return () => {};
 			}
+			const watchState = initialWatchState();
 
-			//TODO: add the other observers
-			const tasks = [() => observeMutations(state, { partial: read, full: prepare })];
+			let resizeIdleCallback: NodeJS.Timeout | undefined;
+
+			const throttledCallback = (callback: VoidFunction) => {
+				resizeIdleCallback && clearTimeout(resizeIdleCallback);
+				resizeIdleCallback = setTimeout(() => {
+					callback();
+				}, 100);
+			};
+
+			const tasks = [
+				() =>
+					observeMutations(watchState, state, {
+						partial: () => throttledCallback(read),
+						full: () => throttledCallback(prepare),
+					}),
+				() => observeResizes(watchState, state, () => throttledCallback(read)),
+				() => observerDimensions(watchState, state, () => throttledCallback(read)),
+			];
 
 			tasks.forEach(scheduleCallback);
+
+			return () => {
+				const { MO, RO, IO } = watchState;
+				const { mainElements, secondaryElements } = state;
+				MO?.disconnect();
+				mainElements.forEach((element) => {
+					IO.get(element)?.disconnect();
+					RO.get(element)?.disconnect();
+				});
+				secondaryElements.forEach((element) => {
+					IO.get(element)?.disconnect();
+					RO.get(element)?.disconnect();
+				});
+			};
 		}
 
 		init();

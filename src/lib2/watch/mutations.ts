@@ -1,19 +1,9 @@
-import { State } from "../types";
+import { State, ValueOf, WatchState } from "../types";
 
 /*
 added: main
 get selectors, check if element matches any of those, get their keyframes, options, callbacks, rootElements and add those to the state
 get the reset and update full
-
-added: secondary
-update fully
-
-remove: main
-remove from mainElements, update fully
-
-remove: secondary
-remove from secondaryElements, update partially
-
 
 */
 
@@ -32,36 +22,93 @@ const makeSelectorMap = (
 	return selectorMap;
 };
 
-const areTheseRelated = (a: HTMLElement, b: HTMLElement) => {
+const theseAreRelated = (a: HTMLElement, b: HTMLElement) => {
 	return a.contains(b) || b.contains(a) || (a.parentElement ?? document.body).contains(b);
 };
 
-const handleElementAdditon = (mutations: MutationRecord[], state: State) => {
-	const { mainElements, secondaryElements, selectors } = state;
-	const selectorMap = makeSelectorMap(mainElements, selectors);
+const isElement = (node: Node): boolean => node instanceof HTMLElement;
 
-	mutations
-		.flatMap((mutation) => mutation.addedNodes)
-		.forEach((newElement) => {
-			if (!(newElement instanceof HTMLElement)) {
-				return;
-			}
-			selectorMap.forEach((mainElement, selector) => {
-				if (newElement.matches(selector)) {
-					//new main element
-				}
-			});
-		});
+const copyMainElementProperties = (
+	state: State,
+	newElement: HTMLElement,
+	matchingElements: Set<HTMLElement>
+) => {
+	matchingElements.forEach((mainElement) => {
+		const keyframes = state.keyframes.get(mainElement)!;
+		const options = state.options.get(mainElement)!;
+		const callbacks = state.callbacks.get(mainElement)!;
+		const selectors = state.selectors.get(mainElement)!;
+
+		state.keyframes.set(
+			newElement,
+			state.keyframes.get(newElement)?.concat(keyframes) ?? keyframes
+		);
+		state.options.set(newElement, state.options.get(newElement)?.concat(options) ?? options);
+		state.callbacks.set(
+			newElement,
+			state.callbacks.get(newElement)?.concat(callbacks) ?? callbacks
+		);
+		state.selectors.set(
+			newElement,
+			state.selectors.get(newElement)?.concat(selectors) ?? selectors
+		);
+	});
 };
 
+const handleElementAdditon =
+	(state: State, callbacks: { partial: VoidFunction; full: VoidFunction }) =>
+	(mutations: MutationRecord[]) => {
+		const { mainElements, secondaryElements, selectors } = state;
+		const selectorMap = makeSelectorMap(mainElements, selectors);
+		let update = "nothing";
+
+		//TODO: if this is to hard to calculate, add it in tasks
+		mutations
+			.flatMap((mutation) => Array.from(mutation.addedNodes))
+			.filter(isElement)
+			//@ts-expect-error ts doesnt get the filtering from above
+			.forEach((newElement: HTMLElement) => {
+				selectorMap.forEach((currentMainElements, selector) => {
+					if (!newElement.matches(selector)) {
+						return;
+					}
+					mainElements.add(newElement);
+					copyMainElementProperties(state, newElement, currentMainElements);
+					update = "full";
+				});
+				mainElements.forEach((mainElement) => {
+					if (!theseAreRelated(mainElement, newElement)) {
+						return;
+					}
+					secondaryElements.add(newElement);
+					update = "full";
+				});
+			});
+
+		mutations
+			.flatMap((mutation) => Array.from(mutation.removedNodes))
+			.filter(isElement)
+			//@ts-expect-error ts doesnt get the filtering from above
+			.forEach((newElement: HTMLElement) => {
+				if (mainElements.delete(newElement)) {
+					update = "full";
+					return;
+				}
+				if (secondaryElements.delete(newElement) && update === "nothing") {
+					update = "partial";
+					return;
+				}
+			});
+		callbacks[update]?.();
+	};
+
 export const observeMutations = (
+	watchState: WatchState,
 	state: State,
 	callbacks: { partial: VoidFunction; full: VoidFunction }
 ) => {
-	const { MO } = state;
-	const callback: MutationCallback = (mutations: MutationRecord[]) => {
-		//handleElementAdditon(mutations, state);
-	};
+	const callback: MutationCallback = handleElementAdditon(state, callbacks);
+
 	const options: MutationObserverInit = {
 		childList: true,
 		subtree: true,
@@ -71,5 +118,5 @@ export const observeMutations = (
 	const observer = new MutationObserver(callback);
 	observer.observe(rootElement, options);
 
-	MO.set(rootElement, observer);
+	watchState.MO = observer;
 };

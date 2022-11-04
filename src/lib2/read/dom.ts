@@ -54,6 +54,7 @@ export const setReadouts = (animationState: AnimationState, state: State) => {
 					applyCSSStyles(element, filterMatchingStyleFromKeyframes(keyframe, timing));
 				});
 			});
+			//TODO: This copying doesnt need to happen every round, should be done before
 			[...mainElements, ...secondaryElements].forEach((element) => {
 				const calculation = getCalculations(element, timing, changeProperties);
 
