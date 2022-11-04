@@ -1,12 +1,5 @@
 import { State, ValueOf, WatchState } from "../types";
 
-/*
-added: main
-get selectors, check if element matches any of those, get their keyframes, options, callbacks, rootElements and add those to the state
-get the reset and update full
-
-*/
-
 const makeSelectorMap = (
 	mainElements: Set<HTMLElement>,
 	selectors: WeakMap<HTMLElement, string[]>
@@ -62,7 +55,6 @@ const handleElementAdditon =
 		const selectorMap = makeSelectorMap(mainElements, selectors);
 		let update = "nothing";
 
-		//TODO: if this is to hard to calculate, add it in tasks
 		mutations
 			.flatMap((mutation) => Array.from(mutation.addedNodes))
 			.filter(isElement)

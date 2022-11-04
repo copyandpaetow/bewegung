@@ -182,3 +182,9 @@ export interface Result {
 	onEnd: (element: HTMLElement) => void;
 	observe: (playState: AnimationPlayState) => VoidFunction;
 }
+
+export interface DomState {
+	timings: number[];
+	properties: CssRuleName[];
+	keyframeMap: Map<number, Map<HTMLElement, StyleChangePossibilities>>;
+}

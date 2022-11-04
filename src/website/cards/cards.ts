@@ -19,19 +19,16 @@ const initCards = () => {
 		// 	cards[activeIndex],
 		// 	[
 		// 		{
-		// 			width: "",
 		// 			height: "",
 		// 		},
 		// 		{
-		// 			width: "100%",
 		// 			height: "70vh",
 		// 		},
 		// 		{
-		// 			width: "55%",
-		// 			height: "60vh",
+		// 			height: "30vh",
 		// 		},
 		// 	],
-		// 	{ duration: 2000, easing: "ease" },
+		// 	{ duration: 4000, easing: "ease" },
 		// ];
 
 		const highlightCard: CustomKeyframeEffect = [
@@ -44,17 +41,17 @@ const initCards = () => {
 			{ duration: 4000, easing: "ease", rootSelector: "main" },
 		];
 
-		const hideOthers: CustomKeyframeEffect = [
-			[...cards].filter((_, index) => index !== activeIndex),
-			{
-				width: "",
-				height: "",
-				callback: () => console.log("cb2"),
-			},
-			{ duration: 2000, easing: "ease-in", rootSelector: "main" },
-		];
+		// const hideOthers: CustomKeyframeEffect = [
+		// 	[...cards].filter((_, index) => index !== activeIndex),
+		// 	{
+		// 		width: "",
+		// 		height: "",
+		// 		callback: () => console.log("cb2"),
+		// 	},
+		// 	{ duration: 2000, easing: "ease-in", rootSelector: "main" },
+		// ];
 
-		return new bewegung(highlightCard, hideOthers);
+		return new bewegung(highlightCard);
 		//return new Bewegung(highlightCard);
 	};
 

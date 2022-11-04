@@ -30,17 +30,16 @@ export const calculateBorderRadius = (
 	externalHeight?: number
 ): string => {
 	const radius = styleEntry.computedStyle.borderRadius!;
-	const normalized = normalizeBorderRadius(radius, {
-		width: externalWidth ?? styleEntry.dimensions.width,
-		height: externalHeight ?? styleEntry.dimensions.height,
-	});
 
 	if (radius.includes("/")) {
 		//TODO: handle more complex border radius
 		return "0px";
 	}
 
-	return normalized;
+	return normalizeBorderRadius(radius, {
+		width: externalWidth ?? styleEntry.dimensions.width,
+		height: externalHeight ?? styleEntry.dimensions.height,
+	});
 };
 
 export const getBorderRadius = (

@@ -23,6 +23,7 @@ export const findAffectedDOMElements = (
 	rootElement: HTMLElement
 ): HTMLElement[] => {
 	//? maybe this could be done with ":has() as well if support gets better"
+	//? should all decendants for all elements be really included? This has huge performance implications
 	const relatives = new Set(
 		DOM.ancestors(element, rootElement).flatMap(DOM.siblings).flatMap(DOM.decendants)
 	);

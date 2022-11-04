@@ -10,28 +10,6 @@ import {
 	WatchState,
 } from "../types";
 
-export const initialState = (): State => ({
-	mainElements: new Set<HTMLElement>(),
-	secondaryElements: new Set<HTMLElement>(),
-	keyframes: new WeakMap<HTMLElement, CustomKeyframe[][]>(),
-	callbacks: new WeakMap<HTMLElement, Callbacks[][]>(),
-	options: new WeakMap<HTMLElement, BewegungsOptions[]>(),
-	selectors: new WeakMap<HTMLElement, string[]>(),
-	totalRuntime: defaultOptions.duration as number,
-	rootElement: new WeakMap<HTMLElement, HTMLElement>(),
-	cssStyleReset: new WeakMap<HTMLElement, Map<string, string>>(),
-	animations: new Map<HTMLElement, Animation>(),
-
-	onStart: new WeakMap<HTMLElement, VoidFunction[]>(),
-	onEnd: new WeakMap<HTMLElement, VoidFunction[]>(),
-});
-
-export const initialWatchState = (): WatchState => ({
-	IO: new WeakMap<HTMLElement, IntersectionObserver>(),
-	RO: new WeakMap<HTMLElement, ResizeObserver>(),
-	MO: undefined,
-});
-
 const saveOriginalStyle = (element: HTMLElement) => {
 	const allAttributes = new Map<string, string>([["style", ""]]);
 	element.getAttributeNames().forEach((attribute) => {

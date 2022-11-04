@@ -1,13 +1,14 @@
+import { initialState, initialAnimationState, initialWatchState } from "./initial-states";
 import { normalizeProps } from "./normalize/structure";
 import { computeSecondaryProperties } from "./prepare/affected-elements";
 import { updateCallbackOffsets, updateKeyframeOffsets } from "./prepare/offsets";
 import { calculateTotalRuntime } from "./prepare/runtime";
-import { initialState, setState, initialWatchState } from "./prepare/state";
+import { setState } from "./prepare/state";
 import { setCallbackAnimations } from "./read/animation-callbacks";
 import { setDefaultCalculations } from "./read/animation-default";
 import { setImageCalculations } from "./read/animation-image";
 import { restoreOriginalStyle } from "./read/apply-styles";
-import { initialAnimationState, setReadouts } from "./read/dom";
+import { setReadouts } from "./read/dom";
 import { addStyleCallback } from "./read/style-callback";
 import { adjustForDisplayNone } from "./read/update-calculations";
 import { scheduleCallback } from "./scheduler";
@@ -24,6 +25,8 @@ if (typeof window !== "undefined") {
 export const getAnimations = (...props: BewegungProps) =>
 	new Promise<Result>((resolve, reject) => {
 		const state = initialState();
+
+		init();
 
 		function init() {
 			const animtionEntries: AnimationEntry[] = [];
@@ -74,13 +77,10 @@ export const getAnimations = (...props: BewegungProps) =>
 			resolve({
 				animations: state.animations,
 				callbackAnimations: state.animations,
-				resetStyle: (element: HTMLElement) =>
-					restoreOriginalStyle(element, state.cssStyleReset.get(element)!),
-				onStart: (element: HTMLElement) =>
-					state.onStart.get(element)?.forEach((callback) => callback()),
-				onEnd: (element: HTMLElement) =>
-					state.onEnd.get(element)?.forEach((callback) => callback()),
-				observe: (playState: AnimationPlayState) => watch(playState),
+				resetStyle: (element) => restoreOriginalStyle(element, state.cssStyleReset.get(element)!),
+				onStart: (element) => state.onStart.get(element)?.forEach((callback) => callback()),
+				onEnd: (element) => state.onEnd.get(element)?.forEach((callback) => callback()),
+				observe: (playState) => watch(playState),
 			});
 		}
 
@@ -125,6 +125,4 @@ export const getAnimations = (...props: BewegungProps) =>
 				});
 			};
 		}
-
-		init();
 	});

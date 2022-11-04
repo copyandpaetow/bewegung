@@ -111,7 +111,6 @@ const createImageAnimations = (
 	);
 };
 
-//TODO: the root element needs to be position relative (if it is static)
 export const setImageCalculations = (animationState: AnimationState, state: State) => {
 	const { animations, totalRuntime, rootElement, options, onEnd, onStart } = state;
 	const { imageReadouts, readouts } = animationState;

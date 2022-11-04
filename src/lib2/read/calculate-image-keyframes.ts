@@ -2,18 +2,10 @@ import { highestNumber } from "../prepare/runtime";
 import { DifferenceArray, ElementReadouts } from "../types";
 import { calculateBorderRadius } from "./additional-tables";
 import { ImageState } from "./animation-image";
-import {
-	calculateDimensionDifferences,
-	getTranslates,
-	save,
-} from "./calculate-dimension-differences";
+import { getTranslates, save } from "./calculate-dimension-differences";
 
 export const calculateImageKeyframes = (imageState: ImageState, readouts: ElementReadouts[]) => {
 	const { maxWidth, maxHeight, ratio, easingTable, keyframes } = imageState;
-
-	//TODO: for very tall images (aspectRatio < 1 (current case 0.66)) this is not perfect, the image is smaller than its wrapper box
-	//TODO: of the images goes from big to small, it stays in the middle and doesnt stick to the bottom (how it should be)
-	//? so after the maxHeight has been reached
 
 	readouts.forEach((entry) => {
 		let scaleWidth: number = entry.dimensions.width / maxWidth;
@@ -27,7 +19,7 @@ export const calculateImageKeyframes = (imageState: ImageState, readouts: Elemen
 			const alternateScaleHeight = maxWidth / ratio / maxHeight;
 			const currentRatio = entry.dimensions.width / entry.dimensions.height;
 
-			if (currentRatio <= 1) {
+			if (currentRatio < ratio) {
 				scaleWidth = alternateScaleWidth * scaleHeight;
 			} else {
 				scaleHeight = alternateScaleHeight * scaleWidth;
@@ -114,8 +106,8 @@ export const getWrapperKeyframes = (
 			offset: readout.offset,
 			clipPath: `inset(${verticalInset}px ${horizontalInset}px round ${calculateBorderRadius(
 				readout,
-				maxHeight,
-				maxWidth
+				maxWidth,
+				maxHeight
 			)})`,
 			transform: `translate(${translateX}px, ${translateY}px) scale(${1 / parentScaleX}, ${
 				1 / parentScaleY

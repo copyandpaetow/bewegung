@@ -1,12 +1,13 @@
 import { defaultChangeProperties } from "../constants";
+import { initialDomState } from "../initial-states";
 import { scheduleCallback } from "../scheduler";
 import {
 	AnimationState,
 	CssRuleName,
 	CustomKeyframe,
-	ElementReadouts,
-	Overrides,
+	DomState,
 	State,
+	StyleChangePossibilities,
 } from "../types";
 import {
 	applyCSSStyles,
@@ -15,7 +16,7 @@ import {
 } from "./apply-styles";
 import { getCalculations } from "./calculate-dom-properties";
 
-const calculateChangeTimings = (allKeyframes: CustomKeyframe[][]) => {
+const calculateChangeTimings = (domState: DomState, allKeyframes: CustomKeyframe[][]) => {
 	const newTimings = new Set([0, 1]);
 
 	allKeyframes.forEach((keyframes) => {
@@ -24,10 +25,10 @@ const calculateChangeTimings = (allKeyframes: CustomKeyframe[][]) => {
 		});
 	});
 
-	return Array.from(newTimings).sort((a, b) => a - b);
+	domState.timings = Array.from(newTimings).sort((a, b) => a - b);
 };
 
-const calculateChangeProperties = (allKeyframes: CustomKeyframe[][]) => {
+const calculateChangeProperties = (domState: DomState, allKeyframes: CustomKeyframe[][]) => {
 	const changeProperties = new Set(defaultChangeProperties);
 
 	allKeyframes.forEach((keyframes) => {
@@ -35,43 +36,62 @@ const calculateChangeProperties = (allKeyframes: CustomKeyframe[][]) => {
 			Object.keys(stylings).forEach((style) => changeProperties.add(style as CssRuleName));
 		});
 	});
-	return Array.from(changeProperties);
+	domState.properties = Array.from(changeProperties);
 };
 
-export const setReadouts = (animationState: AnimationState, state: State) => {
-	const { readouts, imageReadouts } = animationState;
-	const { mainElements, secondaryElements, keyframes, cssStyleReset } = state;
+const calculateAppliableKeyframes = (domState: DomState, state: State) => {
+	const { mainElements, keyframes } = state;
+	const { timings, keyframeMap } = domState;
 
-	const allKeyframes = Array.from(mainElements).flatMap((element) => keyframes.get(element)!);
-	const changeTimings = calculateChangeTimings(allKeyframes);
-	const changeProperties = calculateChangeProperties(allKeyframes);
-	const allElements = [...mainElements, ...secondaryElements];
-
-	changeTimings.forEach((timing) => {
-		scheduleCallback(() => {
-			mainElements.forEach((element) => {
-				keyframes.get(element)?.forEach((keyframe) => {
-					//TODO: this can be calculated beforehand to reduce calculation time here
-					applyCSSStyles(element, filterMatchingStyleFromKeyframes(keyframe, timing));
-				});
-			});
-			allElements.forEach((element) => {
-				const calculation = getCalculations(element, timing, changeProperties);
-
-				//TODO: The elements dont need to be treated like this if the image doesnt change in scale (and is just moved around)
-				const currentReadout = element.tagName === "IMG" ? imageReadouts : readouts;
-				const existingCalculations = currentReadout.get(element)?.concat(calculation) ?? [
-					calculation,
-				];
-				currentReadout.set(element as HTMLImageElement, existingCalculations);
-			});
-
-			mainElements.forEach((element) => restoreOriginalStyle(element, cssStyleReset.get(element)!));
+	timings.forEach((timing) => {
+		const resultingStyle = new Map<HTMLElement, StyleChangePossibilities>();
+		mainElements.forEach((mainElement) => {
+			resultingStyle.set(
+				mainElement,
+				filterMatchingStyleFromKeyframes(keyframes.get(mainElement)!.flat(), timing)
+			);
 		});
+		keyframeMap.set(timing, resultingStyle);
 	});
 };
 
-export const initialAnimationState = (): AnimationState => ({
-	readouts: new Map<HTMLElement, ElementReadouts[]>(),
-	imageReadouts: new Map<HTMLImageElement, ElementReadouts[]>(),
-});
+const readDom = (animationState: AnimationState, state: State, domState: DomState) => {
+	const { mainElements, secondaryElements, cssStyleReset } = state;
+	const { properties, keyframeMap } = domState;
+	const { readouts, imageReadouts } = animationState;
+
+	const allElements = [...mainElements, ...secondaryElements];
+
+	keyframeMap.forEach((keyframes, timing) => {
+		keyframes.forEach((stylePossibility, mainElement) => {
+			applyCSSStyles(mainElement, stylePossibility);
+		});
+
+		allElements.forEach((element) => {
+			const calculation = getCalculations(element, timing, properties);
+			const currentReadout = element.tagName === "IMG" ? imageReadouts : readouts;
+			const existingCalculations = currentReadout.get(element)?.concat(calculation) ?? [
+				calculation,
+			];
+			currentReadout.set(element as HTMLImageElement, existingCalculations);
+		});
+
+		mainElements.forEach((element) => restoreOriginalStyle(element, cssStyleReset.get(element)!));
+	});
+};
+
+export const setReadouts = (animationState: AnimationState, state: State) => {
+	const { mainElements, keyframes } = state;
+	const domState = initialDomState();
+
+	const allKeyframes = Array.from(mainElements).flatMap((element) => keyframes.get(element)!);
+
+	const tasks = [
+		() => calculateChangeTimings(domState, allKeyframes),
+		() => calculateChangeProperties(domState, allKeyframes),
+		() => calculateAppliableKeyframes(domState, state),
+		() => readDom(animationState, state, domState),
+	];
+
+	tasks.forEach(scheduleCallback);
+};
