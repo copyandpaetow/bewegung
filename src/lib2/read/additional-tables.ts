@@ -24,11 +24,15 @@ const normalizeBorderRadius = (radii: string, dimensions: { height: number; widt
 	return `${widthEntries.join(" ")} / ${heightEntries.join(" ")}`;
 };
 
-export const calculateBorderRadius = (styleEntry: ElementReadouts): string => {
+export const calculateBorderRadius = (
+	styleEntry: ElementReadouts,
+	externalWidth?: number,
+	externalHeight?: number
+): string => {
 	const radius = styleEntry.computedStyle.borderRadius!;
 	const normalized = normalizeBorderRadius(radius, {
-		width: styleEntry.dimensions.width,
-		height: styleEntry.dimensions.height,
+		width: externalWidth ?? styleEntry.dimensions.width,
+		height: externalHeight ?? styleEntry.dimensions.height,
 	});
 
 	if (radius.includes("/")) {

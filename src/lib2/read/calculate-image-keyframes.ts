@@ -1,5 +1,6 @@
 import { highestNumber } from "../prepare/runtime";
 import { DifferenceArray, ElementReadouts } from "../types";
+import { calculateBorderRadius } from "./additional-tables";
 import { ImageState } from "./animation-image";
 import {
 	calculateDimensionDifferences,
@@ -60,18 +61,6 @@ export const calculateImageKeyframes = (imageState: ImageState, readouts: Elemen
 	});
 };
 
-//TODO: this is still needed because the more sophisticated function returns a different result
-const calculateBorderRadius = (borderRadius: string, height: number, width: number): string => {
-	const parsedRadius = parseFloat(borderRadius);
-
-	if (isNaN(parsedRadius)) {
-		//TODO: handle more complex border radius
-		return "0px";
-	}
-
-	return `${(100 * parsedRadius) / width}% / ${(100 * parsedRadius) / height}%`;
-};
-
 export const getWrapperKeyframes = (
 	imageState: ImageState,
 	readouts: ElementReadouts[],
@@ -124,7 +113,7 @@ export const getWrapperKeyframes = (
 		wrapperKeyframes.push({
 			offset: readout.offset,
 			clipPath: `inset(${verticalInset}px ${horizontalInset}px round ${calculateBorderRadius(
-				readout.computedStyle.borderRadius!,
+				readout,
 				maxHeight,
 				maxWidth
 			)})`,

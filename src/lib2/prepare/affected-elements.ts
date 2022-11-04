@@ -22,7 +22,7 @@ export const findAffectedDOMElements = (
 	element: HTMLElement,
 	rootElement: HTMLElement
 ): HTMLElement[] => {
-	//TODO this could be done with ":has() as well if support gets better"
+	//? maybe this could be done with ":has() as well if support gets better"
 	const relatives = new Set(
 		DOM.ancestors(element, rootElement).flatMap(DOM.siblings).flatMap(DOM.decendants)
 	);
@@ -75,11 +75,11 @@ export const computeSecondaryProperties = (state: State) => {
 				compareRootElements(root, rootElement.get(secondaryElement))
 			);
 
-			//TODO this currently causes the secondary elements to have a lot of duplicates, so it could be a set
-			options.set(
-				secondaryElement,
-				(options.get(secondaryElement) ?? []).concat(options.get(mainElement)!)
-			);
+			const allOptions = new Set([
+				...(options.get(secondaryElement) ?? []),
+				...options.get(mainElement)!,
+			]);
+			options.set(secondaryElement, Array.from(allOptions));
 		});
 	});
 };

@@ -56,17 +56,11 @@ export const filterMatchingStyleFromKeyframes = (
 			return;
 		}
 
-		const { offset, transform, class: cssClass, attribute, ...styles } = keyframe;
+		const { offset, class: cssClass, attribute, ...styles } = keyframe;
 
-		//TODO: this will override what was before, if composite is something other than "replace" it needs to be done here
-		//@ts-expect-error ts weirdness
-		updates.style = {
-			...updates.style,
-			...(transform && {
-				transform: transform as string,
-			}),
-			...styles,
-		};
+		Object.entries(styles).forEach(([key, value]) => {
+			updates.style[key] = value;
+		});
 
 		if (Boolean(cssClass)) {
 			updates.classes.push(...(cssClass as string).split(" "));

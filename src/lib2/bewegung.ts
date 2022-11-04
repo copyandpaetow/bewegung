@@ -12,7 +12,7 @@ export class bewegung implements BewegungAPI {
 	#stateMachine: StateMachine;
 
 	constructor(...bewegungProps: BewegungProps) {
-		this.#now = performance.now();
+		this.#now = Date.now();
 		this.#state = getAnimations(...bewegungProps);
 		this.#setStateMachine();
 		this.finished.then(() => this.#updatePlayState("finished"));
@@ -20,6 +20,7 @@ export class bewegung implements BewegungAPI {
 
 	async #setStateMachine() {
 		const { animations, onStart, onEnd } = await this.#state;
+		console.log(`calculation took ${Date.now() - this.#now}ms`);
 		this.#stateMachine = {
 			idle: {
 				running() {
@@ -65,7 +66,6 @@ export class bewegung implements BewegungAPI {
 	}
 
 	async #updatePlayState(newState: AllPlayStates) {
-		//TODO: maybe there is a better way to await the readyness of the library
 		await this.#state;
 
 		const nextState: VoidFunction | undefined = this.#stateMachine[this.#playState]?.[newState];

@@ -85,7 +85,6 @@ export const getAnimations = (...props: BewegungProps) =>
 		}
 
 		function watch(playState: AnimationPlayState) {
-			//TODO: maybe it would make sense to also prohibit this funtion to be called again while its still working
 			if (playState !== "idle" && playState !== "paused") {
 				return () => {};
 			}

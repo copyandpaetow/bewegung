@@ -45,6 +45,7 @@ export const setReadouts = (animationState: AnimationState, state: State) => {
 	const allKeyframes = Array.from(mainElements).flatMap((element) => keyframes.get(element)!);
 	const changeTimings = calculateChangeTimings(allKeyframes);
 	const changeProperties = calculateChangeProperties(allKeyframes);
+	const allElements = [...mainElements, ...secondaryElements];
 
 	changeTimings.forEach((timing) => {
 		scheduleCallback(() => {
@@ -54,8 +55,7 @@ export const setReadouts = (animationState: AnimationState, state: State) => {
 					applyCSSStyles(element, filterMatchingStyleFromKeyframes(keyframe, timing));
 				});
 			});
-			//TODO: This copying doesnt need to happen every round, should be done before
-			[...mainElements, ...secondaryElements].forEach((element) => {
+			allElements.forEach((element) => {
 				const calculation = getCalculations(element, timing, changeProperties);
 
 				//TODO: The elements dont need to be treated like this if the image doesnt change in scale (and is just moved around)
