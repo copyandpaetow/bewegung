@@ -33,6 +33,7 @@ export const getTranslates = (
 	const current = currentEntry.dimensions;
 	const reference = referenceEntry.dimensions;
 
+	//TODO: If the root is scrolled down, maybe these need to be corrected by the scroll position
 	const parentCurrentLeft = parentCurrentEntry?.dimensions.left ?? 0;
 	const parentCurrentTop = parentCurrentEntry?.dimensions.top ?? 0;
 	const parentReferenceLeft = parentReferenceEntry?.dimensions.left ?? 0;

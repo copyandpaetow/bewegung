@@ -38,7 +38,7 @@ const initCards = () => {
 				height: ["50vh", "25vh", "70vh", "60vh"],
 				callback: [() => console.log("cb1")],
 			},
-			{ duration: 4000, easing: "ease", rootSelector: "main" },
+			{ duration: 4000, easing: "ease", rootSelector: "main", iterations: 2 },
 		];
 
 		// const hideOthers: CustomKeyframeEffect = [

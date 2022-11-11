@@ -63,20 +63,22 @@ const readDom = (animationState: AnimationState, state: State, domState: DomStat
 	const allElements = [...mainElements, ...secondaryElements];
 
 	keyframeMap.forEach((keyframes, timing) => {
-		keyframes.forEach((stylePossibility, mainElement) => {
-			applyCSSStyles(mainElement, stylePossibility);
-		});
+		scheduleCallback(() => {
+			keyframes.forEach((stylePossibility, mainElement) => {
+				applyCSSStyles(mainElement, stylePossibility);
+			});
 
-		allElements.forEach((element) => {
-			const calculation = getCalculations(element, timing, properties);
-			const currentReadout = element.tagName === "IMG" ? imageReadouts : readouts;
-			const existingCalculations = currentReadout.get(element)?.concat(calculation) ?? [
-				calculation,
-			];
-			currentReadout.set(element as HTMLImageElement, existingCalculations);
-		});
+			allElements.forEach((element) => {
+				const calculation = getCalculations(element, timing, properties);
+				const currentReadout = element.tagName === "IMG" ? imageReadouts : readouts;
+				const existingCalculations = currentReadout.get(element)?.concat(calculation) ?? [
+					calculation,
+				];
+				currentReadout.set(element as HTMLImageElement, existingCalculations);
+			});
 
-		mainElements.forEach((element) => restoreOriginalStyle(element, cssStyleReset.get(element)!));
+			mainElements.forEach((element) => restoreOriginalStyle(element, cssStyleReset.get(element)!));
+		});
 	});
 };
 

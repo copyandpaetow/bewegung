@@ -1,21 +1,43 @@
 import { BewegungsOptions, Callbacks, CustomKeyframe, State } from "../types";
 
+//?: if the lastOffset is equal to the newOffset, their keyframes will get mashed together eventually
+// with newOffset === lastOffset ? newOffset + 0.0001 : newOffset, this could be avoided but it creates a flicker and doesnt look that great
 const updateOffsets = (
 	entry: CustomKeyframe[] | Callbacks[],
 	options: BewegungsOptions,
 	totalRuntime: number
-) => {
-	const { duration, delay: start, endDelay } = options;
+): CustomKeyframe[] | Callbacks[] => {
+	const { duration: untypedDuration, delay: start, endDelay, iterations, direction } = options;
+	const duration = untypedDuration as number;
+	if (iterations === Infinity) {
+		throw new Error("cant calculate with Infinity");
+	}
 
-	return entry.map((frame) => {
-		const absoluteTiming =
-			(start! + (duration as number) * frame.offset! + endDelay!) / totalRuntime;
+	const updatedFrames: CustomKeyframe[] | Callbacks[] = [];
+	const reversedEntry: CustomKeyframe[] | Callbacks[] = [...entry].reverse();
 
-		return {
-			...frame,
-			offset: absoluteTiming,
-		};
+	Array.from(Array(iterations), () => {
+		const lastOffset = updatedFrames.at(-1)?.offset ?? 0;
+
+		entry.forEach((frame, index) => {
+			const isForward =
+				direction === "normal" ||
+				(direction === "alternate" && index % 2 === 0) ||
+				(direction === "alternate-reverse" && index % 2 !== 0);
+
+			const offsetWithDirection = (isForward ? frame : reversedEntry[index]).offset as number;
+			const newOffset =
+				(start! + ((duration as number) * offsetWithDirection)! - endDelay!) / totalRuntime +
+				lastOffset;
+
+			updatedFrames.push({
+				...frame,
+				offset: newOffset,
+			});
+		});
 	});
+
+	return updatedFrames;
 };
 
 export const updateKeyframeOffsets = (state: State, previousRuntime: number) => {
@@ -46,6 +68,6 @@ export const updateCallbackOffsets = (state: State, previousRuntime: number) => 
 		const currentValue = callbacks
 			.get(element)!
 			.map((callback, index) => updateOffsets(callback, option[index], totalRuntime));
-		callbacks.set(element, currentValue);
+		callbacks.set(element, currentValue as Callbacks[][]);
 	});
 };

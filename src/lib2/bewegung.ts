@@ -1,9 +1,5 @@
 import { getAnimations } from "./animation";
-import { BewegungAPI, BewegungProps, Result } from "./types";
-
-type ExtendedPlayStates = "scrolling" | "reversing";
-type AllPlayStates = AnimationPlayState | ExtendedPlayStates;
-type StateMachine = Record<AllPlayStates, Partial<Record<AllPlayStates, VoidFunction>>>;
+import { AllPlayStates, BewegungAPI, BewegungProps, Result, StateMachine } from "./types";
 
 export class bewegung implements BewegungAPI {
 	#now: number;

@@ -19,7 +19,7 @@ import { observeResizes } from "./watch/resizes";
 
 if (typeof window !== "undefined") {
 	// @ts-expect-error polyfill for requestIdleCallback
-	window.requestIdleCallback ||= window.requestAnimationFrame;
+	window.requestIdleCallback ??= window.requestAnimationFrame;
 }
 
 export const getAnimations = (...props: BewegungProps) =>

@@ -188,3 +188,7 @@ export interface DomState {
 	properties: CssRuleName[];
 	keyframeMap: Map<number, Map<HTMLElement, StyleChangePossibilities>>;
 }
+
+type ExtendedPlayStates = "scrolling" | "reversing";
+export type AllPlayStates = AnimationPlayState | ExtendedPlayStates;
+export type StateMachine = Record<AllPlayStates, Partial<Record<AllPlayStates, VoidFunction>>>;
