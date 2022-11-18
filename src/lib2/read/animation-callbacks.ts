@@ -1,19 +1,41 @@
 import { State } from "../types";
 
-//TODO: implement callbacks
 export const setCallbackAnimations = (state: State) => {
-	const { animations, callbacks, mainElements, totalRuntime } = state;
-
-	//! a callback from an AnimationEntry is now on every of its targets, e.g. 3 elements with the callback that should only be called once would be called 3 times
-	//* add it to a set or a weakset could work for now
-	//? but how do we reset these on every iteration
-	const calledCallbacks = new Set<VoidFunction>();
+	const { animations, callbacks, mainElements, totalRuntime, onStart } = state;
+	const allCallbacks = new Map<number, Set<VoidFunction>>();
 
 	mainElements.forEach((element) => {
-		const callback = callbacks.get(element);
+		const elementCallbacks = callbacks.get(element);
+
+		elementCallbacks?.flat().forEach((currentCallback) => {
+			const { offset, callback } = currentCallback;
+
+			const previous = (allCallbacks.get(offset) ?? new Set<VoidFunction>()).add(callback);
+			allCallbacks.set(offset, previous);
+		});
 	});
 
-	// const animation = new Animation(new KeyframeEffect(element, [], offset * totalRuntime));
-	// animation.onfinish = callback;
-	// return animation;
+	const fakeCallbackElement = document.createElement("div");
+	const callbackAnimation = new Animation(
+		new KeyframeEffect(fakeCallbackElement, null, totalRuntime)
+	);
+	const sortedCallbackMap = new Map([...allCallbacks].sort((a, b) => a[0] - b[0]));
+
+	function checkTime(animation: Animation, callbackMap: Map<number, Set<VoidFunction>>) {
+		const progress = (animation.currentTime ?? 0) / totalRuntime;
+		const [offset, callbacks] = callbackMap.entries().next().value as [number, Set<VoidFunction>];
+
+		if (offset <= progress) {
+			callbacks.forEach((callback) => callback());
+			callbackMap.delete(offset);
+		}
+
+		if (animation.playState === "finished") {
+			return;
+		}
+
+		requestAnimationFrame(() => checkTime(animation, callbackMap));
+	}
+	onStart.set(fakeCallbackElement, [() => checkTime(callbackAnimation, sortedCallbackMap)]);
+	animations.set(fakeCallbackElement, callbackAnimation);
 };

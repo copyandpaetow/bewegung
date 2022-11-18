@@ -16,8 +16,8 @@ const updateOffsets = (
 	const updatedFrames: CustomKeyframe[] | Callbacks[] = [];
 	const reversedEntry: CustomKeyframe[] | Callbacks[] = [...entry].reverse();
 
-	Array.from(Array(iterations), () => {
-		const lastOffset = updatedFrames.at(-1)?.offset ?? 0;
+	Array.from(Array(iterations), (_, iteration) => {
+		const lastIterationOffset = (start! + duration * iteration - endDelay!) / totalRuntime ?? 0;
 
 		entry.forEach((frame, index) => {
 			const isForward =
@@ -27,8 +27,8 @@ const updateOffsets = (
 
 			const offsetWithDirection = (isForward ? frame : reversedEntry[index]).offset as number;
 			const newOffset =
-				(start! + ((duration as number) * offsetWithDirection)! - endDelay!) / totalRuntime +
-				lastOffset;
+				(start! + (duration * offsetWithDirection)! - endDelay!) / totalRuntime +
+				lastIterationOffset;
 
 			updatedFrames.push({
 				...frame,
