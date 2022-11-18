@@ -66,36 +66,58 @@ export const getAnimations = (...props: BewegungProps) =>
 				() => setDefaultCalculations(animationState, state),
 				() => setImageCalculations(animationState, state),
 				() => setCallbackAnimations(state),
-				() => console.log({ animationState, state }),
 				complete,
 			];
 
 			tasks.forEach(scheduleCallback);
 		}
 
+		function scroll(progress: number, done?: boolean) {
+			return (
+				-1 *
+				Math.min(Math.max(progress, 0.001), done === undefined ? 1 : 0.999) *
+				state.totalRuntime
+			);
+		}
+
 		function complete() {
 			resolve({
 				animations: state.animations,
-				callbackAnimations: state.animations,
-				resetStyle: (element) => restoreOriginalStyle(element, state.cssStyleReset.get(element)!),
+				timekeeper: state.timeKeeper,
+				resetStyle: (element) => restoreOriginalStyle(element, state.cssStyleReset.get(element)),
 				onStart: (element) => state.onStart.get(element)?.forEach((callback) => callback()),
 				onEnd: (element) => state.onEnd.get(element)?.forEach((callback) => callback()),
-				observe: (playState) => watch(playState),
+				observe: (before, after) => watch(before, after),
+				scroll,
 			});
 		}
 
-		function watch(playState: AnimationPlayState) {
-			if (playState !== "idle" && playState !== "paused") {
-				return () => {};
-			}
+		function watch(before: VoidFunction, after: VoidFunction) {
 			const watchState = initialWatchState();
 
 			let resizeIdleCallback: NodeJS.Timeout | undefined;
 
+			const disconnect: VoidFunction = () => {
+				const { MO, RO, IO } = watchState;
+				const { mainElements, secondaryElements } = state;
+				MO?.disconnect();
+				mainElements.forEach((element) => {
+					IO.get(element)?.disconnect();
+					RO.get(element)?.disconnect();
+				});
+				secondaryElements.forEach((element) => {
+					IO.get(element)?.disconnect();
+					RO.get(element)?.disconnect();
+				});
+			};
+
 			const throttledCallback = (callback: VoidFunction) => {
 				resizeIdleCallback && clearTimeout(resizeIdleCallback);
 				resizeIdleCallback = setTimeout(() => {
+					disconnect();
+					before();
 					callback();
+					after();
 				}, 100);
 			};
 
@@ -111,18 +133,6 @@ export const getAnimations = (...props: BewegungProps) =>
 
 			tasks.forEach(scheduleCallback);
 
-			return () => {
-				const { MO, RO, IO } = watchState;
-				const { mainElements, secondaryElements } = state;
-				MO?.disconnect();
-				mainElements.forEach((element) => {
-					IO.get(element)?.disconnect();
-					RO.get(element)?.disconnect();
-				});
-				secondaryElements.forEach((element) => {
-					IO.get(element)?.disconnect();
-					RO.get(element)?.disconnect();
-				});
-			};
+			return disconnect;
 		}
 	});

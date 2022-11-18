@@ -144,7 +144,7 @@ export interface State {
 	rootElement: WeakMap<HTMLElement, HTMLElement>;
 	cssStyleReset: WeakMap<HTMLElement, Map<string, string>>;
 	animations: Map<HTMLElement, Animation>;
-
+	timeKeeper: Animation;
 	onStart: WeakMap<HTMLElement, VoidFunction[]>;
 	onEnd: WeakMap<HTMLElement, VoidFunction[]>;
 }
@@ -176,11 +176,12 @@ export interface MaximumDimensions {
 
 export interface Result {
 	animations: Map<HTMLElement, Animation>;
-	callbackAnimations: Map<HTMLElement, Animation>;
+	timekeeper: Animation;
 	resetStyle: (element: HTMLElement) => void;
 	onStart: (element: HTMLElement) => void;
 	onEnd: (element: HTMLElement) => void;
-	observe: (playState: AnimationPlayState) => VoidFunction;
+	observe: (before: VoidFunction, after: VoidFunction) => VoidFunction;
+	scroll: (progress: number, done?: boolean) => number;
 }
 
 export interface DomState {

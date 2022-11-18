@@ -1,4 +1,4 @@
-import { Bewegung } from "../../lib/bewegung";
+import { Bewegung } from "../../lib2/bewegung";
 
 const toggleAccordions = () => {
 	const accordionHeaders = [
@@ -10,8 +10,7 @@ const toggleAccordions = () => {
 		let [target] = accordionHeader.ariaControlsElements;
 
 		accordionHeader.addEventListener("click", () => {
-			let expanded =
-				accordionHeader.getAttribute("aria-expanded") === "true" || false;
+			let expanded = accordionHeader.getAttribute("aria-expanded") === "true" || false;
 
 			const animation = new Bewegung(
 				[accordionHeader, { attribute: `aria-expanded=${!expanded}` }, 500],

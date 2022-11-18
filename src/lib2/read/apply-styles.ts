@@ -75,8 +75,11 @@ export const filterMatchingStyleFromKeyframes = (
 
 export const restoreOriginalStyle = (
 	element: HTMLElement,
-	savedAttributes: Map<string, string>
+	savedAttributes: Map<string, string> | undefined
 ) => {
+	if (!savedAttributes) {
+		return;
+	}
 	const currentAttributes = new Set(element.getAttributeNames());
 
 	savedAttributes.forEach((value, key) => {

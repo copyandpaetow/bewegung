@@ -1,5 +1,4 @@
-import { Bewegung } from "../../lib/bewegung";
-import { bewegung } from "../../lib2/bewegung";
+import { Bewegung } from "../../lib2/bewegung";
 import { CustomKeyframeEffect } from "../../lib2/types";
 
 const initCards = () => {
@@ -51,11 +50,10 @@ const initCards = () => {
 			{ duration: 2000, easing: "ease-in", rootSelector: "main" },
 		];
 
-		return new bewegung(highlightCard, hideOthers);
-		//return new Bewegung(highlightCard);
+		return new Bewegung(highlightCard, hideOthers);
 	};
 
-	let animation: bewegung | undefined;
+	let animation: Bewegung | undefined;
 	let paused = false;
 
 	cardsPlayButton?.addEventListener("click", () => {
@@ -102,7 +100,6 @@ const initAdditionalImages = () => {
 					[image, { width: "20vh" }, { duration: 4000, easing: "ease-in" }]
 				);
 				animation.play();
-				animation.pause();
 				imageExpandedState[index] = true;
 			}
 		});

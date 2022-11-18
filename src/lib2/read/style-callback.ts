@@ -6,6 +6,8 @@ const checkForBorderRadius = (entry: ElementReadouts) => entry.computedStyle.bor
 
 const checkForDisplayInline = (entry: ElementReadouts) => entry.computedStyle.display === "inline";
 
+const checkForDisplayNone = (entry: ElementReadouts) => entry.computedStyle.display === "inline";
+
 const checkForPositionStatic = (entry: ElementReadouts) =>
 	entry.computedStyle.position === "static";
 
@@ -43,6 +45,11 @@ const checkDefaultReadouts = (
 			styles.after.display = element.style.display;
 		}
 
+		if (readout.some(checkForDisplayNone)) {
+			styles.before.display = "absolute";
+			styles.after.display = element.style.display;
+		}
+
 		styleMap.set(element, styles);
 	});
 };
@@ -66,6 +73,11 @@ const checkImageReadouts = (
 		if (readout.some(checkForBorderRadius)) {
 			styles.before.borderRadius = "0px";
 			styles.after.borderRadius = element.style.borderRadius;
+		}
+
+		if (readout.some(checkForDisplayNone)) {
+			styles.before.display = "absolute";
+			styles.after.display = element.style.display;
 		}
 	});
 

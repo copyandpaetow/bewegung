@@ -23,14 +23,4 @@
 /*
 - performance improvements via filtering
 - apply style guide
-
-
-
-*/
-
-/*
-iterations
-
-- the play/reverse-methods could get an iterations option 
-
 */

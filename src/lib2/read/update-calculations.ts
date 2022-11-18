@@ -32,11 +32,16 @@ export const recalculateDisplayNoneValues = (readout: ElementReadouts[]): Elemen
 };
 
 export const adjustForDisplayNone = (animationState: AnimationState) => {
-	const { readouts } = animationState;
+	const { readouts, imageReadouts } = animationState;
 
 	readouts.forEach((readout, element) => {
 		scheduleCallback(() => {
 			readouts.set(element, recalculateDisplayNoneValues(readout));
+		});
+	});
+	imageReadouts.forEach((readout, element) => {
+		scheduleCallback(() => {
+			imageReadouts.set(element, recalculateDisplayNoneValues(readout));
 		});
 	});
 };

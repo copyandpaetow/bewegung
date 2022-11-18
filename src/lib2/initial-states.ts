@@ -11,6 +11,10 @@ import {
 	StyleChangePossibilities,
 } from "./types";
 
+const callbackAnimation = new Animation(
+	new KeyframeEffect(document.createElement("div"), null, defaultOptions.duration as number)
+);
+
 export const initialState = (): State => ({
 	mainElements: new Set<HTMLElement>(),
 	secondaryElements: new Set<HTMLElement>(),
@@ -22,7 +26,9 @@ export const initialState = (): State => ({
 	rootElement: new WeakMap<HTMLElement, HTMLElement>(),
 	cssStyleReset: new WeakMap<HTMLElement, Map<string, string>>(),
 	animations: new Map<HTMLElement, Animation>(),
-
+	timeKeeper: new Animation(
+		new KeyframeEffect(document.createElement("div"), null, defaultOptions.duration as number)
+	),
 	onStart: new WeakMap<HTMLElement, VoidFunction[]>(),
 	onEnd: new WeakMap<HTMLElement, VoidFunction[]>(),
 });

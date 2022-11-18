@@ -10,5 +10,8 @@ export const calculateTotalRuntime = (state: State) => {
 		.flatMap((element) => options.get(element)!)
 		.map((option) => option.endTime!);
 
-	state.totalRuntime = highestNumber(allRuntimes);
+	const totalRuntime = highestNumber(allRuntimes);
+
+	state.totalRuntime = totalRuntime;
+	state.timeKeeper.effect?.updateTiming({ duration: totalRuntime });
 };

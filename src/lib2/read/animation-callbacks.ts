@@ -1,8 +1,10 @@
 import { State } from "../types";
 
 export const setCallbackAnimations = (state: State) => {
-	const { animations, callbacks, mainElements, totalRuntime, onStart } = state;
+	const { animations, callbacks, mainElements, totalRuntime, onStart, timeKeeper } = state;
 	const allCallbacks = new Map<number, Set<VoidFunction>>();
+	//@ts-expect-error
+	const target = timeKeeper.effect.target as HTMLElement;
 
 	mainElements.forEach((element) => {
 		const elementCallbacks = callbacks.get(element);
@@ -15,19 +17,20 @@ export const setCallbackAnimations = (state: State) => {
 		});
 	});
 
-	const fakeCallbackElement = document.createElement("div");
-	const callbackAnimation = new Animation(
-		new KeyframeEffect(fakeCallbackElement, null, totalRuntime)
-	);
 	const sortedCallbackMap = new Map([...allCallbacks].sort((a, b) => a[0] - b[0]));
 
 	function checkTime(animation: Animation, callbackMap: Map<number, Set<VoidFunction>>) {
 		const progress = (animation.currentTime ?? 0) / totalRuntime;
-		const [offset, callbacks] = callbackMap.entries().next().value as [number, Set<VoidFunction>];
+		const { done, value } = callbackMap.entries().next();
+		if (done) {
+			return;
+		}
+
+		const [offset, callbacks] = value as [number, Set<VoidFunction>];
 
 		if (offset <= progress) {
-			callbacks.forEach((callback) => callback());
-			callbackMap.delete(offset);
+			callbacks?.forEach((callback) => callback());
+			callbackMap?.delete(offset);
 		}
 
 		if (animation.playState === "finished") {
@@ -36,6 +39,6 @@ export const setCallbackAnimations = (state: State) => {
 
 		requestAnimationFrame(() => checkTime(animation, callbackMap));
 	}
-	onStart.set(fakeCallbackElement, [() => checkTime(callbackAnimation, sortedCallbackMap)]);
-	animations.set(fakeCallbackElement, callbackAnimation);
+	onStart.set(target, [() => checkTime(timeKeeper, sortedCallbackMap)]);
+	animations.set(target, timeKeeper);
 };
