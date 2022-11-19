@@ -30,6 +30,7 @@ const updateOffsets = (
 				(start! + (duration * offsetWithDirection)! - endDelay!) / totalRuntime +
 				lastIterationOffset;
 
+			//@ts-expect-error
 			updatedFrames.push({
 				...frame,
 				offset: newOffset,

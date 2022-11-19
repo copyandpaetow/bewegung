@@ -59,6 +59,7 @@ export const filterMatchingStyleFromKeyframes = (
 		const { offset, class: cssClass, attribute, ...styles } = keyframe;
 
 		Object.entries(styles).forEach(([key, value]) => {
+			//@ts-expect-error
 			updates.style[key] = value;
 		});
 
