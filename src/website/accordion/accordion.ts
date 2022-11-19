@@ -1,4 +1,4 @@
-import { Bewegung } from "../../lib2/bewegung";
+import { Bewegung } from "../../lib/bewegung";
 
 const toggleAccordions = () => {
 	const accordionHeaders = [

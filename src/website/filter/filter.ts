@@ -1,4 +1,4 @@
-import { Bewegung } from "../../lib2/bewegung";
+import { Bewegung } from "../../lib/bewegung";
 
 const initFilter = () => {
 	const checkboxes = document.querySelectorAll("#filter input");

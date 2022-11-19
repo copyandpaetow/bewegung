@@ -1,40 +1,8 @@
-import {
-	calculatedElementProperties,
-	ChunkState,
-	ElementState,
-	StyleState,
-} from "../types";
+import { State, WatchState } from "../types";
 
-export const getRootElement = (
-	element: HTMLElement,
-	allSelectors: string[]
-) => {
-	const selectors = new Set<string>(allSelectors);
-
-	if (selectors.size === 0) {
-		return document.body;
-	}
-
-	let currentElement = element?.parentElement;
-	let match: HTMLElement | undefined;
-
-	while (currentElement && !match) {
-		selectors.forEach((selector) => {
-			if (currentElement?.matches(selector)) {
-				match = currentElement;
-			}
-		});
-		currentElement = currentElement.parentElement;
-	}
-	return match || document.body;
-};
-
-const calculateRootMargin = (
-	rootElement: HTMLElement,
-	elementProperties: calculatedElementProperties[]
-) => {
+const calculateRootMargin = (rootElement: HTMLElement, mainElement: HTMLElement) => {
 	const { clientWidth, clientHeight } = rootElement;
-	const { dimensions } = elementProperties[0];
+	const dimensions = mainElement.getBoundingClientRect();
 	const buffer = 5;
 
 	const rootMargins = [
@@ -47,29 +15,17 @@ const calculateRootMargin = (
 	return rootMargins.map((px) => `${-1 * Math.floor(px - buffer)}px`).join(" ");
 };
 
-export const ObserveDimensionChange = (
-	chunkState: ChunkState,
-	elementState: ElementState,
-	styleState: StyleState,
-	callback: () => void
+export const observerDimensions = (
+	watchState: WatchState,
+	state: State,
+	callback: VoidFunction
 ) => {
-	let allIntersectionObserver = new WeakMap<
-		HTMLElement,
-		IntersectionObserver
-	>();
+	const { IO } = watchState;
+	const { mainElements, secondaryElements, rootElement } = state;
 
-	elementState.getAllElements().forEach((element) => {
-		allIntersectionObserver.get(element)?.disconnect();
-
-		const mainElements = elementState.isMainElement(element)
-			? [element]
-			: [...elementState.getDependecyElements(element)!];
-
-		const allSelectors = mainElements.flatMap(
-			(mainElement) => chunkState.getSelector(mainElement)!
-		);
-
-		const rootElement = getRootElement(element, allSelectors);
+	[...mainElements, ...secondaryElements].forEach((element) => {
+		IO.get(element)?.disconnect();
+		const root = rootElement.get(element)!;
 
 		let firstTime = true;
 		const observer = new IntersectionObserver(
@@ -81,28 +37,13 @@ export const ObserveDimensionChange = (
 				callback();
 			},
 			{
-				root: rootElement,
+				root,
 				threshold: [0.2, 0.4, 0.6, 0.8, 1],
-				rootMargin: calculateRootMargin(
-					rootElement,
-					styleState.getElementProperties(element)!
-				),
+				rootMargin: calculateRootMargin(root, element),
 			}
 		);
 
 		observer.observe(element);
-		allIntersectionObserver.set(element, observer);
+		IO.set(element, observer);
 	});
-
-	return {
-		disconnect: () => {
-			elementState.getAllElements().forEach((element) => {
-				allIntersectionObserver.get(element)?.disconnect();
-			});
-			allIntersectionObserver = new WeakMap<
-				HTMLElement,
-				IntersectionObserver
-			>();
-		},
-	};
 };

@@ -1,5 +1,5 @@
-import { Bewegung } from "../../lib2/bewegung";
-import { CustomKeyframeEffect } from "../../lib2/types";
+import { Bewegung } from "../../lib/bewegung";
+import { CustomKeyframeEffect } from "../../lib/types";
 
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
@@ -14,22 +14,6 @@ const initCards = () => {
 	};
 
 	const highlight = () => {
-		// const highlightCard: CustomKeyframeEffect = [
-		// 	cards[activeIndex],
-		// 	[
-		// 		{
-		// 			height: "",
-		// 		},
-		// 		{
-		// 			height: "70vh",
-		// 		},
-		// 		{
-		// 			height: "30vh",
-		// 		},
-		// 	],
-		// 	{ duration: 4000, easing: "ease" },
-		// ];
-
 		const highlightCard: CustomKeyframeEffect = [
 			cards[activeIndex],
 			{
