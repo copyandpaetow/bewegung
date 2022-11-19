@@ -1,4 +1,4 @@
-import { Timeline, TimelineEntry } from "../types";
+import { CalculationState, Timeline, TimelineEntry, ImageState } from "../types";
 
 export const toArray = <MaybeArrayType>(
 	maybeArray: MaybeArrayType | MaybeArrayType[]
@@ -12,9 +12,7 @@ const easingValues = {
 	"ease-in-out": [0.42, 0.0, 0.58, 1.0],
 };
 
-const getEasingFromCubicBezier = (
-	easing: string
-): [number, number, number, number] | undefined => {
+const getEasingFromCubicBezier = (easing: string): [number, number, number, number] | undefined => {
 	if (!easing.includes("cubic-bezier")) {
 		return;
 	}
@@ -32,9 +30,9 @@ const transformEasings = (easings: string[]): string => {
 
 	easings.forEach((easing) => {
 		const [p0, p1, p2, p3] = getEasingFromCubicBezier(easing) ??
-			easingValues[
-				easing as "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out"
-			] ?? [0, 0, 1, 1];
+			easingValues[easing as "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out"] ?? [
+				0, 0, 1, 1,
+			];
 
 		easingPoints = [
 			Math.max(easingPoints[0], p0),
@@ -57,10 +55,7 @@ export const getTimelineFractions = (
 
 	if (timeline.length === 1) {
 		const { start, end, easing } = timeline[0];
-		return [
-			...sortedTimeline,
-			{ start, end, easing: Array.isArray(easing) ? easing[0] : easing },
-		];
+		return [...sortedTimeline, { start, end, easing: Array.isArray(easing) ? easing[0] : easing }];
 	}
 
 	// find lowest number
@@ -77,26 +72,20 @@ export const getTimelineFractions = (
 	);
 
 	// get all entries with the lowest number
-	const entriesWithLowestNumber = timeline.filter(
-		({ start }) => start === lowestNumber
-	);
+	const entriesWithLowestNumber = timeline.filter(({ start }) => start === lowestNumber);
 
 	// create a new element with these numbers and all easings from the first step
-	const newSortedEntry = entriesWithLowestNumber.reduce(
-		(accumulator, current, index, array) => {
-			const { easing, end, start } = current;
-			const prevStart = accumulator?.start || start;
-			const prevEasing = accumulator?.easing || [];
-			const newEasing = toArray(prevEasing).concat(easing);
-			return {
-				start: prevStart,
-				end: end === secondLowestNumber ? end : secondLowestNumber,
-				easing:
-					index === array.length - 1 ? transformEasings(newEasing) : newEasing,
-			};
-		},
-		{} as TimelineEntry
-	);
+	const newSortedEntry = entriesWithLowestNumber.reduce((accumulator, current, index, array) => {
+		const { easing, end, start } = current;
+		const prevStart = accumulator?.start || start;
+		const prevEasing = accumulator?.easing || [];
+		const newEasing = toArray(prevEasing).concat(easing);
+		return {
+			start: prevStart,
+			end: end === secondLowestNumber ? end : secondLowestNumber,
+			easing: index === array.length - 1 ? transformEasings(newEasing) : newEasing,
+		};
+	}, {} as TimelineEntry);
 
 	// modify all entries and replace all occurrences with the second lowest number
 	// remove all entries where start and end are the same
@@ -114,24 +103,20 @@ export const getTimelineFractions = (
 };
 
 export const calculateEasingMap = (
+	calculationState: CalculationState | ImageState,
 	mainElementOptions: ComputedEffectTiming[],
 	totalRuntime: number
 ) => {
-	const easingTable: Record<number, string> = {};
-
-	const timings: Timeline = mainElementOptions.map(
-		({ delay, duration, easing }) => ({
-			start: (delay as number) / totalRuntime,
-			end: (duration as number) / totalRuntime,
-			easing: easing as string,
-		})
-	);
+	const timings: Timeline = mainElementOptions.map(({ delay, duration, easing }) => ({
+		start: (delay as number) / totalRuntime,
+		end: (duration as number) / totalRuntime,
+		easing: easing as string,
+	}));
 
 	getTimelineFractions(timings).forEach((entry, index, array) => {
 		const { start } = entry;
 		const easing = array[index].easing as string;
 
-		easingTable[start] = easing;
+		calculationState.easingTable[start] = easing;
 	});
-	return easingTable;
 };

@@ -17,5 +17,5 @@
 		"noImplicitReturns": true,
 		"strictPropertyInitialization": false
 	},
-	"include": ["src/lib/"]
+	"include": ["src/lib/", "src/lib/read/additional-tables.ts"]
 }
