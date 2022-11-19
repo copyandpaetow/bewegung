@@ -11,21 +11,21 @@ An animation experiment of how far you can go with the FLIP technique to become 
 ```javascript
 //for one entry
 
-bewegung({ target, keyframes, option });
+new Bewegung({ target, keyframes, option });
 
-bewegung({ target, keyframes });
+new Bewegung({ target, keyframes });
 
 //for multiple entries
 
-bewegung([{ target, keyframes, option }, { target, keyframes, option }, ...]);
+new Bewegung([{ target, keyframes, option }, { target, keyframes, option }, ...]);
 
-bewegung([{ target, keyframes }, { target, keyframes }, ...]);
+new Bewegung([{ target, keyframes }, { target, keyframes }, ...]);
 
 //from a previous animation
 
-bewegung(keyframeEffect)
+new Bewegung(keyframeEffect)
 
-bewegung([keyframeEffect, keyframeEffect, ...])
+new Bewegung([keyframeEffect, keyframeEffect, ...])
 
 ```
 
@@ -38,10 +38,10 @@ Can be one or multiple elements or their selector.
 #### keyframes
 
 Takes in an object of css-styles or an array of these css-style objects. In addition to css styles, an `offset` can be included to indicate the starting time of that style to take effect (the original css property `offset` is renamed to `cssOffset`). Another additon is the `callback`, which executes a function at its offset-time.
-If no `offset` is supplied, it will assume 1 (for one entry), 0 and 1 (for two entries) and for more it will be 0 and 1 for the first and last and all other will get distributed evenly.
+If no `offset` is supplied, it will assume 1 (for one entry), 0 and 1 (for two entries) and for more it will be 0 and 1 for the first and last and all other will get distributed evenly. Further additions are `attribute` and `class` for toggling attributes or css-classes on the element, respectivly.
 
 ```javascript
-bewegung({
+new Bewegung({
           element,
           [
             {height: "20vh", width: "20vw", offset: 0.5, callback: ()=>console.log("starting to grow")},
@@ -54,7 +54,7 @@ bewegung({
 It is also possible to input an Object with css style arrays. If there are less `offset`s than entries, they will be filled up like with the array syntax.
 
 ```javascript
-bewegung({
+new Bewegung({
           element,
           {
             height:[ "20vh", "40vh"],
@@ -71,13 +71,13 @@ bewegung({
 Can either be a detailed object or just a number, which will be the duration (in ms).
 
 ```javascript
-bewegung({
+new Bewegung({
           element,
           {height:"20vh",width: "20vw"},
           400
           })
 
-bewegung({
+new Bewegung({
           element,
           {height:"20vh",width: "20vw"},
           {duration: 400, easing: "ease-in"}
@@ -90,12 +90,9 @@ The `option` object can include these optional fields:
 - **delay**: The time the animation waits before running. Defaults to `0`.
 - **endDelay**: The time the animation waits after running before actually completing. Defaults to `0`.
 - **easing**: The animation curve / timing function of the animation. Defaults to `ease`.
-- **onAnimationStart**: a callback on animation start.
-- **onAnimationEnd**: a callback on animation end.
-- **onAnimationPause**: a callback on animation pause.
-- **onAnimationCancel**: a callback on animation cancel.
-
-Other options like **direction**, **fill**, and **iteration** are possible to add, but might cause issues when combined with multiple animations.
+- **iteration**: How many times the animation will loop, defaults to `1`. For the calculation we need to know how many iterations there are, so it cant be `Infinity`.
+- **direction**: Defines the direction for the animation and their iterations, defaults to `normal`.
+- **rootSelector**: Defines the upper most parent element, so the animation does not affect outside elements. Great for improving performance. Defaults to `body`.
 
 #### KeyframeEffect
 
@@ -106,39 +103,39 @@ It is also possible to add an existing keyframe effect or an array of effects to
 #### Play, Pause, Reverse
 
 ```javascript
-import { bewegung } from "bewegung";
+import { Bewegung } from "bewegung";
 
 const element = document.querySelector(".some-element")
 
-const animation = bewegung({
+const animation = new Bewegung({
                   element,
                   {height: "20vh", width: "20vw"},
                   {duration: 400, easing: "ease-in"}
                   })
 
-bewegung.play()
+animation.play()
 
 //something happens
 
-bewegung.pause()
+animation.pause()
 
 //something else happens, so the animation should go back
 
-bewegung.reverse()
+animation.reverse()
 ```
 
 #### Scroll
 
-`.scroll(progress:number, done: boolean)`
+`.scroll(progress:number, done?: boolean)`
 
 The animation can be controlled with a progress input (a number between 0 and 1) like the amount of page scrolled down. An optional second parameter is used to finish the animation.
 
 ```javascript
-import { bewegung } from "bewegung";
+import { Bewegung } from "bewegung";
 
 const element = document.querySelector(".some-element")
 
-const animation = bewegung({
+const animation = new Bewegung({
                   element,
                   {height: "20vh", width: "20vw"},
                   {duration: 400, easing: "ease-in"}
@@ -149,28 +146,6 @@ window.addEventListener("scroll", ()=>{
   const isVisible = scrollAmount < 0.5
   animation.scroll(scrollAmount, isVisible)
 })
-
-```
-
-#### Refresh
-
-the animation calculates the needed keyframes from the elements position. If these change between calling the animation function and it's `.play()` method, the animation could look off / be wrong. in that case the calculation can be redone.
-
-```javascript
-import { bewegung } from "bewegung";
-
-const element = document.querySelector(".some-element")
-
-const animation = bewegung({
-                  element,
-                  {height: "20vh", width: "20vw"},
-                  {duration: 400, easing: "ease-in"}
-                  })
-
-// an element got removed / replaced / changed
-
-animation.refresh()
-animation.play()
 
 ```
 
