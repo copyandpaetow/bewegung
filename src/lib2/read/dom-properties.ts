@@ -24,10 +24,8 @@ const getDomRect = (domElement: HTMLElement): PartialDomRect => {
 
 export const getCalculations = (
 	element: HTMLElement,
-	timing: number,
 	changeProperties: CssRuleName[]
 ): ElementReadouts => ({
 	dimensions: getDomRect(element),
-	offset: timing,
 	computedStyle: getComputedStylings(changeProperties, element),
 });
