@@ -1,4 +1,4 @@
-import { Bewegung } from "../../lib/bewegung";
+import { Bewegung } from "../../lib2/bewegung";
 import { CustomKeyframeEffect } from "../../lib/types";
 
 const initCards = () => {
@@ -25,7 +25,7 @@ const initCards = () => {
 		];
 
 		const hideOthers: CustomKeyframeEffect = [
-			[...cards].filter((_, index) => index !== activeIndex),
+			".card",
 			{
 				width: "",
 				height: "",
@@ -34,7 +34,21 @@ const initCards = () => {
 			{ duration: 2000, easing: "ease-in", rootSelector: "main" },
 		];
 
-		return new Bewegung(highlightCard, hideOthers);
+		const hidePauseButton: CustomKeyframeEffect = [
+			".cards__button--pause",
+			[
+				{
+					display: "none",
+					offset: 0.2,
+				},
+				{
+					display: "",
+				},
+			],
+			1500,
+		];
+
+		return new Bewegung(hideOthers, highlightCard, hidePauseButton);
 	};
 
 	let animation: Bewegung | undefined;

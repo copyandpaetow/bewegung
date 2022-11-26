@@ -28,8 +28,13 @@ export const fillState = <Key extends keyof AnimationEntry, Value extends ValueO
 ) => {
 	props.forEach((entry) => {
 		entry.target.forEach((mainElement) => {
+			const needsNestedArray = type === "keyframes" || type === "callbacks";
 			const value = entry[type] as Value;
-			const existingValues = state.get(mainElement)?.concat(value) ?? [value];
+
+			const existingValues = (state.get(mainElement) ?? [])?.concat(
+				needsNestedArray ? [value] : value
+			);
+
 			state.set(mainElement, existingValues);
 		});
 	});
