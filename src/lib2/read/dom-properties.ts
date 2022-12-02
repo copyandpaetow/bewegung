@@ -10,10 +10,10 @@ const getComputedStylings = (
 
 	changeProperties.forEach((cssRule: CssRuleName) => {
 		//@ts-expect-error length/parentRule weirdness
-		relevantStyles[cssRule] = computedElementStyle.getPropertyValue(cssRule);
+		relevantStyles[cssRule] = computedElementStyle[cssRule];
 	});
 
-	return { ...computedElementStyle };
+	return relevantStyles;
 };
 
 const getDomRect = (domElement: HTMLElement): PartialDomRect => {

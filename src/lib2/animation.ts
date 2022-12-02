@@ -18,22 +18,16 @@ export const getAnimations = (...props: BewegungProps) =>
 		const worker = QueryableWorker("worker.ts");
 		const state = initState(worker, ...props);
 		const animations = new Map<HTMLElement, Animation>();
-		let domWork = new Map<string, StyleChangePossibilities>();
-
-		const readDomFromChanges = () => {
-			//!this currently takes 5s
-			const domState = readDom(domWork, state);
-			console.log(domState);
-		};
 
 		getAffectedElements(worker, state);
 		console.log(`formatting took ${performance.now() - now}ms`);
 		worker.addListener(
 			"sendAppliableKeyframes",
-			(elementChanges: [Map<string, StyleChangePossibilities>]) => {
+			async (elementChanges: [Map<string, StyleChangePossibilities>]) => {
 				//TODO: currently their RAF overlapps, we need to add a domQueue
-				domWork = elementChanges[0];
-				readDomFromChanges();
+
+				const domResult = await readDom(elementChanges[0], state);
+				worker.sendQuery("sendReadouts", domResult);
 			}
 		);
 
