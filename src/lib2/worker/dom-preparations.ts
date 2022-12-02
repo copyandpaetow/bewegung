@@ -22,6 +22,7 @@ export const calculateChangeProperties = (allKeyframes: Map<string, CustomKeyfra
 			Object.keys(stylings).forEach((style) => changeProperties.add(style as CssRuleName));
 		});
 	});
+
 	return Array.from(changeProperties);
 };
 

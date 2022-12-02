@@ -13,8 +13,8 @@ export const initState = (worker: WorkerMethods, ...props: BewegungProps): State
 
 	const { keyframes, callbacks } = separateKeyframesAndCallbacks(normalizedProps, chunkIDs);
 	worker.sendQuery("sendKeyframes", keyframes);
-	worker.addListener("sendChangeProperties", (changePropertiesFromWorker: CssRuleName[]) => {
-		changeProperties.push(...changePropertiesFromWorker);
+	worker.addListener("sendChangeProperties", (changePropertiesFromWorker: [CssRuleName[]]) => {
+		changeProperties.push(...changePropertiesFromWorker[0]);
 		worker.removeListener("sendChangeProperties");
 	});
 

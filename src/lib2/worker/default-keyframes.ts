@@ -1,7 +1,6 @@
 import { DefaultKeyframes, ElementReadouts, WorkerState } from "../types";
 import { checkForBorderRadius, checkForDisplayInline, checkForDisplayNone } from "../utils";
 import { calculateDefaultKeyframes, getCalcualtionsFromReadouts } from "./default-calculations";
-import { addStyleOverrides } from "./overrides";
 import { calculateKeyframeTables } from "./style-tables";
 
 const checkDefaultReadouts = (elementReadouts: ElementReadouts[]) => {
