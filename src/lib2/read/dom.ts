@@ -7,19 +7,19 @@ export const readDom = (elementChanges: Map<string, StyleChangePossibilities>, s
 	const { cssResets, elementLookup, changeProperties } = state;
 	const readouts = new Map<string, ElementReadouts>();
 
-	requestAnimationFrame(() => {
-		elementChanges.forEach((styleChange, elementString) => {
+	elementChanges.forEach((styleChange, elementString) => {
+		const domElement = state.elementLookup.get(elementString)!;
+		applyCSSStyles(domElement, styleChange);
+		elementLookup.forEach((domElement, elementString) => {
+			readouts.set(
+				elementString,
+				getCalculations(domElement, changeProperties, styleChange.offset)
+			);
+		});
+		cssResets.forEach((reset, elementString) => {
 			const domElement = state.elementLookup.get(elementString)!;
-			applyCSSStyles(domElement, styleChange);
-			elementLookup.forEach((domElement, elementString) => {
-				readouts.set(elementString, getCalculations(domElement, changeProperties));
-			});
-			cssResets.forEach((reset, elementString) => {
-				const domElement = state.elementLookup.get(elementString)!;
-				restoreOriginalStyle(domElement, reset);
-			});
+			restoreOriginalStyle(domElement, reset);
 		});
 	});
-
 	return readouts;
 };

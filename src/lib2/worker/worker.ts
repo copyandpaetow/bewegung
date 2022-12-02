@@ -13,6 +13,8 @@ import {
 	calculateChangeProperties,
 	calculateChangeTimings,
 } from "./dom-preparations";
+import { filterReadouts } from "./filter-readouts";
+import { constructKeyframes } from "./keyframes";
 import { calculateTotalRuntime } from "./runtime";
 import { updateKeyframeOffsets } from "./update-offsets";
 
@@ -33,10 +35,16 @@ const workerState: WorkerState = {
 	changeTimings: [],
 	totalRuntime: defaultOptions.duration as number,
 	appliableKeyframes: [],
-	readouts: [],
+	readouts: new Map(),
 	lookup: new Map(),
 	sendKeyframes: 0,
 	recievedKeyframes: 0,
+};
+
+const updateEntries = () => {
+	filterReadouts(workerState);
+
+	reply("sendKeyframes", constructKeyframes(workerState));
 };
 
 const queryFunctions = {
@@ -45,7 +53,6 @@ const queryFunctions = {
 	},
 	sendKeyframes(keyframes: Map<string, CustomKeyframe[]>) {
 		workerState.keyframes = keyframes;
-
 		reply("sendChangeProperties", calculateChangeProperties(keyframes));
 	},
 	sendOptions(options: Map<string, BewegungsOptions>) {
@@ -53,29 +60,31 @@ const queryFunctions = {
 		workerState.totalRuntime = calculateTotalRuntime(options);
 		workerState.keyframes = updateKeyframeOffsets(workerState);
 		workerState.changeTimings = calculateChangeTimings(workerState.keyframes);
-		workerState.sendKeyframes = workerState.keyframes.size;
 	},
 	sendElements(elements: Map<string, string[]>) {
 		workerState.elements = elements;
 		workerState.appliableKeyframes = calculateAppliableKeyframes(workerState);
 
-		reply("sendAppliableKeyframes", workerState.appliableKeyframes[workerState.sendKeyframes - 1]);
-		workerState.sendKeyframes -= 1;
+		reply("sendAppliableKeyframes", workerState.appliableKeyframes[workerState.sendKeyframes]);
+		workerState.sendKeyframes += 1;
 	},
 	sendElementLookup(elementLookup: Map<string, ElementEntry>) {
 		workerState.lookup = elementLookup;
 	},
-	sendReadouts(readout: Map<string, ElementReadouts>) {
+	sendReadouts(newReadout: Map<string, ElementReadouts>) {
 		workerState.recievedKeyframes += 1;
-		workerState.readouts.push(readout);
-
-		getDomDifferences(workerState);
-
-		if (workerState.sendKeyframes > 0) {
-			reply(
-				"sendAppliableKeyframes",
-				workerState.appliableKeyframes[workerState.sendKeyframes - 1]
+		newReadout.forEach((readout, elementString) => {
+			workerState.readouts.set(
+				elementString,
+				(workerState.readouts.get(elementString) ?? []).concat(readout)
 			);
+		});
+
+		if (workerState.sendKeyframes > workerState.keyframes.size - 1) {
+			reply("sendAppliableKeyframes", workerState.appliableKeyframes[workerState.sendKeyframes]);
+			workerState.sendKeyframes += 1;
+		} else {
+			updateEntries();
 		}
 	},
 };

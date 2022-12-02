@@ -141,7 +141,12 @@ export const calculateDimensionDifferences = (
 		widthDifference: save(widthDifference, 1),
 		leftDifference: save(leftDifference, 0),
 		topDifference: save(topDifference, 0),
+		offset: currentEntry.offset,
 	};
 };
 
-export const getDomDifferences = (workerState: WorkerState) => {};
+export const getDomDifferences = (workerState: WorkerState) => {
+	// we can get one element at the time, either default order or reversed
+	// these entries are still unfiltered for display none
+	// if it is not an image, we could get the difference
+};
