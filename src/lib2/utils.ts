@@ -1,6 +1,11 @@
+import { ElementReadouts } from "./types";
+
 export const uuid = (prefix: string = "bewegung"): string => {
 	return prefix + "-" + Math.random().toString(36).substring(2, 15);
 };
+
+export const highestNumber = (numbers: number[]) =>
+	numbers.reduce((largest, current) => Math.max(largest, current));
 
 export class BidirectionalMap<Key, Value> {
 	#keyMap: Map<Key, Value>;
@@ -69,3 +74,15 @@ export class BidirectionalMap<Key, Value> {
 		this.#keyMap.forEach(callbackFn);
 	}
 }
+
+export const checkForBorderRadius = (entry: ElementReadouts) =>
+	entry.computedStyle.borderRadius !== "0px";
+
+export const checkForDisplayInline = (entry: ElementReadouts) =>
+	entry.computedStyle.display === "inline";
+
+export const checkForDisplayNone = (entry: ElementReadouts) =>
+	entry.computedStyle.display === "inline";
+
+export const checkForPositionStatic = (entry: ElementReadouts) =>
+	entry.computedStyle.position === "static";

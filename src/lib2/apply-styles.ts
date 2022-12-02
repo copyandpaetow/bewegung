@@ -39,17 +39,18 @@ export const applyCSSStyles = (
 	}
 };
 
-const styleUpdates = (): StyleChangePossibilities => ({
+const styleUpdates = (timing: number): StyleChangePossibilities => ({
 	style: {},
 	classes: [],
 	attributes: [],
+	offset: timing,
 });
 
 export const filterMatchingStyleFromKeyframes = (
 	keyframes: CustomKeyframe[],
 	timing: number
 ): StyleChangePossibilities => {
-	const updates = styleUpdates();
+	const updates = styleUpdates(timing);
 
 	keyframes?.forEach((keyframe) => {
 		if (timing < keyframe.offset!) {
@@ -72,4 +73,3 @@ export const filterMatchingStyleFromKeyframes = (
 
 	return updates;
 };
-

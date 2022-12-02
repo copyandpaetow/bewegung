@@ -71,6 +71,8 @@ export type BewegungProps = CustomKeyframeEffect | (CustomKeyframeEffect | Keyfr
 export type ElementReadouts = {
 	dimensions: PartialDomRect;
 	computedStyle: Partial<CSSStyleDeclaration>;
+	offset: number;
+	ratio: number;
 };
 
 export type DifferenceArray = [ElementReadouts, ElementReadouts];
@@ -88,6 +90,7 @@ export type StyleChangePossibilities = {
 	style: Partial<CSSStyleDeclaration>;
 	classes: string[];
 	attributes: string[];
+	offset: number;
 };
 
 export interface DimensionalDifferences {
@@ -95,6 +98,7 @@ export interface DimensionalDifferences {
 	widthDifference: number;
 	leftDifference: number;
 	topDifference: number;
+	offset: number;
 }
 
 export interface TimelineEntry {
@@ -114,10 +118,12 @@ export type AnimationEntry = {
 
 export interface Result {}
 
+export type EntryType = "image" | "text" | "default";
+
 export type ElementEntry = {
 	parent: string;
 	root: string;
-	type: "image" | "text" | "default";
+	type: EntryType;
 	chunks: string[];
 };
 
@@ -146,8 +152,35 @@ export interface WorkerState {
 	changeTimings: number[];
 	totalRuntime: number;
 	appliableKeyframes: Map<string, StyleChangePossibilities>[];
-	readouts: Map<string, ElementReadouts>[];
+	readouts: Map<string, ElementReadouts[]>;
 	lookup: Map<string, ElementEntry>;
 	sendKeyframes: number;
 	recievedKeyframes: number;
+}
+
+export interface ImageState {
+	wrapperStyle: Partial<CSSStyleDeclaration>;
+	placeholderStyle: Partial<CSSStyleDeclaration>;
+	maxWidth: number;
+	maxHeight: number;
+	easingTable: Record<number, string>;
+	wrapperKeyframes: Keyframe[];
+	keyframes: Keyframe[];
+	overrides: { before: Partial<CSSStyleDeclaration>; after: Partial<CSSStyleDeclaration> };
+}
+
+export interface StyleTables {
+	borderRadiusTable: Record<number, string>;
+	opacityTable: Record<number, string>;
+	filterTable: Record<number, string>;
+	userTransformTable: Record<number, string>;
+	easingTable: Record<number, string>;
+}
+
+export interface DefaultKeyframes {
+	keyframes: Keyframe[];
+	overrides: {
+		before: Partial<CSSStyleDeclaration>;
+		after: Partial<CSSStyleDeclaration>;
+	};
 }
