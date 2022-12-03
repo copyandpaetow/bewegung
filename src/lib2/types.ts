@@ -116,7 +116,10 @@ export type AnimationEntry = {
 	selector: string;
 };
 
-export interface Result {}
+export interface Result {
+	animations: Animation[];
+	onStart: VoidFunction[];
+}
 
 export type EntryType = "image" | "text" | "default";
 

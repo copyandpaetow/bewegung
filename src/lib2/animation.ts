@@ -1,26 +1,29 @@
+import { createDefaultAnimation } from "./calculate/default-animation";
+import { createImageAnimation } from "./calculate/image-animation";
 import { getAffectedElements } from "./normalize/affected-elements";
 import { initState } from "./normalize/state";
 import { readDom } from "./read/dom";
 import {
 	BewegungProps,
 	DefaultKeyframes,
-	ElementReadouts,
 	ImageState,
 	Result,
-	State,
 	StyleChangePossibilities,
 } from "./types";
 import { QueryableWorker } from "./worker/setup";
 
 export const getAnimations = (...props: BewegungProps) =>
 	new Promise<Result>((resolve) => {
-		const now = performance.now();
 		const worker = QueryableWorker("worker.ts");
 		const state = initState(worker, ...props);
-		const animations = new Map<HTMLElement, Animation>();
+		const animationState = {
+			animations: [],
+			onStart: [],
+		};
 
-		getAffectedElements(worker, state);
-		console.log(`formatting took ${performance.now() - now}ms`);
+		const stringifiedElementLookup = getAffectedElements(state);
+		worker.sendQuery("sendElementLookup", stringifiedElementLookup);
+
 		worker.addListener(
 			"sendAppliableKeyframes",
 			async (elementChanges: [Map<string, StyleChangePossibilities>]) => {
@@ -33,13 +36,19 @@ export const getAnimations = (...props: BewegungProps) =>
 
 		worker.addListener(
 			"sendKeyframes",
-			(keyframeMaps: [Map<string, ImageState[]>, Map<string, DefaultKeyframes[]>]) => {
-				console.log(keyframeMaps);
-				console.log(`worker calculation took ${performance.now() - now}ms`);
+			(keyframeResults: [[Map<string, ImageState>, Map<string, DefaultKeyframes>, number]]) => {
+				const [imageKeyframes, defaultKeyframes, totalRuntime] = keyframeResults[0];
+				createDefaultAnimation(defaultKeyframes, animationState, state, totalRuntime);
+				createImageAnimation(
+					imageKeyframes,
+					animationState,
+					state,
+					stringifiedElementLookup,
+					totalRuntime
+				);
+				resolve(animationState);
 			}
 		);
-		// await keyframe data, override data and totalRoundtime?
-		// transform into animations
 
 		// RO + IO => re-apply keyframes and send data
 		// MO => re-translate elements and move them to the worker

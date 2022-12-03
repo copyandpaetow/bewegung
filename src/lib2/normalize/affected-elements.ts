@@ -1,5 +1,5 @@
 import { ElementEntry, State, WorkerMethods } from "../types";
-import {  uuid } from "../utils";
+import { uuid } from "../utils";
 
 const DOM = {
 	parent(element: HTMLElement): HTMLElement {
@@ -73,7 +73,7 @@ const isTextNode = (element: HTMLElement) => {
 };
 const isImage = (mainElement: HTMLElement) => (mainElement.tagName === "IMG" ? "image" : false);
 
-export const getAffectedElements = (worker: WorkerMethods, state: State) => {
+export const getAffectedElements = (state: State) => {
 	const { elementLookup, mainElements, options } = state;
 	const chunkLookup = new Map<HTMLElement, Set<string>>();
 	const stringifiedElementLookup = new Map<string, ElementEntry>();
@@ -117,5 +117,5 @@ export const getAffectedElements = (worker: WorkerMethods, state: State) => {
 		});
 	});
 
-	worker.sendQuery("sendElementLookup", stringifiedElementLookup);
+	return stringifiedElementLookup;
 };

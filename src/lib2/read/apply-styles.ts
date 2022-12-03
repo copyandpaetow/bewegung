@@ -1,4 +1,4 @@
-import { CustomKeyframe, StyleChangePossibilities } from "./types";
+import { CustomKeyframe, StyleChangePossibilities } from "../types";
 
 export const applyStyleObject = (element: HTMLElement, style: Partial<CSSStyleDeclaration>) => {
 	Object.assign(element.style, style);

@@ -13,7 +13,7 @@ const checkDefaultReadouts = (elementReadouts: ElementReadouts[]) => {
 	}
 
 	if (elementReadouts.some(checkForDisplayInline)) {
-		before.display = "inline";
+		before.display = "inline-block";
 		after.display = elementReadouts.at(-1)!.computedStyle.display;
 	}
 
