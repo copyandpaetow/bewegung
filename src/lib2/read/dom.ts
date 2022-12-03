@@ -1,6 +1,6 @@
-import { applyCSSStyles } from "../apply-styles";
 import { restoreOriginalStyle } from "../normalize/css-resets";
 import { ElementReadouts, State, StyleChangePossibilities } from "../types";
+import { applyCSSStyles } from "./apply-styles";
 import { getCalculations } from "./dom-properties";
 
 export const readDom = (elementChanges: Map<string, StyleChangePossibilities>, state: State) =>

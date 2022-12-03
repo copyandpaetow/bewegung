@@ -41,7 +41,7 @@ const checkDefaultReadouts = (
 		}
 
 		if (element.tagName === "SPAN" && readout.some(checkForDisplayInline)) {
-			styles.before.display = "inline";
+			styles.before.display = "inline-block";
 			styles.after.display = element.style.display;
 		}
 
@@ -86,7 +86,7 @@ const checkImageReadouts = (
 		const rootReadout = readouts.get(element) ?? imageReadouts.get(element as HTMLImageElement)!;
 		if (rootReadout.every(checkForPositionStatic)) {
 			styles.before.position = "relative";
-			styles.before.position = element.style.position;
+			styles.after.position = element.style.position;
 		}
 	});
 };

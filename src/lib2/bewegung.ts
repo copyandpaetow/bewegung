@@ -19,7 +19,19 @@ export class Bewegung implements BewegungAPI {
 		return Promise.resolve();
 	}
 
-	play() {}
+	play() {
+		const awaitAnimations = async () => {
+			const { animations, onStart } = await this.#state;
+			onStart.forEach((cb) => cb());
+			animations.forEach((animation) => {
+				animation.play();
+				animation.pause();
+			});
+			console.log(`it took ${Date.now() - this.#now}ms`);
+		};
+
+		return awaitAnimations();
+	}
 	pause() {}
 	scroll(progress: number, done?: boolean) {}
 	reverse() {}

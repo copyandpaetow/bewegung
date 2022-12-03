@@ -1,5 +1,4 @@
 import { defaultOptions } from "../constants";
-import { calculateDimensionDifferences } from "../read/dimension-differences";
 import {
 	DimensionalDifferences,
 	StyleTables,
@@ -7,6 +6,7 @@ import {
 	EntryType,
 	DifferenceArray,
 } from "../types";
+import { calculateDimensionDifferences } from "../calculate/dimension-differences";
 
 export const calculateDefaultKeyframes = (
 	calculations: DimensionalDifferences[],

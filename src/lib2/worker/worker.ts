@@ -1,5 +1,4 @@
 import { defaultOptions } from "../constants";
-import { getDomDifferences } from "../read/dimension-differences";
 import {
 	BewegungsOptions,
 	CssRuleName,
@@ -66,6 +65,7 @@ const queryFunctions = {
 		workerState.appliableKeyframes = calculateAppliableKeyframes(workerState);
 
 		reply("sendAppliableKeyframes", workerState.appliableKeyframes[workerState.sendKeyframes]);
+
 		workerState.sendKeyframes += 1;
 	},
 	sendElementLookup(elementLookup: Map<string, ElementEntry>) {
@@ -80,7 +80,8 @@ const queryFunctions = {
 			);
 		});
 
-		if (workerState.sendKeyframes > workerState.keyframes.size - 1) {
+		console.log(workerState.appliableKeyframes[workerState.sendKeyframes]);
+		if (workerState.sendKeyframes <= workerState.keyframes.size - 1) {
 			reply("sendAppliableKeyframes", workerState.appliableKeyframes[workerState.sendKeyframes]);
 			workerState.sendKeyframes += 1;
 		} else {
