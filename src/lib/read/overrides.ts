@@ -41,13 +41,15 @@ const checkDefaultReadouts = (
 		}
 
 		if (element.tagName === "SPAN" && readout.some(checkForDisplayInline)) {
-			styles.before.display = "inline";
+			styles.before.display = "inline-block";
 			styles.after.display = element.style.display;
 		}
 
 		if (readout.some(checkForDisplayNone)) {
-			styles.before.display = "absolute";
+			styles.before.display = "block";
+			styles.before.position = "absolute";
 			styles.after.display = element.style.display;
+			styles.after.position = element.style.position;
 		}
 
 		styleMap.set(element, styles);
@@ -76,8 +78,10 @@ const checkImageReadouts = (
 		}
 
 		if (readout.some(checkForDisplayNone)) {
-			styles.before.display = "absolute";
+			styles.before.display = "block";
+			styles.before.position = "absolute";
 			styles.after.display = element.style.display;
+			styles.after.position = element.style.position;
 		}
 	});
 
