@@ -73,3 +73,18 @@
 	background-image: var(--background);
 }
 
+.animate {
+	width: 100%;
+	height: 2rem;
+	background-color: midnightblue;
+	animation: occupy 5s ease 2s infinite alternate;
+}
+
+@keyframes occupy {
+	from {
+		width: 100%;
+	}
+	to {
+		width: 10%;
+	}
+}

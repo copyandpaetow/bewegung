@@ -1,5 +1,5 @@
 import { emptyImageSrc } from "../constants";
-import { restoreOriginalStyle } from "../normalize/css-resets";
+import { restoreOriginalStyle } from "../read/css-resets";
 import { applyStyleObject } from "../read/apply-styles";
 import { ImageState, State, ElementEntry } from "../types";
 

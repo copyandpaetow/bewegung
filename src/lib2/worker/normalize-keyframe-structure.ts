@@ -1,9 +1,6 @@
 import {
-	AnimationEntry,
-	Callbacks,
 	CustomKeyframe,
 	CustomKeyframeArrayValueSyntax,
-	CustomKeyframeEffect,
 	EveryKeyframeSyntax,
 	ValueOf,
 } from "../types";
@@ -92,52 +89,4 @@ export const unifyKeyframeStructure = (keyframe: EveryKeyframeSyntax): CustomKey
 		return formatArraySyntax(keyframe as CustomKeyframeArrayValueSyntax);
 	}
 	throw new Error("No mixing between array and object syntax");
-};
-
-export const addIndividualEasing = (entry: AnimationEntry) => {
-	const { easing, composite } = entry.options;
-
-	entry.keyframes = entry.keyframes.map((keyframe) => {
-		const { offset, ...styles } = keyframe;
-
-		const individualEasing =
-			styles.animationTimingFunction ?? styles.transitionTimingFunction ?? easing;
-
-		return {
-			offset,
-			easing: individualEasing,
-			composite,
-			...styles,
-		};
-	});
-};
-
-export const separateKeyframesAndCallbacks = (
-	normalizedProps: CustomKeyframeEffect[],
-	chunkIDs: string[]
-) => {
-	const keyframes = new Map<string, CustomKeyframe[]>();
-	const callbacks = new Map<string, Callbacks[]>();
-
-	normalizedProps.forEach((entry, index) => {
-		const normalizedKeyframes = unifyKeyframeStructure(entry[1]);
-		const chunkID = chunkIDs[index];
-
-		normalizedKeyframes.forEach((keyframe) => {
-			const { callback, offset, ...styles } = keyframe;
-
-			if (callback) {
-				callbacks.set(
-					chunkID,
-					(callbacks.get(chunkID) ?? []).concat({ callback, offset } as Callbacks)
-				);
-			}
-
-			keyframes.set(
-				chunkID,
-				(keyframes.get(chunkID) ?? []).concat({ ...styles, offset } as CustomKeyframe)
-			);
-		});
-	});
-	return { callbacks, keyframes };
 };

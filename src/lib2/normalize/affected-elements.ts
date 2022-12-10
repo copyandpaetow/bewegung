@@ -1,5 +1,7 @@
+import { getRatio } from "../read/dom-properties";
 import { ElementEntry, State, WorkerMethods } from "../types";
 import { uuid } from "../utils";
+import { getOrAddKeyFromLookup } from "./state";
 
 const DOM = {
 	parent(element: HTMLElement): HTMLElement {
@@ -47,11 +49,14 @@ const compareRootElements = (current: HTMLElement, previous: HTMLElement | undef
 	return current;
 };
 
-export const getRootElement = (selectors: string[]): HTMLElement => {
+export const getRootElement = (entries: string[] | HTMLElement[]): HTMLElement => {
 	let root: HTMLElement | undefined;
 
-	selectors.forEach((selector) => {
-		const rootElement = document.querySelector(selector) as HTMLElement | null;
+	entries.forEach((selector: string | HTMLElement) => {
+		const rootElement =
+			typeof selector === "string"
+				? (document.querySelector(selector) as HTMLElement | null)
+				: selector;
 
 		if (!rootElement) {
 			throw new Error("no root element with that selector");
@@ -74,48 +79,53 @@ const isTextNode = (element: HTMLElement) => {
 const isImage = (mainElement: HTMLElement) => (mainElement.tagName === "IMG" ? "image" : false);
 
 export const getAffectedElements = (state: State) => {
-	const { elementLookup, mainElements, options } = state;
-	const chunkLookup = new Map<HTMLElement, Set<string>>();
+	const { elementLookup, rootSelector, worker } = state;
 	const stringifiedElementLookup = new Map<string, ElementEntry>();
+	const getAffectedElementsMap = new Map<string, Set<string>>();
+	const rootElements = new Map<string, HTMLElement>();
 
-	mainElements.forEach((mainElementStrings, chunkID) => {
-		mainElementStrings.forEach((mainElementString) => {
-			const domElement = elementLookup.get(mainElementString)!;
-			const rootSelector = options.get(chunkID)!.rootSelector!;
-			const rootElement = document.querySelector(rootSelector) as HTMLElement;
+	const elementConnections = new Map<string, HTMLElement[]>();
 
-			chunkLookup.set(domElement, (chunkLookup.get(domElement) ?? new Set()).add(chunkID));
+	elementLookup.forEach((domElement, elementString) => {
+		const rootElement = getRootElement(rootSelector.get(domElement)!);
+		rootElements.set(elementString, rootElement);
+		elementConnections.set(elementString, findAffectedDOMElements(domElement, rootElement));
+	});
 
-			findAffectedDOMElements(domElement, rootElement).forEach((secondaryElement, index, array) => {
-				chunkLookup.set(
-					secondaryElement,
-					(chunkLookup.get(secondaryElement) ?? new Set()).add(chunkID)
-				);
-				if (elementLookup.has(secondaryElement)) {
-					return;
-				}
-				elementLookup.set(uuid("secondary"), secondaryElement);
-			});
+	elementConnections.forEach((secondaryDomElements, elementString) => {
+		secondaryDomElements.forEach((secondaryDomElement) => {
+			const key = getOrAddKeyFromLookup(secondaryDomElement, elementLookup);
+			getAffectedElementsMap.set(
+				key,
+				(getAffectedElementsMap.get(key) ?? new Set<string>()).add(elementString)
+			);
 		});
 	});
 
-	chunkLookup.forEach((relevantChunkIDs, element) => {
-		const id = elementLookup.get(element)!;
-		const parentID = elementLookup.get(element.parentElement!) ?? id;
-		const elementType = isImage(element) || isTextNode(element) || "default";
+	elementLookup.forEach((domElement, elementString) => {
+		const elementType = isImage(domElement) || isTextNode(domElement) || "default"; //TODO: this should also be an enum
+		const affectedByMainElements = getAffectedElementsMap.get(elementString)!;
 
 		const rootElement = getRootElement(
-			Array.from(relevantChunkIDs, (chunkID) => options.get(chunkID)!.rootSelector!)
+			Array.from(
+				affectedByMainElements,
+				(mainElementString: string) => rootElements.get(mainElementString)!
+			)
 		);
-		const rootID = elementLookup.get(rootElement)!;
 
-		stringifiedElementLookup.set(id, {
-			root: rootID,
-			parent: parentID,
+		stringifiedElementLookup.set(elementString, {
+			self: elementString,
+			root: elementLookup.get(rootElement)!,
+			parent: elementLookup.get(
+				domElement.tagName === "BODY" ? domElement : domElement.parentElement!
+			)!,
 			type: elementType,
-			chunks: [...relevantChunkIDs],
+			affectedBy: [...affectedByMainElements],
+			ratio: getRatio(domElement),
 		});
 	});
+
+	worker.sendQuery("sendElementLookup", stringifiedElementLookup);
 
 	return stringifiedElementLookup;
 };

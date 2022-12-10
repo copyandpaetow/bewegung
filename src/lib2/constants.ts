@@ -3,21 +3,27 @@ import { CssRuleName } from "./types";
 export const defaultChangeProperties: CssRuleName[] = [
 	"borderRadius",
 	"display",
-	"font",
-	"opacity",
 	"filter",
+	"height",
+	"objectFit",
+	"objectPosition",
+	"opacity",
 	"position",
 	"transform",
 	"transformOrigin",
 	"width",
-	"height",
-	"objectFit",
-	"objectPosition",
 ];
 
 export const defaultOptions: Partial<KeyframeEffectOptions> = {
-	duration: 400,
+	composite: "replace",
+	delay: 0,
+	direction: "normal",
+	duration: "400",
 	easing: "ease",
+	endDelay: 0,
+	fill: "auto",
+	iterations: 1,
+	iterationStart: 0,
 };
 
 export const emptyImageSrc =

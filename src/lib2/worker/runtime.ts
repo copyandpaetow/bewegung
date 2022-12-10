@@ -1,7 +1,7 @@
-import { BewegungsOptions, State } from "../types";
+import { BewegungsOptions } from "../types";
 import { highestNumber } from "../utils";
 
-export const calculateTotalRuntime = (options: Map<string, BewegungsOptions>) => {
+export const calculateTotalRuntime = (options: BewegungsOptions[]) => {
 	const runtimes: number[] = [];
 
 	options.forEach((option) => {
