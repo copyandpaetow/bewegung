@@ -1,6 +1,4 @@
-import { CustomKeyframeEffect, ElementOrSelector } from "../types";
-import { BidirectionalMap, uuid } from "../utils";
-import { findAffectedDOMElements, getRootElement } from "./affected-elements";
+import { ElementOrSelector } from "../types";
 
 const findElementsByString = (selector: string) => {
 	const getFromSelector = document.querySelectorAll(selector);
@@ -13,7 +11,7 @@ const findElementsByString = (selector: string) => {
 
 const QUERYSTRING = "bewegung-getelement";
 
-const convertToElementArray = (element: HTMLElement): HTMLElement[] => {
+const convertToElementArray = (element: Element): HTMLElement[] => {
 	element.setAttribute(QUERYSTRING, "");
 
 	const newNodeList = document.querySelectorAll(`[${QUERYSTRING}]`);
@@ -33,40 +31,9 @@ export const normalizeElements = (elements: ElementOrSelector): HTMLElement[] =>
 
 	if (Array.isArray(elements)) {
 		return elements.flatMap((element) =>
-			element instanceof HTMLElement ? element : convertToElementArray(element as HTMLElement)
+			element instanceof HTMLElement ? element : convertToElementArray(element)
 		);
 	}
 
 	return convertToElementArray(elements as HTMLElement);
-};
-
-export const getElements = (normalizedProps: CustomKeyframeEffect[], chunkIDs: string[]) => {
-	const elementLookup = new BidirectionalMap<string, HTMLElement>();
-	const elements = new Map<string, string[]>();
-	const selectors = new Map<string, string>();
-
-	normalizedProps.forEach((propEntry, index) => {
-		const elementsFromProps = propEntry[0];
-		const htmlElements = normalizeElements(elementsFromProps);
-		const chunkID = chunkIDs[index];
-		const elementStrings: string[] = [];
-
-		htmlElements.forEach((mainElement) => {
-			if (elementLookup.has(mainElement)) {
-				const key = elementLookup.get(mainElement)!;
-				elementStrings.push(key);
-			} else {
-				const key = uuid("main");
-				elementLookup.set(key, mainElement);
-				elementStrings.push(key);
-			}
-		});
-		elements.set(chunkID, elementStrings);
-
-		if (typeof elementsFromProps === "string") {
-			selectors.set(chunkID, elementsFromProps);
-		}
-	});
-
-	return { elementLookup, elements, selectors };
 };

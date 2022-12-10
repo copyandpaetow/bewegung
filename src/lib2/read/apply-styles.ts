@@ -4,10 +4,10 @@ export const applyStyleObject = (element: HTMLElement, style: Partial<CSSStyleDe
 	Object.assign(element.style, style);
 };
 
-const applyClasses = (element: HTMLElement, classes: string[]) =>
+const applyClasses = (element: HTMLElement, classes: Set<string>) =>
 	classes.forEach((classEntry) => element.classList.toggle(classEntry));
 
-const applyAttributes = (element: HTMLElement, attributes: string[]) => {
+const applyAttributes = (element: HTMLElement, attributes: Set<string>) => {
 	attributes.forEach((attribute) => {
 		const [key, value] = attribute.split("=");
 
@@ -26,31 +26,18 @@ export const applyCSSStyles = (
 ) => {
 	const { attributes, classes, style } = stylePossibilities;
 
-	if (Object.values(style).length) {
-		applyStyleObject(element, style);
-	}
+	// console.log(element, stylePossibilities);
 
-	if (classes.length) {
-		applyClasses(element, classes);
-	}
-
-	if (attributes.length) {
-		applyAttributes(element, attributes);
-	}
+	style && applyStyleObject(element, style);
+	classes && applyClasses(element, classes);
+	attributes && applyAttributes(element, attributes);
 };
-
-const styleUpdates = (timing: number): StyleChangePossibilities => ({
-	style: {},
-	classes: [],
-	attributes: [],
-	offset: timing,
-});
 
 export const filterMatchingStyleFromKeyframes = (
 	keyframes: CustomKeyframe[],
 	timing: number
-): StyleChangePossibilities => {
-	const updates = styleUpdates(timing);
+): StyleChangePossibilities | undefined => {
+	const updates: Partial<StyleChangePossibilities> = {};
 
 	keyframes?.forEach((keyframe) => {
 		if (timing < keyframe.offset!) {
@@ -58,18 +45,25 @@ export const filterMatchingStyleFromKeyframes = (
 		}
 
 		const { offset, class: cssClass, attribute, ...styles } = keyframe;
+		const hasStyles = Object.keys(styles).length > 0;
 
-		Object.entries(styles).forEach(([key, value]) => {
-			updates.style[key] = value;
+		if (hasStyles) {
+			updates.style = { ...(updates.style ?? {}), ...(styles as Partial<CSSStyleDeclaration>) };
+		}
+
+		cssClass?.split(" ").forEach((classString) => {
+			updates.classes ??= new Set<string>().add(classString);
 		});
 
-		if (Boolean(cssClass)) {
-			updates.classes.push(...(cssClass as string).split(" "));
-		}
-		if (Boolean(attribute)) {
-			updates.attributes.push(...(attribute as string).split(" "));
-		}
+		attribute?.split(" ").forEach((attributeString) => {
+			updates.attributes ??= new Set<string>().add(attributeString);
+		});
 	});
 
-	return updates;
+	if (Object.keys(updates).length === 0) {
+		return;
+	}
+	updates.offset = timing;
+
+	return updates as StyleChangePossibilities;
 };

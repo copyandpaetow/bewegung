@@ -18,18 +18,16 @@ const initCards = () => {
 			cards[activeIndex],
 			{
 				width: ["30%", "100%", "55%"],
-				height: ["50vh", "25vh", "70vh", "60vh"],
-				callback: [() => console.log("cb1")],
+				height: ["70vh"],
 			},
-			{ duration: 1000, easing: "ease", rootSelector: "main", iterations: 2 },
+			{ duration: 1000, easing: "ease", rootSelector: "main" },
 		];
 
 		const hideOthers: CustomKeyframeEffect = [
-			".card",
+			".card:not(.main)",
 			{
 				width: "",
 				height: "",
-				callback: () => console.log("cb2"),
 			},
 			{ duration: 2000, easing: "ease-in", rootSelector: "main" },
 		];
@@ -48,7 +46,7 @@ const initCards = () => {
 			1500,
 		];
 
-		return new Bewegung(hideOthers, highlightCard, hidePauseButton);
+		return new Bewegung(highlightCard);
 	};
 
 	let animation: Bewegung | undefined;

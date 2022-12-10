@@ -10,6 +10,8 @@ export const constructKeyframes = (
 	const imageReadouts = new Map<string, ImageState>();
 	const defaultReadouts = new Map<string, DefaultKeyframes>();
 
+	console.log(readouts);
+
 	readouts.forEach((elementReadouts, elementString) => {
 		lookup.get(elementString)!.type === "image"
 			? imageReadouts.set(

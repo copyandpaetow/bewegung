@@ -1,4 +1,4 @@
-import { ElementReadouts, CssRuleName, PartialDomRect } from "../types";
+import { CssRuleName, ElementReadouts, PartialDomRect } from "../types";
 
 const getComputedStylings = (
 	changeProperties: CssRuleName[],
@@ -10,19 +10,19 @@ const getComputedStylings = (
 
 	changeProperties.forEach((cssRule: CssRuleName) => {
 		//@ts-expect-error length/parentRule weirdness
-		relevantStyles[cssRule] = computedElementStyle[cssRule];
+		relevantStyles[cssRule] = computedElementStyle.getPropertyValue(cssRule);
 	});
 
 	return relevantStyles;
 };
 
 const getDomRect = (domElement: HTMLElement): PartialDomRect => {
-	const { top, right, bottom, left, width, height } = domElement.getBoundingClientRect();
+	const { top, left, width, height } = domElement.getBoundingClientRect();
 
-	return { top, right, bottom, left, width, height };
+	return { top, left, width, height };
 };
 
-const getRatio = (domElement: HTMLElement): number => {
+export const getRatio = (domElement: HTMLElement): number => {
 	if (domElement.tagName !== "IMG") {
 		return 0;
 	}
@@ -40,5 +40,4 @@ export const getCalculations = (
 	dimensions: getDomRect(element),
 	computedStyle: getComputedStylings(changeProperties, element),
 	offset: timing,
-	ratio: getRatio(element),
 });

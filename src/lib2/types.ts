@@ -15,7 +15,6 @@ export type CssRuleName = "cssOffset" | keyof CSSStyleDeclaration;
 
 export type CustomKeyframeArrayValueSyntax = Partial<
 	Record<CssRuleName, string[] | number[]> & {
-		callback: VoidFunction[];
 		offset: number[];
 		class: string[];
 		attribute: string[];
@@ -25,8 +24,9 @@ export type CustomKeyframeArrayValueSyntax = Partial<
 export type NonCSSEntries = {
 	class: string;
 	attribute: string;
-	callback: VoidFunction;
 	offset: number;
+	easing: string;
+	composite: string;
 };
 
 export type CustomKeyframe = Partial<Record<CssRuleName, string | number> & NonCSSEntries>;
@@ -48,11 +48,6 @@ export type CustomKeyframeEffect = [
 	options: EveryOptionSyntax
 ];
 
-export type Callbacks = {
-	callback: VoidFunction;
-	offset: number;
-};
-
 export interface BewegungAPI {
 	play: () => void;
 	pause: () => void;
@@ -72,24 +67,21 @@ export type ElementReadouts = {
 	dimensions: PartialDomRect;
 	computedStyle: Partial<CSSStyleDeclaration>;
 	offset: number;
-	ratio: number;
 };
 
 export type DifferenceArray = [ElementReadouts, ElementReadouts];
 
 export type PartialDomRect = {
 	top: number;
-	right: number;
-	bottom: number;
 	left: number;
 	width: number;
 	height: number;
 };
 
 export type StyleChangePossibilities = {
-	style: Partial<CSSStyleDeclaration>;
-	classes: string[];
-	attributes: string[];
+	style?: Partial<CSSStyleDeclaration>;
+	classes?: Set<string>;
+	attributes?: Set<string>;
 	offset: number;
 };
 
@@ -111,7 +103,6 @@ export type Timeline = TimelineEntry[];
 export type AnimationEntry = {
 	target: HTMLElement[];
 	keyframes: CustomKeyframe[];
-	callbacks: Callbacks[];
 	options: BewegungsOptions;
 	selector: string;
 };
@@ -124,10 +115,12 @@ export interface Result {
 export type EntryType = "image" | "text" | "default";
 
 export type ElementEntry = {
+	affectedBy: string[];
 	parent: string;
 	root: string;
+	self: string;
 	type: EntryType;
-	chunks: string[];
+	ratio: number;
 };
 
 export interface WorkerMethods {
@@ -139,26 +132,21 @@ export interface WorkerMethods {
 }
 
 export interface State {
-	callbacks: Map<string, Callbacks[]>;
-	selectors: Map<string, string>;
+	selectors: Map<string, number>;
 	elementLookup: BidirectionalMap<string, HTMLElement>;
-	mainElements: Map<string, string[]>;
-	options: Map<string, BewegungsOptions>;
-	cssResets: Map<string, Map<string, string>>;
-	changeProperties: CssRuleName[];
+	rootSelector: Map<HTMLElement, string[]>;
+	cssResets: Map<HTMLElement, Map<string, string>>;
+	worker: WorkerMethods;
 }
 
 export interface WorkerState {
 	keyframes: Map<string, CustomKeyframe[]>;
-	options: Map<string, BewegungsOptions>;
+	options: Map<string, BewegungsOptions[]>;
 	elements: Map<string, string[]>;
-	changeTimings: number[];
 	totalRuntime: number;
 	appliableKeyframes: Map<string, StyleChangePossibilities>[];
 	readouts: Map<string, ElementReadouts[]>;
 	lookup: Map<string, ElementEntry>;
-	sendKeyframes: number;
-	recievedKeyframes: number;
 }
 
 export interface ImageState {
@@ -187,3 +175,15 @@ export interface DefaultKeyframes {
 		after: Partial<CSSStyleDeclaration>;
 	};
 }
+
+export type TransferObject = {
+	targets: string[][];
+	keyframes: EveryKeyframeSyntax[];
+	options: EveryOptionSyntax[];
+};
+
+export type AnimationInformation = {
+	totalRuntime: number;
+	changeTimings: number[];
+	changeProperties: CssRuleName[];
+};

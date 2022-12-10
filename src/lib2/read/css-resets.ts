@@ -1,5 +1,3 @@
-import { BidirectionalMap } from "../utils";
-
 export const saveOriginalStyle = (element: HTMLElement) => {
 	const allAttributes = new Map<string, string>([["style", ""]]);
 	element.getAttributeNames().forEach((attribute) => {
@@ -30,20 +28,4 @@ export const restoreOriginalStyle = (
 	currentAttributes.forEach((attribute) => {
 		element.removeAttribute(attribute);
 	});
-};
-
-export const saveMainElementStyles = (
-	elements: Map<string, string[]>,
-	elementLookup: BidirectionalMap<string, HTMLElement>
-) => {
-	const elementResets = new Map<string, Map<string, string>>();
-
-	elements.forEach((elementStrings, chunkID) => {
-		elementStrings.forEach((elementString) => {
-			const domElement = elementLookup.get(elementString)!;
-			elementResets.set(elementString, saveOriginalStyle(domElement));
-		});
-	});
-
-	return elementResets;
 };

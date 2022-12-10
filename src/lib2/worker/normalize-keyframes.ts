@@ -1,25 +1,26 @@
-import { BewegungsOptions, Callbacks, CustomKeyframe, State, WorkerState } from "../types";
+import { BewegungsOptions, CustomKeyframe, EveryKeyframeSyntax } from "../types";
+import { unifyKeyframeStructure } from "./normalize-keyframe-structure";
 
 //?: if the lastOffset is equal to the newOffset, their keyframes will get mashed together eventually
 // with newOffset === lastOffset ? newOffset + 0.0001 : newOffset, this could be avoided but it creates a flicker and doesnt look that great
 const updateOffsets = (
-	entry: CustomKeyframe[] | Callbacks[],
+	keyframes: CustomKeyframe[],
 	options: BewegungsOptions,
 	totalRuntime: number
-): CustomKeyframe[] | Callbacks[] => {
+): CustomKeyframe[] => {
 	const { duration: untypedDuration, delay: start, endDelay, iterations, direction } = options;
 	const duration = untypedDuration as number;
 	if (iterations === Infinity) {
 		throw new Error("cant calculate with Infinity");
 	}
 
-	const updatedFrames: CustomKeyframe[] | Callbacks[] = [];
-	const reversedEntry: CustomKeyframe[] | Callbacks[] = [...entry].reverse();
+	const updatedFrames: CustomKeyframe[] = [];
+	const reversedEntry: CustomKeyframe[] = [...keyframes].reverse();
 
 	Array.from(Array(iterations), (_, iteration) => {
 		const lastIterationOffset = (start! + duration * iteration - endDelay!) / totalRuntime ?? 0;
 
-		entry.forEach((frame, index) => {
+		keyframes.forEach((frame, index) => {
 			const isForward =
 				direction === "normal" ||
 				(direction === "alternate" && index % 2 === 0) ||
@@ -40,15 +41,34 @@ const updateOffsets = (
 	return updatedFrames;
 };
 
-export const updateKeyframeOffsets = (workerState: WorkerState) => {
-	const { options, keyframes, totalRuntime } = workerState;
-	const updatedKeyframes = new Map<string, CustomKeyframe[]>();
+const addIndividualEasing = (
+	keyframes: CustomKeyframe[],
+	options: BewegungsOptions
+): CustomKeyframe[] => {
+	const { easing, composite } = options;
 
-	keyframes.forEach((keyframeEntry, chunkID) => {
-		const option = options.get(chunkID)!;
+	return keyframes.map((frame) => {
+		const { offset, ...styles } = frame;
 
-		updatedKeyframes.set(chunkID, updateOffsets(keyframeEntry, option, totalRuntime));
+		const individualEasing = (styles.animationTimingFunction ??
+			styles.transitionTimingFunction ??
+			easing) as string | undefined;
+
+		return {
+			offset,
+			easing: individualEasing,
+			composite,
+			...styles,
+		};
 	});
-
-	return updatedKeyframes;
 };
+
+export const normalizeKeyframes = (
+	allKeyframes: EveryKeyframeSyntax[],
+	allOptions: BewegungsOptions[],
+	totalRoundtime: number
+): CustomKeyframe[][] =>
+	allKeyframes
+		.map(unifyKeyframeStructure)
+		.map((keyframes, index) => addIndividualEasing(keyframes, allOptions[index]))
+		.map((keyframes, index) => updateOffsets(keyframes, allOptions[index], totalRoundtime));

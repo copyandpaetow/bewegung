@@ -1,21 +1,22 @@
 import { defaultOptions } from "../constants";
 import {
 	BewegungsOptions,
-	CssRuleName,
 	CustomKeyframe,
 	ElementEntry,
 	ElementReadouts,
+	TransferObject,
 	WorkerState,
 } from "../types";
 import {
-	calculateAppliableKeyframes,
-	calculateChangeProperties,
 	calculateChangeTimings,
+	calculateChangeProperties,
+	calculateAppliableKeyframes,
 } from "./dom-preparations";
 import { filterReadouts } from "./filter-readouts";
 import { constructKeyframes } from "./keyframes";
+import { normalizeKeyframes } from "./normalize-keyframes";
+import { normalizeOptions } from "./normalize-options";
 import { calculateTotalRuntime } from "./runtime";
-import { updateKeyframeOffsets } from "./update-offsets";
 
 const reply = (queryMethodListener: string, ...queryMethodArguments: any[]) => {
 	if (!queryMethodListener) {
@@ -25,69 +26,6 @@ const reply = (queryMethodListener: string, ...queryMethodArguments: any[]) => {
 		queryMethodListener,
 		queryMethodArguments,
 	});
-};
-
-const workerState: WorkerState = {
-	keyframes: new Map(),
-	options: new Map(),
-	elements: new Map(),
-	changeTimings: [],
-	totalRuntime: defaultOptions.duration as number,
-	appliableKeyframes: [],
-	readouts: new Map(),
-	lookup: new Map(),
-	sendKeyframes: 0,
-	recievedKeyframes: 0,
-};
-
-const updateEntries = () => {
-	filterReadouts(workerState);
-
-	reply("sendKeyframes", constructKeyframes(workerState));
-};
-
-const queryFunctions = {
-	init() {
-		console.log("started");
-	},
-	sendKeyframes(keyframes: Map<string, CustomKeyframe[]>) {
-		workerState.keyframes = keyframes;
-		reply("sendChangeProperties", calculateChangeProperties(keyframes));
-	},
-	sendOptions(options: Map<string, BewegungsOptions>) {
-		workerState.options = options;
-		workerState.totalRuntime = calculateTotalRuntime(options);
-		workerState.keyframes = updateKeyframeOffsets(workerState);
-		workerState.changeTimings = calculateChangeTimings(workerState.keyframes);
-	},
-	sendElements(elements: Map<string, string[]>) {
-		workerState.elements = elements;
-		workerState.appliableKeyframes = calculateAppliableKeyframes(workerState);
-
-		reply("sendAppliableKeyframes", workerState.appliableKeyframes[workerState.sendKeyframes]);
-
-		workerState.sendKeyframes += 1;
-	},
-	sendElementLookup(elementLookup: Map<string, ElementEntry>) {
-		workerState.lookup = elementLookup;
-	},
-	sendReadouts(newReadout: Map<string, ElementReadouts>) {
-		workerState.recievedKeyframes += 1;
-		newReadout.forEach((readout, elementString) => {
-			workerState.readouts.set(
-				elementString,
-				(workerState.readouts.get(elementString) ?? []).concat(readout)
-			);
-		});
-
-		console.log(workerState.appliableKeyframes[workerState.sendKeyframes]);
-		if (workerState.sendKeyframes <= workerState.keyframes.size - 1) {
-			reply("sendAppliableKeyframes", workerState.appliableKeyframes[workerState.sendKeyframes]);
-			workerState.sendKeyframes += 1;
-		} else {
-			updateEntries();
-		}
-	},
 };
 
 onmessage = (event) => {
@@ -100,4 +38,83 @@ onmessage = (event) => {
 	const execute = queryFunctions[queryMethod];
 
 	execute?.(...queryMethodArguments);
+};
+
+const workerState: WorkerState = {
+	keyframes: new Map<string, CustomKeyframe[]>(),
+	options: new Map<string, BewegungsOptions[]>(),
+	elements: new Map(),
+
+	totalRuntime: defaultOptions.duration as number,
+	appliableKeyframes: [],
+	readouts: new Map(),
+	lookup: new Map(),
+};
+
+const updateEntries = () => {
+	filterReadouts(workerState);
+
+	reply("sendKeyframes", constructKeyframes(workerState));
+};
+
+const fillWorkerState = (
+	targets: string[][],
+	keyframes: CustomKeyframe[][],
+	options: BewegungsOptions[]
+) => {
+	targets.forEach((allTargets, index) => {
+		const currentOption = options[index];
+		const currentKeyframes = keyframes[index];
+
+		allTargets.forEach((target) => {
+			workerState.keyframes.set(
+				target,
+				(workerState.keyframes.get(target) ?? []).concat(currentKeyframes)
+			);
+			workerState.options.set(
+				target,
+				(workerState.options.get(target) ?? []).concat(currentOption)
+			);
+		});
+	});
+};
+
+const queryFunctions = {
+	normalizePropsInWorker(transferObject: TransferObject) {
+		const options = normalizeOptions(transferObject.options);
+		const totalRuntime = (workerState.totalRuntime = calculateTotalRuntime(options));
+		const keyframes = normalizeKeyframes(transferObject.keyframes, options, totalRuntime);
+		const changeTimings = calculateChangeTimings(keyframes);
+
+		reply("sendKeyframeInformationToClient", {
+			changeTimings,
+			changeProperties: calculateChangeProperties(keyframes),
+			totalRunetime: workerState.totalRuntime,
+		});
+		fillWorkerState(transferObject.targets, keyframes, options);
+
+		workerState.appliableKeyframes = calculateAppliableKeyframes(changeTimings, workerState);
+	},
+
+	sendElementLookup(elementLookup: Map<string, ElementEntry>) {
+		workerState.lookup = elementLookup;
+		reply("sendAppliableKeyframes", workerState.appliableKeyframes.pop());
+	},
+
+	sendReadouts(newReadout: Map<string, ElementReadouts>) {
+		newReadout.forEach((readout, elementString) => {
+			workerState.readouts.set(
+				elementString,
+				(workerState.readouts.get(elementString) ?? []).concat(readout)
+			);
+		});
+
+		if (workerState.appliableKeyframes.length > 0) {
+			reply("sendAppliableKeyframes", workerState.appliableKeyframes.pop());
+
+			return;
+		}
+		filterReadouts(workerState);
+		reply("sendKeyframes", constructKeyframes(workerState));
+	},
 };
