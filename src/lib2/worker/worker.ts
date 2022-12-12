@@ -47,14 +47,9 @@ const workerState: WorkerState = {
 
 	totalRuntime: defaultOptions.duration as number,
 	appliableKeyframes: [],
+	resultingStyleChange: new Map(),
 	readouts: new Map(),
 	lookup: new Map(),
-};
-
-const updateEntries = () => {
-	filterReadouts(workerState);
-
-	reply("sendKeyframes", constructKeyframes(workerState));
 };
 
 const fillWorkerState = (
@@ -89,29 +84,39 @@ const queryFunctions = {
 		reply("sendKeyframeInformationToClient", {
 			changeTimings,
 			changeProperties: calculateChangeProperties(keyframes),
-			totalRunetime: workerState.totalRuntime,
+			totalRuntime: workerState.totalRuntime,
 		});
 		fillWorkerState(transferObject.targets, keyframes, options);
 
-		workerState.appliableKeyframes = calculateAppliableKeyframes(changeTimings, workerState);
+		const appliableKeyframes = calculateAppliableKeyframes(changeTimings, workerState);
+
+		workerState.appliableKeyframes = appliableKeyframes;
+		workerState.resultingStyleChange = appliableKeyframes.at(-1)!;
 	},
 
 	sendElementLookup(elementLookup: Map<string, ElementEntry>) {
 		workerState.lookup = elementLookup;
-		reply("sendAppliableKeyframes", workerState.appliableKeyframes.pop());
 	},
 
+	requestAppliableKeyframes() {
+		reply("sendAppliableKeyframes", {
+			keyframes: workerState.appliableKeyframes.pop(),
+			done: workerState.appliableKeyframes.length === 0,
+		});
+	},
 	sendReadouts(newReadout: Map<string, ElementReadouts>) {
 		newReadout.forEach((readout, elementString) => {
 			workerState.readouts.set(
 				elementString,
-				(workerState.readouts.get(elementString) ?? []).concat(readout)
+				[readout].concat(workerState.readouts.get(elementString) ?? [])
 			);
 		});
 
 		if (workerState.appliableKeyframes.length > 0) {
-			reply("sendAppliableKeyframes", workerState.appliableKeyframes.pop());
-
+			reply("sendAppliableKeyframes", {
+				keyframes: workerState.appliableKeyframes.pop(),
+				done: workerState.appliableKeyframes.length === 0,
+			});
 			return;
 		}
 		filterReadouts(workerState);

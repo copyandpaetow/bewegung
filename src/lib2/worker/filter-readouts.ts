@@ -34,6 +34,10 @@ export const filterReadouts = (workerState: WorkerState) => {
 	const { readouts } = workerState;
 
 	readouts.forEach((elementReadouts, elementString) => {
+		if (elementReadouts.length < 2) {
+			readouts.delete(elementString);
+			return;
+		}
 		readouts.set(elementString, recalculateDisplayNoneValues(elementReadouts));
 	});
 };

@@ -28,10 +28,10 @@ export const calculateChangeProperties = (allKeyframes: CustomKeyframe[][]) => {
 
 export const calculateAppliableKeyframes = (changeTimings: number[], workerState: WorkerState) => {
 	const { keyframes } = workerState;
-	const appliableKeyframes: Map<string, StyleChangePossibilities>[] = [];
+	const appliableKeyframes: Map<string, CustomKeyframe>[] = [];
 
 	changeTimings.forEach((timing) => {
-		const resultingStyle = new Map<string, StyleChangePossibilities>();
+		const resultingStyle = new Map<string, CustomKeyframe>();
 		keyframes.forEach((keyframe, elementString) => {
 			//TODO: if nothing was added they should not be added to the resulting style
 			const combinedKeyframe = filterMatchingStyleFromKeyframes(keyframe, timing);

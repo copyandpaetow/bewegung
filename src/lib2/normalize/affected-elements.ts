@@ -89,15 +89,19 @@ export const getAffectedElements = (state: State) => {
 	elementLookup.forEach((domElement, elementString) => {
 		const rootElement = getRootElement(rootSelector.get(domElement)!);
 		rootElements.set(elementString, rootElement);
+
 		elementConnections.set(elementString, findAffectedDOMElements(domElement, rootElement));
 	});
 
-	elementConnections.forEach((secondaryDomElements, elementString) => {
+	elementConnections.forEach((secondaryDomElements, mainElementString) => {
 		secondaryDomElements.forEach((secondaryDomElement) => {
-			const key = getOrAddKeyFromLookup(secondaryDomElement, elementLookup);
+			const secondaryElementString = getOrAddKeyFromLookup(secondaryDomElement, elementLookup);
+
 			getAffectedElementsMap.set(
-				key,
-				(getAffectedElementsMap.get(key) ?? new Set<string>()).add(elementString)
+				secondaryElementString,
+				(getAffectedElementsMap.get(secondaryElementString) ?? new Set<string>()).add(
+					mainElementString
+				)
 			);
 		});
 	});

@@ -8,9 +8,10 @@ const getComputedStylings = (
 
 	const relevantStyles: Partial<CSSStyleDeclaration> = {};
 
+	//TODO if `getPropertyValue(rule)` is faster, we need to resturcture the changeProperties to be border-radius instead of borderRadius for example
 	changeProperties.forEach((cssRule: CssRuleName) => {
 		//@ts-expect-error length/parentRule weirdness
-		relevantStyles[cssRule] = computedElementStyle.getPropertyValue(cssRule);
+		relevantStyles[cssRule] = computedElementStyle[cssRule];
 	});
 
 	return relevantStyles;

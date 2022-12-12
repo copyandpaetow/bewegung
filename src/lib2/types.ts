@@ -144,7 +144,8 @@ export interface WorkerState {
 	options: Map<string, BewegungsOptions[]>;
 	elements: Map<string, string[]>;
 	totalRuntime: number;
-	appliableKeyframes: Map<string, StyleChangePossibilities>[];
+	appliableKeyframes: Map<string, CustomKeyframe>[];
+	resultingStyleChange: Map<string, CustomKeyframe>;
 	readouts: Map<string, ElementReadouts[]>;
 	lookup: Map<string, ElementEntry>;
 }
@@ -171,8 +172,8 @@ export interface StyleTables {
 export interface DefaultKeyframes {
 	keyframes: Keyframe[];
 	overrides: {
-		before: Partial<CSSStyleDeclaration>;
-		after: Partial<CSSStyleDeclaration>;
+		before: CustomKeyframe;
+		after: CustomKeyframe;
 	};
 }
 
