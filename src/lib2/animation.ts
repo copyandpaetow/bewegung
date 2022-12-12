@@ -1,3 +1,5 @@
+import { createDefaultAnimation } from "./calculate/default-animation";
+import { createImageAnimation } from "./calculate/image-animation";
 import { getAffectedElements } from "./normalize/affected-elements";
 import { initState } from "./normalize/state";
 import { getAnimationInformation, readWriteDomChanges } from "./read/dom";
@@ -8,18 +10,10 @@ import {
 	ElementEntry,
 	ImageState,
 	State,
-	StyleChangePossibilities,
 	WorkerMethods,
 } from "./types";
-import { createDefaultAnimation } from "./calculate/default-animation";
-import { createImageAnimation } from "./calculate/image-animation";
 
 //TODO: unify sendQuere und Listener Names in an enum
-
-type AnimationState = {
-	animations: Animation[];
-	onStart: VoidFunction[];
-};
 
 const getKeyframes = (worker: WorkerMethods) =>
 	new Promise<[Map<string, ImageState>, Map<string, DefaultKeyframes>, number]>((resolve) =>
@@ -37,20 +31,20 @@ const createAnimationsFromKeyframes = async (
 ) => {
 	const { worker } = state;
 	const { totalRuntime } = animationInformation;
-	console.log(2, animationInformation.totalRuntime);
-
 	const [imageKeyframes, defaultKeyframes] = await getKeyframes(worker);
 
-	const { onStart, animations } = createDefaultAnimation(defaultKeyframes, state, totalRuntime);
-	// createImageAnimation(
-	// 	imageKeyframes,
-	// 	animationState,
-	// 	state,
-	// 	stringifiedElementLookup,
-	// 	totalRuntime
-	// );
+	const defaultAnimations = createDefaultAnimation(defaultKeyframes, state, totalRuntime);
+	const imageAnimations = createImageAnimation(
+		imageKeyframes,
+		state,
+		stringifiedElementLookup,
+		totalRuntime
+	);
 
-	return { onStart, animations };
+	return {
+		onStart: [...defaultAnimations.onStart, ...imageAnimations.onStart],
+		animations: [...defaultAnimations.animations, ...imageAnimations.animations],
+	};
 };
 
 export const getAnimations = async (...props: BewegungProps) => {
@@ -58,7 +52,6 @@ export const getAnimations = async (...props: BewegungProps) => {
 
 	const stringifiedElementLookup = getAffectedElements(state);
 	const animationInformation = await getAnimationInformation(state);
-	console.log(1, animationInformation.totalRuntime);
 	await readWriteDomChanges(state, animationInformation);
 	const animations = await createAnimationsFromKeyframes(
 		state,

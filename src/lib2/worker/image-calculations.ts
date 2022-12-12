@@ -32,6 +32,7 @@ export const getWrapperStyle = (
 export const initialImageState = (): ImageState => ({
 	wrapperStyle: {},
 	placeholderStyle: {},
+	ratio: 0,
 	maxWidth: 0,
 	maxHeight: 0,
 	easingTable: {},
@@ -44,7 +45,7 @@ export const initialImageState = (): ImageState => ({
 });
 
 export const calculateImageKeyframes = (readouts: ElementReadouts[], imageState: ImageState) => {
-	const { maxWidth, maxHeight, easingTable } = imageState;
+	const { maxWidth, maxHeight, easingTable, ratio } = imageState;
 
 	const keyframes: Keyframe[] = [];
 
@@ -56,11 +57,11 @@ export const calculateImageKeyframes = (readouts: ElementReadouts[], imageState:
 		let translateY: number = 0;
 
 		if (entry.computedStyle.objectFit === "cover") {
-			const alternateScaleWidth = (entry.ratio * maxHeight) / maxWidth;
-			const alternateScaleHeight = maxWidth / entry.ratio / maxHeight;
+			const alternateScaleWidth = (ratio * maxHeight) / maxWidth;
+			const alternateScaleHeight = maxWidth / ratio / maxHeight;
 			const currentRatio = entry.dimensions.width / entry.dimensions.height;
 
-			if (currentRatio < entry.ratio) {
+			if (currentRatio < ratio) {
 				scaleWidth = alternateScaleWidth * scaleHeight;
 			} else {
 				scaleHeight = alternateScaleHeight * scaleWidth;

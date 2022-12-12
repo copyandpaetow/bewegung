@@ -153,6 +153,7 @@ export interface WorkerState {
 export interface ImageState {
 	wrapperStyle: Partial<CSSStyleDeclaration>;
 	placeholderStyle: Partial<CSSStyleDeclaration>;
+	ratio: number,
 	maxWidth: number;
 	maxHeight: number;
 	easingTable: Record<number, string>;

@@ -23,7 +23,6 @@ export class Bewegung implements BewegungAPI {
 		const awaitAnimations = async () => {
 			const { animations, onStart } = await this.#state;
 			onStart.forEach((cb) => cb());
-			console.log(onStart);
 			animations.forEach((animation) => {
 				animation.play();
 				animation.pause();
