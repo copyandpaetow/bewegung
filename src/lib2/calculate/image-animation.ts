@@ -23,12 +23,12 @@ const getWrapperElement = (wrapperStyle: Partial<CSSStyleDeclaration>) => {
 
 export const createImageAnimation = (
 	imageKeyframes: Map<string, ImageState>,
-	animationState: { animations: Animation[]; onStart: VoidFunction[] },
 	state: State,
 	entryLookup: Map<string, ElementEntry>,
 	totalRuntime: number
 ) => {
-	const { animations, onStart } = animationState;
+	const animations: Animation[] = [];
+	const onStart: VoidFunction[] = [];
 	const { elementLookup, cssResets } = state;
 
 	imageKeyframes.forEach((imageEntry, elementString) => {
@@ -41,7 +41,6 @@ export const createImageAnimation = (
 			maxWidth,
 			overrides,
 		} = imageEntry;
-		const { animations, onStart } = animationState;
 		const domElement = elementLookup.get(elementString) as HTMLImageElement;
 
 		const animation = new Animation(new KeyframeEffect(domElement, keyframes, totalRuntime));
@@ -59,7 +58,7 @@ export const createImageAnimation = (
 				placeholder.remove();
 			}
 			wrapper.remove();
-			restoreOriginalStyle(domElement, cssResets.get(elementString)!);
+			restoreOriginalStyle(domElement, cssResets.get(domElement)!);
 			applyStyleObject(domElement, overrides.after);
 			applyStyleObject(root, { position: root.style.position });
 		};
@@ -79,4 +78,6 @@ export const createImageAnimation = (
 		animations.push(animation);
 		animations.push(new Animation(new KeyframeEffect(wrapper, wrapperKeyframes, totalRuntime)));
 	});
+
+	return { animations, onStart };
 };

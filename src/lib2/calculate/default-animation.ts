@@ -10,8 +10,6 @@ export const createDefaultAnimation = (
 	const onStart: VoidFunction[] = [];
 	const { elementLookup } = state;
 
-	console.log(totalRuntime);
-
 	defaultKeyframes.forEach((defaultEntry, elementString) => {
 		const { keyframes, overrides } = defaultEntry;
 		const domElement = elementLookup.get(elementString)!;
@@ -23,8 +21,6 @@ export const createDefaultAnimation = (
 
 		animations.push(animation);
 	});
-
-	console.log(animations);
 
 	return { animations, onStart };
 };

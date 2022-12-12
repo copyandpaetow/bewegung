@@ -15,7 +15,6 @@ export const getAnimationInformation = (state: State) =>
 		state.worker.addListener(
 			"sendKeyframeInformationToClient",
 			([information]: [AnimationInformation]) => {
-				console.log(0, information.totalRuntime);
 				resolve(information);
 			}
 		);

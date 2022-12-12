@@ -44,15 +44,12 @@ export const getImageKeyframes = (
 		entry.affectedBy.flatMap((elementString) => options.get(elementString)!)
 	);
 
+	imageState.ratio = entry.ratio;
 	imageState.easingTable = calculateEasingMap([...easings], totalRuntime);
 	imageState.maxHeight = highestNumber(elementReadouts.map((prop) => prop.dimensions.height));
 	imageState.maxWidth = highestNumber(elementReadouts.map((prop) => prop.dimensions.width));
 	imageState.placeholderStyle = getPlaceholderStyle(elementReadouts);
-	imageState.wrapperStyle = getWrapperStyle(
-		elementReadouts,
-		readouts.get(entry.parent)!,
-		imageState
-	);
+	imageState.wrapperStyle = getWrapperStyle(elementReadouts, readouts.get(entry.root)!, imageState);
 	imageState.wrapperKeyframes = getWrapperKeyframes(
 		elementReadouts,
 		readouts.get(entry.parent)!,

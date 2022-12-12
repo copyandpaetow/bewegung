@@ -20,7 +20,7 @@ const initCards = () => {
 				//width: ["30%", "100%", "55%"],
 				height: ["70vh"],
 			},
-			{ duration: 1000, easing: "ease", rootSelector: "main" },
+			{ duration: 1000, easing: "ease", rootSelector: ".cards_wrapper" },
 		];
 
 		const hideOthers: CustomKeyframeEffect = [
