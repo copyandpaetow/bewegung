@@ -3,25 +3,28 @@ import {
 	CssRuleName,
 	ElementReadouts,
 	State,
-	StyleChangePossibilities,
 	WorkerMethods,
+	CustomKeyframe,
 } from "../types";
-import { Queue } from "../utils";
 import { applyCSSStyles } from "./apply-styles";
 import { restoreOriginalStyle } from "./css-resets";
 import { getCalculations } from "./dom-properties";
 
-const getAnimationInformation = (worker: WorkerMethods) =>
+export const getAnimationInformation = (state: State) =>
 	new Promise<AnimationInformation>((resolve) => {
-		worker.addListener("sendKeyframeInformationToClient", ([information]: [AnimationInformation]) =>
-			resolve(information)
+		state.worker.addListener(
+			"sendKeyframeInformationToClient",
+			([information]: [AnimationInformation]) => {
+				console.log(0, information.totalRuntime);
+				resolve(information);
+			}
 		);
 	});
 
 const nextBrowserRender = () => new Promise((resolve) => requestAnimationFrame(resolve));
 
 const readDom = async (
-	elementChanges: Map<string, StyleChangePossibilities>,
+	elementChanges: Map<string, CustomKeyframe>,
 	changeProperties: CssRuleName[],
 	state: State
 ) => {
@@ -35,7 +38,7 @@ const readDom = async (
 		elementLookup.forEach((domElement, elementString) => {
 			readouts.set(
 				elementString,
-				getCalculations(domElement, changeProperties, styleChange.offset)
+				getCalculations(domElement, changeProperties, styleChange.offset!)
 			);
 		});
 		cssResets.forEach((reset, domElement) => {
@@ -44,7 +47,7 @@ const readDom = async (
 	});
 	return readouts;
 };
-let once = false;
+
 const areObjectsIdentical = <Value>(
 	current: Record<string, Value>,
 	previous: Record<string, Value>
@@ -79,23 +82,34 @@ const filterSimilarDomReadouts = (
 	return newReadouts;
 };
 
-export const readWriteDomChanges = async (state: State) => {
+export const readWriteDomChanges = async (
+	state: State,
+	animationInformation: AnimationInformation
+) => {
 	const { worker } = state;
 	const previousDomReadouts = new Map<string, ElementReadouts>();
+	let setIsFinished = (value: boolean | PromiseLike<boolean>) => {};
+	const isFinished = new Promise((resolve) => {
+		setIsFinished = resolve;
+	});
 
 	worker.addListener(
 		"sendAppliableKeyframes",
-		([elementChanges]: [Map<string, StyleChangePossibilities>]) => enqueue(elementChanges)
+		async ([{ keyframes, done }]: [{ keyframes: Map<string, CustomKeyframe>; done: boolean }]) => {
+			const domReadouts = await readDom(keyframes, animationInformation.changeProperties, state);
+			//TODO: check if this added calculation time is worth it in the long run
+			const filterReadouts = filterSimilarDomReadouts(domReadouts, previousDomReadouts);
+			worker.sendQuery("sendReadouts", filterReadouts);
+
+			if (done) {
+				setIsFinished(true);
+				return;
+			}
+		}
 	);
-	const { totalRuntime, changeProperties } = await getAnimationInformation(worker);
-	const enqueue = Queue(async (current: Map<string, StyleChangePossibilities>) => {
-		const domReadouts = await readDom(current, changeProperties, state);
 
-		//TODO: check if this added calculation time is worth it in the long run
-		const filterReadouts = filterSimilarDomReadouts(domReadouts, previousDomReadouts);
+	worker.sendQuery("requestAppliableKeyframes");
 
-		worker.sendQuery("sendReadouts", filterReadouts);
-	});
-
-	return totalRuntime;
+	await isFinished;
+	return;
 };

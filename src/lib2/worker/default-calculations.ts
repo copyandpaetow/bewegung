@@ -44,6 +44,8 @@ export const getCalcualtionsFromReadouts = (
 ) => {
 	const isTextNode = textNode === "text";
 
+	//TODO: these could be different. We need to get the curretn offset and search the parent entry for that or everything after
+
 	return readouts.map((readout, index, array) => {
 		const child: DifferenceArray = [readout, array.at(-1)!];
 		const parent: DifferenceArray | [undefined, undefined] = parentReadouts

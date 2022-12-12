@@ -1,4 +1,4 @@
-import { ElementReadouts, WorkerState } from "../types";
+import { BewegungsOptions, ElementReadouts, WorkerState } from "../types";
 import { checkForBorderRadius, checkForDisplayNone, highestNumber } from "../utils";
 import { calculateEasingMap } from "./easings";
 import {
@@ -40,8 +40,11 @@ export const getImageKeyframes = (
 
 	const entry = lookup.get(elementString)!;
 
-	const easings = entry.chunks.map((chunkID) => options.get(chunkID)!);
-	imageState.easingTable = calculateEasingMap(easings, totalRuntime);
+	const easings = new Set<BewegungsOptions>(
+		entry.affectedBy.flatMap((elementString) => options.get(elementString)!)
+	);
+
+	imageState.easingTable = calculateEasingMap([...easings], totalRuntime);
 	imageState.maxHeight = highestNumber(elementReadouts.map((prop) => prop.dimensions.height));
 	imageState.maxWidth = highestNumber(elementReadouts.map((prop) => prop.dimensions.width));
 	imageState.placeholderStyle = getPlaceholderStyle(elementReadouts);

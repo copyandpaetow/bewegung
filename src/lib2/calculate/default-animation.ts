@@ -1,17 +1,16 @@
-import { applyStyleObject } from "../read/apply-styles";
+import { applyCSSStyles } from "../read/apply-styles";
 import { DefaultKeyframes, State } from "../types";
 
 export const createDefaultAnimation = (
 	defaultKeyframes: Map<string, DefaultKeyframes>,
-	animationState: {
-		animations: Animation[];
-		onStart: VoidFunction[];
-	},
 	state: State,
-	totalRuntime
+	totalRuntime: number
 ) => {
-	const { animations, onStart } = animationState;
+	const animations: Animation[] = [];
+	const onStart: VoidFunction[] = [];
 	const { elementLookup } = state;
+
+	console.log(totalRuntime);
 
 	defaultKeyframes.forEach((defaultEntry, elementString) => {
 		const { keyframes, overrides } = defaultEntry;
@@ -19,9 +18,13 @@ export const createDefaultAnimation = (
 
 		const animation = new Animation(new KeyframeEffect(domElement, keyframes, totalRuntime));
 
-		animation.onfinish = () => applyStyleObject(domElement, overrides.after);
-		onStart.push(() => applyStyleObject(domElement, overrides.before));
+		onStart.push(() => applyCSSStyles(domElement, overrides.before));
+		animation.onfinish = () => applyCSSStyles(domElement, overrides.after);
 
 		animations.push(animation);
 	});
+
+	console.log(animations);
+
+	return { animations, onStart };
 };

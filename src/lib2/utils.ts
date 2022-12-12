@@ -86,27 +86,3 @@ export const checkForDisplayNone = (entry: ElementReadouts) =>
 
 export const checkForPositionStatic = (entry: ElementReadouts) =>
 	entry.computedStyle.position === "static";
-
-export const Queue = <Type>(callback: (current: Type) => void) => {
-	const queue: Type[] = [];
-	let isRunning = false;
-
-	const run = async () => {
-		isRunning = true;
-
-		while (queue.length) {
-			callback(queue.shift()!);
-		}
-
-		isRunning = false;
-	};
-
-	return (entry: Type) => {
-		queue.push(entry);
-
-		if (isRunning) {
-			return;
-		}
-		run();
-	};
-};
