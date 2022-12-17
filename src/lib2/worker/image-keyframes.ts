@@ -52,7 +52,7 @@ export const getImageKeyframes = (
 	imageState.wrapperStyle = getWrapperStyle(elementReadouts, readouts.get(entry.root)!, imageState);
 	imageState.wrapperKeyframes = getWrapperKeyframes(
 		elementReadouts,
-		readouts.get(entry.parent)!,
+		readouts.get(entry.root)!,
 		imageState
 	);
 	imageState.keyframes = calculateImageKeyframes(elementReadouts, imageState);
