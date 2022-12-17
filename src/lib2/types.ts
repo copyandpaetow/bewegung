@@ -118,7 +118,6 @@ export type ElementEntry = {
 	affectedBy: string[];
 	parent: string;
 	root: string;
-	self: string;
 	type: EntryType;
 	ratio: number;
 };
@@ -142,18 +141,19 @@ export interface State {
 export interface WorkerState {
 	keyframes: Map<string, CustomKeyframe[]>;
 	options: Map<string, BewegungsOptions[]>;
-	elements: Map<string, string[]>;
 	totalRuntime: number;
+	changeTimings: number[];
 	appliableKeyframes: Map<string, CustomKeyframe>[];
 	resultingStyleChange: Map<string, CustomKeyframe>;
 	readouts: Map<string, ElementReadouts[]>;
 	lookup: Map<string, ElementEntry>;
+	rootElements: Set<string>;
 }
 
 export interface ImageState {
 	wrapperStyle: Partial<CSSStyleDeclaration>;
 	placeholderStyle: Partial<CSSStyleDeclaration>;
-	ratio: number,
+	ratio: number;
 	maxWidth: number;
 	maxHeight: number;
 	easingTable: Record<number, string>;

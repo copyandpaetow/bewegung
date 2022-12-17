@@ -14,26 +14,29 @@ export const recalculateDisplayNoneValues = (readout: ElementReadouts[]): Elemen
 		if (isEntryVisible(entry)) {
 			return entry;
 		}
-		const nextEntryDimensions = (
+		const nextEntry =
 			array.slice(0, index).reverse().find(isEntryVisible) ||
-			array.slice(index).find(isEntryVisible)
-		)?.dimensions;
+			array.slice(index).find(isEntryVisible);
 
-		if (!nextEntryDimensions) {
+		if (!nextEntry) {
 			return entry;
 		}
 
-		return {
-			...entry,
-			dimensions: { ...nextEntryDimensions, width: 0, height: 0 },
-		};
+		entry.dimensions = { ...nextEntry.dimensions, width: 0, height: 0 };
+		entry.computedStyle.transformOrigin = nextEntry.computedStyle.transformOrigin;
+
+		return entry;
 	});
 };
 
 export const filterReadouts = (workerState: WorkerState) => {
-	const { readouts } = workerState;
+	const { readouts, rootElements } = workerState;
 
 	readouts.forEach((elementReadouts, elementString) => {
+		if (rootElements.has(elementString)) {
+			return;
+		}
+
 		if (elementReadouts.length < 2) {
 			readouts.delete(elementString);
 			return;

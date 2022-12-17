@@ -1,6 +1,5 @@
 import { getRatio } from "../read/dom-properties";
-import { ElementEntry, State, WorkerMethods } from "../types";
-import { uuid } from "../utils";
+import { ElementEntry, State } from "../types";
 import { getOrAddKeyFromLookup } from "./state";
 
 const DOM = {
@@ -36,7 +35,7 @@ export const findAffectedDOMElements = (
 		DOM.ancestors(element, rootElement).concat(DOM.siblings(element)).flatMap(DOM.decendants)
 	);
 
-	return [...relatives] as HTMLElement[];
+	return Array.from(relatives) as HTMLElement[];
 };
 
 const compareRootElements = (current: HTMLElement, previous: HTMLElement | undefined | null) => {
@@ -65,17 +64,18 @@ export const getRootElement = (entries: string[] | HTMLElement[]): HTMLElement =
 
 		root = compareRootElements(rootElement, root);
 	});
+
 	return root as HTMLElement;
 };
 
 const isTextNode = (element: HTMLElement) => {
-	const childNodes = Array.from(element.childNodes);
-
-	if (childNodes.length === 0) {
+	if (!element.hasChildNodes()) {
 		return false;
 	}
 
-	return childNodes.every((node) => Boolean(node.textContent?.trim())) ? "text" : false;
+	return Array.from(element.childNodes).every((node) => Boolean(node.textContent?.trim()))
+		? "text"
+		: false;
 };
 const isImage = (mainElement: HTMLElement) => (mainElement.tagName === "IMG" ? "image" : false);
 
@@ -119,7 +119,6 @@ export const getAffectedElements = (state: State) => {
 		);
 
 		stringifiedElementLookup.set(elementString, {
-			self: elementString,
 			root: elementLookup.get(rootElement)!,
 			parent: elementLookup.get(
 				domElement.tagName === "BODY" ? domElement : domElement.parentElement!
@@ -129,7 +128,6 @@ export const getAffectedElements = (state: State) => {
 			ratio: getRatio(domElement),
 		});
 	});
-
 	worker.sendQuery("sendElementLookup", stringifiedElementLookup);
 
 	return stringifiedElementLookup;

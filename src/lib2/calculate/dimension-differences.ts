@@ -78,6 +78,7 @@ const getScales = (
 ) => {
 	const [currentEntry, referenceEntry] = child;
 	const [parentCurrentEntry, parentReferenceEntry] = parent;
+	const isParentEmpty = parentCurrentEntry === undefined && parentReferenceEntry === undefined;
 
 	const current = currentEntry.dimensions;
 	const reference = referenceEntry.dimensions;
@@ -91,6 +92,17 @@ const getScales = (
 	const parentHeightDifference = parentCurrentHeight / parentReferenceHeight;
 	const childWidthDifference = current.width / reference.width;
 	const childHeightDifference = current.height / reference.height;
+
+	//TODO: buttons are also textNodes... Regardless of type, if the diff is 0, it should return 0
+	if (isParentEmpty) {
+		return {
+			parentWidthDifference,
+			parentHeightDifference,
+			heightDifference: isTextNode ? 1 : childHeightDifference,
+			widthDifference: isTextNode ? 1 : childWidthDifference,
+			textCorrection: 0,
+		};
+	}
 
 	const heightDifference = (isTextNode ? 1 : childHeightDifference) / parentHeightDifference;
 	const widthDifference = (isTextNode ? 1 : childWidthDifference) / parentWidthDifference;
@@ -143,10 +155,4 @@ export const calculateDimensionDifferences = (
 		topDifference: save(topDifference, 0),
 		offset: currentEntry.offset,
 	};
-};
-
-export const getDomDifferences = (workerState: WorkerState) => {
-	// we can get one element at the time, either default order or reversed
-	// these entries are still unfiltered for display none
-	// if it is not an image, we could get the difference
 };

@@ -43,13 +43,14 @@ onmessage = (event) => {
 const workerState: WorkerState = {
 	keyframes: new Map<string, CustomKeyframe[]>(),
 	options: new Map<string, BewegungsOptions[]>(),
-	elements: new Map(),
+	changeTimings: [],
 
 	totalRuntime: defaultOptions.duration as number,
 	appliableKeyframes: [],
 	resultingStyleChange: new Map(),
 	readouts: new Map(),
 	lookup: new Map(),
+	rootElements: new Set(),
 };
 
 const fillWorkerState = (
@@ -79,7 +80,7 @@ const queryFunctions = {
 		const options = normalizeOptions(transferObject.options);
 		const totalRuntime = (workerState.totalRuntime = calculateTotalRuntime(options));
 		const keyframes = normalizeKeyframes(transferObject.keyframes, options, totalRuntime);
-		const changeTimings = calculateChangeTimings(keyframes);
+		const changeTimings = (workerState.changeTimings = calculateChangeTimings(keyframes));
 
 		reply("sendKeyframeInformationToClient", {
 			changeTimings,
@@ -88,14 +89,19 @@ const queryFunctions = {
 		});
 		fillWorkerState(transferObject.targets, keyframes, options);
 
-		const appliableKeyframes = calculateAppliableKeyframes(changeTimings, workerState);
+		const appliableKeyframes = calculateAppliableKeyframes(workerState);
 
 		workerState.appliableKeyframes = appliableKeyframes;
 		workerState.resultingStyleChange = appliableKeyframes.at(-1)!;
 	},
 
 	sendElementLookup(elementLookup: Map<string, ElementEntry>) {
+		const rootElements = new Set<string>();
+
+		elementLookup.forEach((entry) => rootElements.add(entry.root));
+
 		workerState.lookup = elementLookup;
+		workerState.rootElements = rootElements;
 	},
 
 	requestAppliableKeyframes() {

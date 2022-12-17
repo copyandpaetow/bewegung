@@ -7,6 +7,7 @@ import {
 	DifferenceArray,
 } from "../types";
 import { calculateDimensionDifferences } from "../calculate/dimension-differences";
+import { findCorrespondingElement } from "./image-calculations";
 
 export const calculateDefaultKeyframes = (
 	calculations: DimensionalDifferences[],
@@ -40,18 +41,28 @@ export const calculateDefaultKeyframes = (
 export const getCalcualtionsFromReadouts = (
 	readouts: ElementReadouts[],
 	parentReadouts: ElementReadouts[] | undefined,
-	textNode: EntryType
+	textNode: EntryType,
+	changeTimings: number[]
 ) => {
 	const isTextNode = textNode === "text";
 
 	//TODO: these could be different. We need to get the curretn offset and search the parent entry for that or everything after
 
-	return readouts.map((readout, index, array) => {
-		const child: DifferenceArray = [readout, array.at(-1)!];
-		const parent: DifferenceArray | [undefined, undefined] = parentReadouts
-			? [parentReadouts[index], parentReadouts.at(-1)!]
-			: [undefined, undefined];
+	return readouts.map((readout) => {
+		const child: DifferenceArray = [readout, readouts.at(-1)!];
 
-		return calculateDimensionDifferences(child, parent, isTextNode);
+		if (!parentReadouts) {
+			return calculateDimensionDifferences(child, [undefined, undefined], isTextNode);
+		}
+
+		const correspondingParentEntry =
+			parentReadouts?.find((entry) => entry.offset === readout.offset) ??
+			findCorrespondingElement(readout, parentReadouts!, changeTimings);
+
+		return calculateDimensionDifferences(
+			child,
+			[correspondingParentEntry, parentReadouts.at(-1)!],
+			isTextNode
+		);
 	});
 };

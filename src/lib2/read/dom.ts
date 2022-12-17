@@ -22,6 +22,8 @@ export const getAnimationInformation = (state: State) =>
 
 const nextBrowserRender = () => new Promise((resolve) => requestAnimationFrame(resolve));
 
+const wait = (duration: number) => new Promise((resolve) => setTimeout(resolve, duration));
+
 const readDom = async (
 	elementChanges: Map<string, CustomKeyframe>,
 	changeProperties: CssRuleName[],
@@ -40,10 +42,11 @@ const readDom = async (
 				getCalculations(domElement, changeProperties, styleChange.offset!)
 			);
 		});
-		cssResets.forEach((reset, domElement) => {
-			restoreOriginalStyle(domElement, reset);
-		});
 	});
+	cssResets.forEach((reset, domElement) => {
+		restoreOriginalStyle(domElement, reset);
+	});
+
 	return readouts;
 };
 
@@ -70,8 +73,6 @@ const filterSimilarDomReadouts = (
 			areObjectsIdentical(readout.dimensions, previousReadout.dimensions) &&
 			areObjectsIdentical(readout.computedStyle, previousReadout.computedStyle)
 		) {
-			//equal
-
 			return;
 		}
 		newReadouts.set(string, readout);
@@ -87,7 +88,7 @@ export const readWriteDomChanges = async (
 ) => {
 	const { worker } = state;
 	const previousDomReadouts = new Map<string, ElementReadouts>();
-	let setIsFinished = (value: boolean | PromiseLike<boolean>) => {};
+	let setIsFinished = (value?: unknown) => {};
 	const isFinished = new Promise((resolve) => {
 		setIsFinished = resolve;
 	});
@@ -101,7 +102,7 @@ export const readWriteDomChanges = async (
 			worker.sendQuery("sendReadouts", filterReadouts);
 
 			if (done) {
-				setIsFinished(true);
+				setIsFinished();
 				return;
 			}
 		}
