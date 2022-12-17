@@ -96,16 +96,45 @@ export const calculateImageKeyframes = (readouts: ElementReadouts[], imageState:
 	return keyframes;
 };
 
+//TODO: REFACTOR: change the structure into something more performant
+export const findCorrespondingElement = (
+	currentReadout: ElementReadouts,
+	rootReadouts: ElementReadouts[],
+	changeTimings: number[]
+) => {
+	if (rootReadouts.length === 1) {
+		return rootReadouts[0];
+	}
+
+	const offsetPosition = changeTimings.findIndex((offset) => offset === currentReadout.offset);
+	const partialChangeTimings = changeTimings.slice(offsetPosition);
+	let result = currentReadout;
+
+	partialChangeTimings.some((offset) => {
+		const resultAtCurrentOffset = rootReadouts.find((readout) => readout.offset === offset);
+		if (resultAtCurrentOffset) {
+			result = resultAtCurrentOffset;
+			return true;
+		}
+		return false;
+	})!;
+
+	return result;
+};
+
+//TODO: REFACTOR: split into smaller chunks
 export const getWrapperKeyframes = (
 	readouts: ElementReadouts[],
 	rootReadouts: ElementReadouts[],
-	imageState: ImageState
-) => {
-	const { maxWidth, maxHeight, easingTable, wrapperKeyframes } = imageState;
-	const keyframes: Keyframe[] = [];
-	readouts.forEach((readout) => {
-		const currentOffset = readout.offset;
-		const correspondingParentEntry = rootReadouts.find((entry) => entry.offset === currentOffset)!; //TODO: handle offset not being there
+	imageState: ImageState,
+	changeTimings: number[]
+): Keyframe[] => {
+	const { maxWidth, maxHeight, easingTable } = imageState;
+
+	return readouts.map((readout) => {
+		const correspondingParentEntry =
+			rootReadouts.find((entry) => entry.offset === readout.offset) ??
+			findCorrespondingElement(readout, rootReadouts, changeTimings);
 
 		const parentScaleY =
 			correspondingParentEntry.dimensions.height / rootReadouts.at(-1)!.dimensions.height;
@@ -142,7 +171,7 @@ export const getWrapperKeyframes = (
 		const translateX = leftDifference - (maxWidth - readout.dimensions.width) / 2;
 		const translateY = topDifference - (maxHeight - readout.dimensions.height) / 2;
 
-		keyframes.push({
+		return {
 			offset: readout.offset,
 			clipPath: `inset(${verticalInset}px ${horizontalInset}px round ${calculateBorderRadius(
 				readout,
@@ -153,7 +182,6 @@ export const getWrapperKeyframes = (
 				1 / parentScaleY
 			})`,
 			easing: easingTable[readout.offset] ?? "ease",
-		});
+		};
 	});
-	return keyframes;
 };

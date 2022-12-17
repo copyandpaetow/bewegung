@@ -33,7 +33,6 @@ const checkDefaultReadouts = (
 
 	if (elementReadouts.some(checkForDisplayNone)) {
 		before.display = before.display ?? "block";
-		before.position = "absolute";
 		after.display = elementReadouts.at(-1)!.computedStyle.display;
 	}
 
@@ -48,7 +47,8 @@ export const getDefaultKeyframes = (
 	elementString: string,
 	workerState: WorkerState
 ): DefaultKeyframes => {
-	const { lookup, readouts, options, totalRuntime, resultingStyleChange } = workerState;
+	const { lookup, readouts, options, totalRuntime, resultingStyleChange, changeTimings } =
+		workerState;
 	const entry = lookup.get(elementString)!;
 
 	const easings = new Set<BewegungsOptions>(
@@ -60,7 +60,8 @@ export const getDefaultKeyframes = (
 	const differences = getCalcualtionsFromReadouts(
 		elementReadouts,
 		readouts.get(entry.parent)!,
-		entry.type
+		entry.type,
+		changeTimings
 	);
 
 	return {

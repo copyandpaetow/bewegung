@@ -20,7 +20,6 @@ const getImageOverride = (elementReadouts: ElementReadouts[]) => {
 
 	if (elementReadouts.some(checkForDisplayNone)) {
 		before.display = before.display ?? "block";
-		before.position = "absolute";
 		after.display = elementReadouts.at(-1)!.computedStyle.display;
 	}
 
@@ -35,7 +34,7 @@ export const getImageKeyframes = (
 	elementString: string,
 	workerState: WorkerState
 ) => {
-	const { lookup, options, readouts, totalRuntime } = workerState;
+	const { lookup, options, readouts, totalRuntime, changeTimings } = workerState;
 	const imageState = initialImageState();
 
 	const entry = lookup.get(elementString)!;
@@ -43,17 +42,19 @@ export const getImageKeyframes = (
 	const easings = new Set<BewegungsOptions>(
 		entry.affectedBy.flatMap((elementString) => options.get(elementString)!)
 	);
+	const rootReadout = readouts.get(entry.root)!;
 
 	imageState.ratio = entry.ratio;
 	imageState.easingTable = calculateEasingMap([...easings], totalRuntime);
 	imageState.maxHeight = highestNumber(elementReadouts.map((prop) => prop.dimensions.height));
 	imageState.maxWidth = highestNumber(elementReadouts.map((prop) => prop.dimensions.width));
 	imageState.placeholderStyle = getPlaceholderStyle(elementReadouts);
-	imageState.wrapperStyle = getWrapperStyle(elementReadouts, readouts.get(entry.root)!, imageState);
+	imageState.wrapperStyle = getWrapperStyle(elementReadouts, rootReadout, imageState);
 	imageState.wrapperKeyframes = getWrapperKeyframes(
 		elementReadouts,
-		readouts.get(entry.root)!,
-		imageState
+		rootReadout,
+		imageState,
+		changeTimings
 	);
 	imageState.keyframes = calculateImageKeyframes(elementReadouts, imageState);
 	imageState.overrides = getImageOverride(elementReadouts);

@@ -17,7 +17,7 @@ const initCards = () => {
 		const highlightCard: CustomKeyframeEffect = [
 			cards[activeIndex],
 			{
-				width: ["55%"],
+				width: ["30%", "100%", "55%"],
 				height: ["70vh"],
 			},
 			{ duration: 1000, easing: "ease", rootSelector: ".cards_wrapper" },
@@ -46,7 +46,7 @@ const initCards = () => {
 			1500,
 		];
 
-		return new Bewegung(highlightCard);
+		return new Bewegung(highlightCard, hideOthers, hidePauseButton);
 	};
 
 	let animation: Bewegung | undefined;
