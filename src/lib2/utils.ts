@@ -82,7 +82,7 @@ export const checkForDisplayInline = (entry: ElementReadouts) =>
 	entry.computedStyle.display === "inline";
 
 export const checkForDisplayNone = (entry: ElementReadouts) =>
-	entry.computedStyle.display === "inline";
+	entry.computedStyle.display === "none";
 
 export const checkForPositionStatic = (entry: ElementReadouts) =>
 	entry.computedStyle.position === "static";

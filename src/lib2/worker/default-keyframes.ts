@@ -2,7 +2,9 @@ import {
 	BewegungsOptions,
 	CustomKeyframe,
 	DefaultKeyframes,
+	ElementEntry,
 	ElementReadouts,
+	EntryType,
 	StyleChangePossibilities,
 	WorkerState,
 } from "../types";
@@ -13,6 +15,7 @@ import { calculateKeyframeTables } from "./style-tables";
 //TODO: if nothing happens here, these should not return anything
 const checkDefaultReadouts = (
 	elementReadouts: ElementReadouts[],
+	entry: ElementEntry,
 	resultingStyleChange?: CustomKeyframe
 ) => {
 	const before = resultingStyleChange ?? {};
@@ -23,7 +26,7 @@ const checkDefaultReadouts = (
 		after.borderRadius = elementReadouts.at(-1)!.computedStyle.borderRadius;
 	}
 
-	if (elementReadouts.some(checkForDisplayInline)) {
+	if (elementReadouts.some(checkForDisplayInline) && entry.type !== "text") {
 		before.display = "inline-block";
 		after.display = elementReadouts.at(-1)!.computedStyle.display;
 	}
@@ -62,6 +65,10 @@ export const getDefaultKeyframes = (
 
 	return {
 		keyframes: calculateDefaultKeyframes(differences, styleTables),
-		overrides: checkDefaultReadouts(elementReadouts, resultingStyleChange.get(elementString)),
+		overrides: checkDefaultReadouts(
+			elementReadouts,
+			entry,
+			resultingStyleChange.get(elementString)
+		),
 	};
 };

@@ -1,7 +1,6 @@
 import { emptyImageSrc } from "../constants";
-import { restoreOriginalStyle } from "../read/css-resets";
 import { applyStyleObject } from "../read/apply-styles";
-import { ImageState, State, ElementEntry } from "../types";
+import { ElementEntry, ImageState, State } from "../types";
 
 const getPlaceholderElement = (element: HTMLImageElement, style: Partial<CSSStyleDeclaration>) => {
 	const placeholder = document.createElement("img");
@@ -29,7 +28,7 @@ export const createImageAnimation = (
 ) => {
 	const animations: Animation[] = [];
 	const onStart: VoidFunction[] = [];
-	const { elementLookup, cssResets } = state;
+	const { elementLookup } = state;
 
 	imageKeyframes.forEach((imageEntry, elementString) => {
 		const {
@@ -42,6 +41,7 @@ export const createImageAnimation = (
 			overrides,
 		} = imageEntry;
 		const domElement = elementLookup.get(elementString) as HTMLImageElement;
+		const originalStyle = domElement.style.cssText;
 
 		const animation = new Animation(new KeyframeEffect(domElement, keyframes, totalRuntime));
 		const placeholder = getPlaceholderElement(domElement, placeholderStyle);
@@ -58,16 +58,14 @@ export const createImageAnimation = (
 				placeholder.remove();
 			}
 			wrapper.remove();
-			restoreOriginalStyle(domElement, cssResets.get(domElement)!);
+			domElement.style.cssText = originalStyle;
 			applyStyleObject(domElement, overrides.after);
 			applyStyleObject(root, { position: root.style.position });
 		};
 
 		onStart.push(() => {
 			nextSibling ? parent.insertBefore(placeholder, nextSibling) : parent.appendChild(placeholder);
-
 			domElement.style.cssText = `all: initial; height: ${maxHeight}px; width: ${maxWidth}px; pointer-events: none;`;
-
 			wrapper.appendChild(domElement);
 			root.appendChild(wrapper);
 

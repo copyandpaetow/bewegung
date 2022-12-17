@@ -103,14 +103,17 @@ export const getWrapperKeyframes = (
 ) => {
 	const { maxWidth, maxHeight, easingTable, wrapperKeyframes } = imageState;
 	const keyframes: Keyframe[] = [];
-	readouts.forEach((readout, index) => {
+	readouts.forEach((readout) => {
+		const currentOffset = readout.offset;
+		const correspondingParentEntry = rootReadouts.find((entry) => entry.offset === currentOffset)!; //TODO: handle offset not being there
+
 		const parentScaleY =
-			rootReadouts[index].dimensions.height / rootReadouts.at(-1)!.dimensions.height;
+			correspondingParentEntry.dimensions.height / rootReadouts.at(-1)!.dimensions.height;
 		const parentScaleX =
-			rootReadouts[index].dimensions.width / rootReadouts.at(-1)!.dimensions.width;
+			correspondingParentEntry.dimensions.width / rootReadouts.at(-1)!.dimensions.width;
 
 		const child: DifferenceArray = [readout, readouts.at(-1)!];
-		const parent: DifferenceArray = [rootReadouts[index], rootReadouts.at(-1)!];
+		const parent: DifferenceArray = [correspondingParentEntry, rootReadouts.at(-1)!];
 
 		const {
 			currentLeftDifference,
@@ -125,21 +128,14 @@ export const getWrapperKeyframes = (
 		const referenceHorizontalInset = (maxWidth - readouts.at(-1)!.dimensions.width) / 2;
 		const referenceVerticalInset = (maxHeight - readouts.at(-1)!.dimensions.height) / 2;
 
-		/*
-		TODO: this is still not perfect, the vertical achis is not right (by only 1-2%)
-		? however, reworking to this is perfect for the vertical achis but not for the horizontal one (by 30%)
 		const leftDifference =
-			currentLeftDifference / parentScaleX - referenceLeftDifference + referenceHorizontalInset;
-		const topDifference =
-			currentTopDifference / parentScaleY - referenceTopDifference + referenceVerticalInset;
-		*/
-
-		const leftDifference =
-			(currentLeftDifference + horizontalInset) / parentScaleX -
+			currentLeftDifference / parentScaleX +
+			horizontalInset -
 			referenceLeftDifference -
 			referenceHorizontalInset;
 		const topDifference =
-			(currentTopDifference + verticalInset) / parentScaleY -
+			currentTopDifference / parentScaleY +
+			verticalInset -
 			referenceTopDifference -
 			referenceVerticalInset;
 
