@@ -23,7 +23,8 @@ export const recalculateDisplayNoneValues = (readout: ElementReadouts[]): Elemen
 		}
 
 		entry.dimensions = { ...nextEntry.dimensions, width: 0, height: 0 };
-		entry.computedStyle.transformOrigin = nextEntry.computedStyle.transformOrigin;
+		//TODO: this needs some more testing
+		//entry.computedStyle.transformOrigin = nextEntry.computedStyle.transformOrigin;
 
 		return entry;
 	});

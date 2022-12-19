@@ -33,7 +33,6 @@ export const calculateAppliableKeyframes = (workerState: WorkerState) => {
 	changeTimings.forEach((timing) => {
 		const resultingStyle = new Map<string, CustomKeyframe>();
 		keyframes.forEach((keyframe, elementString) => {
-			//TODO: if nothing was added they should not be added to the resulting style
 			const combinedKeyframe = filterMatchingStyleFromKeyframes(keyframe, timing);
 
 			if (!combinedKeyframe) {

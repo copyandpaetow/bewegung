@@ -4,8 +4,8 @@ import { getImageKeyframes } from "./image-keyframes";
 
 export const constructKeyframes = (
 	workerState: WorkerState
-): [Map<string, ImageState>, Map<string, DefaultKeyframes>, number] => {
-	const { readouts, lookup, totalRuntime } = workerState;
+): [Map<string, ImageState>, Map<string, DefaultKeyframes>] => {
+	const { readouts, lookup } = workerState;
 
 	const imageReadouts = new Map<string, ImageState>();
 	const defaultReadouts = new Map<string, DefaultKeyframes>();
@@ -22,5 +22,5 @@ export const constructKeyframes = (
 			  );
 	});
 
-	return [imageReadouts, defaultReadouts, totalRuntime];
+	return [imageReadouts, defaultReadouts];
 };

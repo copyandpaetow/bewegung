@@ -28,7 +28,6 @@ export const applyCSSStyles = (element: HTMLElement, resultingStyle: CustomKeyfr
 	attribute && applyAttributes(element, attribute.split(" "));
 };
 
-//TODO: creating / working with the StyleChangePossibilities is cluncky, it needs to get better
 export const filterMatchingStyleFromKeyframes = (
 	keyframes: CustomKeyframe[],
 	timing: number
