@@ -1,6 +1,6 @@
-import { getRatio } from "../read/dom-properties";
+import { getRatio } from "./read-dom-properties";
 import { ElementEntry, State } from "../types";
-import { getOrAddKeyFromLookup } from "./state";
+import { getOrAddKeyFromLookup } from "./init-state";
 
 const DOM = {
 	parent(element: HTMLElement): HTMLElement {

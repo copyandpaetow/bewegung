@@ -1,9 +1,9 @@
-import { saveOriginalStyle } from "../read/css-resets";
+import { saveOriginalStyle } from "./css-resets";
 import { BewegungProps, EveryOptionSyntax, State, TransferObject } from "../types";
 import { BidirectionalMap, uuid } from "../utils";
 import { QueryableWorker } from "../worker-thread/setup";
-import { normalizeElements } from "./elements";
-import { unifyPropStructure } from "./props";
+import { normalizeElements } from "./normalize-elements";
+import { unifyPropStructure } from "./normalize-props";
 
 export const getOrAddKeyFromLookup = (
 	element: HTMLElement,

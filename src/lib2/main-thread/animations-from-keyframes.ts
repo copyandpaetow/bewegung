@@ -1,4 +1,4 @@
-import { createDefaultAnimation } from "../calculate/default-animation";
+import { createDefaultAnimation } from "./create-default-animation";
 import {
 	WorkerMethods,
 	ImageState,

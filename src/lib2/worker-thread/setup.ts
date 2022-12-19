@@ -10,10 +10,6 @@ export function QueryableWorker(url: string, onError?: VoidFunction): WorkerMeth
 		worker.onerror = onError;
 	}
 
-	const postMessage = (message) => {
-		worker.postMessage(message);
-	};
-
 	const terminate = () => {
 		worker.terminate();
 	};
@@ -48,7 +44,6 @@ export function QueryableWorker(url: string, onError?: VoidFunction): WorkerMeth
 	};
 
 	return {
-		postMessage,
 		terminate,
 		addListener,
 		removeListener,

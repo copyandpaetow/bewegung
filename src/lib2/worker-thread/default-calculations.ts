@@ -6,7 +6,7 @@ import {
 	EntryType,
 	DifferenceArray,
 } from "../types";
-import { calculateDimensionDifferences } from "../calculate/dimension-differences";
+import { calculateDimensionDifferences } from "./calculate-dimension-differences";
 import { findCorrespondingElement } from "./image-calculations";
 
 export const calculateDefaultKeyframes = (

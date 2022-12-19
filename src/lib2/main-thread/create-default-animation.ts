@@ -1,4 +1,4 @@
-import { applyCSSStyles } from "../read/apply-styles";
+import { applyCSSStyles } from "./apply-styles";
 import { DefaultKeyframes, State } from "../types";
 
 export const createDefaultAnimation = (
