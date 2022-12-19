@@ -1,4 +1,4 @@
-import { getTranslates, save } from "../calculate/dimension-differences";
+import { getTranslates, save } from "./calculate-dimension-differences";
 import { DifferenceArray, ElementReadouts, ImageState, WorkerState } from "../types";
 import { calculateBorderRadius } from "./style-tables";
 

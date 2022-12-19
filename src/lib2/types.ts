@@ -115,12 +115,28 @@ export type ElementEntry = {
 	ratio: number;
 };
 
+export type QueryFunctions = {
+	normalizePropsInWorker(transferObject: TransferObject): void;
+	sendElementLookup(elementLookup: Map<string, ElementEntry>): void;
+	requestAppliableKeyframes(): void;
+	sendReadouts(newReadout: Map<string, ElementReadouts>): void;
+};
+
+type Replies = {
+	sendAppliableKeyframes: (
+		returnValue: [{ keyframes: Map<string, CustomKeyframe>; done: boolean }]
+	) => void;
+	sendKeyframeInformationToClient: (returnValue: [AnimationInformation]) => void;
+	sendKeyframes: (
+		returnValue: [[Map<string, ImageState>, Map<string, DefaultKeyframes>, number]]
+	) => void;
+};
+
 export interface WorkerMethods {
-	postMessage: (message: any) => void;
 	terminate: () => void;
-	addListener: (name: any, listener: any) => void;
-	removeListener: (name: any) => void;
-	sendQuery: (queryMethod: any, ...queryMethodArguments: any[]) => void;
+	addListener: (name: keyof Replies, listener: ValueOf<Replies>) => void;
+	removeListener: (name: keyof Replies) => void;
+	sendQuery: (queryMethod: keyof QueryFunctions, ...queryMethodArguments: any[]) => void;
 }
 
 export interface State {

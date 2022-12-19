@@ -1,5 +1,5 @@
 import { defaultChangeProperties } from "../constants";
-import { filterMatchingStyleFromKeyframes } from "../read/apply-styles";
+import { filterMatchingStyleFromKeyframes } from "../main-thread/apply-styles";
 import { CssRuleName, CustomKeyframe, StyleChangePossibilities, WorkerState } from "../types";
 
 export const calculateChangeTimings = (allKeyframes: CustomKeyframe[][]) => {

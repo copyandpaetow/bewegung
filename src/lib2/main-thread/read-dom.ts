@@ -7,7 +7,7 @@ import {
 } from "../types";
 import { applyCSSStyles } from "./apply-styles";
 import { restoreOriginalStyle } from "./css-resets";
-import { getCalculations } from "./dom-properties";
+import { getCalculations } from "./read-dom-properties";
 
 export const getAnimationInformation = (state: State) =>
 	new Promise<AnimationInformation>((resolve) => {

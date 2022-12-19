@@ -4,6 +4,7 @@ import {
 	CustomKeyframe,
 	ElementEntry,
 	ElementReadouts,
+	QueryFunctions,
 	TransferObject,
 	WorkerState,
 } from "../types";
@@ -75,7 +76,7 @@ const fillWorkerState = (
 	});
 };
 
-const queryFunctions = {
+const queryFunctions: QueryFunctions = {
 	normalizePropsInWorker(transferObject: TransferObject) {
 		const options = normalizeOptions(transferObject.options);
 		const totalRuntime = (workerState.totalRuntime = calculateTotalRuntime(options));

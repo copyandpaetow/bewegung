@@ -1,5 +1,5 @@
 import { emptyImageSrc } from "../constants";
-import { applyStyleObject } from "../read/apply-styles";
+import { applyStyleObject } from "./apply-styles";
 import { ElementEntry, ImageState, State } from "../types";
 
 const getPlaceholderElement = (element: HTMLImageElement, style: Partial<CSSStyleDeclaration>) => {
