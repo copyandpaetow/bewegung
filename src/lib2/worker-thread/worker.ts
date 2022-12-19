@@ -125,7 +125,10 @@ const queryFunctions = {
 			});
 			return;
 		}
+
 		filterReadouts(workerState);
-		reply("sendKeyframes", constructKeyframes(workerState));
+
+		const finalKeyframes = constructKeyframes(workerState);
+		reply("sendKeyframes", finalKeyframes);
 	},
 };

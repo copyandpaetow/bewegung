@@ -1,10 +1,9 @@
 import {
 	AnimationInformation,
 	CssRuleName,
+	CustomKeyframe,
 	ElementReadouts,
 	State,
-	WorkerMethods,
-	CustomKeyframe,
 } from "../types";
 import { applyCSSStyles } from "./apply-styles";
 import { restoreOriginalStyle } from "./css-resets";
@@ -21,8 +20,6 @@ export const getAnimationInformation = (state: State) =>
 	});
 
 const nextBrowserRender = () => new Promise((resolve) => requestAnimationFrame(resolve));
-
-const wait = (duration: number) => new Promise((resolve) => setTimeout(resolve, duration));
 
 const readDom = async (
 	elementChanges: Map<string, CustomKeyframe>,

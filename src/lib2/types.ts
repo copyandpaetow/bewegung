@@ -100,13 +100,6 @@ export interface TimelineEntry {
 }
 export type Timeline = TimelineEntry[];
 
-export type AnimationEntry = {
-	target: HTMLElement[];
-	keyframes: CustomKeyframe[];
-	options: BewegungsOptions;
-	selector: string;
-};
-
 export interface Result {
 	animations: Animation[];
 	onStart: VoidFunction[];
