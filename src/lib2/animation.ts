@@ -1,6 +1,6 @@
-import { createAnimationsFromKeyframes } from "./main-thread/animations-from-keyframes";
+import { createAnimationsFromKeyframes } from "./main-thread/create-animations-from-keyframes";
 import { getAffectedElements } from "./main-thread/find-affected-elements";
-import { initState } from "./main-thread/init-state";
+import { initState } from "./main-thread/state";
 import { getAnimationInformation, readWriteDomChanges } from "./main-thread/read-dom";
 import { BewegungProps } from "./types";
 

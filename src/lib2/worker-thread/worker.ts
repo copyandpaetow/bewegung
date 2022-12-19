@@ -12,12 +12,12 @@ import {
 	calculateChangeTimings,
 	calculateChangeProperties,
 	calculateAppliableKeyframes,
-} from "./dom-preparations";
+} from "./calculate-dom-changes";
 import { filterReadouts } from "./filter-readouts";
-import { constructKeyframes } from "./keyframes";
+import { constructKeyframes } from "./sort-keyframes";
 import { normalizeKeyframes } from "./normalize-keyframes";
 import { normalizeOptions } from "./normalize-options";
-import { calculateTotalRuntime } from "./runtime";
+import { calculateTotalRuntime } from "./calculate-runtime";
 
 const reply = (queryMethodListener: string, ...queryMethodArguments: any[]) => {
 	if (!queryMethodListener) {

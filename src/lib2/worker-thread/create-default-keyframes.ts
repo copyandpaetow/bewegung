@@ -9,8 +9,11 @@ import {
 	WorkerState,
 } from "../types";
 import { checkForBorderRadius, checkForDisplayInline, checkForDisplayNone } from "../utils";
-import { calculateDefaultKeyframes, getCalcualtionsFromReadouts } from "./default-calculations";
-import { calculateKeyframeTables } from "./style-tables";
+import {
+	calculateDefaultKeyframes,
+	getCalcualtionsFromReadouts,
+} from "./calculate-default-keyframes";
+import { calculateKeyframeTables } from "./calculate-style-tables";
 
 //TODO: if nothing happens here, these should not return anything
 const checkDefaultReadouts = (

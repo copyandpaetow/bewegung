@@ -1,5 +1,5 @@
 import { BewegungsOptions, ElementReadouts, StyleTables } from "../types";
-import { calculateEasingMap } from "./easings";
+import { calculateEasingMap } from "./calculate-easings";
 import { isEntryVisible } from "./filter-readouts";
 
 const normalizeBorderRadius = (radii: string, dimensions: { height: number; width: number }) => {

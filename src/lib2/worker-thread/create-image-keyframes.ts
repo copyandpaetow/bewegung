@@ -1,13 +1,13 @@
 import { BewegungsOptions, ElementReadouts, WorkerState } from "../types";
 import { checkForBorderRadius, checkForDisplayNone, highestNumber } from "../utils";
-import { calculateEasingMap } from "./easings";
+import { calculateEasingMap } from "./calculate-easings";
 import {
 	calculateImageKeyframes,
 	getPlaceholderStyle,
 	getWrapperKeyframes,
 	getWrapperStyle,
 	initialImageState,
-} from "./image-calculations";
+} from "./calculate-image-keyframes";
 
 const getImageOverride = (elementReadouts: ElementReadouts[]) => {
 	const before: Partial<CSSStyleDeclaration> = {};
