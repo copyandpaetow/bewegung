@@ -1,10 +1,4 @@
-import {
-	DimensionalDifferences,
-	ElementReadouts,
-	DifferenceArray,
-	ElementEntry,
-	WorkerState,
-} from "../types";
+import { DifferenceArray, DimensionalDifferences, ElementReadouts } from "../types";
 
 export const save = (value: number, alternative: number): number => {
 	return value === Infinity || value === -Infinity || isNaN(value) ? alternative : value;

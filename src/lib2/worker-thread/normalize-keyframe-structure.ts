@@ -50,18 +50,54 @@ const formatArraySyntax = (
 		.fill(undefined)
 		.map((_, index) => (keyframeOffset?.[index] as number | undefined) ?? undefined);
 
-	const allOffsets = calculateOffsets(offsetArray);
+	const newKeyframes: CustomKeyframe[] = calculateOffsets(offsetArray).map((offset) => ({
+		offset,
+	}));
 
-	const newKeyframes: CustomKeyframe[] = [];
+	/*
+		TODO: this is not entirely correct, every property creates its own entries and their will be combined in the end
+		=> the resulting length of the array can be greater than the longest property array
 
+		e.g.  {height: ["20vh","50vh","70vh"], width: ["30%", "55%", "70%", "90%"]} would create
+
+	[{
+		offset: 0,
+		height: "20vh",
+		width: "30%",
+	},
+	{
+		offset: 0.25,
+		width: "55%",
+	},
+	{
+		offset: 0.5,
+		height: "50vh",
+	},
+	{
+		offset: 0.75,
+		width: "70%",
+	},
+	{
+		offset: 1,
+		height: "70vh",
+		width: "90%",
+	}];
+
+	because the height creates entries with offset: 0,0.5,1 and the height creates, 0, 0.25, 0.75,1
+
+	*/
 	Object.entries(keyframeWithoutOffset).forEach(
 		([property, value]: [string, ValueOf<CustomKeyframeArrayValueSyntax>]) => {
+			//height: ["70vh"]
+			//width: ["30%", "100%", "55%"]
+
 			value?.forEach((entry: ValueOf<CustomKeyframe>, index: number) => {
-				newKeyframes[index] = {
-					...newKeyframes[index],
-					offset: allOffsets[index],
-					...{ [property]: entry },
-				};
+				if (value.length === 1) {
+					newKeyframes[1][property] = entry;
+					return;
+				}
+
+				newKeyframes[index][property] = entry;
 			});
 		}
 	);

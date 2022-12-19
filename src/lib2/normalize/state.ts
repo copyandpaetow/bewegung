@@ -1,16 +1,9 @@
-import {
-	BewegungProps,
-	EveryKeyframeSyntax,
-	EveryOptionSyntax,
-	State,
-	TransferObject,
-	WorkerMethods,
-} from "../types";
-import { BidirectionalMap, uuid } from "../utils";
 import { saveOriginalStyle } from "../read/css-resets";
+import { BewegungProps, EveryOptionSyntax, State, TransferObject } from "../types";
+import { BidirectionalMap, uuid } from "../utils";
+import { QueryableWorker } from "../worker-thread/setup";
 import { normalizeElements } from "./elements";
 import { unifyPropStructure } from "./props";
-import { QueryableWorker } from "../worker/setup";
 
 export const getOrAddKeyFromLookup = (
 	element: HTMLElement,
@@ -48,7 +41,6 @@ export const initState = (...props: BewegungProps): State => {
 	unifyPropStructure(...props).forEach((entry, index) => {
 		const [targets, keyframes, options] = entry;
 
-		//TODO: for when an element if the same selector is added
 		if (typeof targets === "string") {
 			selectors.set(targets, index);
 		}

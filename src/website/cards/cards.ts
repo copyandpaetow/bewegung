@@ -20,7 +20,7 @@ const initCards = () => {
 				width: ["30%", "100%", "55%"],
 				height: ["70vh"],
 			},
-			{ duration: 1000, easing: "ease", rootSelector: ".cards_wrapper" },
+			{ duration: 4000, easing: "ease", rootSelector: ".cards_wrapper" },
 		];
 
 		const hideOthers: CustomKeyframeEffect = [
@@ -46,7 +46,7 @@ const initCards = () => {
 			1500,
 		];
 
-		return new Bewegung(highlightCard, hideOthers, hidePauseButton);
+		return new Bewegung(highlightCard);
 	};
 
 	let animation: Bewegung | undefined;
