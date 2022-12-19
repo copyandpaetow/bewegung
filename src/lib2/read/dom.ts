@@ -47,44 +47,11 @@ const readDom = async (
 	return readouts;
 };
 
-const areObjectsIdentical = <Value>(
-	current: Record<string, Value>,
-	previous: Record<string, Value>
-) => Object.entries(current).every(([key, value]) => previous[key] === value);
-
-const filterSimilarDomReadouts = (
-	current: Map<string, ElementReadouts>,
-	previous: Map<string, ElementReadouts>
-) => {
-	const newReadouts = new Map<string, ElementReadouts>();
-
-	current.forEach((readout, string) => {
-		if (!previous.has(string)) {
-			newReadouts.set(string, readout);
-			previous.set(string, readout);
-			return;
-		}
-		const previousReadout = previous.get(string)!;
-
-		if (
-			areObjectsIdentical(readout.dimensions, previousReadout.dimensions) &&
-			areObjectsIdentical(readout.computedStyle, previousReadout.computedStyle)
-		) {
-			return;
-		}
-		newReadouts.set(string, readout);
-		previous.set(string, readout);
-	});
-
-	return newReadouts;
-};
-
 export const readWriteDomChanges = async (
 	state: State,
 	animationInformation: AnimationInformation
 ) => {
 	const { worker } = state;
-	const previousDomReadouts = new Map<string, ElementReadouts>();
 	let setIsFinished = (value?: unknown) => {};
 	const isFinished = new Promise((resolve) => {
 		setIsFinished = resolve;
@@ -94,9 +61,7 @@ export const readWriteDomChanges = async (
 		"sendAppliableKeyframes",
 		async ([{ keyframes, done }]: [{ keyframes: Map<string, CustomKeyframe>; done: boolean }]) => {
 			const domReadouts = await readDom(keyframes, animationInformation.changeProperties, state);
-			//TODO: check if this added calculation time is worth it in the long run
-			const filterReadouts = filterSimilarDomReadouts(domReadouts, previousDomReadouts);
-			worker.sendQuery("sendReadouts", filterReadouts);
+			worker.sendQuery("sendReadouts", domReadouts);
 
 			if (done) {
 				setIsFinished();
