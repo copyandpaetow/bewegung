@@ -7,7 +7,7 @@ import {
 	ElementEntry,
 	AnimationInformation,
 } from "../types";
-import { createImageAnimation } from "./image-animation";
+import { createImageAnimation } from "./create-image-animation";
 
 const getKeyframes = (worker: WorkerMethods) =>
 	new Promise<[Map<string, ImageState>, Map<string, DefaultKeyframes>, number]>((resolve) =>

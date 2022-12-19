@@ -1,6 +1,6 @@
 import { getTranslates, save } from "./calculate-dimension-differences";
 import { DifferenceArray, ElementReadouts, ImageState, WorkerState } from "../types";
-import { calculateBorderRadius } from "./style-tables";
+import { calculateBorderRadius } from "./calculate-style-tables";
 
 export const getPlaceholderStyle = (readouts: ElementReadouts[]): Partial<CSSStyleDeclaration> => {
 	return {

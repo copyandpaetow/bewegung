@@ -1,6 +1,6 @@
 import { DefaultKeyframes, ImageState, WorkerState } from "../types";
-import { getDefaultKeyframes } from "./default-keyframes";
-import { getImageKeyframes } from "./image-keyframes";
+import { getDefaultKeyframes } from "./create-default-keyframes";
+import { getImageKeyframes } from "./create-image-keyframes";
 
 export const constructKeyframes = (
 	workerState: WorkerState
