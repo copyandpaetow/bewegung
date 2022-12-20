@@ -12,7 +12,7 @@ export const getOrAddKeyFromLookup = (
 	if (lookup.has(element)) {
 		return lookup.get(element)!;
 	}
-	const key = uuid();
+	const key = uuid(element.tagName);
 	lookup.set(key, element);
 
 	return key;

@@ -69,15 +69,15 @@ const getScales = (
 	const [parentCurrent, parentReference] = parent;
 	const isParentEmpty = parentCurrent === undefined && parentReference === undefined;
 
-	const parentCurrentWidth = parentCurrent?.unsaveWidth ?? 1;
-	const parentCurrentHeight = parentCurrent?.unsaveHeight ?? 1;
-	const parentReferenceWidth = parentReference?.unsaveWidth ?? 1;
-	const parentReferenceHeight = parentReference?.unsaveHeight ?? 1;
+	const parentCurrentWidth = parentCurrent?.currentWidth ?? 1;
+	const parentCurrentHeight = parentCurrent?.currentHeight ?? 1;
+	const parentReferenceWidth = parentReference?.currentWidth ?? 1;
+	const parentReferenceHeight = parentReference?.currentHeight ?? 1;
 
 	const parentWidthDifference = parentCurrentWidth / parentReferenceWidth;
 	const parentHeightDifference = parentCurrentHeight / parentReferenceHeight;
-	const childWidthDifference = current.unsaveWidth / reference.unsaveWidth;
-	const childHeightDifference = current.unsaveHeight / reference.unsaveHeight;
+	const childWidthDifference = current.unsaveWidth / reference.currentWidth;
+	const childHeightDifference = current.unsaveHeight / reference.currentHeight;
 
 	const scaleOverride = isTextNode && childHeightDifference !== 0 && childWidthDifference !== 0;
 
@@ -130,10 +130,14 @@ export const calculateDimensionDifferences = (
 	} = getScales(child, parent, isTextNode);
 
 	if (!parent[0]) {
-		// if the root gets smaller we need to increase the top/left values
-		// if it root gets bigger, we need to decrease the top/left values
-		const leftDifference = currentLeftDifference - referenceLeftDifference - textCorrection;
-		const topDifference = currentTopDifference - referenceTopDifference;
+		//TODO: this needs to be rechecked
+		//* for some reason, the extra scale is only needed if the root gets smaller afterwards
+		const scaleY = Math.min(1, heightDifference);
+		const scaleX = Math.min(1, heightDifference);
+
+		const leftDifference =
+			(currentLeftDifference - referenceLeftDifference - textCorrection) * scaleX;
+		const topDifference = (currentTopDifference - referenceTopDifference) / scaleY;
 
 		return {
 			heightDifference: save(heightDifference, 1),

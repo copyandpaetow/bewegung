@@ -1,10 +1,11 @@
 import { applyCSSStyles } from "./apply-styles";
-import { DefaultKeyframes, State } from "../types";
+import { DefaultKeyframes, ElementEntry, State } from "../types";
 
 export const createDefaultAnimation = (
 	defaultKeyframes: Map<string, DefaultKeyframes>,
 	state: State,
-	totalRuntime: number
+	totalRuntime: number,
+	stringifiedElementLookup: Map<string, ElementEntry>
 ) => {
 	const animations: Animation[] = [];
 	const onStart: VoidFunction[] = [];
@@ -13,6 +14,12 @@ export const createDefaultAnimation = (
 	defaultKeyframes.forEach((defaultEntry, elementString) => {
 		const { keyframes, overrides } = defaultEntry;
 		const domElement = elementLookup.get(elementString)!;
+		const isRoot = stringifiedElementLookup.get(elementString)?.root === elementString;
+
+		if (isRoot && (overrides.before.position === "static" || !overrides.before.position)) {
+			overrides.before.position = "relative";
+			overrides.after.position = overrides.after.position ?? "";
+		}
 
 		const animation = new Animation(new KeyframeEffect(domElement, keyframes, totalRuntime));
 

@@ -51,6 +51,13 @@ export const createImageAnimation = (
 		const nextSibling = domElement.nextElementSibling;
 		const parent = domElement.parentElement!;
 
+		const isRoot = entryLookup.get(elementString)?.root === elementString;
+
+		if (isRoot && (overrides.before.position === "static" || !overrides.before.position)) {
+			overrides.before.position = "relative";
+			overrides.after.position = overrides.after.position ?? "";
+		}
+
 		animation.onfinish = () => {
 			try {
 				parent.replaceChild(domElement, placeholder);
@@ -60,7 +67,6 @@ export const createImageAnimation = (
 			wrapper.remove();
 			domElement.style.cssText = originalStyle;
 			applyStyleObject(domElement, overrides.after);
-			applyStyleObject(root, { position: root.style.position });
 		};
 
 		onStart.push(() => {
@@ -70,7 +76,6 @@ export const createImageAnimation = (
 			root.appendChild(wrapper);
 
 			applyStyleObject(domElement, overrides.before);
-			applyStyleObject(root, { position: "relative" });
 		});
 
 		animations.push(animation);
