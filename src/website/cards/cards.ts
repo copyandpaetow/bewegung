@@ -38,7 +38,7 @@ const initCards = () => {
 		];
 
 		const hidePauseButton: CustomKeyframeEffect = [
-			".cards__button--pause",
+			cards[activeIndex],
 			[
 				{
 					display: "none",
@@ -48,10 +48,10 @@ const initCards = () => {
 					display: "",
 				},
 			],
-			1500,
+			10500,
 		];
 
-		return new Bewegung(highlightCard, hideOthers);
+		return new Bewegung(highlightCard);
 	};
 
 	let animation: Bewegung | undefined;

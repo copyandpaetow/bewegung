@@ -63,9 +63,13 @@ export interface BewegungAPI {
 
 export type BewegungProps = CustomKeyframeEffect | (CustomKeyframeEffect | KeyframeEffect)[];
 
-export type ElementReadouts = {
-	dimensions: PartialDomRect;
-	computedStyle: Partial<CSSStyleDeclaration>;
+export type ElementReadouts = Omit<Partial<CSSStyleDeclaration>, "offset"> & {
+	currentTop: number;
+	currentLeft: number;
+	unsaveWidth: number;
+	unsaveHeight: number;
+	currentWidth: number;
+	currentHeight: number;
 	offset: number;
 };
 
@@ -113,6 +117,7 @@ export type ElementEntry = {
 	root: string;
 	type: EntryType;
 	ratio: number;
+	self: string;
 };
 
 export type QueryFunctions = {

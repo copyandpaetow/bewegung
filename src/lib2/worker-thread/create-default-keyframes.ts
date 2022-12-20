@@ -4,8 +4,6 @@ import {
 	DefaultKeyframes,
 	ElementEntry,
 	ElementReadouts,
-	EntryType,
-	StyleChangePossibilities,
 	WorkerState,
 } from "../types";
 import { checkForBorderRadius, checkForDisplayInline, checkForDisplayNone } from "../utils";
@@ -26,17 +24,17 @@ const checkDefaultReadouts = (
 
 	if (elementReadouts.some(checkForBorderRadius)) {
 		before.borderRadius = "0px";
-		after.borderRadius = elementReadouts.at(-1)!.computedStyle.borderRadius;
+		after.borderRadius = elementReadouts.at(-1)!.borderRadius;
 	}
 
 	if (elementReadouts.some(checkForDisplayInline) && entry.type !== "text") {
 		before.display = "inline-block";
-		after.display = elementReadouts.at(-1)!.computedStyle.display;
+		after.display = elementReadouts.at(-1)!.display;
 	}
 
 	if (elementReadouts.some(checkForDisplayNone)) {
 		before.display = before.display ?? "block";
-		after.display = elementReadouts.at(-1)!.computedStyle.display;
+		after.display = elementReadouts.at(-1)!.display;
 	}
 
 	return {
@@ -62,7 +60,7 @@ export const getDefaultKeyframes = (
 
 	const differences = getCalcualtionsFromReadouts(
 		elementReadouts,
-		readouts.get(entry.parent)!,
+		readouts.get(entry.parent),
 		entry.type,
 		changeTimings
 	);

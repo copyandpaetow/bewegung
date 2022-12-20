@@ -9,13 +9,13 @@ const parseTransformOrigin = (entry: ElementReadouts | undefined) => {
 		return [0, 0];
 	}
 
-	const transformOriginString = entry.computedStyle.transformOrigin!;
+	const transformOriginString = entry.transformOrigin!;
 
 	const calculated = transformOriginString.split(" ").map((value: string, index: number) => {
 		if (value.includes("px")) {
 			return parseFloat(value);
 		}
-		const heightOrWidth = index ? entry.dimensions.height : entry.dimensions.width;
+		const heightOrWidth = index ? entry.currentHeight : entry.currentWidth;
 
 		return (parseFloat(value) / 100) * heightOrWidth;
 	});
@@ -27,35 +27,30 @@ export const getTranslates = (
 	child: DifferenceArray,
 	parent: DifferenceArray | [undefined, undefined]
 ) => {
-	const [currentEntry, referenceEntry] = child;
-	const [parentCurrentEntry, parentReferenceEntry] = parent;
+	const [current, reference] = child;
+	const [parentCurrent, parentReference] = parent;
 
-	const current = currentEntry.dimensions;
-	const reference = referenceEntry.dimensions;
+	const parentCurrentLeft = parentCurrent?.currentLeft ?? 0;
+	const parentCurrentTop = parentCurrent?.currentTop ?? 0;
+	const parentReferenceLeft = parentReference?.currentLeft ?? 0;
+	const parentReferenceTop = parentReference?.currentTop ?? 0;
 
-	//TODO: If the root is scrolled down, maybe these need to be corrected by the scroll position
-	const parentCurrentLeft = parentCurrentEntry?.dimensions.left ?? 0;
-	const parentCurrentTop = parentCurrentEntry?.dimensions.top ?? 0;
-	const parentReferenceLeft = parentReferenceEntry?.dimensions.left ?? 0;
-	const parentReferenceTop = parentReferenceEntry?.dimensions.top ?? 0;
-
-	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(referenceEntry);
+	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(reference);
 	const [originParentReferenceLeft, originParentReferenceTop] =
-		parseTransformOrigin(parentReferenceEntry);
+		parseTransformOrigin(parentReference);
 
-	const [originCurrentLeft, originCurrentTop] = parseTransformOrigin(currentEntry);
-	const [originParentCurrentLeft, originParentCurrentTop] =
-		parseTransformOrigin(parentCurrentEntry);
+	const [originCurrentLeft, originCurrentTop] = parseTransformOrigin(current);
+	const [originParentCurrentLeft, originParentCurrentTop] = parseTransformOrigin(parentCurrent);
 
 	const currentLeftDifference =
-		current.left + originCurrentLeft - (parentCurrentLeft + originParentCurrentLeft);
+		current.currentLeft + originCurrentLeft - (parentCurrentLeft + originParentCurrentLeft);
 	const referenceLeftDifference =
-		reference.left + originReferenceLeft - (parentReferenceLeft + originParentReferenceLeft);
+		reference.currentLeft + originReferenceLeft - (parentReferenceLeft + originParentReferenceLeft);
 
 	const currentTopDifference =
-		current.top + originCurrentTop - (parentCurrentTop + originParentCurrentTop);
+		current.currentTop + originCurrentTop - (parentCurrentTop + originParentCurrentTop);
 	const referenceTopDifference =
-		reference.top + originReferenceTop - (parentReferenceTop + originParentReferenceTop);
+		reference.currentTop + originReferenceTop - (parentReferenceTop + originParentReferenceTop);
 
 	return {
 		currentLeftDifference,
@@ -70,38 +65,36 @@ const getScales = (
 	parent: DifferenceArray | [undefined, undefined],
 	isTextNode: boolean
 ) => {
-	const [currentEntry, referenceEntry] = child;
-	const [parentCurrentEntry, parentReferenceEntry] = parent;
-	const isParentEmpty = parentCurrentEntry === undefined && parentReferenceEntry === undefined;
+	const [current, reference] = child;
+	const [parentCurrent, parentReference] = parent;
+	const isParentEmpty = parentCurrent === undefined && parentReference === undefined;
 
-	const current = currentEntry.dimensions;
-	const reference = referenceEntry.dimensions;
-
-	const parentCurrentWidth = parentCurrentEntry?.dimensions.width ?? 1;
-	const parentCurrentHeight = parentCurrentEntry?.dimensions.height ?? 1;
-	const parentReferenceWidth = parentReferenceEntry?.dimensions.width ?? 1;
-	const parentReferenceHeight = parentReferenceEntry?.dimensions.height ?? 1;
+	const parentCurrentWidth = parentCurrent?.unsaveWidth ?? 1;
+	const parentCurrentHeight = parentCurrent?.unsaveHeight ?? 1;
+	const parentReferenceWidth = parentReference?.unsaveWidth ?? 1;
+	const parentReferenceHeight = parentReference?.unsaveHeight ?? 1;
 
 	const parentWidthDifference = parentCurrentWidth / parentReferenceWidth;
 	const parentHeightDifference = parentCurrentHeight / parentReferenceHeight;
-	const childWidthDifference = current.width / reference.width;
-	const childHeightDifference = current.height / reference.height;
+	const childWidthDifference = current.unsaveWidth / reference.unsaveWidth;
+	const childHeightDifference = current.unsaveHeight / reference.unsaveHeight;
 
-	//TODO: buttons are also textNodes... Regardless of type, if the diff is 0, it should return 0
+	const scaleOverride = isTextNode && childHeightDifference !== 0 && childWidthDifference !== 0;
+
 	if (isParentEmpty) {
 		return {
 			parentWidthDifference,
 			parentHeightDifference,
-			heightDifference: isTextNode ? 1 : childHeightDifference,
-			widthDifference: isTextNode ? 1 : childWidthDifference,
+			heightDifference: scaleOverride ? 1 : childHeightDifference,
+			widthDifference: scaleOverride ? 1 : childWidthDifference,
 			textCorrection: 0,
 		};
 	}
 
-	const heightDifference = (isTextNode ? 1 : childHeightDifference) / parentHeightDifference;
-	const widthDifference = (isTextNode ? 1 : childWidthDifference) / parentWidthDifference;
+	const heightDifference = (scaleOverride ? 1 : childHeightDifference) / parentHeightDifference;
+	const widthDifference = (scaleOverride ? 1 : childWidthDifference) / parentWidthDifference;
 
-	const textCorrection = isTextNode
+	const textCorrection = scaleOverride
 		? (parentCurrentWidth - parentReferenceWidth) / 2 / parentWidthDifference
 		: 0;
 
@@ -113,8 +106,6 @@ const getScales = (
 		textCorrection,
 	};
 };
-
-//TODO: if the animation is executed and scrolled down, the values are wrong, it shifts down as well
 
 export const calculateDimensionDifferences = (
 	child: DifferenceArray,
@@ -137,6 +128,21 @@ export const calculateDimensionDifferences = (
 		widthDifference,
 		textCorrection,
 	} = getScales(child, parent, isTextNode);
+
+	if (!parent[0]) {
+		// if the root gets smaller we need to increase the top/left values
+		// if it root gets bigger, we need to decrease the top/left values
+		const leftDifference = currentLeftDifference - referenceLeftDifference - textCorrection;
+		const topDifference = currentTopDifference - referenceTopDifference;
+
+		return {
+			heightDifference: save(heightDifference, 1),
+			widthDifference: save(widthDifference, 1),
+			leftDifference: save(leftDifference, 0),
+			topDifference: save(topDifference, 0),
+			offset: currentEntry.offset,
+		};
+	}
 
 	const leftDifference =
 		currentLeftDifference / parentWidthDifference - referenceLeftDifference - textCorrection;

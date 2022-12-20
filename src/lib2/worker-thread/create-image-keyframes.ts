@@ -15,12 +15,12 @@ const getImageOverride = (elementReadouts: ElementReadouts[]) => {
 
 	if (elementReadouts.some(checkForBorderRadius)) {
 		before.borderRadius = "0px";
-		after.borderRadius = elementReadouts.at(-1)!.computedStyle.borderRadius;
+		after.borderRadius = elementReadouts.at(-1)!.borderRadius;
 	}
 
 	if (elementReadouts.some(checkForDisplayNone)) {
 		before.display = before.display ?? "block";
-		after.display = elementReadouts.at(-1)!.computedStyle.display;
+		after.display = elementReadouts.at(-1)!.display;
 	}
 
 	return {
@@ -46,8 +46,8 @@ export const getImageKeyframes = (
 
 	imageState.ratio = entry.ratio;
 	imageState.easingTable = calculateEasingMap([...easings], totalRuntime);
-	imageState.maxHeight = highestNumber(elementReadouts.map((prop) => prop.dimensions.height));
-	imageState.maxWidth = highestNumber(elementReadouts.map((prop) => prop.dimensions.width));
+	imageState.maxHeight = highestNumber(elementReadouts.map((prop) => prop.currentHeight));
+	imageState.maxWidth = highestNumber(elementReadouts.map((prop) => prop.currentWidth));
 	imageState.placeholderStyle = getPlaceholderStyle(elementReadouts);
 	imageState.wrapperStyle = getWrapperStyle(elementReadouts, rootReadout, imageState);
 	imageState.wrapperKeyframes = getWrapperKeyframes(

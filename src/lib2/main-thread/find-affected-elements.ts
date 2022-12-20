@@ -108,7 +108,7 @@ export const getAffectedElements = (state: State) => {
 	});
 
 	elementLookup.forEach((domElement, elementString) => {
-		const elementType = isImage(domElement) || isTextNode(domElement) || "default"; //TODO: this should also be an enum
+		const elementType = isImage(domElement) || isTextNode(domElement) || "default";
 		const affectedByMainElements = getAffectedElementsMap.get(elementString)!;
 
 		const rootElement = getRootElement(
@@ -120,12 +120,11 @@ export const getAffectedElements = (state: State) => {
 
 		stringifiedElementLookup.set(elementString, {
 			root: elementLookup.get(rootElement)!,
-			parent: elementLookup.get(
-				domElement.tagName === "BODY" ? domElement : domElement.parentElement!
-			)!,
+			parent: elementLookup.get(domElement.parentElement!)!,
 			type: elementType,
 			affectedBy: [...affectedByMainElements],
 			ratio: getRatio(domElement),
+			self: elementString,
 		});
 	});
 	worker.sendQuery("sendElementLookup", stringifiedElementLookup);
