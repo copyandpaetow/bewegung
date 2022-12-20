@@ -27,7 +27,12 @@ export const createAnimationsFromKeyframes = async (
 	const { totalRuntime } = animationInformation;
 	const [imageKeyframes, defaultKeyframes] = await getKeyframes(worker);
 
-	const defaultAnimations = createDefaultAnimation(defaultKeyframes, state, totalRuntime);
+	const defaultAnimations = createDefaultAnimation(
+		defaultKeyframes,
+		state,
+		totalRuntime,
+		stringifiedElementLookup
+	);
 	const imageAnimations = createImageAnimation(
 		imageKeyframes,
 		state,
