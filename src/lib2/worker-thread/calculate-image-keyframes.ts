@@ -1,12 +1,12 @@
+import { DifferenceArray, ElementReadouts, ImageState } from "../types";
 import { getTranslates, save } from "./calculate-dimension-differences";
-import { DifferenceArray, ElementReadouts, ImageState, WorkerState } from "../types";
 import { calculateBorderRadius } from "./calculate-style-tables";
 
 export const getPlaceholderStyle = (readouts: ElementReadouts[]): Partial<CSSStyleDeclaration> => {
 	return {
 		opacity: "0",
-		height: readouts.at(-1)!.dimensions.height + "px",
-		width: readouts.at(-1)!.dimensions.width + "px",
+		height: readouts.at(-1)!.unsaveHeight + "px",
+		width: readouts.at(-1)!.unsaveWidth + "px",
 	};
 };
 
@@ -19,8 +19,8 @@ export const getWrapperStyle = (
 
 	return {
 		position: "absolute",
-		top: `${readouts.at(-1)!.dimensions.top! - rootReadouts.at(-1)!.dimensions.top!}px`,
-		left: `${readouts.at(-1)!.dimensions.left! - rootReadouts.at(-1)!.dimensions.left!}px`,
+		top: `${readouts.at(-1)!.currentTop - rootReadouts.at(-1)!.currentTop}px`,
+		left: `${readouts.at(-1)!.currentLeft - rootReadouts.at(-1)!.currentLeft}px`,
 		height: `${maxHeight}px`,
 		width: `${maxWidth}px`,
 		pointerEvents: "none",
@@ -50,16 +50,16 @@ export const calculateImageKeyframes = (readouts: ElementReadouts[], imageState:
 	const keyframes: Keyframe[] = [];
 
 	readouts.forEach((entry) => {
-		let scaleWidth: number = entry.dimensions.width / maxWidth;
-		let scaleHeight: number = entry.dimensions.height / maxHeight;
+		let scaleWidth: number = entry.unsaveWidth / maxWidth;
+		let scaleHeight: number = entry.unsaveHeight / maxHeight;
 
 		let translateX: number = 0;
 		let translateY: number = 0;
 
-		if (entry.computedStyle.objectFit === "cover") {
+		if (entry.objectFit === "cover") {
 			const alternateScaleWidth = (ratio * maxHeight) / maxWidth;
 			const alternateScaleHeight = maxWidth / ratio / maxHeight;
-			const currentRatio = entry.dimensions.width / entry.dimensions.height;
+			const currentRatio = entry.unsaveWidth / entry.unsaveHeight;
 
 			if (currentRatio < ratio) {
 				scaleWidth = alternateScaleWidth * scaleHeight;
@@ -68,20 +68,16 @@ export const calculateImageKeyframes = (readouts: ElementReadouts[], imageState:
 			}
 		}
 
-		if (entry.computedStyle.objectPosition !== "50% 50%") {
-			const [xAchis, yAchis] = entry.computedStyle
-				.objectPosition!.split(" ")
-				.map((value, index) => {
-					if (value.includes("%")) {
-						return (parseFloat(value) - 100) / 100;
-					}
-					return (
-						parseFloat(value) / (index === 0 ? entry.dimensions.width : entry.dimensions.height)
-					);
-				});
+		if (entry.objectPosition !== "50% 50%") {
+			const [xAchis, yAchis] = entry.objectPosition!.split(" ").map((value, index) => {
+				if (value.includes("%")) {
+					return (parseFloat(value) - 100) / 100;
+				}
+				return parseFloat(value) / (index === 0 ? entry.currentWidth : entry.currentHeight);
+			});
 
-			translateX = save((maxWidth * scaleWidth - entry.dimensions.width) / 2, 0) * xAchis * -1;
-			translateY = save((maxHeight * scaleHeight - entry.dimensions.height) / 2, 0) * yAchis * -1;
+			translateX = save((maxWidth * scaleWidth - entry.currentWidth) / 2, 0) * xAchis * -1;
+			translateY = save((maxHeight * scaleHeight - entry.currentHeight) / 2, 0) * yAchis * -1;
 		}
 
 		keyframes.push({
@@ -93,6 +89,7 @@ export const calculateImageKeyframes = (readouts: ElementReadouts[], imageState:
 			easing: easingTable[entry.offset] ?? "ease",
 		});
 	});
+
 	return keyframes;
 };
 
@@ -132,17 +129,15 @@ export const getWrapperKeyframes = (
 	const { maxWidth, maxHeight, easingTable } = imageState;
 
 	return readouts.map((readout) => {
-		const correspondingParentEntry =
+		const correspondingRootEntry =
 			rootReadouts.find((entry) => entry.offset === readout.offset) ??
 			findCorrespondingElement(readout, rootReadouts, changeTimings);
 
-		const parentScaleY =
-			correspondingParentEntry.dimensions.height / rootReadouts.at(-1)!.dimensions.height;
-		const parentScaleX =
-			correspondingParentEntry.dimensions.width / rootReadouts.at(-1)!.dimensions.width;
+		const rootScaleY = correspondingRootEntry.currentHeight / rootReadouts.at(-1)!.currentHeight;
+		const rootScaleX = correspondingRootEntry.currentWidth / rootReadouts.at(-1)!.currentWidth;
 
 		const child: DifferenceArray = [readout, readouts.at(-1)!];
-		const parent: DifferenceArray = [correspondingParentEntry, rootReadouts.at(-1)!];
+		const parent: DifferenceArray = [correspondingRootEntry, rootReadouts.at(-1)!];
 
 		const {
 			currentLeftDifference,
@@ -151,25 +146,25 @@ export const getWrapperKeyframes = (
 			referenceTopDifference,
 		} = getTranslates(child, parent);
 
-		const horizontalInset = (maxWidth - readout.dimensions.width) / 2;
-		const verticalInset = (maxHeight - readout.dimensions.height) / 2;
+		const horizontalInset = (maxWidth - readout.currentWidth) / 2;
+		const verticalInset = (maxHeight - readout.currentHeight) / 2;
 
-		const referenceHorizontalInset = (maxWidth - readouts.at(-1)!.dimensions.width) / 2;
-		const referenceVerticalInset = (maxHeight - readouts.at(-1)!.dimensions.height) / 2;
+		const referenceHorizontalInset = (maxWidth - readouts.at(-1)!.currentWidth) / 2;
+		const referenceVerticalInset = (maxHeight - readouts.at(-1)!.currentHeight) / 2;
 
 		const leftDifference =
-			currentLeftDifference / parentScaleX +
+			currentLeftDifference / rootScaleX +
 			horizontalInset -
 			referenceLeftDifference -
 			referenceHorizontalInset;
 		const topDifference =
-			currentTopDifference / parentScaleY +
+			currentTopDifference / rootScaleY +
 			verticalInset -
 			referenceTopDifference -
 			referenceVerticalInset;
 
-		const translateX = leftDifference - (maxWidth - readout.dimensions.width) / 2;
-		const translateY = topDifference - (maxHeight - readout.dimensions.height) / 2;
+		const translateX = leftDifference - (maxWidth - readout.currentWidth) / 2;
+		const translateY = topDifference - (maxHeight - readout.currentHeight) / 2;
 
 		return {
 			offset: readout.offset,
@@ -178,8 +173,8 @@ export const getWrapperKeyframes = (
 				maxWidth,
 				maxHeight
 			)})`,
-			transform: `translate(${translateX}px, ${translateY}px) scale(${1 / parentScaleX}, ${
-				1 / parentScaleY
+			transform: `translate(${translateX}px, ${translateY}px) scale(${1 / rootScaleX}, ${
+				1 / rootScaleY
 			})`,
 			easing: easingTable[readout.offset] ?? "ease",
 		};

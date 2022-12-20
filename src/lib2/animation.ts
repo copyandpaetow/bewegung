@@ -4,9 +4,13 @@ import { initState } from "./main-thread/state";
 import { getAnimationInformation, readWriteDomChanges } from "./main-thread/read-dom";
 import { BewegungProps } from "./types";
 
-//TODO: different root selector create a small jump in the beginning
-//TODO: display: none is not consistently working
-//TODO: rethink the offset structure for the style entries. Finding entries with certain offsets is tedious
+//TODO: the root scale needs to be applied to its transform values. For small => big, it works but not the other way around
+//TODO: if we scroll down far enough the translate values are wrong
+//? maybe because some values get negative?
+
+//TODO: rethink the offset structure for the style entries. Finding entries with certain offsets is tedious.
+// ? since we dont filter the elements anymore, this is not needed. We should filter on the worker thread though
+//TODO: filter send readouts on the worker thread
 //TODO: stop empty overrides from being send
 
 export const getAnimations = async (...props: BewegungProps) => {

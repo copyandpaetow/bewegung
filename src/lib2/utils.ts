@@ -75,14 +75,10 @@ export class BidirectionalMap<Key, Value> {
 	}
 }
 
-export const checkForBorderRadius = (entry: ElementReadouts) =>
-	entry.computedStyle.borderRadius !== "0px";
+export const checkForBorderRadius = (entry: ElementReadouts) => entry.borderRadius !== "0px";
 
-export const checkForDisplayInline = (entry: ElementReadouts) =>
-	entry.computedStyle.display === "inline";
+export const checkForDisplayInline = (entry: ElementReadouts) => entry.display === "inline";
 
-export const checkForDisplayNone = (entry: ElementReadouts) =>
-	entry.computedStyle.display === "none";
+export const checkForDisplayNone = (entry: ElementReadouts) => entry.display === "none";
 
-export const checkForPositionStatic = (entry: ElementReadouts) =>
-	entry.computedStyle.position === "static";
+export const checkForPositionStatic = (entry: ElementReadouts) => entry.position === "static";

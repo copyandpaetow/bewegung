@@ -1,9 +1,7 @@
 import { ElementReadouts, WorkerState } from "../types";
 
 export const isEntryVisible = (entry: ElementReadouts) =>
-	entry.computedStyle.display !== "none" &&
-	entry.dimensions.height !== 0 &&
-	entry.dimensions.width !== 0;
+	entry.display !== "none" && entry.unsaveWidth !== 0 && entry.unsaveWidth !== 0;
 
 export const recalculateDisplayNoneValues = (readout: ElementReadouts[]): ElementReadouts[] => {
 	if (readout.every(isEntryVisible)) {
@@ -22,11 +20,13 @@ export const recalculateDisplayNoneValues = (readout: ElementReadouts[]): Elemen
 			return entry;
 		}
 
-		entry.dimensions = { ...nextEntry.dimensions, width: 0, height: 0 };
-		//TODO: this needs some more testing
-		//entry.computedStyle.transformOrigin = nextEntry.computedStyle.transformOrigin;
-
-		return entry;
+		return {
+			...nextEntry,
+			unsaveHeight: 0,
+			unsaveWidth: 0,
+			display: entry.display,
+			offset: entry.offset,
+		};
 	});
 };
 

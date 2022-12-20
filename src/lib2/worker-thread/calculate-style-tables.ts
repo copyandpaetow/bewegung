@@ -1,6 +1,5 @@
 import { BewegungsOptions, ElementReadouts, StyleTables } from "../types";
 import { calculateEasingMap } from "./calculate-easings";
-import { isEntryVisible } from "./filter-readouts";
 
 const normalizeBorderRadius = (radii: string, dimensions: { height: number; width: number }) => {
 	const radius = radii.split(" ");
@@ -30,7 +29,7 @@ export const calculateBorderRadius = (
 	externalWidth?: number,
 	externalHeight?: number
 ): string => {
-	const radius = styleEntry.computedStyle.borderRadius!;
+	const radius = styleEntry.borderRadius!;
 
 	if (radius.includes("/")) {
 		//TODO: handle more complex border radius
@@ -38,56 +37,52 @@ export const calculateBorderRadius = (
 	}
 
 	return normalizeBorderRadius(radius, {
-		width: externalWidth ?? styleEntry.dimensions.width,
-		height: externalHeight ?? styleEntry.dimensions.height,
+		width: externalWidth ?? styleEntry.currentWidth,
+		height: externalHeight ?? styleEntry.currentHeight,
 	});
 };
 
 export const getBorderRadius = (calculatedProperties: ElementReadouts[]) => {
 	const styleTable: Record<number, string> = {};
 
-	if (calculatedProperties.every((style) => style.computedStyle.borderRadius === "0px")) {
+	if (calculatedProperties.every((style) => style.borderRadius === "0px")) {
 		return styleTable;
 	}
 
 	calculatedProperties.forEach((style) => {
-		styleTable[style.offset] = isEntryVisible(style) ? calculateBorderRadius(style) : "0px";
+		styleTable[style.offset] = calculateBorderRadius(style);
 	});
 	return styleTable;
 };
 
 export const getOpacity = (calculatedProperties: ElementReadouts[]) => {
 	const styleTable: Record<number, string> = {};
-	if (calculatedProperties.every((style) => style.computedStyle.opacity === "1")) {
+	if (calculatedProperties.every((style) => style.opacity === "1")) {
 		return styleTable;
 	}
 
-	calculatedProperties.forEach(
-		(style) => (styleTable[style.offset] = style.computedStyle.opacity!)
-	);
+	calculatedProperties.forEach((style) => (styleTable[style.offset] = style.opacity!));
 	return styleTable;
 };
 
 export const getFilter = (calculatedProperties: ElementReadouts[]) => {
 	const styleTable: Record<number, string> = {};
 
-	if (calculatedProperties.every((style) => style.computedStyle.filter === "none")) {
+	if (calculatedProperties.every((style) => style.filter === "none")) {
 		return styleTable;
 	}
 
-	calculatedProperties.forEach((style) => (styleTable[style.offset] = style.computedStyle.filter!));
+	calculatedProperties.forEach((style) => (styleTable[style.offset] = style.filter!));
 	return styleTable;
 };
 
 export const getUserTransforms = (calculatedProperties: ElementReadouts[]) => {
 	const styleTable: Record<number, string> = {};
-	if (calculatedProperties.every((style) => style.computedStyle.transform === "none")) {
+	if (calculatedProperties.every((style) => style.transform === "none")) {
 		return styleTable;
 	}
 
-	calculatedProperties.forEach(
-		(style) => (styleTable[style.offset] = style.computedStyle.transform!)
-	);
+	calculatedProperties.forEach((style) => (styleTable[style.offset] = style.transform!));
 	return styleTable;
 };
 

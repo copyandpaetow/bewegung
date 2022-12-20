@@ -4,14 +4,12 @@ export const defaultChangeProperties: CssRuleName[] = [
 	"borderRadius",
 	"display",
 	"filter",
-	"height",
 	"objectFit",
 	"objectPosition",
 	"opacity",
 	"position",
 	"transform",
 	"transformOrigin",
-	"width",
 ];
 
 export const defaultOptions: Partial<KeyframeEffectOptions> = {
