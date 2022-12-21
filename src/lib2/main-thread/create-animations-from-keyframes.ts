@@ -18,6 +18,21 @@ const getKeyframes = (worker: WorkerMethods) =>
 		)
 	);
 
+export const fillImplicitKeyframes = (keyframes: Keyframe[]): Keyframe[] => {
+	const updatedKeyframes = [...keyframes];
+	const firstKeyframe = updatedKeyframes.at(0)!;
+	const lastKeyframe = updatedKeyframes.at(-1)!;
+
+	if (firstKeyframe.offset !== 0) {
+		updatedKeyframes.unshift({ ...firstKeyframe, offset: 0 });
+	}
+	if (lastKeyframe.offset !== 1) {
+		updatedKeyframes.push({ ...lastKeyframe, offset: 1 });
+	}
+
+	return updatedKeyframes;
+};
+
 export const createAnimationsFromKeyframes = async (
 	state: State,
 	stringifiedElementLookup: Map<string, ElementEntry>,

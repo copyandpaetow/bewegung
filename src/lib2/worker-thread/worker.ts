@@ -18,6 +18,7 @@ import { constructKeyframes } from "./sort-keyframes";
 import { normalizeKeyframes } from "./normalize-keyframes";
 import { normalizeOptions } from "./normalize-options";
 import { calculateTotalRuntime } from "./calculate-runtime";
+import { compareOffsetObjects } from "../utils";
 
 const reply = (queryMethodListener: string, ...queryMethodArguments: any[]) => {
 	if (!queryMethodListener) {
@@ -76,6 +77,17 @@ const fillWorkerState = (
 	});
 };
 
+const sendKeyframes = (appliableKeyframes: Map<string, CustomKeyframe>[]) => {
+	if (appliableKeyframes.length === 0) {
+		return false;
+	}
+	reply("sendAppliableKeyframes", {
+		keyframes: appliableKeyframes.pop(),
+		done: appliableKeyframes.length === 0,
+	});
+	return true;
+};
+
 const queryFunctions: QueryFunctions = {
 	normalizePropsInWorker(transferObject: TransferObject) {
 		const options = normalizeOptions(transferObject.options);
@@ -106,24 +118,28 @@ const queryFunctions: QueryFunctions = {
 	},
 
 	requestAppliableKeyframes() {
-		reply("sendAppliableKeyframes", {
-			keyframes: workerState.appliableKeyframes.pop(),
-			done: workerState.appliableKeyframes.length === 0,
-		});
+		sendKeyframes(workerState.appliableKeyframes);
 	},
+
 	sendReadouts(newReadout: Map<string, ElementReadouts>) {
+		const areThereMoreKeyframes = sendKeyframes(workerState.appliableKeyframes);
+
 		newReadout.forEach((readout, elementString) => {
-			workerState.readouts.set(
-				elementString,
-				[readout].concat(workerState.readouts.get(elementString) ?? [])
-			);
+			const allReadouts = workerState.readouts.get(elementString);
+
+			if (!allReadouts) {
+				workerState.readouts.set(elementString, [readout]);
+				return;
+			}
+
+			if (compareOffsetObjects(readout, allReadouts[0])) {
+				return;
+			}
+
+			workerState.readouts.set(elementString, [readout].concat(allReadouts!));
 		});
 
-		if (workerState.appliableKeyframes.length > 0) {
-			reply("sendAppliableKeyframes", {
-				keyframes: workerState.appliableKeyframes.pop(),
-				done: workerState.appliableKeyframes.length === 0,
-			});
+		if (areThereMoreKeyframes) {
 			return;
 		}
 

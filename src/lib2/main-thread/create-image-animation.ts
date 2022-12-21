@@ -1,6 +1,7 @@
 import { emptyImageSrc } from "../constants";
 import { applyStyleObject } from "./apply-styles";
 import { ElementEntry, ImageState, State } from "../types";
+import { fillImplicitKeyframes } from "./create-animations-from-keyframes";
 
 const getPlaceholderElement = (element: HTMLImageElement, style: Partial<CSSStyleDeclaration>) => {
 	const placeholder = document.createElement("img");
@@ -43,7 +44,9 @@ export const createImageAnimation = (
 		const domElement = elementLookup.get(elementString) as HTMLImageElement;
 		const originalStyle = domElement.style.cssText;
 
-		const animation = new Animation(new KeyframeEffect(domElement, keyframes, totalRuntime));
+		const animation = new Animation(
+			new KeyframeEffect(domElement, fillImplicitKeyframes(keyframes), totalRuntime)
+		);
 		const placeholder = getPlaceholderElement(domElement, placeholderStyle);
 		const wrapper = getWrapperElement(wrapperStyle);
 		const entry = entryLookup.get(elementString)!;
@@ -79,7 +82,11 @@ export const createImageAnimation = (
 		});
 
 		animations.push(animation);
-		animations.push(new Animation(new KeyframeEffect(wrapper, wrapperKeyframes, totalRuntime)));
+		animations.push(
+			new Animation(
+				new KeyframeEffect(wrapper, fillImplicitKeyframes(wrapperKeyframes), totalRuntime)
+			)
+		);
 	});
 
 	return { animations, onStart };

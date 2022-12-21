@@ -11,9 +11,11 @@ import { BewegungProps } from "./types";
 //TODO: stop empty animations from being send
 //TODO: stop empty overrides from being send
 //TODO: rethink the offset structure for the style entries. Finding entries with certain offsets is tedious.
-// ? since we dont filter the elements anymore, this is not needed. We should filter on the worker thread though
 
 //TODO: clip-path for display none images doesnt show the border radius anymore
+
+//TODO: animating a "display:none" element removes its styling. This seems to be a problem of a secondaryElement having a style-attribute
+// ? maybe we can only use the before override and reapply the cssText we would save beforehand
 
 export const getAnimations = async (...props: BewegungProps) => {
 	const state = initState(...props);

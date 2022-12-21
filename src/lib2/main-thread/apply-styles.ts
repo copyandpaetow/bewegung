@@ -32,7 +32,7 @@ export const filterMatchingStyleFromKeyframes = (
 	keyframes: CustomKeyframe[],
 	timing: number
 ): CustomKeyframe | undefined => {
-	const resultingStyle: CustomKeyframe = {};
+	const resultingStyle: CustomKeyframe = { offset: timing };
 
 	keyframes?.forEach((keyframe) => {
 		if (timing < keyframe.offset!) {
@@ -48,12 +48,6 @@ export const filterMatchingStyleFromKeyframes = (
 		cssClass && (resultingStyle.class = `${resultingStyle.class} ${cssClass}`);
 		attribute && (resultingStyle.attribute = `${resultingStyle.attribute} ${attribute}`);
 	});
-
-	if (timing !== 0 && Object.keys(resultingStyle).length === 0) {
-		return;
-	}
-
-	resultingStyle.offset = timing;
 
 	return resultingStyle as StyleChangePossibilities;
 };
