@@ -88,12 +88,9 @@ const formatArraySyntax = (
 	*/
 	Object.entries(keyframeWithoutOffset).forEach(
 		([property, value]: [string, ValueOf<CustomKeyframeArrayValueSyntax>]) => {
-			//height: ["70vh"]
-			//width: ["30%", "100%", "55%"]
-
 			value?.forEach((entry: ValueOf<CustomKeyframe>, index: number) => {
 				if (value.length === 1) {
-					newKeyframes[1][property] = entry;
+					newKeyframes.at(-1)![property] = entry;
 					return;
 				}
 

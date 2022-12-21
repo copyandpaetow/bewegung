@@ -1,5 +1,6 @@
 import { applyCSSStyles } from "./apply-styles";
 import { DefaultKeyframes, ElementEntry, State } from "../types";
+import { fillImplicitKeyframes } from "./create-animations-from-keyframes";
 
 export const createDefaultAnimation = (
 	defaultKeyframes: Map<string, DefaultKeyframes>,
@@ -21,7 +22,9 @@ export const createDefaultAnimation = (
 			overrides.after.position = overrides.after.position ?? "";
 		}
 
-		const animation = new Animation(new KeyframeEffect(domElement, keyframes, totalRuntime));
+		const animation = new Animation(
+			new KeyframeEffect(domElement, fillImplicitKeyframes(keyframes), totalRuntime)
+		);
 
 		onStart.push(() => applyCSSStyles(domElement, overrides.before));
 		animation.onfinish = () => applyCSSStyles(domElement, overrides.after);

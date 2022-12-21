@@ -8,8 +8,7 @@ const updateOffsets = (
 	options: BewegungsOptions,
 	totalRuntime: number
 ): CustomKeyframe[] => {
-	const { duration: untypedDuration, delay: start, endDelay, iterations, direction } = options;
-	const duration = untypedDuration as number;
+	const { duration, delay: start, endDelay, iterations, direction } = options;
 	if (iterations === Infinity) {
 		throw new Error("cant calculate with Infinity");
 	}
@@ -27,7 +26,7 @@ const updateOffsets = (
 
 		currentFrame.forEach((frame) => {
 			const currentOffset = frame.offset! + iteration;
-			const newOffset = (start! + duration * currentOffset - endDelay!) / totalRuntime;
+			const newOffset = (start! + (duration as number) * currentOffset - endDelay!) / totalRuntime;
 
 			updatedFrames.push({
 				...frame,
@@ -61,6 +60,22 @@ const addIndividualEasing = (
 	});
 };
 
+const fillImplicitKeyframes = (keyframes: CustomKeyframe[], options: BewegungsOptions) => {
+	const { easing, composite } = options;
+	const updatedKeyframes = [...keyframes];
+	const firstKeyframe = updatedKeyframes.at(0)!;
+	const lastKeyframe = updatedKeyframes.at(-1)!;
+
+	if (firstKeyframe.offset !== 0) {
+		updatedKeyframes.unshift({ offset: 0, easing, composite });
+	}
+	if (lastKeyframe.offset !== 1) {
+		updatedKeyframes.push({ offset: 1, easing, composite });
+	}
+
+	return updatedKeyframes;
+};
+
 export const normalizeKeyframes = (
 	allKeyframes: EveryKeyframeSyntax[],
 	allOptions: BewegungsOptions[],
@@ -69,4 +84,5 @@ export const normalizeKeyframes = (
 	allKeyframes
 		.map(unifyKeyframeStructure)
 		.map((keyframes, index) => addIndividualEasing(keyframes, allOptions[index]))
+		.map((keyframes, index) => fillImplicitKeyframes(keyframes, allOptions[index]))
 		.map((keyframes, index) => updateOffsets(keyframes, allOptions[index], totalRoundtime));

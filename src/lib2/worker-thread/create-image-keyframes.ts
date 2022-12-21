@@ -12,15 +12,14 @@ import {
 const getImageOverride = (elementReadouts: ElementReadouts[]) => {
 	const before: Partial<CSSStyleDeclaration> = {};
 	const after: Partial<CSSStyleDeclaration> = {};
-
 	if (elementReadouts.some(checkForBorderRadius)) {
 		before.borderRadius = "0px";
 		after.borderRadius = elementReadouts.at(-1)!.borderRadius;
 	}
 
 	if (elementReadouts.some(checkForDisplayNone)) {
-		before.display = before.display ?? "block";
-		after.display = elementReadouts.at(-1)!.display;
+		before.display = "";
+		after.display = "none";
 	}
 
 	return {
