@@ -1,6 +1,34 @@
-import { DefaultKeyframes, ImageState, WorkerState } from "../types";
+import { DefaultKeyframes, ElementReadouts, ImageState, WorkerState } from "../types";
+import { isEntryVisible } from "../utils";
 import { getDefaultKeyframes } from "./create-default-keyframes";
 import { getImageKeyframes } from "./create-image-keyframes";
+
+const recalculateDisplayNoneValues = (readout: ElementReadouts[]): ElementReadouts[] => {
+	if (readout.every(isEntryVisible)) {
+		return readout;
+	}
+
+	return readout.map((entry, index, array) => {
+		if (isEntryVisible(entry)) {
+			return entry;
+		}
+		const nextEntry =
+			array.slice(0, index).reverse().find(isEntryVisible) ||
+			array.slice(index).find(isEntryVisible);
+
+		if (!nextEntry) {
+			return entry;
+		}
+
+		return {
+			...nextEntry,
+			unsaveHeight: 0,
+			unsaveWidth: 0,
+			display: entry.display,
+			offset: entry.offset,
+		};
+	});
+};
 
 export const constructKeyframes = (
 	workerState: WorkerState
@@ -11,14 +39,16 @@ export const constructKeyframes = (
 	const defaultReadouts = new Map<string, DefaultKeyframes>();
 
 	readouts.forEach((elementReadouts, elementString) => {
-		lookup.get(elementString)!.type === "image"
+		const isImage = lookup.get(elementString)!.type === "image";
+		const saveReadouts = recalculateDisplayNoneValues(elementReadouts);
+		isImage
 			? imageReadouts.set(
 					elementString,
-					getImageKeyframes(elementReadouts, elementString, workerState)
+					getImageKeyframes(saveReadouts, elementString, workerState)
 			  )
 			: defaultReadouts.set(
 					elementString,
-					getDefaultKeyframes(elementReadouts, elementString, workerState)
+					getDefaultKeyframes(saveReadouts, elementString, workerState)
 			  );
 	});
 
