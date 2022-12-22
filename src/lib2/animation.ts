@@ -1,7 +1,7 @@
 import { createAnimationsFromKeyframes } from "./main-thread/create-animations-from-keyframes";
 import { getAffectedElements } from "./main-thread/find-affected-elements";
 import { initState } from "./main-thread/state";
-import { getAnimationInformation, readWriteDomChanges } from "./main-thread/read-dom";
+import { readWriteDomChanges } from "./main-thread/read-dom";
 import { BewegungProps } from "./types";
 
 /*
@@ -10,12 +10,11 @@ TODOS:
 # performance
 - rethink filtering. Maybe remove elements with all the same keyframes? Or all the elements are "translate(0,0) scale(0,0)"
 ? because some elements dont change but are affected from their parents and therefor influence their children
+* in that case we would need to get their parents.parents... to help with the scale
 
 #refactor
 - rethink the offset structure for the style entries. Finding entries with certain offsets is tedious.
 - improve the worker.ts main structure
-- since we need to replay keyframes at certain times, we cant .pop() them, the appliableKeyframes to to remain
-- changeTimings are not needed, maybe we can just send the changeProperties and the totalRuntime whenever they are actually needed?
 - to avoid the wrong order of messages, we might need a queue 
 
 #bugs
@@ -30,13 +29,8 @@ export const getAnimations = async (...props: BewegungProps) => {
 	const state = initState(...props);
 
 	const stringifiedElementLookup = getAffectedElements(state);
-	const animationInformation = await getAnimationInformation(state);
-	await readWriteDomChanges(state, animationInformation);
-	const animations = await createAnimationsFromKeyframes(
-		state,
-		stringifiedElementLookup,
-		animationInformation
-	);
+	await readWriteDomChanges(state);
+	const animations = await createAnimationsFromKeyframes(state, stringifiedElementLookup);
 
 	// RO + IO => re-apply keyframes and send data
 	// MO => re-translate elements and move them to the worker

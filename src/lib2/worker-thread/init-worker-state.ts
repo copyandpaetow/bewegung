@@ -27,8 +27,9 @@ export const initWorkerState = (): WorkerState => ({
 	options: new Map<string, BewegungsOptions[]>(),
 	appliableKeyframes: [],
 	totalRuntime: defaultOptions.duration as number,
-	resultingStyleChange: new Map<string, CustomKeyframe>(),
+	remainingKeyframes: 0,
 	readouts: new Map<string, ElementReadouts[]>(),
 	lookup: new Map<string, ElementEntry>(),
 	rootElements: new Set<string>(),
+	changeProperties: [],
 });

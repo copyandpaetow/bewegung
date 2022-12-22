@@ -123,29 +123,35 @@ export type ElementEntry = {
 export type QueryFunctions = {
 	initWorkerState(transferObject: TransferObject): void;
 	sendElementLookup(elementLookup: Map<string, ElementEntry>): void;
-	requestAppliableKeyframes(time: number): void;
+	requestAppliableKeyframes(): void;
 	sendReadouts(newReadout: Map<string, ElementReadouts>): void;
 };
 
 export type Queries = {
 	initWorkerState: [TransferObject];
 	sendElementLookup: [Map<string, ElementEntry>];
-	requestAppliableKeyframes: [number];
+	requestAppliableKeyframes: [];
 	sendReadouts: [Map<string, ElementReadouts>];
 };
 
 export type Replies = {
-	sendAppliableKeyframes: [{ keyframes: Map<string, CustomKeyframe>; done: boolean }];
+	sendAppliableKeyframes: [
+		{ keyframes: Map<string, CustomKeyframe>; changeProperties: CssRuleName[]; done: boolean }
+	];
 	sendKeyframeInformationToClient: [AnimationInformation];
-	sendKeyframes: [[Map<string, ImageState>, Map<string, DefaultKeyframes>]];
+	sendKeyframes: [[Map<string, ImageState>, Map<string, DefaultKeyframes>, number]];
 };
 
 export type ReplyFunctions = {
 	sendAppliableKeyframes: (
-		returnValue: [{ keyframes: Map<string, CustomKeyframe>; done: boolean }]
+		returnValue: [
+			{ keyframes: Map<string, CustomKeyframe>; changeProperties: CssRuleName[]; done: boolean }
+		]
 	) => void;
 	sendKeyframeInformationToClient: (returnValue: [AnimationInformation]) => void;
-	sendKeyframes: (returnValue: [[Map<string, ImageState>, Map<string, DefaultKeyframes>]]) => void;
+	sendKeyframes: (
+		returnValue: [[Map<string, ImageState>, Map<string, DefaultKeyframes>, number]]
+	) => void;
 };
 
 export interface WorkerMethods {
@@ -168,8 +174,9 @@ export interface WorkerState {
 	options: Map<string, BewegungsOptions[]>;
 	totalRuntime: number;
 	changeTimings: number[];
+	changeProperties: CssRuleName[];
 	appliableKeyframes: Map<string, CustomKeyframe>[];
-	resultingStyleChange: Map<string, CustomKeyframe>;
+	remainingKeyframes: number;
 	readouts: Map<string, ElementReadouts[]>;
 	lookup: Map<string, ElementEntry>;
 	rootElements: Set<string>;

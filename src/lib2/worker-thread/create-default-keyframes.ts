@@ -51,9 +51,10 @@ export const getDefaultKeyframes = (
 	elementString: string,
 	workerState: WorkerState
 ): DefaultKeyframes => {
-	const { lookup, readouts, options, totalRuntime, resultingStyleChange, changeTimings } =
+	const { lookup, readouts, options, totalRuntime, appliableKeyframes, changeTimings } =
 		workerState;
 	const entry = lookup.get(elementString)!;
+	const resultingStyleChange = appliableKeyframes.at(-1)!;
 
 	const easings = new Set<BewegungsOptions>(
 		entry.affectedBy.flatMap((elementString) => options.get(elementString)!)
