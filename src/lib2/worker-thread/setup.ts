@@ -1,10 +1,11 @@
-import { WorkerMethods } from "../types";
+import { Queries, ReplyFunctions, ValueOf, WorkerMethods } from "../types";
 
 export function QueryableWorker(url: string, onError?: VoidFunction): WorkerMethods {
 	const worker = new Worker(new URL(url, import.meta.url), {
 		type: "module",
 	});
-	const listeners = new Map();
+
+	const listeners = new Map<keyof ReplyFunctions, ValueOf<ReplyFunctions>>();
 
 	if (onError) {
 		worker.onerror = onError;
@@ -14,20 +15,17 @@ export function QueryableWorker(url: string, onError?: VoidFunction): WorkerMeth
 		worker.terminate();
 	};
 
-	const addListener = (name, listener) => {
+	const addListener = (name: keyof ReplyFunctions, listener: ValueOf<ReplyFunctions>) => {
 		listeners.set(name, listener);
 	};
 
-	const removeListener = (name) => {
+	const removeListener = (name: keyof ReplyFunctions) => {
 		listeners.delete(name);
 	};
 
 	// This functions takes at least one argument, the method name we want to query.
 	// Then we can pass in the arguments that the method needs.
-	const sendQuery = (queryMethod, ...queryMethodArguments) => {
-		if (!queryMethod) {
-			throw new TypeError("QueryableWorker.sendQuery takes at least one argument");
-		}
+	const sendQuery = (queryMethod: keyof Queries, ...queryMethodArguments: ValueOf<Queries>) => {
 		worker.postMessage({
 			queryMethod,
 			queryMethodArguments,
@@ -37,9 +35,6 @@ export function QueryableWorker(url: string, onError?: VoidFunction): WorkerMeth
 	worker.onmessage = (event) => {
 		const { queryMethodListener, queryMethodArguments } = event.data;
 
-		if (!queryMethodListener || !queryMethodArguments) {
-			return;
-		}
 		listeners.get(queryMethodListener)?.(queryMethodArguments);
 	};
 

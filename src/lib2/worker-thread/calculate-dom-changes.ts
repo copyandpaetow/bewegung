@@ -26,8 +26,10 @@ export const calculateChangeProperties = (allKeyframes: CustomKeyframe[][]) => {
 	return Array.from(changeProperties);
 };
 
-export const calculateAppliableKeyframes = (workerState: WorkerState) => {
-	const { keyframes, changeTimings } = workerState;
+export const calculateAppliableKeyframes = (
+	keyframes: Map<string, CustomKeyframe[]>,
+	changeTimings: number[]
+) => {
 	const appliableKeyframes: Map<string, CustomKeyframe>[] = [];
 
 	changeTimings.forEach((timing) => {

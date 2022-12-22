@@ -56,8 +56,7 @@ export const initState = (...props: BewegungProps): State => {
 		transferObject.keyframes[index] = keyframes;
 		transferObject.options[index] = options;
 	});
-
-	worker.sendQuery("normalizePropsInWorker", transferObject);
+	worker.sendQuery("initWorkerState", transferObject);
 
 	return {
 		cssResets,
