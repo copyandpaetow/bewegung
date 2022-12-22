@@ -32,15 +32,7 @@ export const createImageAnimation = (
 	const { elementLookup } = state;
 
 	imageKeyframes.forEach((imageEntry, elementString) => {
-		const {
-			wrapperKeyframes,
-			wrapperStyle,
-			placeholderStyle,
-			keyframes,
-			maxHeight,
-			maxWidth,
-			overrides,
-		} = imageEntry;
+		const { wrapperKeyframes, wrapperStyle, placeholderStyle, keyframes, override } = imageEntry;
 		const domElement = elementLookup.get(elementString) as HTMLImageElement;
 		const originalStyle = domElement.style.cssText;
 
@@ -54,13 +46,6 @@ export const createImageAnimation = (
 		const nextSibling = domElement.nextElementSibling;
 		const parent = domElement.parentElement!;
 
-		const isRoot = entryLookup.get(elementString)?.root === elementString;
-
-		if (isRoot && (overrides.before.position === "static" || !overrides.before.position)) {
-			overrides.before.position = "relative";
-			overrides.after.position = overrides.after.position ?? "";
-		}
-
 		animation.onfinish = () => {
 			try {
 				parent.replaceChild(domElement, placeholder);
@@ -69,30 +54,25 @@ export const createImageAnimation = (
 			}
 			wrapper.remove();
 			domElement.style.cssText = originalStyle;
-			applyStyleObject(domElement, overrides.after);
 		};
 
 		onStart.push(() => {
 			nextSibling ? parent.insertBefore(placeholder, nextSibling) : parent.appendChild(placeholder);
 			applyStyleObject(domElement, {
 				...defaultImageStyles,
-				height: String(maxHeight),
-				width: String(maxWidth),
-				inlineSize: String(maxWidth),
-				blockSize: String(maxHeight),
+				...override,
+				height: "100%",
+				width: "100%",
 			});
 			wrapper.appendChild(domElement);
 			root.appendChild(wrapper);
-
-			applyStyleObject(domElement, overrides.before);
 		});
 
-		animations.push(animation);
-		animations.push(
-			new Animation(
-				new KeyframeEffect(wrapper, fillImplicitKeyframes(wrapperKeyframes), totalRuntime)
-			)
+		const wrapperAnimation = new Animation(
+			new KeyframeEffect(wrapper, fillImplicitKeyframes(wrapperKeyframes), totalRuntime)
 		);
+
+		animations.push(animation, wrapperAnimation);
 	});
 
 	return { animations, onStart };

@@ -13,50 +13,37 @@ import {
 } from "./calculate-default-keyframes";
 import { calculateKeyframeTables } from "./calculate-style-tables";
 
-//TODO: if nothing happens here, these should not return anything
 const checkDefaultReadouts = (
 	elementReadouts: ElementReadouts[],
 	parentReadouts: ElementReadouts[] | undefined,
-	entry: ElementEntry,
-	resultingStyleChange?: CustomKeyframe
+	entry: ElementEntry
 ) => {
-	const before = resultingStyleChange ?? {};
-	const after: CustomKeyframe = {};
+	const override: CustomKeyframe = {};
+
+	if (entry.self === entry.root && elementReadouts.at(-1)!.position === "static") {
+		override.position = "relative";
+	}
 
 	if (elementReadouts.some(checkForBorderRadius)) {
-		before.borderRadius = "0px";
-		after.borderRadius = elementReadouts.at(-1)!.borderRadius;
+		override.borderRadius = "0px";
 	}
 
 	if (elementReadouts.some(checkForDisplayInline) && entry.type !== "text") {
-		before.display = "inline-block";
-		after.display = elementReadouts.at(-1)!.display;
+		override.display = "inline-block";
 	}
 
 	if (checkForDisplayNone(elementReadouts.at(-1)!)) {
-		after.display = before.display ?? "";
-		after.position = before.position ?? "";
-		after.width = before.width ?? "";
-		after.height = before.height ?? "";
-		after.left = before.left ?? "";
-		after.top = before.top ?? "";
-		after.gridArea = before.gridArea ?? "";
-
-		before.display = "";
-		before.position = "absolute";
-		before.width = elementReadouts.at(-1)!.currentWidth + "px";
-		before.height = elementReadouts.at(-1)!.currentHeight + "px";
-		before.left =
+		override.display = "";
+		override.position = "absolute";
+		// override.width = elementReadouts.at(-1)!.currentWidth + "px";
+		// override.height = elementReadouts.at(-1)!.currentHeight + "px";
+		override.left =
 			elementReadouts.at(-1)!.currentLeft - (parentReadouts?.at(-1)!.currentLeft ?? 0) + "px";
-		before.top =
+		override.top =
 			elementReadouts.at(-1)!.currentTop - (parentReadouts?.at(-1)!.currentTop ?? 0) + "px";
-		before.gridArea = "1/1/2/2";
 	}
 
-	return {
-		before,
-		after,
-	};
+	return override;
 };
 
 export const getDefaultKeyframes = (
@@ -84,11 +71,7 @@ export const getDefaultKeyframes = (
 
 	return {
 		keyframes: calculateDefaultKeyframes(differences, styleTables),
-		overrides: checkDefaultReadouts(
-			elementReadouts,
-			parentReadouts,
-			entry,
-			resultingStyleChange.get(elementString)
-		),
+		resultingStyle: resultingStyleChange.get(elementString)!,
+		override: checkDefaultReadouts(elementReadouts, parentReadouts, entry),
 	};
 };

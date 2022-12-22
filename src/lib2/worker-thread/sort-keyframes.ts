@@ -39,6 +39,9 @@ export const constructKeyframes = (
 	const defaultReadouts = new Map<string, DefaultKeyframes>();
 
 	readouts.forEach((elementReadouts, elementString) => {
+		if (elementReadouts.every((entry) => !isEntryVisible(entry))) {
+			return;
+		}
 		const isImage = lookup.get(elementString)!.type === "image";
 		const saveReadouts = recalculateDisplayNoneValues(elementReadouts);
 		isImage
@@ -52,21 +55,20 @@ export const constructKeyframes = (
 			  );
 	});
 
-	imageReadouts.forEach((entry, elementString) => {
-		if (new Set(entry.keyframes.map((frame) => frame.transform)).size > 1) {
-			return;
-		}
+	// imageReadouts.forEach((entry, elementString) => {
+	// 	if (new Set(entry.keyframes.map((frame) => frame.transform)).size > 1) {
+	// 		return;
+	// 	}
 
-		imageReadouts.delete(elementString);
-	});
+	// 	imageReadouts.delete(elementString);
+	// });
 
-	defaultReadouts.forEach((entry, elementString) => {
-		if (new Set(entry.keyframes.map((frame) => frame.transform)).size > 1) {
-			return;
-		}
-
-		defaultReadouts.delete(elementString);
-	});
+	// defaultReadouts.forEach((entry, elementString) => {
+	// 	if (new Set(entry.keyframes.map((frame) => frame.transform)).size > 1) {
+	// 		return;
+	// 	}
+	// 	defaultReadouts.delete(elementString);
+	// });
 
 	return [imageReadouts, defaultReadouts];
 };

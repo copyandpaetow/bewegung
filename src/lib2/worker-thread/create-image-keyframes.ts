@@ -10,22 +10,12 @@ import {
 } from "./calculate-image-keyframes";
 
 const getImageOverride = (elementReadouts: ElementReadouts[]) => {
-	const before: Partial<CSSStyleDeclaration> = {};
-	const after: Partial<CSSStyleDeclaration> = {};
+	const override: Partial<CSSStyleDeclaration> = {};
 	if (elementReadouts.some(checkForBorderRadius)) {
-		before.borderRadius = "0px";
-		after.borderRadius = elementReadouts.at(-1)!.borderRadius;
+		override.borderRadius = "0px";
 	}
 
-	if (elementReadouts.some(checkForDisplayNone)) {
-		before.display = "";
-		after.display = "none";
-	}
-
-	return {
-		before,
-		after,
-	};
+	return override;
 };
 
 export const getImageKeyframes = (
@@ -56,7 +46,7 @@ export const getImageKeyframes = (
 		changeTimings
 	);
 	imageState.keyframes = calculateImageKeyframes(elementReadouts, imageState);
-	imageState.overrides = getImageOverride(elementReadouts);
+	imageState.override = getImageOverride(elementReadouts);
 
 	return imageState;
 };

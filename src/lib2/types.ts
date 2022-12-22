@@ -184,7 +184,7 @@ export interface ImageState {
 	easingTable: Record<number, string>;
 	wrapperKeyframes: Keyframe[];
 	keyframes: Keyframe[];
-	overrides: { before: Partial<CSSStyleDeclaration>; after: Partial<CSSStyleDeclaration> };
+	override: Partial<CSSStyleDeclaration>;
 }
 
 export interface StyleTables {
@@ -197,10 +197,8 @@ export interface StyleTables {
 
 export interface DefaultKeyframes {
 	keyframes: Keyframe[];
-	overrides: {
-		before: CustomKeyframe;
-		after: CustomKeyframe;
-	};
+	resultingStyle: CustomKeyframe;
+	override: CustomKeyframe;
 }
 
 export type TransferObject = {
