@@ -26,3 +26,29 @@ export const defaultOptions: Partial<KeyframeEffectOptions> = {
 
 export const emptyImageSrc =
 	"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+
+export const defaultImageStyles: Partial<CSSStyleDeclaration> = {
+	aspectRatio: "initial",
+	blockSize: "initial",
+	display: "initial",
+	imageOrientation: "initial",
+	imageRendering: "initial",
+	inlineSize: "initial",
+	inset: "initial",
+	height: "initial",
+	maxBlockSize: "initial",
+	maxHeight: "initial",
+	maxInlineSize: "initial",
+	maxWidth: "initial",
+	minBlockSize: "initial",
+	minHeight: "initial",
+	minInlineSize: "initial",
+	minWidth: "initial",
+	objectFit: "initial",
+	objectPosition: "initial",
+	overflow: "initial",
+	pointerEvents: "none",
+	position: "initial",
+	willChange: "initial",
+	width: "initial",
+};

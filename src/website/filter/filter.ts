@@ -9,9 +9,17 @@ const initFilter = () => {
 				document.querySelectorAll(`img[data-color=${element.value}]`)
 			).map((element) => element.parentElement) as HTMLElement[];
 			if (element.checked) {
-				new Bewegung(selectedImages, { display: "" }, { duration: 14000 }).play();
+				new Bewegung(
+					selectedImages,
+					{ display: "" },
+					{ duration: 1400, rootSelector: "main" }
+				).play();
 			} else {
-				const animation = new Bewegung(selectedImages, { display: "none" }, { duration: 14000 });
+				const animation = new Bewegung(
+					selectedImages,
+					{ display: "none" },
+					{ duration: 1400, rootSelector: "main" }
+				);
 				animation.play();
 			}
 		})

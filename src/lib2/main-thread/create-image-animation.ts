@@ -1,4 +1,4 @@
-import { emptyImageSrc } from "../constants";
+import { defaultImageStyles, emptyImageSrc } from "../constants";
 import { applyStyleObject } from "./apply-styles";
 import { ElementEntry, ImageState, State } from "../types";
 import { fillImplicitKeyframes } from "./create-animations-from-keyframes";
@@ -74,7 +74,13 @@ export const createImageAnimation = (
 
 		onStart.push(() => {
 			nextSibling ? parent.insertBefore(placeholder, nextSibling) : parent.appendChild(placeholder);
-			domElement.style.cssText = `all: initial; height: ${maxHeight}px; width: ${maxWidth}px; pointer-events: none;`;
+			applyStyleObject(domElement, {
+				...defaultImageStyles,
+				height: String(maxHeight),
+				width: String(maxWidth),
+				inlineSize: String(maxWidth),
+				blockSize: String(maxHeight),
+			});
 			wrapper.appendChild(domElement);
 			root.appendChild(wrapper);
 

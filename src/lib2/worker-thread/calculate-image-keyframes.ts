@@ -4,7 +4,6 @@ import { calculateBorderRadius } from "./calculate-style-tables";
 
 export const getPlaceholderStyle = (readouts: ElementReadouts[]): Partial<CSSStyleDeclaration> => {
 	return {
-		opacity: "0",
 		height: readouts.at(-1)!.unsaveHeight + "px",
 		width: readouts.at(-1)!.unsaveWidth + "px",
 	};
