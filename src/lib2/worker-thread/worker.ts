@@ -1,5 +1,4 @@
 import {
-	BewegungsOptions,
 	CustomKeyframe,
 	ElementEntry,
 	ElementReadouts,
@@ -7,16 +6,13 @@ import {
 	Replies,
 	TransferObject,
 	ValueOf,
-	WorkerState,
 } from "../types";
-import { compareOffsetObjects } from "../utils";
 import {
 	calculateAppliableKeyframes,
 	calculateChangeProperties,
 	calculateChangeTimings,
 } from "./calculate-dom-changes";
 import { calculateTotalRuntime } from "./calculate-runtime";
-import { filterReadouts } from "./filter-readouts";
 import { expandEntry, initWorkerState } from "./init-worker-state";
 import { normalizeKeyframes } from "./normalize-keyframes";
 import { normalizeOptions } from "./normalize-options";
@@ -90,16 +86,10 @@ const queryFunctions: QueryFunctions = {
 
 	sendReadouts(newReadout: Map<string, ElementReadouts>) {
 		const areThereMoreKeyframes = sendKeyframes(workerState.appliableKeyframes);
-
 		newReadout.forEach((readout, elementString) => {
 			const allReadouts = workerState.readouts.get(elementString);
-
 			if (!allReadouts) {
 				workerState.readouts.set(elementString, [readout]);
-				return;
-			}
-
-			if (compareOffsetObjects(readout, allReadouts[0])) {
 				return;
 			}
 
@@ -109,8 +99,6 @@ const queryFunctions: QueryFunctions = {
 		if (areThereMoreKeyframes) {
 			return;
 		}
-
-		filterReadouts(workerState);
 
 		const finalKeyframes = constructKeyframes(workerState);
 		reply("sendKeyframes", finalKeyframes);

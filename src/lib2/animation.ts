@@ -21,12 +21,10 @@ TODOS:
 - to avoid the wrong order of messages, we might need a queue 
 
 #bugs
-- animating a "display:none" element removes its styling. This seems to be a problem of a secondaryElement having a style-attribute
 - if we scroll down far enough the translate values are wrong
 - a starting delay combined with a value that changes on offset 0 behaves wrongly => the change should be instantiously but it is a transition
-- clip-path for display none images doesnt show the border radius anymore
 - shrinking elements distort text elements
-- removing all styles from images is a problem, we would need to find the "active styles" and keep them
+- clip-path for display none images doesnt show the border radius anymore
 
 */
 
