@@ -16,7 +16,7 @@ import { calculateKeyframeTables } from "./calculate-style-tables";
 //TODO: if nothing happens here, these should not return anything
 const checkDefaultReadouts = (
 	elementReadouts: ElementReadouts[],
-	rootReadouts: ElementReadouts[],
+	parentReadouts: ElementReadouts[],
 	entry: ElementEntry,
 	resultingStyleChange?: CustomKeyframe
 ) => {
@@ -46,8 +46,8 @@ const checkDefaultReadouts = (
 		before.position = "absolute";
 		before.width = elementReadouts.at(-1)!.currentWidth + "px";
 		before.height = elementReadouts.at(-1)!.currentHeight + "px";
-		before.left = elementReadouts.at(-1)!.currentLeft - rootReadouts.at(-1)!.currentLeft + "px";
-		before.top = elementReadouts.at(-1)!.currentTop; //? for some reason this doesnt need root correction as the left value
+		before.left = elementReadouts.at(-1)!.currentLeft - parentReadouts.at(-1)!.currentLeft + "px";
+		before.top = elementReadouts.at(-1)!.currentTop - parentReadouts.at(-1)!.currentTop + "px";
 		before.gridArea = "1/1/2/2";
 	}
 
@@ -83,7 +83,7 @@ export const getDefaultKeyframes = (
 		keyframes: calculateDefaultKeyframes(differences, styleTables),
 		overrides: checkDefaultReadouts(
 			elementReadouts,
-			readouts.get(entry.root)!,
+			readouts.get(entry.parent)!,
 			entry,
 			resultingStyleChange.get(elementString)
 		),

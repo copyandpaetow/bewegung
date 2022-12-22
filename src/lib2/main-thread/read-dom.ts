@@ -70,7 +70,7 @@ export const readWriteDomChanges = async (
 		}
 	);
 
-	worker.sendQuery("requestAppliableKeyframes");
+	worker.sendQuery("requestAppliableKeyframes", Date.now());
 
 	await isFinished;
 	return;

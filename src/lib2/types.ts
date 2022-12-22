@@ -121,27 +121,38 @@ export type ElementEntry = {
 };
 
 export type QueryFunctions = {
-	normalizePropsInWorker(transferObject: TransferObject): void;
+	initWorkerState(transferObject: TransferObject): void;
 	sendElementLookup(elementLookup: Map<string, ElementEntry>): void;
-	requestAppliableKeyframes(): void;
+	requestAppliableKeyframes(time: number): void;
 	sendReadouts(newReadout: Map<string, ElementReadouts>): void;
 };
 
-type Replies = {
+export type Queries = {
+	initWorkerState: [TransferObject];
+	sendElementLookup: [Map<string, ElementEntry>];
+	requestAppliableKeyframes: [number];
+	sendReadouts: [Map<string, ElementReadouts>];
+};
+
+export type Replies = {
+	sendAppliableKeyframes: [{ keyframes: Map<string, CustomKeyframe>; done: boolean }];
+	sendKeyframeInformationToClient: [AnimationInformation];
+	sendKeyframes: [[Map<string, ImageState>, Map<string, DefaultKeyframes>]];
+};
+
+export type ReplyFunctions = {
 	sendAppliableKeyframes: (
 		returnValue: [{ keyframes: Map<string, CustomKeyframe>; done: boolean }]
 	) => void;
 	sendKeyframeInformationToClient: (returnValue: [AnimationInformation]) => void;
-	sendKeyframes: (
-		returnValue: [[Map<string, ImageState>, Map<string, DefaultKeyframes>, number]]
-	) => void;
+	sendKeyframes: (returnValue: [[Map<string, ImageState>, Map<string, DefaultKeyframes>]]) => void;
 };
 
 export interface WorkerMethods {
 	terminate: () => void;
-	addListener: (name: keyof Replies, listener: ValueOf<Replies>) => void;
-	removeListener: (name: keyof Replies) => void;
-	sendQuery: (queryMethod: keyof QueryFunctions, ...queryMethodArguments: any[]) => void;
+	addListener: (name: keyof ReplyFunctions, listener: ValueOf<ReplyFunctions>) => void;
+	removeListener: (name: keyof ReplyFunctions) => void;
+	sendQuery: (queryMethod: keyof Queries, ...queryMethodArguments: ValueOf<Queries>) => void;
 }
 
 export interface State {
@@ -202,4 +213,9 @@ export type AnimationInformation = {
 	totalRuntime: number;
 	changeTimings: number[];
 	changeProperties: CssRuleName[];
+};
+
+export type ExpandEntry = {
+	(allTargets: string[][], entry: CustomKeyframe[][]): Map<string, CustomKeyframe[]>;
+	(allTargets: string[][], entry: BewegungsOptions[]): Map<string, BewegungsOptions[]>;
 };

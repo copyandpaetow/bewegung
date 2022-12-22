@@ -10,10 +10,10 @@ import {
 import { createImageAnimation } from "./create-image-animation";
 
 const getKeyframes = (worker: WorkerMethods) =>
-	new Promise<[Map<string, ImageState>, Map<string, DefaultKeyframes>, number]>((resolve) =>
+	new Promise<[Map<string, ImageState>, Map<string, DefaultKeyframes>]>((resolve) =>
 		worker.addListener(
 			"sendKeyframes",
-			([keyframeResults]: [[Map<string, ImageState>, Map<string, DefaultKeyframes>, number]]) =>
+			([keyframeResults]: [[Map<string, ImageState>, Map<string, DefaultKeyframes>]]) =>
 				resolve(keyframeResults)
 		)
 	);
