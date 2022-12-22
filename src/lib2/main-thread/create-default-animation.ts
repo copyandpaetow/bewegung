@@ -1,33 +1,30 @@
 import { applyCSSStyles } from "./apply-styles";
-import { DefaultKeyframes, ElementEntry, State } from "../types";
+import { DefaultKeyframes, State } from "../types";
 import { fillImplicitKeyframes } from "./create-animations-from-keyframes";
 
 export const createDefaultAnimation = (
 	defaultKeyframes: Map<string, DefaultKeyframes>,
 	state: State,
-	totalRuntime: number,
-	stringifiedElementLookup: Map<string, ElementEntry>
+	totalRuntime: number
 ) => {
 	const animations: Animation[] = [];
 	const onStart: VoidFunction[] = [];
 	const { elementLookup } = state;
 
 	defaultKeyframes.forEach((defaultEntry, elementString) => {
-		const { keyframes, overrides } = defaultEntry;
+		const { keyframes, override, resultingStyle } = defaultEntry;
 		const domElement = elementLookup.get(elementString)!;
-		const isRoot = stringifiedElementLookup.get(elementString)?.root === elementString;
-
-		if (isRoot && (overrides.before.position === "static" || !overrides.before.position)) {
-			overrides.before.position = "relative";
-			overrides.after.position = overrides.after.position ?? "";
-		}
+		const originalStyle = domElement.style.cssText;
 
 		const animation = new Animation(
 			new KeyframeEffect(domElement, fillImplicitKeyframes(keyframes), totalRuntime)
 		);
 
-		onStart.push(() => applyCSSStyles(domElement, overrides.before));
-		animation.onfinish = () => applyCSSStyles(domElement, overrides.after);
+		onStart.push(() => applyCSSStyles(domElement, { ...resultingStyle, ...override }));
+		animation.onfinish = () => {
+			domElement.style.cssText = originalStyle;
+			applyCSSStyles(domElement, { ...resultingStyle });
+		};
 
 		animations.push(animation);
 	});

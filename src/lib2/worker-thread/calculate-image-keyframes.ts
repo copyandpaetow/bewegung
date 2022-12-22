@@ -37,10 +37,7 @@ export const initialImageState = (): ImageState => ({
 	easingTable: {},
 	wrapperKeyframes: [],
 	keyframes: [],
-	overrides: {
-		before: {},
-		after: {},
-	},
+	override: {},
 });
 
 export const calculateImageKeyframes = (readouts: ElementReadouts[], imageState: ImageState) => {

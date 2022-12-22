@@ -12,6 +12,7 @@
 .color {
 	width: calc(100% / 5 - var(--space-100));
 	aspect-ratio: 0.66;
+	background-color: grey
 }
 
 .color__img {

@@ -8,8 +8,6 @@ import { BewegungProps } from "./types";
 TODOS:
 
 # performance
-- stop empty overrides from being send or remove them entirely 
-? => maybe we can only use the before override and reapply the cssText we would save beforehand
 - rethink filtering. Maybe remove elements with all the same keyframes? Or all the elements are "translate(0,0) scale(0,0)"
 ? because some elements dont change but are affected from their parents and therefor influence their children
 
