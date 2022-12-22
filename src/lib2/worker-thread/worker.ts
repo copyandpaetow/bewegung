@@ -6,6 +6,7 @@ import {
 	Replies,
 	TransferObject,
 	ValueOf,
+	WorkerState,
 } from "../types";
 import {
 	calculateAppliableKeyframes,
@@ -32,15 +33,16 @@ onmessage = (event) => {
 	execute?.(...queryMethodArguments);
 };
 
-const sendKeyframes = (appliableKeyframes: Map<string, CustomKeyframe>[]) => {
-	if (appliableKeyframes.length === 0) {
-		return false;
-	}
+const sendKeyframes = (workerState: WorkerState) => {
+	const { appliableKeyframes, remainingKeyframes, changeProperties } = workerState;
+	const currentIndex = remainingKeyframes - 1;
+
 	reply("sendAppliableKeyframes", {
-		keyframes: appliableKeyframes.pop()!,
-		done: appliableKeyframes.length === 0,
+		keyframes: appliableKeyframes[currentIndex],
+		changeProperties,
+		done: currentIndex === 0,
 	});
-	return true;
+	workerState.remainingKeyframes = currentIndex;
 };
 
 let workerState = initWorkerState();
@@ -51,12 +53,8 @@ const queryFunctions: QueryFunctions = {
 		const totalRuntime = calculateTotalRuntime(options);
 		const keyframes = normalizeKeyframes(transferObject.keyframes, options, totalRuntime);
 		const changeTimings = calculateChangeTimings(keyframes);
+		const changeProperties = calculateChangeProperties(keyframes);
 
-		reply("sendKeyframeInformationToClient", {
-			changeTimings,
-			changeProperties: calculateChangeProperties(keyframes),
-			totalRuntime: totalRuntime,
-		});
 		const keyframeMap = expandEntry(transferObject.targets, keyframes);
 		const appliableKeyframes = calculateAppliableKeyframes(keyframeMap, changeTimings);
 
@@ -67,8 +65,10 @@ const queryFunctions: QueryFunctions = {
 			options: expandEntry(transferObject.targets, options),
 			appliableKeyframes,
 			totalRuntime,
-			resultingStyleChange: appliableKeyframes.at(-1)!,
+			changeProperties,
 		};
+
+		queryFunctions.requestAppliableKeyframes();
 	},
 
 	sendElementLookup(elementLookup: Map<string, ElementEntry>) {
@@ -81,11 +81,14 @@ const queryFunctions: QueryFunctions = {
 	},
 
 	requestAppliableKeyframes() {
-		sendKeyframes(workerState.appliableKeyframes);
+		workerState.remainingKeyframes = workerState.appliableKeyframes.length;
+		sendKeyframes(workerState);
 	},
 
 	sendReadouts(newReadout: Map<string, ElementReadouts>) {
-		const areThereMoreKeyframes = sendKeyframes(workerState.appliableKeyframes);
+		const remainingWork = workerState.remainingKeyframes > 0;
+		console.log(workerState.remainingKeyframes, remainingWork);
+
 		newReadout.forEach((readout, elementString) => {
 			const allReadouts = workerState.readouts.get(elementString);
 			if (!allReadouts) {
@@ -96,11 +99,8 @@ const queryFunctions: QueryFunctions = {
 			workerState.readouts.set(elementString, [readout].concat(allReadouts!));
 		});
 
-		if (areThereMoreKeyframes) {
-			return;
-		}
-
-		const finalKeyframes = constructKeyframes(workerState);
-		reply("sendKeyframes", finalKeyframes);
+		remainingWork
+			? sendKeyframes(workerState)
+			: reply("sendKeyframes", constructKeyframes(workerState));
 	},
 };

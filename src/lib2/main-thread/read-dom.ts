@@ -47,30 +47,22 @@ const readDom = async (
 	return readouts;
 };
 
-export const readWriteDomChanges = async (
-	state: State,
-	animationInformation: AnimationInformation
-) => {
+export const readWriteDomChanges = async (state: State) => {
 	const { worker } = state;
 	let setIsFinished = (value?: unknown) => {};
 	const isFinished = new Promise((resolve) => {
 		setIsFinished = resolve;
 	});
 
-	worker.addListener(
-		"sendAppliableKeyframes",
-		async ([{ keyframes, done }]: [{ keyframes: Map<string, CustomKeyframe>; done: boolean }]) => {
-			const domReadouts = await readDom(keyframes, animationInformation.changeProperties, state);
-			worker.sendQuery("sendReadouts", domReadouts);
+	worker.addListener("sendAppliableKeyframes", async ([{ keyframes, changeProperties, done }]) => {
+		const domReadouts = await readDom(keyframes, changeProperties, state);
+		worker.sendQuery("sendReadouts", domReadouts);
 
-			if (done) {
-				setIsFinished();
-				return;
-			}
+		if (done) {
+			setIsFinished();
+			return;
 		}
-	);
-
-	worker.sendQuery("requestAppliableKeyframes", Date.now());
+	});
 
 	await isFinished;
 	return;
