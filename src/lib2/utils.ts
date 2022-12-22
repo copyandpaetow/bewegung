@@ -81,6 +81,9 @@ export const checkForDisplayInline = (entry: ElementReadouts) => entry.display =
 
 export const checkForDisplayNone = (entry: ElementReadouts) => entry.display === "none";
 
+export const isEntryVisible = (entry: ElementReadouts) =>
+	entry.display !== "none" && entry.unsaveWidth !== 0 && entry.unsaveWidth !== 0;
+
 export const checkForPositionStatic = (entry: ElementReadouts) => entry.position === "static";
 
 export const compareOffsetObjects = <Value>(

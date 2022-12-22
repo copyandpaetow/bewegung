@@ -79,7 +79,7 @@ const getScales = (
 	const childWidthDifference = current.unsaveWidth / reference.currentWidth;
 	const childHeightDifference = current.unsaveHeight / reference.currentHeight;
 
-	const scaleOverride = isTextNode && childHeightDifference !== 0 && childWidthDifference !== 0;
+	const scaleOverride = isTextNode && (childHeightDifference !== 0 || childWidthDifference !== 0);
 
 	if (isParentEmpty) {
 		return {
