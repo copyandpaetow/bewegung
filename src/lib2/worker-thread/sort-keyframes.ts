@@ -52,5 +52,21 @@ export const constructKeyframes = (
 			  );
 	});
 
+	imageReadouts.forEach((entry, elementString) => {
+		if (new Set(entry.keyframes.map((frame) => frame.transform)).size > 1) {
+			return;
+		}
+
+		imageReadouts.delete(elementString);
+	});
+
+	defaultReadouts.forEach((entry, elementString) => {
+		if (new Set(entry.keyframes.map((frame) => frame.transform)).size > 1) {
+			return;
+		}
+
+		defaultReadouts.delete(elementString);
+	});
+
 	return [imageReadouts, defaultReadouts];
 };
