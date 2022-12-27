@@ -51,7 +51,7 @@ const initCards = () => {
 			10500,
 		];
 
-		return new Bewegung(hidePauseButton);
+		return new Bewegung(highlightCard, hideOthers);
 	};
 
 	let animation: Bewegung | undefined;

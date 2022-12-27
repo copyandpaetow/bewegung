@@ -24,16 +24,15 @@ const getWrapperElement = (wrapperStyle: Partial<CSSStyleDeclaration>) => {
 export const createImageAnimation = (
 	imageKeyframes: Map<string, ImageState>,
 	state: State,
-	entryLookup: Map<string, ElementEntry>,
 	totalRuntime: number
 ) => {
 	const animations: Animation[] = [];
 	const onStart: VoidFunction[] = [];
-	const { elementLookup } = state;
+	const { elementTranslation, generalTransferObject } = state;
 
 	imageKeyframes.forEach((imageEntry, elementString) => {
 		const { wrapperKeyframes, wrapperStyle, placeholderStyle, keyframes, override } = imageEntry;
-		const domElement = elementLookup.get(elementString) as HTMLImageElement;
+		const domElement = elementTranslation.get(elementString) as HTMLImageElement;
 		const originalStyle = domElement.style.cssText;
 
 		const animation = new Animation(
@@ -41,8 +40,8 @@ export const createImageAnimation = (
 		);
 		const placeholder = getPlaceholderElement(domElement, placeholderStyle);
 		const wrapper = getWrapperElement(wrapperStyle);
-		const entry = entryLookup.get(elementString)!;
-		const root = elementLookup.get(entry.root)!;
+		const rootIndex = generalTransferObject._keys.findIndex((element) => element === elementString);
+		const root = elementTranslation.get(generalTransferObject.root[rootIndex])!;
 		const nextSibling = domElement.nextElementSibling;
 		const parent = domElement.parentElement!;
 

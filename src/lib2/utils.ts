@@ -1,7 +1,17 @@
-import { ElementReadouts } from "./types";
+import { Context, ElementReadouts } from "./types";
+
+function* idGeneratorFunction() {
+	let index = 0;
+	while (true) {
+		yield (index += 1);
+	}
+}
+
+const idGenerator = idGeneratorFunction();
 
 export const uuid = (prefix: string = "bewegung"): string => {
-	return prefix + "-" + Math.random().toString(36).substring(2, 15);
+	return `${prefix}-${idGenerator.next().value}`;
+	// return prefix + "-" + Math.random().toString(36).substring(2, 5);
 };
 
 export const highestNumber = (numbers: number[]) =>

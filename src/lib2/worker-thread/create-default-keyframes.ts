@@ -2,7 +2,6 @@ import {
 	BewegungsOptions,
 	CustomKeyframe,
 	DefaultKeyframes,
-	ElementEntry,
 	ElementReadouts,
 	WorkerState,
 } from "../types";
@@ -16,11 +15,14 @@ import { calculateKeyframeTables } from "./calculate-style-tables";
 const checkDefaultReadouts = (
 	elementReadouts: ElementReadouts[],
 	parentReadouts: ElementReadouts[] | undefined,
-	entry: ElementEntry
+	context: {
+		isRoot: boolean;
+		isText: boolean;
+	}
 ) => {
 	const override: CustomKeyframe = {};
 
-	if (entry.self === entry.root && elementReadouts.at(-1)!.position === "static") {
+	if (context.isRoot && elementReadouts.at(-1)!.position === "static") {
 		override.position = "relative";
 	}
 
@@ -28,7 +30,7 @@ const checkDefaultReadouts = (
 		override.borderRadius = "0px";
 	}
 
-	if (elementReadouts.some(checkForDisplayInline) && entry.type !== "text") {
+	if (elementReadouts.some(checkForDisplayInline) && !context.isText) {
 		override.display = "inline-block";
 	}
 
@@ -51,28 +53,42 @@ export const getDefaultKeyframes = (
 	elementString: string,
 	workerState: WorkerState
 ): DefaultKeyframes => {
-	const { lookup, readouts, options, totalRuntime, appliableKeyframes, changeTimings } =
-		workerState;
-	const entry = lookup.get(elementString)!;
+	const {
+		parent,
+		root,
+		type,
+		affectedBy,
+		readouts,
+		options,
+		totalRuntime,
+		appliableKeyframes,
+		changeTimings,
+	} = workerState;
 	const resultingStyleChange = appliableKeyframes.at(-1)!;
 
 	const easings = new Set<BewegungsOptions>(
-		entry.affectedBy.flatMap((elementString) => options.get(elementString)!)
+		affectedBy.get(elementString)!.flatMap((elementString) => options.get(elementString)!)
 	);
 
 	const styleTables = calculateKeyframeTables(elementReadouts, [...easings], totalRuntime);
-	const parentReadouts = readouts.get(entry.parent);
+	const parentReadouts = readouts.get(parent.get(elementString)!);
+	const currentType = type.get(elementString)!;
 
 	const differences = getCalcualtionsFromReadouts(
 		elementReadouts,
 		parentReadouts,
-		entry.type,
+		currentType,
 		changeTimings
 	);
+
+	const context = {
+		isRoot: root.get(elementString)! === elementString,
+		isText: currentType === "text",
+	};
 
 	return {
 		keyframes: calculateDefaultKeyframes(differences, styleTables),
 		resultingStyle: resultingStyleChange.get(elementString)!,
-		override: checkDefaultReadouts(elementReadouts, parentReadouts, entry),
+		override: checkDefaultReadouts(elementReadouts, parentReadouts, context),
 	};
 };

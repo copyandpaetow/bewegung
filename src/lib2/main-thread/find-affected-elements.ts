@@ -68,7 +68,7 @@ export const getRootElement = (entries: string[] | HTMLElement[]): HTMLElement =
 	return root as HTMLElement;
 };
 
-const isTextNode = (element: HTMLElement) => {
+export const isTextNode = (element: HTMLElement) => {
 	if (!element.hasChildNodes()) {
 		return false;
 	}
@@ -77,7 +77,8 @@ const isTextNode = (element: HTMLElement) => {
 		? "text"
 		: false;
 };
-const isImage = (mainElement: HTMLElement) => (mainElement.tagName === "IMG" ? "image" : false);
+export const isImage = (mainElement: HTMLElement) =>
+	mainElement.tagName === "IMG" ? "image" : false;
 
 export const getAffectedElements = (state: State) => {
 	const { elementLookup, rootSelector, worker } = state;
@@ -127,6 +128,7 @@ export const getAffectedElements = (state: State) => {
 			self: elementString,
 		});
 	});
+
 	worker.sendQuery("sendElementLookup", stringifiedElementLookup);
 
 	return stringifiedElementLookup;

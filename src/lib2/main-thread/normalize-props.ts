@@ -18,7 +18,7 @@ const convertToCustomKeyframe = (keyframeEffect: KeyframeEffect): CustomKeyframe
 const isSingleArrayEntry = <Input>(input: Input) =>
 	!Array.isArray(input) && !(input instanceof KeyframeEffect);
 
-export const unifyPropStructure = (...props: BewegungProps): CustomKeyframeEffect[] => {
+export const unifyPropStructure = (props: BewegungProps): CustomKeyframeEffect[] => {
 	if (props instanceof KeyframeEffect) {
 		return [convertToCustomKeyframe(props)];
 	}

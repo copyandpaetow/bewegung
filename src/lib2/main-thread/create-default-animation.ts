@@ -1,15 +1,15 @@
 import { applyCSSStyles } from "./apply-styles";
 import { DefaultKeyframes, State } from "../types";
 import { fillImplicitKeyframes } from "./create-animations-from-keyframes";
+import { BidirectionalMap } from "../utils";
 
 export const createDefaultAnimation = (
 	defaultKeyframes: Map<string, DefaultKeyframes>,
-	state: State,
+	elementLookup: BidirectionalMap<string, HTMLElement>,
 	totalRuntime: number
 ) => {
 	const animations: Animation[] = [];
 	const onStart: VoidFunction[] = [];
-	const { elementLookup } = state;
 
 	defaultKeyframes.forEach((defaultEntry, elementString) => {
 		const { keyframes, override, resultingStyle } = defaultEntry;

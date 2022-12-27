@@ -33,7 +33,9 @@ const recalculateDisplayNoneValues = (readout: ElementReadouts[]): ElementReadou
 export const constructKeyframes = (
 	workerState: WorkerState
 ): [Map<string, ImageState>, Map<string, DefaultKeyframes>, number] => {
-	const { readouts, lookup, totalRuntime } = workerState;
+	const { readouts, type, totalRuntime } = workerState;
+
+	console.log(readouts);
 
 	const imageReadouts = new Map<string, ImageState>();
 	const defaultReadouts = new Map<string, DefaultKeyframes>();
@@ -42,7 +44,7 @@ export const constructKeyframes = (
 		if (elementReadouts.every((entry) => !isEntryVisible(entry))) {
 			return;
 		}
-		const isImage = lookup.get(elementString)!.type === "image";
+		const isImage = type.get(elementString)! === "image";
 		const saveReadouts = recalculateDisplayNoneValues(elementReadouts);
 		isImage
 			? imageReadouts.set(
