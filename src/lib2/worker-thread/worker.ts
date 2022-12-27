@@ -1,106 +1,92 @@
-import {
-	CustomKeyframe,
-	ElementEntry,
-	ElementReadouts,
-	QueryFunctions,
-	Replies,
-	TransferObject,
-	ValueOf,
-	WorkerState,
-} from "../types";
+import { createStore } from "../store";
+import { WorkerSchema } from "../types";
 import {
 	calculateAppliableKeyframes,
 	calculateChangeProperties,
 	calculateChangeTimings,
 } from "./calculate-dom-changes";
 import { calculateTotalRuntime } from "./calculate-runtime";
-import { expandEntry, initWorkerState } from "./init-worker-state";
+import { expandEntry, initalState } from "./init-worker-state";
 import { normalizeKeyframes } from "./normalize-keyframes";
 import { normalizeOptions } from "./normalize-options";
 import { constructKeyframes } from "./sort-keyframes";
 
-const reply = (queryMethodListener: keyof Replies, ...queryMethodArguments: ValueOf<Replies>) => {
-	postMessage({
-		queryMethodListener,
-		queryMethodArguments,
-	});
-};
+createStore<WorkerSchema>(self, {
+	state: initalState(),
+	methods: {
+		setMainState({ state }, transferObject) {
+			const options = normalizeOptions(transferObject.options);
+			const totalRuntime = calculateTotalRuntime(options);
+			const keyframes = normalizeKeyframes(transferObject.keyframes, options, totalRuntime);
+			const changeTimings = calculateChangeTimings(keyframes);
+			const changeProperties = calculateChangeProperties(keyframes);
 
-onmessage = (event) => {
-	const { queryMethod, queryMethodArguments } = event.data;
+			const keyframeMap = expandEntry(transferObject._keys, keyframes);
+			const appliableKeyframes = calculateAppliableKeyframes(keyframeMap, changeTimings);
 
-	const execute = queryFunctions[queryMethod];
-	execute?.(...queryMethodArguments);
-};
+			state.appliableKeyframes = appliableKeyframes;
+			state.changeTimings = changeTimings;
+			state.changeProperties = changeProperties;
+			state.keyframes = keyframeMap;
+			state.options = expandEntry(transferObject._keys, options);
+			state.remainingKeyframes = appliableKeyframes.length;
+			state.selectors = expandEntry(transferObject._keys, [keyframes, options]);
+			state.totalRuntime = totalRuntime;
+		},
+		setGeneralState({ state }, transferObject) {
+			const { _keys, ...newState } = transferObject;
 
-const sendKeyframes = (workerState: WorkerState) => {
-	const { appliableKeyframes, remainingKeyframes, changeProperties } = workerState;
-	const currentIndex = remainingKeyframes - 1;
-
-	reply("sendAppliableKeyframes", {
-		keyframes: appliableKeyframes[currentIndex],
-		changeProperties,
-		done: currentIndex === 0,
-	});
-	workerState.remainingKeyframes = currentIndex;
-};
-
-let workerState = initWorkerState();
-
-const queryFunctions: QueryFunctions = {
-	initWorkerState(transferObject: TransferObject) {
-		const options = normalizeOptions(transferObject.options);
-		const totalRuntime = calculateTotalRuntime(options);
-		const keyframes = normalizeKeyframes(transferObject.keyframes, options, totalRuntime);
-		const changeTimings = calculateChangeTimings(keyframes);
-		const changeProperties = calculateChangeProperties(keyframes);
-
-		const keyframeMap = expandEntry(transferObject.targets, keyframes);
-		const appliableKeyframes = calculateAppliableKeyframes(keyframeMap, changeTimings);
-
-		workerState = {
-			...workerState,
-			changeTimings,
-			keyframes: keyframeMap,
-			options: expandEntry(transferObject.targets, options),
-			appliableKeyframes,
-			totalRuntime,
-			changeProperties,
-		};
-
-		queryFunctions.requestAppliableKeyframes();
+			Object.entries(newState).forEach(([property, value]) => {
+				value.forEach((currentValue, index) => {
+					state[property].set(_keys[index], currentValue);
+				});
+			});
+		},
+		decreaseRemainingKeyframes({ state }) {
+			state.remainingKeyframes = state.remainingKeyframes - 1;
+		},
+		setReadouts({ state }, payload) {
+			payload.forEach((readout, elementString) => {
+				state.readouts.set(
+					elementString,
+					[readout].concat(state.readouts.get(elementString) ?? [])
+				);
+			});
+		},
 	},
+	actions: {
+		updateMainState({ commit, dispatch }, payload) {
+			commit("setMainState", payload);
+			dispatch("updateRemainingKeyframes");
+		},
+		updateGeneralState({ commit }, payload) {
+			commit("setGeneralState", payload);
+		},
+		updateRemainingKeyframes({ commit, dispatch, state }) {
+			const { remainingKeyframes } = state;
 
-	sendElementLookup(elementLookup: Map<string, ElementEntry>) {
-		const rootElements = new Set<string>();
-
-		elementLookup.forEach((entry) => rootElements.add(entry.root));
-
-		workerState.lookup = elementLookup;
-		workerState.rootElements = rootElements;
-	},
-
-	requestAppliableKeyframes() {
-		workerState.remainingKeyframes = workerState.appliableKeyframes.length;
-		sendKeyframes(workerState);
-	},
-
-	sendReadouts(newReadout: Map<string, ElementReadouts>) {
-		const remainingWork = workerState.remainingKeyframes > 0;
-		console.log(workerState.remainingKeyframes, remainingWork);
-
-		newReadout.forEach((readout, elementString) => {
-			const allReadouts = workerState.readouts.get(elementString);
-			if (!allReadouts) {
-				workerState.readouts.set(elementString, [readout]);
+			if (remainingKeyframes) {
+				commit("decreaseRemainingKeyframes");
+				dispatch("replyAppliableKeyframes");
 				return;
 			}
+			dispatch("replyConstructedKeyframes");
+		},
+		updateReadouts({ commit, dispatch }, payload) {
+			commit("setReadouts", payload);
+			dispatch("updateRemainingKeyframes");
+		},
+		replyConstructedKeyframes({ reply, state }) {
+			reply("sendKeyframes", constructKeyframes(state));
+		},
+		replyAppliableKeyframes({ reply, state }) {
+			const { appliableKeyframes, remainingKeyframes, changeProperties } = state;
 
-			workerState.readouts.set(elementString, [readout].concat(allReadouts!));
-		});
-
-		remainingWork
-			? sendKeyframes(workerState)
-			: reply("sendKeyframes", constructKeyframes(workerState));
+			reply("sendAppliableKeyframes", {
+				keyframes: appliableKeyframes[remainingKeyframes],
+				changeProperties,
+				done: remainingKeyframes === 0,
+			});
+		},
 	},
-};
+});

@@ -1,3 +1,4 @@
+import { type } from "os";
 import { BidirectionalMap } from "./utils";
 
 export type ElementOrSelector =
@@ -111,75 +112,33 @@ export interface Result {
 
 export type EntryType = "image" | "text" | "default";
 
-export type ElementEntry = {
-	affectedBy: string[];
-	parent: string;
-	root: string;
-	type: EntryType;
-	ratio: number;
-	self: string;
-};
-
-export type QueryFunctions = {
-	initWorkerState(transferObject: TransferObject): void;
-	sendElementLookup(elementLookup: Map<string, ElementEntry>): void;
-	requestAppliableKeyframes(): void;
-	sendReadouts(newReadout: Map<string, ElementReadouts>): void;
-};
-
-export type Queries = {
-	initWorkerState: [TransferObject];
-	sendElementLookup: [Map<string, ElementEntry>];
-	requestAppliableKeyframes: [];
-	sendReadouts: [Map<string, ElementReadouts>];
-};
-
-export type Replies = {
-	sendAppliableKeyframes: [
-		{ keyframes: Map<string, CustomKeyframe>; changeProperties: CssRuleName[]; done: boolean }
-	];
-	sendKeyframeInformationToClient: [AnimationInformation];
-	sendKeyframes: [[Map<string, ImageState>, Map<string, DefaultKeyframes>, number]];
-};
-
-export type ReplyFunctions = {
-	sendAppliableKeyframes: (
-		returnValue: [
-			{ keyframes: Map<string, CustomKeyframe>; changeProperties: CssRuleName[]; done: boolean }
-		]
-	) => void;
-	sendKeyframeInformationToClient: (returnValue: [AnimationInformation]) => void;
-	sendKeyframes: (
-		returnValue: [[Map<string, ImageState>, Map<string, DefaultKeyframes>, number]]
-	) => void;
-};
-
-export interface WorkerMethods {
-	terminate: () => void;
-	addListener: (name: keyof ReplyFunctions, listener: ValueOf<ReplyFunctions>) => void;
-	removeListener: (name: keyof ReplyFunctions) => void;
-	sendQuery: (queryMethod: keyof Queries, ...queryMethodArguments: ValueOf<Queries>) => void;
-}
-
 export interface State {
-	selectors: Map<string, number>;
+	selectors: Map<string, number[]>;
 	elementLookup: BidirectionalMap<string, HTMLElement>;
 	rootSelector: Map<HTMLElement, string[]>;
 	cssResets: Map<HTMLElement, Map<string, string>>;
-	worker: WorkerMethods;
 }
+
+export type Selector = {
+	keyframes: CustomKeyframe[];
+	options: BewegungsOptions;
+};
 
 export interface WorkerState {
 	keyframes: Map<string, CustomKeyframe[]>;
 	options: Map<string, BewegungsOptions[]>;
+	selectors: Map<string, Selector[]>;
 	totalRuntime: number;
 	changeTimings: number[];
 	changeProperties: CssRuleName[];
 	appliableKeyframes: Map<string, CustomKeyframe>[];
 	remainingKeyframes: number;
 	readouts: Map<string, ElementReadouts[]>;
-	lookup: Map<string, ElementEntry>;
-	rootElements: Set<string>;
+	affectedBy: Map<string, string[]>;
+	parent: Map<string, string>;
+	root: Map<string, string>;
+	type: Map<string, EntryType>;
+	ratio: Map<string, number>;
 }
 
 export interface ImageState {
@@ -208,10 +167,26 @@ export interface DefaultKeyframes {
 	override: CustomKeyframe;
 }
 
-export type TransferObject = {
-	targets: string[][];
+export type MainTransferObject = {
+	_keys: string[][];
 	keyframes: EveryKeyframeSyntax[];
 	options: EveryOptionSyntax[];
+	selectors: string[];
+};
+
+export type GeneralTransferObject = {
+	_keys: string[];
+	root: string[];
+	parent: string[];
+	type: EntryType[];
+	affectedBy: string[][];
+	ratio: number[];
+};
+
+export type ReadoutTransferObject = {
+	[entry in keyof ElementReadouts]: ValueOf<ElementReadouts>;
+} & {
+	_keys: string[];
 };
 
 export type AnimationInformation = {
@@ -223,4 +198,36 @@ export type AnimationInformation = {
 export type ExpandEntry = {
 	(allTargets: string[][], entry: CustomKeyframe[][]): Map<string, CustomKeyframe[]>;
 	(allTargets: string[][], entry: BewegungsOptions[]): Map<string, BewegungsOptions[]>;
+	(allTargets: string[][], entry: [CustomKeyframe[][], BewegungsOptions[]]): Map<
+		string,
+		Selector[]
+	>;
+};
+
+export type WorkerActions<State> = {
+	updateMainState(context: Context<State>, paylaod: MainTransferObject): void;
+	updateRemainingKeyframes(context: Context<State>): void;
+	updateReadouts(context: Context<State>, payload: ReadoutTransferObject): void;
+	replyConstructedKeyframes(context: Context<State>): void;
+	replyAppliableKeyframes(context: Context<State>): void;
+};
+
+export type WorkerMethods<State> = {
+	setMainState(context: Context<State>, transferObject: MainTransferObject): void;
+	decreaseRemainingKeyframes(context: Context<State>): void;
+	setReadouts(context: Context<State>, transferObject: ReadoutTransferObject): void;
+	setGeneralState(context: Context<State>, transferObject: GeneralTransferObject): void;
+};
+
+export type WorkerSchema = {
+	state: WorkerState;
+	methods: WorkerMethods<WorkerState>;
+	actions: WorkerActions<WorkerState>;
+};
+
+export type Context<State> = {
+	state: State;
+	commit(method: any, payload?: any): void;
+	dispatch(action: any, payload?: any): void;
+	reply(queryMethodListener: any, queryMethodArguments: any): void;
 };

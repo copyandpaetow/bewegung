@@ -1,12 +1,33 @@
-import { defaultOptions } from "../constants";
 import {
 	BewegungsOptions,
 	CustomKeyframe,
-	ElementEntry,
 	ElementReadouts,
+	EntryType,
 	ExpandEntry,
+	Selector,
 	WorkerState,
 } from "../types";
+
+export const initalState = (): WorkerState => ({
+	//main element state
+	keyframes: new Map<string, CustomKeyframe[]>(),
+	options: new Map<string, BewegungsOptions[]>(),
+	selectors: new Map<string, Selector[]>(),
+	//all element state
+	root: new Map<string, string>(),
+	parent: new Map<string, string>(),
+	affectedBy: new Map<string, string[]>(),
+	ratio: new Map<string, number>(),
+	type: new Map<string, EntryType>(),
+	//context
+	totalRuntime: 0,
+	changeProperties: [],
+	changeTimings: [0, 1],
+	//keyframe related
+	remainingKeyframes: 0,
+	appliableKeyframes: [],
+	readouts: new Map<string, ElementReadouts[]>(),
+});
 
 export const expandEntry: ExpandEntry = (allTargets: string[][], entry: any) => {
 	const result = new Map<string, any>();
@@ -20,16 +41,3 @@ export const expandEntry: ExpandEntry = (allTargets: string[][], entry: any) => 
 	});
 	return result;
 };
-
-export const initWorkerState = (): WorkerState => ({
-	changeTimings: [0, 1],
-	keyframes: new Map<string, CustomKeyframe[]>(),
-	options: new Map<string, BewegungsOptions[]>(),
-	appliableKeyframes: [],
-	totalRuntime: defaultOptions.duration as number,
-	remainingKeyframes: 0,
-	readouts: new Map<string, ElementReadouts[]>(),
-	lookup: new Map<string, ElementEntry>(),
-	rootElements: new Set<string>(),
-	changeProperties: [],
-});

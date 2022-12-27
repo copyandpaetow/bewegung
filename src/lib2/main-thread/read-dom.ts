@@ -21,49 +21,29 @@ export const getAnimationInformation = (state: State) =>
 
 const nextBrowserRender = () => new Promise((resolve) => requestAnimationFrame(resolve));
 
-const readDom = async (
+export const readDom = async (
 	elementChanges: Map<string, CustomKeyframe>,
 	changeProperties: CssRuleName[],
 	state: State
 ) => {
-	const { cssResets, elementLookup } = state;
+	const { cssResets, elementTranslation } = state;
 	const readouts = new Map<string, ElementReadouts>();
+	let offset;
 
 	await nextBrowserRender();
 	elementChanges.forEach((styleChange, elementString) => {
-		const domElement = state.elementLookup.get(elementString)!;
+		const domElement = elementTranslation.get(elementString)!;
 		applyCSSStyles(domElement, styleChange);
-		elementLookup.forEach((domElement, elementString) => {
-			readouts.set(
-				elementString,
-				getCalculations(domElement, changeProperties, styleChange.offset!)
-			);
-		});
+		if (offset === undefined) {
+			offset = styleChange.offset;
+		}
+	});
+	elementTranslation.forEach((domElement, elementString) => {
+		readouts.set(elementString, getCalculations(domElement, changeProperties, offset));
 	});
 	cssResets.forEach((reset, domElement) => {
 		restoreOriginalStyle(domElement, reset);
 	});
 
 	return readouts;
-};
-
-export const readWriteDomChanges = async (state: State) => {
-	const { worker } = state;
-	let setIsFinished = (value?: unknown) => {};
-	const isFinished = new Promise((resolve) => {
-		setIsFinished = resolve;
-	});
-
-	worker.addListener("sendAppliableKeyframes", async ([{ keyframes, changeProperties, done }]) => {
-		const domReadouts = await readDom(keyframes, changeProperties, state);
-		worker.sendQuery("sendReadouts", domReadouts);
-
-		if (done) {
-			setIsFinished();
-			return;
-		}
-	});
-
-	await isFinished;
-	return;
 };

@@ -23,17 +23,14 @@ export const getImageKeyframes = (
 	elementString: string,
 	workerState: WorkerState
 ) => {
-	const { lookup, options, readouts, totalRuntime, changeTimings } = workerState;
+	const { root, affectedBy, ratio, options, readouts, totalRuntime, changeTimings } = workerState;
 	const imageState = initialImageState();
-
-	const entry = lookup.get(elementString)!;
-
 	const easings = new Set<BewegungsOptions>(
-		entry.affectedBy.flatMap((elementString) => options.get(elementString)!)
+		affectedBy.get(elementString)!.flatMap((elementString) => options.get(elementString)!)
 	);
-	const rootReadout = readouts.get(entry.root)!;
+	const rootReadout = readouts.get(root.get(elementString)!)!;
 
-	imageState.ratio = entry.ratio;
+	imageState.ratio = ratio.get(elementString)!;
 	imageState.easingTable = calculateEasingMap([...easings], totalRuntime);
 	imageState.maxHeight = highestNumber(elementReadouts.map((prop) => prop.currentHeight));
 	imageState.maxWidth = highestNumber(elementReadouts.map((prop) => prop.currentWidth));

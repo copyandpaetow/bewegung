@@ -8,7 +8,7 @@ export class Bewegung implements BewegungAPI {
 
 	constructor(...bewegungProps: BewegungProps) {
 		this.#now = Date.now();
-		this.#state = getAnimations(...bewegungProps);
+		this.#state = getAnimations(bewegungProps);
 	}
 
 	get playState() {
@@ -29,7 +29,6 @@ export class Bewegung implements BewegungAPI {
 			});
 			console.log(`it took ${Date.now() - this.#now}ms`);
 		};
-
 		return awaitAnimations();
 	}
 	pause() {}
