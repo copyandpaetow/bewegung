@@ -1,4 +1,4 @@
-import { CssRuleName, ElementReadouts, PartialDomRect } from "../types";
+import { CssRuleName, ElementReadouts } from "../types";
 
 export const getRatio = (domElement: HTMLElement): number =>
 	domElement.tagName !== "IMG"

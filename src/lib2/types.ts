@@ -1,5 +1,5 @@
 import { type } from "os";
-import { BidirectionalMap } from "./utils";
+import { BidirectionalMap } from "./main-thread/element-translations";
 
 export type ElementOrSelector =
 	| HTMLElement
@@ -112,13 +112,6 @@ export interface Result {
 
 export type EntryType = "image" | "text" | "default";
 
-export interface State {
-	selectors: Map<string, number[]>;
-	elementLookup: BidirectionalMap<string, HTMLElement>;
-	rootSelector: Map<HTMLElement, string[]>;
-	cssResets: Map<HTMLElement, Map<string, string>>;
-}
-
 export type Selector = {
 	keyframes: CustomKeyframe[];
 	options: BewegungsOptions;
@@ -183,18 +176,6 @@ export type GeneralTransferObject = {
 	ratio: number[];
 };
 
-export type ReadoutTransferObject = {
-	[entry in keyof ElementReadouts]: ValueOf<ElementReadouts>;
-} & {
-	_keys: string[];
-};
-
-export type AnimationInformation = {
-	totalRuntime: number;
-	changeTimings: number[];
-	changeProperties: CssRuleName[];
-};
-
 export type ExpandEntry = {
 	(allTargets: string[][], entry: CustomKeyframe[][]): Map<string, CustomKeyframe[]>;
 	(allTargets: string[][], entry: BewegungsOptions[]): Map<string, BewegungsOptions[]>;
@@ -204,25 +185,66 @@ export type ExpandEntry = {
 	>;
 };
 
-export type WorkerActions<State> = {
-	updateMainState(context: Context<State>, paylaod: MainTransferObject): void;
-	updateRemainingKeyframes(context: Context<State>): void;
-	updateReadouts(context: Context<State>, payload: ReadoutTransferObject): void;
-	replyConstructedKeyframes(context: Context<State>): void;
-	replyAppliableKeyframes(context: Context<State>): void;
+export type WorkerActions = {
+	updateMainState(context: Context<WorkerState>, paylaod: MainTransferObject): void;
+	updateGeneralState(context: Context<WorkerState>, paylaod: GeneralTransferObject): void;
+	updateRemainingKeyframes(context: Context<WorkerState>): void;
+	updateReadouts(context: Context<WorkerState>, payload: Map<string, ElementReadouts>): void;
+	replyConstructedKeyframes(context: Context<WorkerState>): void;
+	replyAppliableKeyframes(context: Context<WorkerState>): void;
 };
 
-export type WorkerMethods<State> = {
-	setMainState(context: Context<State>, transferObject: MainTransferObject): void;
-	decreaseRemainingKeyframes(context: Context<State>): void;
-	setReadouts(context: Context<State>, transferObject: ReadoutTransferObject): void;
-	setGeneralState(context: Context<State>, transferObject: GeneralTransferObject): void;
+export type WorkerMethods = {
+	setMainState(context: Context<WorkerState>, transferObject: MainTransferObject): void;
+	decreaseRemainingKeyframes(context: Context<WorkerState>): void;
+	setReadouts(context: Context<WorkerState>, transferObject: Map<string, ElementReadouts>): void;
+	setGeneralState(context: Context<WorkerState>, transferObject: GeneralTransferObject): void;
 };
 
 export type WorkerSchema = {
 	state: WorkerState;
-	methods: WorkerMethods<WorkerState>;
-	actions: WorkerActions<WorkerState>;
+	methods: WorkerMethods;
+	actions: WorkerActions;
+};
+
+export type MainState = {
+	cssResets: Map<HTMLElement, Map<string, string>>;
+	rootSelector: Map<HTMLElement, string[]>;
+	elementTranslation: BidirectionalMap<string, HTMLElement>;
+	generalTransferObject: GeneralTransferObject;
+	mainTransferObject: MainTransferObject;
+	onStart: VoidFunction[];
+	animations: Animation[];
+	result: Promise<Result>;
+	finishCallback: (value: Result | PromiseLike<Result>) => void;
+};
+
+export type MainMethods = {
+	setMainTransferObject(context: Context<MainState>, payload: BewegungProps): void;
+	setGeneralTransferObject(context: Context<MainState>, payload: any): void;
+	setResults(context: Context<MainState>, payload: resultingKeyframes): void;
+};
+type resultingKeyframes = [Map<string, ImageState>, Map<string, DefaultKeyframes>, number];
+
+type AppliableKeyframes = {
+	done: boolean;
+	changeProperties: CssRuleName[];
+	keyframes: Map<string, CustomKeyframe>;
+};
+
+export type MainActions = {
+	initStateFromProps(context: Context<MainState>, payload: BewegungProps): void;
+	sendAppliableKeyframes(context: Context<MainState>, payload: AppliableKeyframes): Promise<void>;
+	sendKeyframes(context: Context<MainState>, payload: resultingKeyframes): void;
+	replyMainTransferObject(context: Context<MainState>): void;
+	replyGeneralTransferObject(context: Context<MainState>): void;
+	replyReadout(context: Context<MainState>, payload: Map<string, ElementReadouts>): void;
+};
+
+export type MainSchema = {
+	state: MainState;
+	methods: MainMethods;
+	actions: MainActions;
 };
 
 export type Context<State> = {

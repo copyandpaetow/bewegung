@@ -1,20 +1,14 @@
 import { createDefaultAnimation } from "./main-thread/create-default-animation";
 import { createImageAnimation } from "./main-thread/create-image-animation";
 import { saveOriginalStyle } from "./main-thread/css-resets";
-import {
-	findAffectedDOMElements,
-	getRootElement,
-	isImage,
-	isTextNode,
-} from "./main-thread/find-affected-elements";
+import { getOrAddKeyFromLookup } from "./main-thread/element-translations";
+import { setGeneralTransferObject } from "./main-thread/find-affected-elements";
 import { normalizeElements } from "./main-thread/normalize-elements";
 import { unifyPropStructure } from "./main-thread/normalize-props";
 import { readDom } from "./main-thread/read-dom";
-import { getRatio } from "./main-thread/read-dom-properties";
-import { getOrAddKeyFromLookup, getRootSelector } from "./main-thread/state";
+import { getRootSelector, initialMainState, mainTransferObject } from "./main-thread/state";
 import { createStore } from "./store";
-import { BewegungProps, Result } from "./types";
-import { BidirectionalMap } from "./utils";
+import { BewegungProps, MainSchema } from "./types";
 
 /*
 TODOS:
@@ -38,40 +32,16 @@ TODOS:
 
 */
 
-export const getAnimations = (props: BewegungProps) => {
-	const worker = new Worker(new URL("worker-thread/worker.ts", import.meta.url), {
-		type: "module",
-	});
+const worker = new Worker(new URL("worker-thread/worker.ts", import.meta.url), {
+	type: "module",
+});
 
-	const store = createStore(worker, {
-		state: {
-			cssResets: new Map<HTMLElement, Map<string, string>>(),
-			rootSelector: new Map<HTMLElement, string[]>(),
-			mainTransferObject: {
-				_keys: [],
-				keyframes: [],
-				options: [],
-				selectors: [],
-			},
-			generalTransferObject: {
-				_keys: [],
-				root: [],
-				parent: [],
-				type: [],
-				affectedBy: [],
-				ratio: [],
-			},
-			elementTranslation: new BidirectionalMap<string, HTMLElement>(),
-			onStart: [],
-			animations: [],
-			result: new Promise<Result>((resolve) => {}),
-			finishPromise: () => {},
-		},
+export const getAnimations = (props: BewegungProps) => {
+	const store = createStore<MainSchema>(worker, {
+		state: initialMainState(),
 		methods: {
-			setPromise({ state }) {
-				state.result = new Promise<Result>((resolve) => (state.finishPromise = resolve));
-			},
 			setMainTransferObject({ state }, payload) {
+				const newMainTransferObject = mainTransferObject();
 				unifyPropStructure(payload).forEach((entry, index) => {
 					const [targets, keyframes, options] = entry;
 
@@ -86,61 +56,14 @@ export const getAnimations = (props: BewegungProps) => {
 						return getOrAddKeyFromLookup(element, state.elementTranslation);
 					});
 
-					state.mainTransferObject._keys[index] = elementKeys;
-					state.mainTransferObject.keyframes[index] = keyframes;
-					state.mainTransferObject.options[index] = options;
-					state.mainTransferObject.selectors[index] = typeof targets === "string" ? targets : "";
+					newMainTransferObject._keys[index] = elementKeys;
+					newMainTransferObject.keyframes[index] = keyframes;
+					newMainTransferObject.options[index] = options;
+					newMainTransferObject.selectors[index] = typeof targets === "string" ? targets : "";
 				});
+				state.mainTransferObject = newMainTransferObject;
 			},
-			setGeneralTransferObject({ state }) {
-				const getAffectedElementsMap = new Map<string, Set<string>>();
-				const rootElements = new Map<string, HTMLElement>();
-				const elementConnections = new Map<string, HTMLElement[]>();
-
-				state.elementTranslation.forEach((domElement, elementString) => {
-					const rootElement = getRootElement(state.rootSelector.get(domElement)!);
-					rootElements.set(elementString, rootElement);
-
-					elementConnections.set(elementString, findAffectedDOMElements(domElement, rootElement));
-				});
-
-				elementConnections.forEach((secondaryDomElements, mainElementString) => {
-					secondaryDomElements.forEach((secondaryDomElement) => {
-						const secondaryElementString = getOrAddKeyFromLookup(
-							secondaryDomElement,
-							state.elementTranslation
-						);
-
-						getAffectedElementsMap.set(
-							secondaryElementString,
-							(getAffectedElementsMap.get(secondaryElementString) ?? new Set<string>()).add(
-								mainElementString
-							)
-						);
-					});
-				});
-
-				state.elementTranslation.forEach((domElement, elementString) => {
-					const elementType = isImage(domElement) || isTextNode(domElement) || "default";
-					const affectedByMainElements = getAffectedElementsMap.get(elementString)!;
-
-					const rootElement = getRootElement(
-						Array.from(
-							affectedByMainElements,
-							(mainElementString: string) => rootElements.get(mainElementString)!
-						)
-					);
-
-					state.generalTransferObject.root.push(state.elementTranslation.get(rootElement)!);
-					state.generalTransferObject.parent.push(
-						state.elementTranslation.get(domElement.parentElement!)!
-					);
-					state.generalTransferObject.type.push(elementType);
-					state.generalTransferObject.affectedBy.push([...affectedByMainElements]);
-					state.generalTransferObject.ratio.push(getRatio(domElement));
-					state.generalTransferObject._keys.push(elementString);
-				});
-			},
+			setGeneralTransferObject,
 			setResults({ state }, payload) {
 				const [imageKeyframes, defaultKeyframes, totalRuntime] = payload;
 				const defaultAnimations = createDefaultAnimation(
@@ -155,7 +78,6 @@ export const getAnimations = (props: BewegungProps) => {
 		},
 		actions: {
 			initStateFromProps({ dispatch, commit }, payload) {
-				commit("setPromise");
 				commit("setMainTransferObject", payload);
 				dispatch("replyMainTransferObject");
 				commit("setGeneralTransferObject");
@@ -168,7 +90,7 @@ export const getAnimations = (props: BewegungProps) => {
 			},
 			sendKeyframes({ commit, state }, payload) {
 				commit("setResults", payload);
-				state.finishPromise({ animations: state.animations, onStart: state.onStart });
+				state.finishCallback({ animations: state.animations, onStart: state.onStart });
 			},
 			replyMainTransferObject({ state, reply }) {
 				reply("updateMainState", state.mainTransferObject);

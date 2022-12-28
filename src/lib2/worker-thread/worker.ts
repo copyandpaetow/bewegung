@@ -11,7 +11,10 @@ import { normalizeKeyframes } from "./normalize-keyframes";
 import { normalizeOptions } from "./normalize-options";
 import { constructKeyframes } from "./sort-keyframes";
 
-createStore<WorkerSchema>(self, {
+//@ts-expect-error typescript doesnt 
+const worker = self as Worker
+
+createStore<WorkerSchema>(worker, {
 	state: initalState(),
 	methods: {
 		setMainState({ state }, transferObject) {
