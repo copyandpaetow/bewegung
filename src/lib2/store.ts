@@ -9,7 +9,7 @@ export const createStore = <Schema extends Record<"actions" | "methods" | "state
 		schema.actions[workerAction]?.(context, workerActionArguments);
 	});
 
-	const context: Context<Schema> = {
+	const context: Context<Schema["state"]> = {
 		state: schema.state,
 		commit(method, payload) {
 			schema.methods[method]?.(context, payload);

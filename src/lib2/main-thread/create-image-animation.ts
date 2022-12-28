@@ -1,6 +1,6 @@
 import { defaultImageStyles, emptyImageSrc } from "../constants";
+import { ImageState, MainState } from "../types";
 import { applyStyleObject } from "./apply-styles";
-import { ElementEntry, ImageState, State } from "../types";
 import { fillImplicitKeyframes } from "./create-animations-from-keyframes";
 
 const getPlaceholderElement = (element: HTMLImageElement, style: Partial<CSSStyleDeclaration>) => {
@@ -23,7 +23,7 @@ const getWrapperElement = (wrapperStyle: Partial<CSSStyleDeclaration>) => {
 
 export const createImageAnimation = (
 	imageKeyframes: Map<string, ImageState>,
-	state: State,
+	state: MainState,
 	totalRuntime: number
 ) => {
 	const animations: Animation[] = [];

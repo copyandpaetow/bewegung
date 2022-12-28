@@ -1,6 +1,7 @@
+import { Context, MainState } from "../types";
+import { getOrAddKeyFromLookup } from "./element-translations";
 import { getRatio } from "./read-dom-properties";
-import { ElementEntry, State } from "../types";
-import { getOrAddKeyFromLookup } from "./state";
+import { generalTransferObject } from "./state";
 
 const DOM = {
 	parent(element: HTMLElement): HTMLElement {
@@ -49,7 +50,7 @@ const compareRootElements = (current: HTMLElement, previous: HTMLElement | undef
 	return current;
 };
 
-export const getRootElement = (entries: string[] | HTMLElement[]): HTMLElement => {
+const getRootElement = (entries: string[] | HTMLElement[]): HTMLElement => {
 	let root: HTMLElement | undefined;
 
 	entries.forEach((selector: string | HTMLElement) => {
@@ -68,7 +69,7 @@ export const getRootElement = (entries: string[] | HTMLElement[]): HTMLElement =
 	return root as HTMLElement;
 };
 
-export const isTextNode = (element: HTMLElement) => {
+const isTextNode = (element: HTMLElement) => {
 	if (!element.hasChildNodes()) {
 		return false;
 	}
@@ -77,19 +78,16 @@ export const isTextNode = (element: HTMLElement) => {
 		? "text"
 		: false;
 };
-export const isImage = (mainElement: HTMLElement) =>
-	mainElement.tagName === "IMG" ? "image" : false;
+const isImage = (mainElement: HTMLElement) => (mainElement.tagName === "IMG" ? "image" : false);
 
-export const getAffectedElements = (state: State) => {
-	const { elementLookup, rootSelector, worker } = state;
-	const stringifiedElementLookup = new Map<string, ElementEntry>();
+export const setGeneralTransferObject = ({ state }: Context<MainState>) => {
 	const getAffectedElementsMap = new Map<string, Set<string>>();
 	const rootElements = new Map<string, HTMLElement>();
-
 	const elementConnections = new Map<string, HTMLElement[]>();
+	const newGeneralTransferObject = generalTransferObject();
 
-	elementLookup.forEach((domElement, elementString) => {
-		const rootElement = getRootElement(rootSelector.get(domElement)!);
+	state.elementTranslation.forEach((domElement, elementString) => {
+		const rootElement = getRootElement(state.rootSelector.get(domElement)!);
 		rootElements.set(elementString, rootElement);
 
 		elementConnections.set(elementString, findAffectedDOMElements(domElement, rootElement));
@@ -97,7 +95,10 @@ export const getAffectedElements = (state: State) => {
 
 	elementConnections.forEach((secondaryDomElements, mainElementString) => {
 		secondaryDomElements.forEach((secondaryDomElement) => {
-			const secondaryElementString = getOrAddKeyFromLookup(secondaryDomElement, elementLookup);
+			const secondaryElementString = getOrAddKeyFromLookup(
+				secondaryDomElement,
+				state.elementTranslation
+			);
 
 			getAffectedElementsMap.set(
 				secondaryElementString,
@@ -108,7 +109,7 @@ export const getAffectedElements = (state: State) => {
 		});
 	});
 
-	elementLookup.forEach((domElement, elementString) => {
+	state.elementTranslation.forEach((domElement, elementString) => {
 		const elementType = isImage(domElement) || isTextNode(domElement) || "default";
 		const affectedByMainElements = getAffectedElementsMap.get(elementString)!;
 
@@ -119,17 +120,12 @@ export const getAffectedElements = (state: State) => {
 			)
 		);
 
-		stringifiedElementLookup.set(elementString, {
-			root: elementLookup.get(rootElement)!,
-			parent: elementLookup.get(domElement.parentElement!)!,
-			type: elementType,
-			affectedBy: [...affectedByMainElements],
-			ratio: getRatio(domElement),
-			self: elementString,
-		});
+		newGeneralTransferObject.root.push(state.elementTranslation.get(rootElement)!);
+		newGeneralTransferObject.parent.push(state.elementTranslation.get(domElement.parentElement!)!);
+		newGeneralTransferObject.type.push(elementType);
+		newGeneralTransferObject.affectedBy.push([...affectedByMainElements]);
+		newGeneralTransferObject.ratio.push(getRatio(domElement));
+		newGeneralTransferObject._keys.push(elementString);
 	});
-
-	worker.sendQuery("sendElementLookup", stringifiedElementLookup);
-
-	return stringifiedElementLookup;
+	state.generalTransferObject = newGeneralTransferObject;
 };
