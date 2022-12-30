@@ -5,7 +5,7 @@ import {
 	ElementReadouts,
 	WorkerState,
 } from "../types";
-import { checkForBorderRadius, checkForDisplayInline, checkForDisplayNone } from "../utils";
+import { checkForBorderRadius, checkForDisplayInline, checkForDisplayNone } from "../shared/utils";
 import {
 	calculateDefaultKeyframes,
 	getCalcualtionsFromReadouts,

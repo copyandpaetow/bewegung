@@ -1,4 +1,4 @@
-import { defaultChangeProperties } from "../constants";
+import { defaultChangeProperties } from "../shared/constants";
 import { filterMatchingStyleFromKeyframes } from "../main-thread/apply-styles";
 import { CssRuleName, CustomKeyframe, WorkerState } from "../types";
 

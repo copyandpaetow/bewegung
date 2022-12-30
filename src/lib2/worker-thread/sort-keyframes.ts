@@ -1,5 +1,5 @@
 import { DefaultKeyframes, ElementReadouts, ImageState, WorkerState } from "../types";
-import { isEntryVisible } from "../utils";
+import { isEntryVisible } from "../shared/utils";
 import { getDefaultKeyframes } from "./create-default-keyframes";
 import { getImageKeyframes } from "./create-image-keyframes";
 

@@ -1,5 +1,5 @@
-import { createStore } from "../store";
-import { WorkerSchema } from "../types";
+import { createStore } from "../shared/store";
+import { MainSchema, WorkerSchema } from "../types";
 import {
 	calculateAppliableKeyframes,
 	calculateChangeProperties,
@@ -11,10 +11,10 @@ import { normalizeKeyframes } from "./normalize-keyframes";
 import { normalizeOptions } from "./normalize-options";
 import { constructKeyframes } from "./sort-keyframes";
 
-//@ts-expect-error typescript doesnt 
-const worker = self as Worker
+//@ts-expect-error typescript doesnt
+const worker = self as Worker;
 
-createStore<WorkerSchema>(worker, {
+createStore<WorkerSchema, MainSchema>(worker, {
 	state: initalState(),
 	methods: {
 		setMainState({ state }, transferObject) {
@@ -45,8 +45,8 @@ createStore<WorkerSchema>(worker, {
 				});
 			});
 		},
-		decreaseRemainingKeyframes({ state }) {
-			state.remainingKeyframes = state.remainingKeyframes - 1;
+		updateRemainingKeyframes({ state }, payload) {
+			state.remainingKeyframes = payload;
 		},
 		setReadouts({ state }, payload) {
 			payload.forEach((readout, elementString) => {
@@ -69,7 +69,7 @@ createStore<WorkerSchema>(worker, {
 			const { remainingKeyframes } = state;
 
 			if (remainingKeyframes) {
-				commit("decreaseRemainingKeyframes");
+				commit("updateRemainingKeyframes", remainingKeyframes - 1);
 				dispatch("replyAppliableKeyframes");
 				return;
 			}
@@ -79,6 +79,11 @@ createStore<WorkerSchema>(worker, {
 			commit("setReadouts", payload);
 			dispatch("updateRemainingKeyframes");
 		},
+		requestKeyframes({ commit, dispatch, state }) {
+			commit("updateRemainingKeyframes", state.appliableKeyframes.length);
+			dispatch("replyAppliableKeyframes");
+		},
+
 		replyConstructedKeyframes({ reply, state }) {
 			reply("sendKeyframes", constructKeyframes(state));
 		},
