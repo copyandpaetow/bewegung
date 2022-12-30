@@ -1,22 +1,6 @@
+import { MainState, Result, resultingKeyframes } from "../types";
 import { createDefaultAnimation } from "./create-default-animation";
-import {
-	WorkerMethods,
-	ImageState,
-	DefaultKeyframes,
-	State,
-	ElementEntry,
-	AnimationInformation,
-} from "../types";
 import { createImageAnimation } from "./create-image-animation";
-
-const getKeyframes = (worker: WorkerMethods) =>
-	new Promise<[Map<string, ImageState>, Map<string, DefaultKeyframes>, number]>((resolve) =>
-		worker.addListener(
-			"sendKeyframes",
-			([keyframeResults]: [[Map<string, ImageState>, Map<string, DefaultKeyframes>, number]]) =>
-				resolve(keyframeResults)
-		)
-	);
 
 export const fillImplicitKeyframes = (keyframes: Keyframe[]): Keyframe[] => {
 	const updatedKeyframes = [...keyframes];
@@ -33,23 +17,24 @@ export const fillImplicitKeyframes = (keyframes: Keyframe[]): Keyframe[] => {
 	return updatedKeyframes;
 };
 
-export const createAnimationsFromKeyframes = async (
-	state: State,
-	stringifiedElementLookup: Map<string, ElementEntry>
-) => {
-	const { worker } = state;
-	const [imageKeyframes, defaultKeyframes, totalRuntime] = await getKeyframes(worker);
+export const createAnimationsFromKeyframes = (
+	state: MainState,
+	payload: resultingKeyframes
+): Result => {
+	const [imageKeyframes, defaultKeyframes, totalRuntime] = payload;
 
-	const defaultAnimations = createDefaultAnimation(defaultKeyframes, state, totalRuntime);
-	const imageAnimations = createImageAnimation(
-		imageKeyframes,
-		state,
-		stringifiedElementLookup,
+	const defaultAnimations = createDefaultAnimation(
+		defaultKeyframes,
+		state.elementTranslation,
 		totalRuntime
 	);
+	const imageAnimations = createImageAnimation(imageKeyframes, state, totalRuntime);
+
+	const timeKeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
 
 	return {
 		onStart: [...defaultAnimations.onStart, ...imageAnimations.onStart],
-		animations: [...defaultAnimations.animations, ...imageAnimations.animations],
+		animations: [...defaultAnimations.animations, ...imageAnimations.animations, timeKeeper],
+		timeKeeper,
 	};
 };

@@ -1,5 +1,4 @@
-import { type } from "os";
-import { BidirectionalMap } from "./main-thread/element-translations";
+import { BidirectionalMap } from "./shared/element-translations";
 
 export type ElementOrSelector =
 	| HTMLElement
@@ -108,6 +107,7 @@ export type Timeline = TimelineEntry[];
 export interface Result {
 	animations: Animation[];
 	onStart: VoidFunction[];
+	timeKeeper: Animation;
 }
 
 export type EntryType = "image" | "text" | "default";
@@ -186,19 +186,35 @@ export type ExpandEntry = {
 };
 
 export type WorkerActions = {
-	updateMainState(context: Context<WorkerState>, paylaod: MainTransferObject): void;
-	updateGeneralState(context: Context<WorkerState>, paylaod: GeneralTransferObject): void;
-	updateRemainingKeyframes(context: Context<WorkerState>): void;
-	updateReadouts(context: Context<WorkerState>, payload: Map<string, ElementReadouts>): void;
-	replyConstructedKeyframes(context: Context<WorkerState>): void;
-	replyAppliableKeyframes(context: Context<WorkerState>): void;
+	updateMainState(context: Context<WorkerSchema, MainSchema>, paylaod: MainTransferObject): void;
+	updateGeneralState(
+		context: Context<WorkerSchema, MainSchema>,
+		paylaod: GeneralTransferObject
+	): void;
+	updateRemainingKeyframes(context: Context<WorkerSchema, MainSchema>): void;
+	updateReadouts(
+		context: Context<WorkerSchema, MainSchema>,
+		payload: Map<string, ElementReadouts>
+	): void;
+	requestKeyframes(context: Context<WorkerSchema, MainSchema>): void;
+	replyConstructedKeyframes(context: Context<WorkerSchema, MainSchema>): void;
+	replyAppliableKeyframes(context: Context<WorkerSchema, MainSchema>): void;
 };
 
 export type WorkerMethods = {
-	setMainState(context: Context<WorkerState>, transferObject: MainTransferObject): void;
-	decreaseRemainingKeyframes(context: Context<WorkerState>): void;
-	setReadouts(context: Context<WorkerState>, transferObject: Map<string, ElementReadouts>): void;
-	setGeneralState(context: Context<WorkerState>, transferObject: GeneralTransferObject): void;
+	setMainState(
+		context: Context<WorkerSchema, MainSchema>,
+		transferObject: MainTransferObject
+	): void;
+	updateRemainingKeyframes(context: Context<WorkerSchema, MainSchema>, payload: number): void;
+	setReadouts(
+		context: Context<WorkerSchema, MainSchema>,
+		transferObject: Map<string, ElementReadouts>
+	): void;
+	setGeneralState(
+		context: Context<WorkerSchema, MainSchema>,
+		transferObject: GeneralTransferObject
+	): void;
 };
 
 export type WorkerSchema = {
@@ -210,21 +226,19 @@ export type WorkerSchema = {
 export type MainState = {
 	cssResets: Map<HTMLElement, Map<string, string>>;
 	rootSelector: Map<HTMLElement, string[]>;
+	rootElement: Map<HTMLElement, HTMLElement>;
 	elementTranslation: BidirectionalMap<string, HTMLElement>;
 	generalTransferObject: GeneralTransferObject;
 	mainTransferObject: MainTransferObject;
-	onStart: VoidFunction[];
-	animations: Animation[];
 	result: Promise<Result>;
 	finishCallback: (value: Result | PromiseLike<Result>) => void;
 };
 
 export type MainMethods = {
-	setMainTransferObject(context: Context<MainState>, payload: BewegungProps): void;
-	setGeneralTransferObject(context: Context<MainState>, payload: any): void;
-	setResults(context: Context<MainState>, payload: resultingKeyframes): void;
+	setMainTransferObject(context: Context<MainSchema, WorkerSchema>, payload: BewegungProps): void;
+	setGeneralTransferObject(context: Context<MainSchema, WorkerSchema>, payload: any): void;
 };
-type resultingKeyframes = [Map<string, ImageState>, Map<string, DefaultKeyframes>, number];
+export type resultingKeyframes = [Map<string, ImageState>, Map<string, DefaultKeyframes>, number];
 
 type AppliableKeyframes = {
 	done: boolean;
@@ -233,12 +247,19 @@ type AppliableKeyframes = {
 };
 
 export type MainActions = {
-	initStateFromProps(context: Context<MainState>, payload: BewegungProps): void;
-	sendAppliableKeyframes(context: Context<MainState>, payload: AppliableKeyframes): Promise<void>;
-	sendKeyframes(context: Context<MainState>, payload: resultingKeyframes): void;
-	replyMainTransferObject(context: Context<MainState>): void;
-	replyGeneralTransferObject(context: Context<MainState>): void;
-	replyReadout(context: Context<MainState>, payload: Map<string, ElementReadouts>): void;
+	initStateFromProps(context: Context<MainSchema, WorkerSchema>, payload: BewegungProps): void;
+	sendAppliableKeyframes(
+		context: Context<MainSchema, WorkerSchema>,
+		payload: AppliableKeyframes
+	): Promise<void>;
+	sendKeyframes(context: Context<MainSchema, WorkerSchema>, payload: resultingKeyframes): void;
+	replyMainTransferObject(context: Context<MainSchema, WorkerSchema>): void;
+	replyGeneralTransferObject(context: Context<MainSchema, WorkerSchema>): void;
+	replyReadout(
+		context: Context<MainSchema, WorkerSchema>,
+		payload: Map<string, ElementReadouts>
+	): void;
+	replyRequestKeyframes(context: Context<MainSchema, WorkerSchema>): void;
 };
 
 export type MainSchema = {
@@ -247,9 +268,15 @@ export type MainSchema = {
 	actions: MainActions;
 };
 
-export type Context<State> = {
-	state: State;
-	commit(method: any, payload?: any): void;
-	dispatch(action: any, payload?: any): void;
-	reply(queryMethodListener: any, queryMethodArguments: any): void;
+export type DefaultSchema = Record<"actions" | "methods" | "state", any>;
+
+export type Context<Schema extends DefaultSchema, ReplySchema extends DefaultSchema> = {
+	state: Schema["state"];
+	commit(method: keyof Schema["methods"], payload?: any): void;
+	dispatch(action: keyof Schema["actions"], payload?: any): void;
+	reply(queryMethodListener: keyof ReplySchema["actions"], queryMethodArguments?: any): void;
 };
+
+type ExtendedPlayStates = "scrolling" | "reversing";
+export type AllPlayStates = AnimationPlayState | ExtendedPlayStates;
+export type StateMachine = Record<AllPlayStates, Partial<Record<AllPlayStates, VoidFunction>>>;

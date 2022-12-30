@@ -1,4 +1,4 @@
-import { defaultImageStyles, emptyImageSrc } from "../constants";
+import { defaultImageStyles, emptyImageSrc } from "../shared/constants";
 import { ImageState, MainState } from "../types";
 import { applyStyleObject } from "./apply-styles";
 import { fillImplicitKeyframes } from "./create-animations-from-keyframes";

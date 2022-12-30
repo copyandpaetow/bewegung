@@ -5,7 +5,7 @@ import {
 	MainTransferObject,
 	Result,
 } from "../types";
-import { BidirectionalMap } from "./element-translations";
+import { BidirectionalMap } from "../shared/element-translations";
 
 export const getRootSelector = (options: EveryOptionSyntax) => {
 	if (!options || typeof options === "number" || !options.rootSelector) {
@@ -37,11 +37,10 @@ export const initialMainState = (): MainState => {
 	return {
 		cssResets: new Map<HTMLElement, Map<string, string>>(),
 		rootSelector: new Map<HTMLElement, string[]>(),
+		rootElement: new Map<HTMLElement, HTMLElement>(),
 		mainTransferObject: mainTransferObject(),
 		generalTransferObject: generalTransferObject(),
 		elementTranslation: new BidirectionalMap<string, HTMLElement>(),
-		onStart: [],
-		animations: [],
 		result: finishPromise,
 		finishCallback,
 	};

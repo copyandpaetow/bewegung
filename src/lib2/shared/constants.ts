@@ -1,4 +1,4 @@
-import { CssRuleName } from "./types";
+import { CssRuleName } from "../types";
 
 export const defaultChangeProperties: CssRuleName[] = [
 	"borderRadius",

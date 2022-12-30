@@ -1,4 +1,4 @@
-import { defaultOptions } from "../constants";
+import { defaultOptions } from "../shared/constants";
 import { BewegungsOptions, EveryOptionSyntax } from "../types";
 
 export const normalizeOptions = (allOptions: EveryOptionSyntax[]): BewegungsOptions[] =>

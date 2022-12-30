@@ -25,8 +25,3 @@
   - a data attribute "data-bewegung=[...]" which we could look for and add those as well with their value as input arguments
   - adding and deleting elements from the dom
 - logic to allow unperformant entries to pass through, like color etc
-
-## performance
-
-some functions take more time to do than others:
-

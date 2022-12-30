@@ -1,5 +1,5 @@
 import { BewegungsOptions, ElementReadouts, WorkerState } from "../types";
-import { checkForBorderRadius, checkForDisplayNone, highestNumber } from "../utils";
+import { checkForBorderRadius, checkForDisplayNone, highestNumber } from "../shared/utils";
 import { calculateEasingMap } from "./calculate-easings";
 import {
 	calculateImageKeyframes,

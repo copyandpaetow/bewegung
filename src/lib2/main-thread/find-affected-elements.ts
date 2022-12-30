@@ -1,5 +1,5 @@
-import { Context, MainState } from "../types";
-import { getOrAddKeyFromLookup } from "./element-translations";
+import { Context, MainSchema, MainState, WorkerSchema } from "../types";
+import { getOrAddKeyFromLookup } from "../shared/element-translations";
 import { getRatio } from "./read-dom-properties";
 import { generalTransferObject } from "./state";
 
@@ -80,52 +80,52 @@ const isTextNode = (element: HTMLElement) => {
 };
 const isImage = (mainElement: HTMLElement) => (mainElement.tagName === "IMG" ? "image" : false);
 
-export const setGeneralTransferObject = ({ state }: Context<MainState>) => {
-	const getAffectedElementsMap = new Map<string, Set<string>>();
-	const rootElements = new Map<string, HTMLElement>();
+export const setGeneralTransferObject = ({ state }: Context<MainSchema, WorkerSchema>) => {
+	const { elementTranslation, rootSelector } = state;
+
+	const affectedElementsMap = new Map<string, Set<string>>();
+	const rootElements = new Map<HTMLElement, HTMLElement>();
 	const elementConnections = new Map<string, HTMLElement[]>();
 	const newGeneralTransferObject = generalTransferObject();
 
-	state.elementTranslation.forEach((domElement, elementString) => {
-		const rootElement = getRootElement(state.rootSelector.get(domElement)!);
-		rootElements.set(elementString, rootElement);
+	elementTranslation.forEach((domElement, elementString) => {
+		const rootElement = getRootElement(rootSelector.get(domElement)!);
+		rootElements.set(domElement, rootElement);
 
 		elementConnections.set(elementString, findAffectedDOMElements(domElement, rootElement));
 	});
 
 	elementConnections.forEach((secondaryDomElements, mainElementString) => {
 		secondaryDomElements.forEach((secondaryDomElement) => {
-			const secondaryElementString = getOrAddKeyFromLookup(
-				secondaryDomElement,
-				state.elementTranslation
-			);
+			const secondaryElementString = getOrAddKeyFromLookup(secondaryDomElement, elementTranslation);
 
-			getAffectedElementsMap.set(
+			affectedElementsMap.set(
 				secondaryElementString,
-				(getAffectedElementsMap.get(secondaryElementString) ?? new Set<string>()).add(
+				(affectedElementsMap.get(secondaryElementString) ?? new Set<string>()).add(
 					mainElementString
 				)
 			);
 		});
 	});
 
-	state.elementTranslation.forEach((domElement, elementString) => {
+	elementTranslation.forEach((domElement, elementString) => {
 		const elementType = isImage(domElement) || isTextNode(domElement) || "default";
-		const affectedByMainElements = getAffectedElementsMap.get(elementString)!;
+		const affectedByMainElements = affectedElementsMap.get(elementString)!;
 
 		const rootElement = getRootElement(
 			Array.from(
 				affectedByMainElements,
-				(mainElementString: string) => rootElements.get(mainElementString)!
+				(mainElementString: string) => rootElements.get(elementTranslation.get(mainElementString)!)!
 			)
 		);
 
-		newGeneralTransferObject.root.push(state.elementTranslation.get(rootElement)!);
-		newGeneralTransferObject.parent.push(state.elementTranslation.get(domElement.parentElement!)!);
+		newGeneralTransferObject.root.push(elementTranslation.get(rootElement)!);
+		newGeneralTransferObject.parent.push(elementTranslation.get(domElement.parentElement!)!);
 		newGeneralTransferObject.type.push(elementType);
 		newGeneralTransferObject.affectedBy.push([...affectedByMainElements]);
 		newGeneralTransferObject.ratio.push(getRatio(domElement));
 		newGeneralTransferObject._keys.push(elementString);
 	});
 	state.generalTransferObject = newGeneralTransferObject;
+	state.rootElement = rootElements;
 };

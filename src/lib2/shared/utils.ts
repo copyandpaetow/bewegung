@@ -1,4 +1,4 @@
-import { Context, ElementReadouts } from "./types";
+import { ElementReadouts } from "../types";
 
 export const highestNumber = (numbers: number[]) =>
 	numbers.reduce((largest, current) => Math.max(largest, current));
