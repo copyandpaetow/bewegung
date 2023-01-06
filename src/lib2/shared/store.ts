@@ -1,7 +1,7 @@
-import { Context, DefaultSchema } from "../types";
+import { Context, DefaultMessage, DefaultSchema, MessageContext } from "../types";
 
 const spawnWorker = () =>
-	new Worker(new URL("worker-thread/worker.ts", import.meta.url), {
+	new Worker(new URL("../worker-thread/worker.ts", import.meta.url), {
 		type: "module",
 	});
 
@@ -17,19 +17,8 @@ export const getWorker = () => {
 	};
 };
 
-export const createStore = <Schema extends DefaultSchema, ReplySchema extends DefaultSchema>(
-	worker: Worker,
-	schema: Schema
-) => {
-	worker.addEventListener(
-		"message",
-		(event: MessageEvent<{ storeAction: ReplySchema["actions"]; storeActionArguments?: any }>) => {
-			const { storeAction, storeActionArguments } = event.data;
-			schema.actions[storeAction]?.(context, storeActionArguments);
-		}
-	);
-
-	const context: Context<Schema, ReplySchema> = {
+export const createStore = <Schema extends DefaultSchema>(schema: Schema) => {
+	const context: Context<Schema> = {
 		state: schema.state,
 		commit(method, payload) {
 			schema.methods[method]?.(context, payload);
@@ -37,11 +26,46 @@ export const createStore = <Schema extends DefaultSchema, ReplySchema extends De
 		dispatch(action, payload) {
 			schema.actions[action]?.(context, payload);
 		},
-		reply(storeAction, storeActionArguments) {
+	};
+
+	return context;
+};
+
+export const createMessageStore = <Sender extends DefaultMessage, Receiver extends DefaultMessage>(
+	worker: Worker,
+	schema: Sender
+) => {
+	const onMessage = (
+		event: MessageEvent<{
+			replyMethod: keyof Sender;
+			replyMethodArguments?: any;
+		}>
+	) => {
+		const { replyMethod, replyMethodArguments } = event.data;
+		schema[replyMethod]?.(context, replyMethodArguments);
+	};
+
+	const onError = (event: ErrorEvent) => {
+		console.log(event);
+	};
+
+	worker.addEventListener("message", onMessage);
+	worker.addEventListener("error", onError);
+
+	const context: MessageContext<Sender, Receiver> = {
+		terminate() {
+			worker.terminate();
+			worker.removeEventListener("message", onMessage);
+			worker.removeEventListener("error", onError);
+		},
+		reply(replyMethod, replyMethodArguments) {
 			worker.postMessage({
-				storeAction,
-				storeActionArguments,
+				replyMethod,
+				replyMethodArguments,
 			});
+		},
+		send(replyMethod, replyMethodArguments) {
+			schema[replyMethod]?.(context, replyMethodArguments);
 		},
 	};
 

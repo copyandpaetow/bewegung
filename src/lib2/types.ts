@@ -185,36 +185,30 @@ export type ExpandEntry = {
 	>;
 };
 
+export type Patches = {
+	op: "add" | "remove";
+	type: "main" | "secondary";
+	key: string;
+	indices?: number | number[];
+};
+
 export type WorkerActions = {
-	updateMainState(context: Context<WorkerSchema, MainSchema>, paylaod: MainTransferObject): void;
+	updateMainState(context: Context<WorkerSchema>, mainTransferObject: MainTransferObject): void;
 	updateGeneralState(
-		context: Context<WorkerSchema, MainSchema>,
-		paylaod: GeneralTransferObject
+		context: Context<WorkerSchema>,
+		generalTransferObject: GeneralTransferObject
 	): void;
-	updateRemainingKeyframes(context: Context<WorkerSchema, MainSchema>): void;
-	updateReadouts(
-		context: Context<WorkerSchema, MainSchema>,
-		payload: Map<string, ElementReadouts>
-	): void;
-	requestKeyframes(context: Context<WorkerSchema, MainSchema>): void;
-	replyConstructedKeyframes(context: Context<WorkerSchema, MainSchema>): void;
-	replyAppliableKeyframes(context: Context<WorkerSchema, MainSchema>): void;
+	updateRemainingKeyframes(context: Context<WorkerSchema>): void;
+	updateReadouts(context: Context<WorkerSchema>, readouts: Map<string, ElementReadouts>): void;
+	requestKeyframes(context: Context<WorkerSchema>): void;
+	sendCurrentKeyframe(context: Context<WorkerSchema>): void;
 };
 
 export type WorkerMethods = {
-	setMainState(
-		context: Context<WorkerSchema, MainSchema>,
-		transferObject: MainTransferObject
-	): void;
-	updateRemainingKeyframes(context: Context<WorkerSchema, MainSchema>, payload: number): void;
-	setReadouts(
-		context: Context<WorkerSchema, MainSchema>,
-		transferObject: Map<string, ElementReadouts>
-	): void;
-	setGeneralState(
-		context: Context<WorkerSchema, MainSchema>,
-		transferObject: GeneralTransferObject
-	): void;
+	setMainState(context: Context<WorkerSchema>, transferObject: MainTransferObject): void;
+	updateRemainingKeyframes(context: Context<WorkerSchema>, payload: number): void;
+	setReadouts(context: Context<WorkerSchema>, transferObject: Map<string, ElementReadouts>): void;
+	setGeneralState(context: Context<WorkerSchema>, transferObject: GeneralTransferObject): void;
 };
 
 export type WorkerSchema = {
@@ -235,10 +229,10 @@ export type MainState = {
 };
 
 export type MainMethods = {
-	setMainTransferObject(context: Context<MainSchema, WorkerSchema>, payload: BewegungProps): void;
-	setGeneralTransferObject(context: Context<MainSchema, WorkerSchema>, payload: any): void;
+	setMainTransferObject(context: Context<MainSchema>, payload: BewegungProps): void;
+	setGeneralTransferObject(context: Context<MainSchema>, payload: any): void;
 };
-export type resultingKeyframes = [Map<string, ImageState>, Map<string, DefaultKeyframes>, number];
+export type ResultingKeyframes = [Map<string, ImageState>, Map<string, DefaultKeyframes>, number];
 
 type AppliableKeyframes = {
 	done: boolean;
@@ -247,19 +241,11 @@ type AppliableKeyframes = {
 };
 
 export type MainActions = {
-	initStateFromProps(context: Context<MainSchema, WorkerSchema>, payload: BewegungProps): void;
-	sendAppliableKeyframes(
-		context: Context<MainSchema, WorkerSchema>,
-		payload: AppliableKeyframes
-	): Promise<void>;
-	sendKeyframes(context: Context<MainSchema, WorkerSchema>, payload: resultingKeyframes): void;
-	replyMainTransferObject(context: Context<MainSchema, WorkerSchema>): void;
-	replyGeneralTransferObject(context: Context<MainSchema, WorkerSchema>): void;
-	replyReadout(
-		context: Context<MainSchema, WorkerSchema>,
-		payload: Map<string, ElementReadouts>
-	): void;
-	replyRequestKeyframes(context: Context<MainSchema, WorkerSchema>): void;
+	initStateFromProps(context: Context<MainSchema>, payload: BewegungProps): void;
+	patches(context: Context<MainSchema>, payload: Patches[]): void;
+	sendAppliableKeyframes(context: Context<MainSchema>, payload: AppliableKeyframes): Promise<void>;
+	sendKeyframes(context: Context<MainSchema>, payload: ResultingKeyframes): void;
+	replyRequestKeyframes(context: Context<MainSchema>): void;
 };
 
 export type MainSchema = {
@@ -270,11 +256,66 @@ export type MainSchema = {
 
 export type DefaultSchema = Record<"actions" | "methods" | "state", any>;
 
-export type Context<Schema extends DefaultSchema, ReplySchema extends DefaultSchema> = {
+export type Context<Schema extends DefaultSchema> = {
 	state: Schema["state"];
 	commit(method: keyof Schema["methods"], payload?: any): void;
 	dispatch(action: keyof Schema["actions"], payload?: any): void;
-	reply(queryMethodListener: keyof ReplySchema["actions"], queryMethodArguments?: any): void;
+};
+
+export type DefaultMessage = Record<string, (context: any, payload: any) => void>;
+
+export type MainMessages = {
+	sendMainTransferObject(
+		context: MessageContext<MainMessages, WorkerMessages>,
+		mainTransferObject: MainTransferObject
+	): void;
+	sendGeneralTransferObject(
+		context: MessageContext<MainMessages, WorkerMessages>,
+		generalTransferObject: GeneralTransferObject
+	): void;
+	sendReadout(
+		context: MessageContext<MainMessages, WorkerMessages>,
+		readouts: Map<string, ElementReadouts>
+	): void;
+	sendRequestKeyframes(context: MessageContext<MainMessages, WorkerMessages>): void;
+	receiveAppliableKeyframes(
+		context: MessageContext<MainMessages, WorkerMessages>,
+		AppliableKeyframes: AppliableKeyframes
+	): void;
+	receiveConstructedKeyframes(
+		context: MessageContext<MainMessages, WorkerMessages>,
+		constructedKeyframes: ResultingKeyframes
+	): void;
+};
+
+export type WorkerMessages = {
+	replyConstructedKeyframes(
+		context: MessageContext<WorkerMessages, MainMessages>,
+		constructedKeyframes: ResultingKeyframes
+	): void;
+	replyAppliableKeyframes(
+		context: MessageContext<WorkerMessages, MainMessages>,
+		appliableKeyframes: AppliableKeyframes
+	): void;
+	receiveMainState(
+		context: MessageContext<WorkerMessages, MainMessages>,
+		mainState: MainTransferObject
+	): void;
+	receiveGeneralState(
+		context: MessageContext<WorkerMessages, MainMessages>,
+		generalState: GeneralTransferObject
+	): void;
+	receiveReadouts(
+		context: MessageContext<WorkerMessages, MainMessages>,
+		readouts: Map<string, ElementReadouts>
+	): void;
+	receiveKeyframeRequest(context: MessageContext<WorkerMessages, MainMessages>): void;
+};
+
+export type MessageContext<Sender, Receiver> = {
+	reply(queryMethodListener: keyof Receiver, queryMethodArguments?: any): void;
+	send(queryMethodListener: keyof Sender, queryMethodArguments?: any): void;
+	terminate(): void;
 };
 
 type ExtendedPlayStates = "scrolling" | "reversing";

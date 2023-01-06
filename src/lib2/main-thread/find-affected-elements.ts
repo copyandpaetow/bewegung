@@ -80,7 +80,7 @@ const isTextNode = (element: HTMLElement) => {
 };
 const isImage = (mainElement: HTMLElement) => (mainElement.tagName === "IMG" ? "image" : false);
 
-export const setGeneralTransferObject = ({ state }: Context<MainSchema, WorkerSchema>) => {
+export const setGeneralTransferObject = ({ state }: Context<MainSchema>) => {
 	const { elementTranslation, rootSelector } = state;
 
 	const affectedElementsMap = new Map<string, Set<string>>();
