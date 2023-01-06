@@ -1,5 +1,5 @@
-import { createStore } from "../shared/store";
-import { MainSchema, WorkerSchema } from "../types";
+import { createMessageStore, createStore } from "../shared/store";
+import { MainMessages, MainSchema, WorkerMessages, WorkerSchema } from "../types";
 import {
 	calculateAppliableKeyframes,
 	calculateChangeProperties,
@@ -14,7 +14,28 @@ import { constructKeyframes } from "./sort-keyframes";
 //@ts-expect-error typescript doesnt
 const worker = self as Worker;
 
-createStore<WorkerSchema, MainSchema>(worker, {
+const messageStore = createMessageStore<WorkerMessages, MainMessages>(worker, {
+	replyConstructedKeyframes({ reply }, constructedKeyframes) {
+		reply("receiveConstructedKeyframes", constructedKeyframes);
+	},
+	replyAppliableKeyframes({ reply }, appliableKeyframes) {
+		reply("receiveAppliableKeyframes", appliableKeyframes);
+	},
+	receiveMainState(_, mainState) {
+		store.dispatch("updateMainState", mainState);
+	},
+	receiveGeneralState(_, generalState) {
+		store.dispatch("updateGeneralState", generalState);
+	},
+	receiveReadouts(_, readouts) {
+		store.dispatch("updateReadouts", readouts);
+	},
+	receiveKeyframeRequest() {
+		store.dispatch("requestKeyframes");
+	},
+});
+
+const store = createStore<WorkerSchema>({
 	state: initalState(),
 	methods: {
 		setMainState({ state }, transferObject) {
@@ -58,39 +79,35 @@ createStore<WorkerSchema, MainSchema>(worker, {
 		},
 	},
 	actions: {
-		updateMainState({ commit, dispatch }, payload) {
-			commit("setMainState", payload);
+		updateMainState({ commit, dispatch }, mainTransferObject) {
+			commit("setMainState", mainTransferObject);
 			dispatch("updateRemainingKeyframes");
 		},
-		updateGeneralState({ commit }, payload) {
-			commit("setGeneralState", payload);
+		updateGeneralState({ commit }, generalTransferObject) {
+			commit("setGeneralState", generalTransferObject);
 		},
 		updateRemainingKeyframes({ commit, dispatch, state }) {
 			const { remainingKeyframes } = state;
 
 			if (remainingKeyframes) {
 				commit("updateRemainingKeyframes", remainingKeyframes - 1);
-				dispatch("replyAppliableKeyframes");
+				dispatch("sendCurrentKeyframe");
 				return;
 			}
-			dispatch("replyConstructedKeyframes");
+			messageStore.send("replyConstructedKeyframes", constructKeyframes(state));
 		},
-		updateReadouts({ commit, dispatch }, payload) {
-			commit("setReadouts", payload);
+		updateReadouts({ commit, dispatch }, readouts) {
+			commit("setReadouts", readouts);
 			dispatch("updateRemainingKeyframes");
 		},
-		requestKeyframes({ commit, dispatch, state }) {
+		requestKeyframes({ dispatch, commit, state }) {
 			commit("updateRemainingKeyframes", state.appliableKeyframes.length);
-			dispatch("replyAppliableKeyframes");
+			dispatch("sendCurrentKeyframe");
 		},
-
-		replyConstructedKeyframes({ reply, state }) {
-			reply("sendKeyframes", constructKeyframes(state));
-		},
-		replyAppliableKeyframes({ reply, state }) {
+		sendCurrentKeyframe({ state }) {
 			const { appliableKeyframes, remainingKeyframes, changeProperties } = state;
 
-			reply("sendAppliableKeyframes", {
+			messageStore.send("replyAppliableKeyframes", {
 				keyframes: appliableKeyframes[remainingKeyframes],
 				changeProperties,
 				done: remainingKeyframes === 0,
