@@ -67,7 +67,7 @@ export const getDefaultKeyframes = (
 	const resultingStyleChange = appliableKeyframes.at(-1)!;
 
 	const easings = new Set<BewegungsOptions>(
-		affectedBy.get(elementString)!.flatMap((elementString) => options.get(elementString)!)
+		affectedBy.get(elementString)!.flatMap((elementString) => options.get(elementString) ?? [])
 	);
 
 	const styleTables = calculateKeyframeTables(elementReadouts, [...easings], totalRuntime);

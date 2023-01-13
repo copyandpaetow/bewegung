@@ -28,7 +28,7 @@ export const createImageAnimation = (
 ) => {
 	const animations: Animation[] = [];
 	const onStart: VoidFunction[] = [];
-	const { elementTranslation, generalTransferObject } = state;
+	const { elementTranslation, elementRoots } = state;
 
 	imageKeyframes.forEach((imageEntry, elementString) => {
 		const { wrapperKeyframes, wrapperStyle, placeholderStyle, keyframes, override } = imageEntry;
@@ -40,8 +40,7 @@ export const createImageAnimation = (
 		);
 		const placeholder = getPlaceholderElement(domElement, placeholderStyle);
 		const wrapper = getWrapperElement(wrapperStyle);
-		const rootIndex = generalTransferObject._keys.findIndex((element) => element === elementString);
-		const root = elementTranslation.get(generalTransferObject.root[rootIndex])!;
+		const root = elementRoots.get(domElement)!;
 		const nextSibling = domElement.nextElementSibling;
 		const parent = domElement.parentElement!;
 

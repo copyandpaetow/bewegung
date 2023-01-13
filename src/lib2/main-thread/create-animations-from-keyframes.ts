@@ -1,4 +1,4 @@
-import { MainState, Result, resultingKeyframes } from "../types";
+import { MainState, Result, ResultingKeyframes } from "../types";
 import { createDefaultAnimation } from "./create-default-animation";
 import { createImageAnimation } from "./create-image-animation";
 
@@ -19,7 +19,7 @@ export const fillImplicitKeyframes = (keyframes: Keyframe[]): Keyframe[] => {
 
 export const createAnimationsFromKeyframes = (
 	state: MainState,
-	payload: resultingKeyframes
+	payload: ResultingKeyframes
 ): Result => {
 	const [imageKeyframes, defaultKeyframes, totalRuntime] = payload;
 

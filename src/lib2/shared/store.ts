@@ -67,6 +67,7 @@ export const createMessageStore = <Sender extends DefaultMessage, Receiver exten
 		send(replyMethod, replyMethodArguments) {
 			schema[replyMethod]?.(context, replyMethodArguments);
 		},
+		cache: schema.cache,
 	};
 
 	return context;
