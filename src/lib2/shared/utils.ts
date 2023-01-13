@@ -25,3 +25,5 @@ export const compareOffsetObjects = <Value>(
 
 		return b[key] === value;
 	});
+
+export const isElement = (node: Node): boolean => node instanceof HTMLElement;

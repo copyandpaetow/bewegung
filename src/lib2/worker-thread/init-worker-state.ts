@@ -12,7 +12,7 @@ export const initalState = (): WorkerState => ({
 	//main element state
 	keyframes: new Map<string, CustomKeyframe[]>(),
 	options: new Map<string, BewegungsOptions[]>(),
-	selectors: new Map<string, Selector[]>(),
+	selectors: new Map<string, [CustomKeyframe[], BewegungsOptions]>(),
 	//all element state
 	root: new Map<string, string>(),
 	parent: new Map<string, string>(),

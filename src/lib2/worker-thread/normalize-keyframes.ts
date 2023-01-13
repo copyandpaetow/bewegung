@@ -3,7 +3,7 @@ import { unifyKeyframeStructure } from "./normalize-keyframe-structure";
 
 //?: if the lastOffset is equal to the newOffset, their keyframes will get mashed together eventually
 // with newOffset === lastOffset ? newOffset + 0.0001 : newOffset, this could be avoided but it creates a flicker and doesnt look that great
-const updateOffsets = (
+export const updateOffsets = (
 	keyframes: CustomKeyframe[],
 	options: BewegungsOptions,
 	totalRuntime: number
@@ -38,51 +38,17 @@ const updateOffsets = (
 	return updatedFrames;
 };
 
-const addIndividualEasing = (
-	keyframes: CustomKeyframe[],
-	options: BewegungsOptions
-): CustomKeyframe[] => {
-	const { easing, composite } = options;
-
-	return keyframes.map((frame) => {
-		const { offset, ...styles } = frame;
-
-		const individualEasing = (styles.animationTimingFunction ??
-			styles.transitionTimingFunction ??
-			easing) as string | undefined;
-
-		return {
-			offset,
-			easing: individualEasing,
-			composite,
-			...styles,
-		};
-	});
-};
-
-const fillImplicitKeyframes = (keyframes: CustomKeyframe[], options: BewegungsOptions) => {
-	const { easing, composite } = options;
+export const fillImplicitKeyframes = (keyframes: CustomKeyframe[]): CustomKeyframe[] => {
 	const updatedKeyframes = [...keyframes];
 	const firstKeyframe = updatedKeyframes.at(0)!;
 	const lastKeyframe = updatedKeyframes.at(-1)!;
 
 	if (firstKeyframe.offset !== 0) {
-		updatedKeyframes.unshift({ offset: 0, easing, composite });
+		updatedKeyframes.unshift({ offset: 0 });
 	}
 	if (lastKeyframe.offset !== 1) {
-		updatedKeyframes.push({ offset: 1, easing, composite });
+		updatedKeyframes.push({ offset: 1 });
 	}
 
 	return updatedKeyframes;
 };
-
-export const normalizeKeyframes = (
-	allKeyframes: EveryKeyframeSyntax[],
-	allOptions: BewegungsOptions[],
-	totalRoundtime: number
-): CustomKeyframe[][] =>
-	allKeyframes
-		.map(unifyKeyframeStructure)
-		.map((keyframes, index) => addIndividualEasing(keyframes, allOptions[index]))
-		.map((keyframes, index) => fillImplicitKeyframes(keyframes, allOptions[index]))
-		.map((keyframes, index) => updateOffsets(keyframes, allOptions[index], totalRoundtime));

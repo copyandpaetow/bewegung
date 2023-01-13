@@ -1,28 +1,32 @@
 import { createAnimationsFromKeyframes } from "./main-thread/create-animations-from-keyframes";
 import { saveOriginalStyle } from "./main-thread/css-resets";
-import { setGeneralTransferObject } from "./main-thread/find-affected-elements";
+import {
+	compareRootElements,
+	getGeneralTransferObject,
+} from "./main-thread/find-affected-elements";
 import { normalizeElements } from "./main-thread/normalize-elements";
 import { unifyPropStructure } from "./main-thread/normalize-props";
 import { readDom } from "./main-thread/read-dom";
-import { getRootSelector, initialMainState, mainTransferObject } from "./main-thread/state";
-import { observerDimensions } from "./main-thread/watch-dimensions";
-import { observeResizes } from "./main-thread/watch-resizes";
+import { getRootSelector, initialMainState } from "./main-thread/state";
+import { watchForChanges } from "./main-thread/watch-changes";
 import { getOrAddKeyFromLookup } from "./shared/element-translations";
 import { createMessageStore, createStore, getWorker } from "./shared/store";
-import { BewegungProps, MainMessages, MainSchema, WorkerMessages } from "./types";
+import { BewegungProps, MainMessages, MainPatch, MainSchema, WorkerMessages } from "./types";
 
 /*
 TODOS:
-
+ 
 # performance
-- if all entries in the GTO or the MTO are the same, maybe just use one then
+- if all entries in the GTO or the MTO are the same, maybe just use one then. 
+* => This compression / decompression could be done within the messageStore
+- zip the transferobjects
+- create a patch from the generalTransferObject and only send that
 
 #refactor
 - rethink the offset structure for the style entries. Finding entries with certain offsets is tedious.
 - rethink filtering. Maybe remove elements with all the same keyframes? Or all the elements are "translate(0,0) scale(0,0)"
 ? because some elements dont change but are affected from their parents and therefor influence their children
 * in that case we would need to get their parents.parents... to help with the scale
-- maybe it makes more sense to separate the worker and reply from the store, so the store could be used in other instances like for the playstate
 
 #bugs
 - all the main elements are also included in the GTO
@@ -37,8 +41,12 @@ const allWorker = getWorker();
 
 export const getAnimations = (props: BewegungProps) => {
 	const messageStore = createMessageStore<MainMessages, WorkerMessages>(allWorker.current(), {
+		cache: {},
 		sendMainTransferObject({ reply }, mainTransferObject) {
 			reply("receiveMainState", mainTransferObject);
+		},
+		sendMainTransferPatch({ reply }, patches) {
+			reply("receiveMainStatePatches", patches);
 		},
 		sendGeneralTransferObject({ reply }, generalTransferObject) {
 			reply("receiveGeneralState", generalTransferObject);
@@ -61,43 +69,70 @@ export const getAnimations = (props: BewegungProps) => {
 		state: initialMainState(),
 		methods: {
 			setMainTransferObject({ state }, initialProps) {
-				const newMainTransferObject = mainTransferObject();
-				const newCssRest = new Map<HTMLElement, Map<string, string>>();
-				const newRootSelectors = new Map<HTMLElement, string[]>();
+				const { mainTransferObject, elementRoots, elementResets, elementSelectors } = state;
+
 				unifyPropStructure(initialProps).forEach((entry, index) => {
 					const [targets, keyframes, options] = entry;
 
 					const htmlElements = normalizeElements(targets);
+					const root = getRootSelector(options);
+					elementSelectors[index] = typeof targets === "string" ? targets : "";
+
 					const elementKeys = htmlElements.map((element) => {
-						newCssRest.set(element, saveOriginalStyle(element));
-						newRootSelectors.set(
-							element,
-							(state.rootSelector.get(element) ?? []).concat(getRootSelector(options))
-						);
+						elementResets.set(element, saveOriginalStyle(element));
+						elementRoots.set(element, compareRootElements(root, elementRoots.get(element)));
 
 						return getOrAddKeyFromLookup(element, state.elementTranslation);
 					});
 
-					newMainTransferObject._keys[index] = elementKeys;
-					newMainTransferObject.keyframes[index] = keyframes;
-					newMainTransferObject.options[index] = options;
-					newMainTransferObject.selectors[index] = typeof targets === "string" ? targets : "";
+					mainTransferObject._keys[index] = elementKeys;
+					mainTransferObject.keyframes[index] = keyframes;
+					mainTransferObject.options[index] = options;
 				});
-				state.mainTransferObject = newMainTransferObject;
-				state.rootSelector = newRootSelectors;
-				state.cssResets = newCssRest;
 			},
-			setGeneralTransferObject,
+			updateMainTransferObject({ state }, patches) {
+				patches.forEach((patch) => {
+					if (patch.op === "+") {
+						patch.indices?.forEach((patchIndex) => {
+							state.mainTransferObject._keys[patchIndex].push(patch.key);
+						});
+						return;
+					}
+					state.elementTranslation.delete(patch.key);
+					state.mainTransferObject._keys.forEach((exisitingKeys) => {
+						const indexInExistingKeys = exisitingKeys.indexOf(patch.key);
+						if (indexInExistingKeys === -1) {
+							return;
+						}
+						exisitingKeys.splice(indexInExistingKeys, 1);
+					});
+				});
+			},
 		},
 		actions: {
 			initStateFromProps({ commit, state }, initialProps) {
 				commit("setMainTransferObject", initialProps);
 				messageStore.send("sendMainTransferObject", state.mainTransferObject);
-				commit("setGeneralTransferObject");
-				messageStore.send("sendGeneralTransferObject", state.generalTransferObject);
-				console.log(state.generalTransferObject);
+
+				messageStore.send("sendGeneralTransferObject", getGeneralTransferObject(state));
 			},
-			patches({ dispatch, commit, state }, payload) {},
+			patchMainState({ commit, state }, patch) {
+				const patches: MainPatch[] = [];
+				patch.addedElements.forEach((entry) => {
+					const key = getOrAddKeyFromLookup(entry[0], state.elementTranslation);
+					patches.push({ op: "+", key, indices: entry[1] });
+				});
+
+				patch.removedElements.forEach((entry) => {
+					const key = getOrAddKeyFromLookup(entry[0], state.elementTranslation);
+					patches.push({ op: "-", key });
+				});
+
+				messageStore.send("sendMainTransferPatch", patches);
+				commit("updateMainTransferObject", patches);
+
+				messageStore.send("sendGeneralTransferObject", getGeneralTransferObject(state));
+			},
 			async sendAppliableKeyframes({ state }, appliableKeyframes) {
 				const { changeProperties, keyframes } = appliableKeyframes;
 				const readouts = await readDom(keyframes, changeProperties, state);
@@ -106,48 +141,16 @@ export const getAnimations = (props: BewegungProps) => {
 			sendKeyframes({ state }, constructedKeyframes) {
 				state.finishCallback(createAnimationsFromKeyframes(state, constructedKeyframes));
 			},
-			replyRequestKeyframes() {
-				messageStore.send("sendRequestKeyframes", undefined);
-			},
 		},
 	});
 	store.dispatch("initStateFromProps", props);
-
-	/*
-	for the MO - deleted element
-	- get the deleted element.
-	- if it is included within the keys of the MTO, delete that key and everything with that index if it would close the keys array
-	- 
-	*/
-
-	const observe = (before: VoidFunction, after: VoidFunction) => {
-		let resizeIdleCallback: NodeJS.Timeout | undefined;
-
-		const throttledCallback = () => {
-			resizeIdleCallback && clearTimeout(resizeIdleCallback);
-			resizeIdleCallback = setTimeout(() => {
-				unobserve();
-				before();
-				store.dispatch("replyRequestKeyframes");
-				after();
-			}, 100);
-		};
-
-		const unobserveRO = observeResizes(store.state, throttledCallback);
-		const unobserveIO = observerDimensions(store.state, throttledCallback);
-
-		const unobserve = () => {
-			unobserveRO();
-			unobserveIO();
-		};
-
-		return unobserve;
-	};
 
 	return {
 		getResults() {
 			return store.state.result;
 		},
-		observe,
+		observe(before: VoidFunction, after: VoidFunction) {
+			return watchForChanges(store, messageStore, [before, after]);
+		},
 	};
 };

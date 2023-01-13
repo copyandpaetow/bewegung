@@ -39,8 +39,11 @@ export const findAffectedDOMElements = (
 	return Array.from(relatives) as HTMLElement[];
 };
 
-const compareRootElements = (current: HTMLElement, previous: HTMLElement | undefined | null) => {
-	if (!previous || current.contains(previous)) {
+export const compareRootElements = (
+	current: HTMLElement,
+	previous: HTMLElement | undefined | null
+) => {
+	if (!previous || current === previous || current.contains(previous)) {
 		return current;
 	}
 	if (previous.contains(current)) {
@@ -50,19 +53,10 @@ const compareRootElements = (current: HTMLElement, previous: HTMLElement | undef
 	return current;
 };
 
-const getRootElement = (entries: string[] | HTMLElement[]): HTMLElement => {
+const getRootElement = (entries: HTMLElement[]): HTMLElement => {
 	let root: HTMLElement | undefined;
 
-	entries.forEach((selector: string | HTMLElement) => {
-		const rootElement =
-			typeof selector === "string"
-				? (document.querySelector(selector) as HTMLElement | null)
-				: selector;
-
-		if (!rootElement) {
-			throw new Error("no root element with that selector");
-		}
-
+	entries.forEach((rootElement: HTMLElement) => {
 		root = compareRootElements(rootElement, root);
 	});
 
@@ -80,17 +74,17 @@ const isTextNode = (element: HTMLElement) => {
 };
 const isImage = (mainElement: HTMLElement) => (mainElement.tagName === "IMG" ? "image" : false);
 
-export const setGeneralTransferObject = ({ state }: Context<MainSchema>) => {
-	const { elementTranslation, rootSelector } = state;
+export const getGeneralTransferObject = (state: MainState) => {
+	const { elementTranslation, elementRoots, mainTransferObject } = state;
 
 	const affectedElementsMap = new Map<string, Set<string>>();
-	const rootElements = new Map<HTMLElement, HTMLElement>();
 	const elementConnections = new Map<string, HTMLElement[]>();
 	const newGeneralTransferObject = generalTransferObject();
+	const mainElements = new Set(mainTransferObject._keys.flat());
 
-	elementTranslation.forEach((domElement, elementString) => {
-		const rootElement = getRootElement(rootSelector.get(domElement)!);
-		rootElements.set(domElement, rootElement);
+	mainElements.forEach((elementString) => {
+		const domElement = elementTranslation.get(elementString)!;
+		const rootElement = elementRoots.get(domElement)!;
 
 		elementConnections.set(elementString, findAffectedDOMElements(domElement, rootElement));
 	});
@@ -115,10 +109,10 @@ export const setGeneralTransferObject = ({ state }: Context<MainSchema>) => {
 		const rootElement = getRootElement(
 			Array.from(
 				affectedByMainElements,
-				(mainElementString: string) => rootElements.get(elementTranslation.get(mainElementString)!)!
+				(mainElementString: string) => elementRoots.get(elementTranslation.get(mainElementString)!)!
 			)
 		);
-
+		elementRoots.set(domElement, rootElement);
 		newGeneralTransferObject.root.push(elementTranslation.get(rootElement)!);
 		newGeneralTransferObject.parent.push(elementTranslation.get(domElement.parentElement!)!);
 		newGeneralTransferObject.type.push(elementType);
@@ -126,6 +120,5 @@ export const setGeneralTransferObject = ({ state }: Context<MainSchema>) => {
 		newGeneralTransferObject.ratio.push(getRatio(domElement));
 		newGeneralTransferObject._keys.push(elementString);
 	});
-	state.generalTransferObject = newGeneralTransferObject;
-	state.rootElement = rootElements;
+	return newGeneralTransferObject;
 };

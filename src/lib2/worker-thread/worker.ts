@@ -1,5 +1,5 @@
 import { createMessageStore, createStore } from "../shared/store";
-import { MainMessages, MainSchema, WorkerMessages, WorkerSchema } from "../types";
+import { MainMessages, WorkerMessages, WorkerSchema } from "../types";
 import {
 	calculateAppliableKeyframes,
 	calculateChangeProperties,
@@ -7,7 +7,8 @@ import {
 } from "./calculate-dom-changes";
 import { calculateTotalRuntime } from "./calculate-runtime";
 import { expandEntry, initalState } from "./init-worker-state";
-import { normalizeKeyframes } from "./normalize-keyframes";
+import { unifyKeyframeStructure } from "./normalize-keyframe-structure";
+import { fillImplicitKeyframes, updateOffsets } from "./normalize-keyframes";
 import { normalizeOptions } from "./normalize-options";
 import { constructKeyframes } from "./sort-keyframes";
 
@@ -15,14 +16,43 @@ import { constructKeyframes } from "./sort-keyframes";
 const worker = self as Worker;
 
 const messageStore = createMessageStore<WorkerMessages, MainMessages>(worker, {
+	cache: {
+		mainState: null,
+	},
 	replyConstructedKeyframes({ reply }, constructedKeyframes) {
 		reply("receiveConstructedKeyframes", constructedKeyframes);
 	},
 	replyAppliableKeyframes({ reply }, appliableKeyframes) {
 		reply("receiveAppliableKeyframes", appliableKeyframes);
 	},
-	receiveMainState(_, mainState) {
+	receiveMainState({ cache }, mainState) {
+		mainState.keyframes = mainState.keyframes
+			.map(unifyKeyframeStructure)
+			.map(fillImplicitKeyframes);
+		mainState.options = normalizeOptions(mainState.options);
+		cache.mainState = mainState;
 		store.dispatch("updateMainState", mainState);
+	},
+	receiveMainStatePatches({ cache }, patches) {
+		if (!cache.mainState) {
+			throw new Error("no main state to patch");
+		}
+		patches.forEach((patch) => {
+			if (patch.op === "+") {
+				patch.indices?.forEach((patchIndex) => {
+					cache.mainState!._keys[patchIndex].push(patch.key);
+				});
+				return;
+			}
+			cache.mainState!._keys.forEach((exisitingKeys) => {
+				const indexInExistingKeys = exisitingKeys.indexOf(patch.key);
+				if (indexInExistingKeys === -1) {
+					return;
+				}
+				exisitingKeys.splice(indexInExistingKeys, 1);
+			});
+		});
+		store.dispatch("updateMainState", cache.mainState);
 	},
 	receiveGeneralState(_, generalState) {
 		store.dispatch("updateGeneralState", generalState);
@@ -39,23 +69,22 @@ const store = createStore<WorkerSchema>({
 	state: initalState(),
 	methods: {
 		setMainState({ state }, transferObject) {
-			const options = normalizeOptions(transferObject.options);
-			const totalRuntime = calculateTotalRuntime(options);
-			const keyframes = normalizeKeyframes(transferObject.keyframes, options, totalRuntime);
-			const changeTimings = calculateChangeTimings(keyframes);
-			const changeProperties = calculateChangeProperties(keyframes);
+			const { _keys, keyframes, options } = transferObject;
+			state.totalRuntime = calculateTotalRuntime(options);
+			const updatedKeyframes = keyframes.map((keyframeEntries, index) =>
+				updateOffsets(keyframeEntries, options[index], state.totalRuntime)
+			);
+			state.changeTimings = calculateChangeTimings(updatedKeyframes);
+			state.changeProperties = calculateChangeProperties(updatedKeyframes);
 
-			const keyframeMap = expandEntry(transferObject._keys, keyframes);
-			const appliableKeyframes = calculateAppliableKeyframes(keyframeMap, changeTimings);
+			state.keyframes = expandEntry(_keys, updatedKeyframes);
+			state.options = expandEntry(_keys, options);
 
-			state.appliableKeyframes = appliableKeyframes;
-			state.changeTimings = changeTimings;
-			state.changeProperties = changeProperties;
-			state.keyframes = keyframeMap;
-			state.options = expandEntry(transferObject._keys, options);
-			state.remainingKeyframes = appliableKeyframes.length;
-			state.selectors = expandEntry(transferObject._keys, [keyframes, options]);
-			state.totalRuntime = totalRuntime;
+			state.appliableKeyframes = calculateAppliableKeyframes(state.keyframes, state.changeTimings);
+			state.remainingKeyframes = state.appliableKeyframes.length;
+		},
+		clearState({ state }) {
+			state = initalState();
 		},
 		setGeneralState({ state }, transferObject) {
 			const { _keys, ...newState } = transferObject;
@@ -80,6 +109,7 @@ const store = createStore<WorkerSchema>({
 	},
 	actions: {
 		updateMainState({ commit, dispatch }, mainTransferObject) {
+			commit("clearState");
 			commit("setMainState", mainTransferObject);
 			dispatch("updateRemainingKeyframes");
 		},

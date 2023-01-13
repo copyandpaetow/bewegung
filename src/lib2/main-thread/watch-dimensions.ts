@@ -16,12 +16,12 @@ const calculateRootMargin = (rootElement: HTMLElement, mainElement: HTMLElement)
 };
 
 export const observerDimensions = (state: MainState, callback: VoidFunction) => {
-	const { elementTranslation, rootElement } = state;
+	const { elementTranslation, elementRoots } = state;
 	const IO = new WeakMap<HTMLElement, IntersectionObserver>();
 
 	elementTranslation.forEach((element) => {
 		IO.get(element)?.disconnect();
-		const root = rootElement.get(element)!;
+		const root = elementRoots.get(element)!;
 
 		let firstTime = true;
 		const observer = new IntersectionObserver(

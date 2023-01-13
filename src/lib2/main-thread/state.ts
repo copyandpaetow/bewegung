@@ -7,11 +7,17 @@ import {
 } from "../types";
 import { BidirectionalMap } from "../shared/element-translations";
 
-export const getRootSelector = (options: EveryOptionSyntax) => {
+export const getRootSelector = (options: EveryOptionSyntax): HTMLElement => {
 	if (!options || typeof options === "number" || !options.rootSelector) {
-		return "body";
+		return document.body;
 	}
-	return options.rootSelector;
+	const root = document.querySelector(options.rootSelector) as HTMLElement | null;
+
+	if (!root) {
+		throw new Error("no element with that selector");
+	}
+
+	return root;
 };
 
 export const generalTransferObject = (): GeneralTransferObject => ({
@@ -27,7 +33,6 @@ export const mainTransferObject = (): MainTransferObject => ({
 	_keys: [],
 	keyframes: [],
 	options: [],
-	selectors: [],
 });
 
 export const initialMainState = (): MainState => {
@@ -35,11 +40,10 @@ export const initialMainState = (): MainState => {
 	const finishPromise = new Promise<Result>((resolve) => (finishCallback = resolve));
 
 	return {
-		cssResets: new Map<HTMLElement, Map<string, string>>(),
-		rootSelector: new Map<HTMLElement, string[]>(),
-		rootElement: new Map<HTMLElement, HTMLElement>(),
 		mainTransferObject: mainTransferObject(),
-		generalTransferObject: generalTransferObject(),
+		elementRoots: new Map<HTMLElement, HTMLElement>(),
+		elementResets: new Map<HTMLElement, Map<string, string>>(),
+		elementSelectors: [],
 		elementTranslation: new BidirectionalMap<string, HTMLElement>(),
 		result: finishPromise,
 		finishCallback,

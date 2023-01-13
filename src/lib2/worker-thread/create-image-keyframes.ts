@@ -26,7 +26,7 @@ export const getImageKeyframes = (
 	const { root, affectedBy, ratio, options, readouts, totalRuntime, changeTimings } = workerState;
 	const imageState = initialImageState();
 	const easings = new Set<BewegungsOptions>(
-		affectedBy.get(elementString)!.flatMap((elementString) => options.get(elementString)!)
+		affectedBy.get(elementString)!.flatMap((elementString) => options.get(elementString) ?? [])
 	);
 	const rootReadout = readouts.get(root.get(elementString)!)!;
 
