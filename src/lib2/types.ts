@@ -48,6 +48,11 @@ export type CustomKeyframeEffect = [
 	options: EveryOptionSyntax
 ];
 
+export type FillImplicitKeyframesOverload = {
+	(keyframes: Keyframe[]): Keyframe[];
+	(keyframes: CustomKeyframe[]): CustomKeyframe[];
+};
+
 export interface BewegungAPI {
 	play: () => void;
 	pause: () => void;
@@ -110,7 +115,7 @@ export interface Result {
 	timeKeeper: Animation;
 }
 
-export type EntryType = "image" | "text" | "default";
+export type EntryType = "image" | "text" | "";
 
 export type Selector = {
 	keyframes: CustomKeyframe[];
@@ -254,6 +259,7 @@ export type MainActions = {
 	patchMainState(context: Context<MainSchema>, payload: MainTransferObjectUpdates): void;
 	sendAppliableKeyframes(context: Context<MainSchema>, payload: AppliableKeyframes): Promise<void>;
 	sendKeyframes(context: Context<MainSchema>, payload: ResultingKeyframes): void;
+	sendGeneralTransferObject(context: Context<MainSchema>): void;
 };
 
 export type MainSchema = {

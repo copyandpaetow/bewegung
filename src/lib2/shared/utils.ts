@@ -1,4 +1,4 @@
-import { ElementReadouts } from "../types";
+import { ElementReadouts, ValueOf } from "../types";
 
 export const highestNumber = (numbers: number[]) =>
 	numbers.reduce((largest, current) => Math.max(largest, current));
@@ -27,3 +27,7 @@ export const compareOffsetObjects = <Value>(
 	});
 
 export const isElement = (node: Node): boolean => node instanceof HTMLElement;
+
+export const toArray = <MaybeArrayType>(
+	maybeArray: MaybeArrayType | MaybeArrayType[]
+): MaybeArrayType[] => (Array.isArray(maybeArray) ? maybeArray : [maybeArray]);

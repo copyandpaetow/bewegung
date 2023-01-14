@@ -1,8 +1,5 @@
+import { toArray } from "../shared/utils";
 import { Timeline, TimelineEntry } from "../types";
-
-export const toArray = <MaybeArrayType>(
-	maybeArray: MaybeArrayType | MaybeArrayType[]
-): MaybeArrayType[] => (Array.isArray(maybeArray) ? maybeArray : [maybeArray]);
 
 const easingValues = {
 	linear: [0, 0, 1, 1],

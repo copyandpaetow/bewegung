@@ -1,7 +1,7 @@
 import { defaultImageStyles, emptyImageSrc } from "../shared/constants";
 import { ImageState, MainState } from "../types";
+import { fillImplicitKeyframes } from "../worker-thread/normalize-keyframes";
 import { applyStyleObject } from "./apply-styles";
-import { fillImplicitKeyframes } from "./create-animations-from-keyframes";
 
 const getPlaceholderElement = (element: HTMLImageElement, style: Partial<CSSStyleDeclaration>) => {
 	const placeholder = document.createElement("img");

@@ -4,7 +4,6 @@ import {
 	ElementReadouts,
 	EntryType,
 	ExpandEntry,
-	Selector,
 	WorkerState,
 } from "../types";
 
