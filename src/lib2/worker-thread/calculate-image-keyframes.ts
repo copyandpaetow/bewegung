@@ -89,7 +89,6 @@ export const calculateImageKeyframes = (readouts: ElementReadouts[], imageState:
 	return keyframes;
 };
 
-//TODO: REFACTOR: change the structure into something more performant
 export const findCorrespondingElement = (
 	currentReadout: ElementReadouts,
 	rootReadouts: ElementReadouts[],
@@ -115,7 +114,6 @@ export const findCorrespondingElement = (
 	return result;
 };
 
-//TODO: REFACTOR: split into smaller chunks
 export const getWrapperKeyframes = (
 	readouts: ElementReadouts[],
 	rootReadouts: ElementReadouts[],

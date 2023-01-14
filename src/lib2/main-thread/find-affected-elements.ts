@@ -1,5 +1,5 @@
-import { Context, MainSchema, MainState, WorkerSchema } from "../types";
 import { getOrAddKeyFromLookup } from "../shared/element-translations";
+import { MainState } from "../types";
 import { getRatio } from "./read-dom-properties";
 import { generalTransferObject } from "./state";
 
@@ -103,7 +103,7 @@ export const getGeneralTransferObject = (state: MainState) => {
 	});
 
 	elementTranslation.forEach((domElement, elementString) => {
-		const elementType = isImage(domElement) || isTextNode(domElement) || "default";
+		const elementType = isImage(domElement) || isTextNode(domElement) || "";
 		const affectedByMainElements = affectedElementsMap.get(elementString)!;
 
 		const rootElement = getRootElement(

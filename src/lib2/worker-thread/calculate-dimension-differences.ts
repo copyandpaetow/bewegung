@@ -130,8 +130,6 @@ export const calculateDimensionDifferences = (
 	} = getScales(child, parent, isTextNode);
 
 	if (!parent[0]) {
-		//TODO: this needs to be rechecked
-		//* for some reason, the extra scale is only needed if the root gets smaller afterwards
 		const scaleY = Math.min(1, heightDifference);
 		const scaleX = Math.min(1, heightDifference);
 

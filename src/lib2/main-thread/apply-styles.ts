@@ -21,7 +21,7 @@ const applyAttributes = (element: HTMLElement, attributes: string[]) => {
 };
 
 export const applyCSSStyles = (element: HTMLElement, resultingStyle: CustomKeyframe) => {
-	const { offset, attribute, class: cssClass, easing, composite, ...style } = resultingStyle;
+	const { offset, attribute, class: cssClass, ...style } = resultingStyle;
 
 	style && applyStyleObject(element, style as Partial<CSSStyleDeclaration>);
 	cssClass && applyClasses(element, cssClass.split(" "));
@@ -39,7 +39,7 @@ export const filterMatchingStyleFromKeyframes = (
 			return;
 		}
 
-		const { offset, class: cssClass, attribute, easing, composite, ...styles } = keyframe;
+		const { offset, class: cssClass, attribute, ...styles } = keyframe;
 
 		Object.entries(styles).forEach(([key, value]) => {
 			resultingStyle[key] = value;

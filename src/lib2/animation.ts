@@ -12,29 +12,33 @@ import { watchForChanges } from "./main-thread/watch-changes";
 import { getOrAddKeyFromLookup } from "./shared/element-translations";
 import { createMessageStore, createStore, getWorker } from "./shared/store";
 import { BewegungProps, MainMessages, MainPatch, MainSchema, WorkerMessages } from "./types";
-
 /*
 TODOS:
  
 # performance
-- if all entries in the GTO or the MTO are the same, maybe just use one then. 
-* => This compression / decompression could be done within the messageStore
-- zip the transferobjects
 - create a patch from the generalTransferObject and only send that
+- maybe a "task" message loop could help to break up larger functions (only on the main thread)
 
 #refactor
 - rethink the offset structure for the style entries. Finding entries with certain offsets is tedious.
 - rethink filtering. Maybe remove elements with all the same keyframes? Or all the elements are "translate(0,0) scale(0,0)"
 ? because some elements dont change but are affected from their parents and therefor influence their children
 * in that case we would need to get their parents.parents... to help with the scale
+- to be somewhat side-effect free, the messageStore should be part of the stores state
+- check for custom properties
+- background images
+- prefer reduced motion
 
 #bugs
+- if an animation which added images is paused and another animation is called, these images will get included and will have more images created for it
 - all the main elements are also included in the GTO
 - if we scroll down far enough the translate values are wrong
 - a starting delay combined with a value that changes on offset 0 behaves wrongly => the change should be instantiously but it is a transition
 - shrinking elements distort text elements
 - clip-path for display none images doesnt show the border radius anymore
 - the store.ts store is not perfectly typed
+- the MO callback needs to be throtteled differently => their callback arguments would need to be saved somewhere or they are lost
+- formatArraySyntax procudes wrong values when properties have mixed middle offsets but the same start and end values
 */
 
 const allWorker = getWorker();
@@ -61,6 +65,7 @@ export const getAnimations = (props: BewegungProps) => {
 			store.dispatch("sendAppliableKeyframes", appliableKeyframes);
 		},
 		receiveConstructedKeyframes(_, constructedKeyframes) {
+			console.log(constructedKeyframes);
 			store.dispatch("sendKeyframes", constructedKeyframes);
 		},
 	});
@@ -74,9 +79,10 @@ export const getAnimations = (props: BewegungProps) => {
 				unifyPropStructure(initialProps).forEach((entry, index) => {
 					const [targets, keyframes, options] = entry;
 
-					const htmlElements = normalizeElements(targets);
 					const root = getRootSelector(options);
+
 					elementSelectors[index] = typeof targets === "string" ? targets : "";
+					const htmlElements = normalizeElements(targets);
 
 					const elementKeys = htmlElements.map((element) => {
 						elementResets.set(element, saveOriginalStyle(element));
@@ -91,15 +97,17 @@ export const getAnimations = (props: BewegungProps) => {
 				});
 			},
 			updateMainTransferObject({ state }, patches) {
+				const { mainTransferObject, elementTranslation } = state;
+
 				patches.forEach((patch) => {
 					if (patch.op === "+") {
 						patch.indices?.forEach((patchIndex) => {
-							state.mainTransferObject._keys[patchIndex].push(patch.key);
+							mainTransferObject._keys[patchIndex].push(patch.key);
 						});
 						return;
 					}
-					state.elementTranslation.delete(patch.key);
-					state.mainTransferObject._keys.forEach((exisitingKeys) => {
+					elementTranslation.delete(patch.key);
+					mainTransferObject._keys.forEach((exisitingKeys) => {
 						const indexInExistingKeys = exisitingKeys.indexOf(patch.key);
 						if (indexInExistingKeys === -1) {
 							return;
@@ -110,13 +118,13 @@ export const getAnimations = (props: BewegungProps) => {
 			},
 		},
 		actions: {
-			initStateFromProps({ commit, state }, initialProps) {
+			initStateFromProps({ dispatch, commit, state }, initialProps) {
 				commit("setMainTransferObject", initialProps);
 				messageStore.send("sendMainTransferObject", state.mainTransferObject);
 
-				messageStore.send("sendGeneralTransferObject", getGeneralTransferObject(state));
+				dispatch("sendGeneralTransferObject");
 			},
-			patchMainState({ commit, state }, patch) {
+			patchMainState({ dispatch, commit, state }, patch) {
 				const patches: MainPatch[] = [];
 				patch.addedElements.forEach((entry) => {
 					const key = getOrAddKeyFromLookup(entry[0], state.elementTranslation);
@@ -131,7 +139,7 @@ export const getAnimations = (props: BewegungProps) => {
 				messageStore.send("sendMainTransferPatch", patches);
 				commit("updateMainTransferObject", patches);
 
-				messageStore.send("sendGeneralTransferObject", getGeneralTransferObject(state));
+				dispatch("sendGeneralTransferObject");
 			},
 			async sendAppliableKeyframes({ state }, appliableKeyframes) {
 				const { changeProperties, keyframes } = appliableKeyframes;
@@ -140,6 +148,9 @@ export const getAnimations = (props: BewegungProps) => {
 			},
 			sendKeyframes({ state }, constructedKeyframes) {
 				state.finishCallback(createAnimationsFromKeyframes(state, constructedKeyframes));
+			},
+			sendGeneralTransferObject({ state }) {
+				messageStore.send("sendGeneralTransferObject", getGeneralTransferObject(state));
 			},
 		},
 	});

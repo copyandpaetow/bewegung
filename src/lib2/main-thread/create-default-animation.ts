@@ -1,7 +1,7 @@
 import { DefaultKeyframes } from "../types";
 import { applyCSSStyles } from "./apply-styles";
-import { fillImplicitKeyframes } from "./create-animations-from-keyframes";
 import { BidirectionalMap } from "../shared/element-translations";
+import { fillImplicitKeyframes } from "../worker-thread/normalize-keyframes";
 
 export const createDefaultAnimation = (
 	defaultKeyframes: Map<string, DefaultKeyframes>,

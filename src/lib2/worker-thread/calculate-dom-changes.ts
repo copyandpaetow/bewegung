@@ -1,6 +1,6 @@
-import { defaultChangeProperties } from "../shared/constants";
 import { filterMatchingStyleFromKeyframes } from "../main-thread/apply-styles";
-import { CssRuleName, CustomKeyframe, WorkerState } from "../types";
+import { defaultChangeProperties } from "../shared/constants";
+import { CssRuleName, CustomKeyframe } from "../types";
 
 export const calculateChangeTimings = (allKeyframes: CustomKeyframe[][]) => {
 	const newTimings = new Set([0, 1]);
@@ -18,7 +18,7 @@ export const calculateChangeProperties = (allKeyframes: CustomKeyframe[][]) => {
 	const changeProperties = new Set(defaultChangeProperties);
 
 	allKeyframes.forEach((keyframes) => {
-		keyframes.forEach(({ offset, easing, composite, ...stylings }) => {
+		keyframes.forEach(({ offset, ...stylings }) => {
 			Object.keys(stylings).forEach((style) => changeProperties.add(style as CssRuleName));
 		});
 	});

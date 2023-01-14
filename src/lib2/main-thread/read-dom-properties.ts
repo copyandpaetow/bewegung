@@ -25,6 +25,7 @@ export const getCalculations = (
 	};
 
 	//TODO if `getPropertyValue(rule)` is faster, we need to resturcture the changeProperties to be border-radius instead of borderRadius for example
+	//? maybe its also the object dynamically growing?
 	changeProperties.forEach((cssRule: CssRuleName) => {
 		relevantStyles[cssRule] = computedElementStyle[cssRule];
 	});

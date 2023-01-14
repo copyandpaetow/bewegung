@@ -35,8 +35,6 @@ export const constructKeyframes = (
 ): [Map<string, ImageState>, Map<string, DefaultKeyframes>, number] => {
 	const { readouts, type, totalRuntime } = workerState;
 
-	console.log(readouts);
-
 	const imageReadouts = new Map<string, ImageState>();
 	const defaultReadouts = new Map<string, DefaultKeyframes>();
 

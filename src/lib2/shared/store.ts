@@ -11,7 +11,9 @@ export const getWorker = () => {
 	return {
 		current() {
 			const current = allWorker.pop()!;
-			allWorker.push(spawnWorker());
+			setTimeout(() => {
+				allWorker.push(spawnWorker());
+			}, 50);
 			return current;
 		},
 	};

@@ -1,5 +1,4 @@
-import { BewegungsOptions, CustomKeyframe, EveryKeyframeSyntax } from "../types";
-import { unifyKeyframeStructure } from "./normalize-keyframe-structure";
+import { BewegungsOptions, CustomKeyframe, FillImplicitKeyframesOverload } from "../types";
 
 //?: if the lastOffset is equal to the newOffset, their keyframes will get mashed together eventually
 // with newOffset === lastOffset ? newOffset + 0.0001 : newOffset, this could be avoided but it creates a flicker and doesnt look that great
@@ -12,6 +11,8 @@ export const updateOffsets = (
 	if (iterations === Infinity) {
 		throw new Error("cant calculate with Infinity");
 	}
+
+	console.log({ keyframes });
 
 	const updatedFrames: CustomKeyframe[] = [];
 	const reversedEntry: CustomKeyframe[] = [...keyframes].reverse();
@@ -38,7 +39,7 @@ export const updateOffsets = (
 	return updatedFrames;
 };
 
-export const fillImplicitKeyframes = (keyframes: CustomKeyframe[]): CustomKeyframe[] => {
+export const fillImplicitKeyframes: FillImplicitKeyframesOverload = (keyframes: any): any => {
 	const updatedKeyframes = [...keyframes];
 	const firstKeyframe = updatedKeyframes.at(0)!;
 	const lastKeyframe = updatedKeyframes.at(-1)!;
