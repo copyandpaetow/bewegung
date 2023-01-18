@@ -42,6 +42,7 @@ export const constructKeyframes = (
 		if (elementReadouts.every((entry) => !isEntryVisible(entry))) {
 			return;
 		}
+
 		const isImage = type.get(elementString)! === "image";
 		const saveReadouts = recalculateDisplayNoneValues(elementReadouts);
 		isImage
@@ -55,11 +56,15 @@ export const constructKeyframes = (
 			  );
 	});
 
+	//* the calculations are off because of the images
+	// here there are already calculated as images and are not included within the defaultReadouts
+	// TODO: this filtering needs to happen earlier
+
 	// imageReadouts.forEach((entry, elementString) => {
 	// 	if (new Set(entry.keyframes.map((frame) => frame.transform)).size > 1) {
 	// 		return;
 	// 	}
-
+	// 	console.log(entry);
 	// 	imageReadouts.delete(elementString);
 	// });
 
@@ -67,6 +72,8 @@ export const constructKeyframes = (
 	// 	if (new Set(entry.keyframes.map((frame) => frame.transform)).size > 1) {
 	// 		return;
 	// 	}
+	// 	console.log(entry);
+
 	// 	defaultReadouts.delete(elementString);
 	// });
 

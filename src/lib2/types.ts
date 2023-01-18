@@ -186,6 +186,12 @@ export type GeneralTransferObject = {
 	ratio: number[];
 };
 
+export type PatchTransferObject = {
+	op: ("+" | "-")[];
+	key: string[];
+	indices: number[][];
+};
+
 export type ExpandEntry = {
 	(allTargets: string[][], entry: CustomKeyframe[][]): Map<string, CustomKeyframe[]>;
 	(allTargets: string[][], entry: BewegungsOptions[]): Map<string, BewegungsOptions[]>;
@@ -193,12 +199,6 @@ export type ExpandEntry = {
 		string,
 		Selector[]
 	>;
-};
-
-export type MainPatch = {
-	op: "+" | "-";
-	key: string;
-	indices?: number[];
 };
 
 export type WorkerActions = {
@@ -239,7 +239,7 @@ export type MainState = {
 
 export type MainMethods = {
 	setMainTransferObject(context: Context<MainSchema>, payload: BewegungProps): void;
-	updateMainTransferObject(context: Context<MainSchema>, patches: MainPatch[]): void;
+	updateMainTransferObject(context: Context<MainSchema>, patches: PatchTransferObject): void;
 };
 export type ResultingKeyframes = [Map<string, ImageState>, Map<string, DefaultKeyframes>, number];
 
@@ -286,7 +286,7 @@ export type MainMessages = {
 	): void;
 	sendMainTransferPatch(
 		context: MessageContext<MainMessages, WorkerMessages>,
-		patches: MainPatch[]
+		patches: PatchTransferObject
 	): void;
 	sendGeneralTransferObject(
 		context: MessageContext<MainMessages, WorkerMessages>,
@@ -325,7 +325,7 @@ export type WorkerMessages = {
 	): void;
 	receiveMainStatePatches(
 		context: MessageContext<WorkerMessages, MainMessages>,
-		patches: MainPatch[]
+		patches: PatchTransferObject
 	): void;
 	receiveGeneralState(
 		context: MessageContext<WorkerMessages, MainMessages>,

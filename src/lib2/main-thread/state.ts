@@ -3,6 +3,7 @@ import {
 	GeneralTransferObject,
 	MainState,
 	MainTransferObject,
+	PatchTransferObject,
 	Result,
 } from "../types";
 import { BidirectionalMap } from "../shared/element-translations";
@@ -20,7 +21,7 @@ export const getRootSelector = (options: EveryOptionSyntax): HTMLElement => {
 	return root;
 };
 
-export const generalTransferObject = (): GeneralTransferObject => ({
+export const makeGeneralTransferObject = (): GeneralTransferObject => ({
 	_keys: [],
 	root: [],
 	parent: [],
@@ -29,10 +30,16 @@ export const generalTransferObject = (): GeneralTransferObject => ({
 	ratio: [],
 });
 
-export const mainTransferObject = (): MainTransferObject => ({
+export const makeMainTransferObject = (): MainTransferObject => ({
 	_keys: [],
 	keyframes: [],
 	options: [],
+});
+
+export const makePatchTransferObject = (): PatchTransferObject => ({
+	op: [],
+	key: [],
+	indices: [],
 });
 
 export const initialMainState = (): MainState => {
@@ -40,7 +47,7 @@ export const initialMainState = (): MainState => {
 	const finishPromise = new Promise<Result>((resolve) => (finishCallback = resolve));
 
 	return {
-		mainTransferObject: mainTransferObject(),
+		mainTransferObject: makeMainTransferObject(),
 		elementRoots: new Map<HTMLElement, HTMLElement>(),
 		elementResets: new Map<HTMLElement, Map<string, string>>(),
 		elementSelectors: [],
