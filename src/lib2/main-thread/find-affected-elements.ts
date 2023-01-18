@@ -1,7 +1,7 @@
 import { getOrAddKeyFromLookup } from "../shared/element-translations";
 import { MainState } from "../types";
 import { getRatio } from "./read-dom-properties";
-import { generalTransferObject } from "./state";
+import { makeGeneralTransferObject } from "./state";
 
 const DOM = {
 	parent(element: HTMLElement): HTMLElement {
@@ -79,7 +79,7 @@ export const getGeneralTransferObject = (state: MainState) => {
 
 	const affectedElementsMap = new Map<string, Set<string>>();
 	const elementConnections = new Map<string, HTMLElement[]>();
-	const newGeneralTransferObject = generalTransferObject();
+	const generalTransferObject = makeGeneralTransferObject();
 	const mainElements = new Set(mainTransferObject._keys.flat());
 
 	mainElements.forEach((elementString) => {
@@ -113,12 +113,12 @@ export const getGeneralTransferObject = (state: MainState) => {
 			)
 		);
 		elementRoots.set(domElement, rootElement);
-		newGeneralTransferObject.root.push(elementTranslation.get(rootElement)!);
-		newGeneralTransferObject.parent.push(elementTranslation.get(domElement.parentElement!)!);
-		newGeneralTransferObject.type.push(elementType);
-		newGeneralTransferObject.affectedBy.push([...affectedByMainElements]);
-		newGeneralTransferObject.ratio.push(getRatio(domElement));
-		newGeneralTransferObject._keys.push(elementString);
+		generalTransferObject.root.push(elementTranslation.get(rootElement)!);
+		generalTransferObject.parent.push(elementTranslation.get(domElement.parentElement!)!);
+		generalTransferObject.type.push(elementType);
+		generalTransferObject.affectedBy.push([...affectedByMainElements]);
+		generalTransferObject.ratio.push(getRatio(domElement));
+		generalTransferObject._keys.push(elementString);
 	});
-	return newGeneralTransferObject;
+	return generalTransferObject;
 };

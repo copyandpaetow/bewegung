@@ -1,5 +1,5 @@
 import { createMessageStore, createStore } from "../shared/store";
-import { MainMessages, WorkerMessages, WorkerSchema } from "../types";
+import { ElementReadouts, MainMessages, WorkerMessages, WorkerSchema } from "../types";
 import {
 	calculateAppliableKeyframes,
 	calculateChangeProperties,
@@ -37,15 +37,16 @@ const messageStore = createMessageStore<WorkerMessages, MainMessages>(worker, {
 		if (!cache.mainState) {
 			throw new Error("no main state to patch");
 		}
-		patches.forEach((patch) => {
-			if (patch.op === "+") {
-				patch.indices?.forEach((patchIndex) => {
-					cache.mainState!._keys[patchIndex].push(patch.key);
+
+		patches.op.forEach((operation, index) => {
+			if (operation === "+") {
+				patches.indices[index].forEach((patchIndex) => {
+					cache.mainState!._keys[patchIndex].push(patches.key[index]);
 				});
 				return;
 			}
 			cache.mainState!._keys.forEach((exisitingKeys) => {
-				const indexInExistingKeys = exisitingKeys.indexOf(patch.key);
+				const indexInExistingKeys = exisitingKeys.indexOf(patches.key[index]);
 				if (indexInExistingKeys === -1) {
 					return;
 				}

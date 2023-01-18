@@ -7,27 +7,28 @@ import {
 import { normalizeElements } from "./main-thread/normalize-elements";
 import { unifyPropStructure } from "./main-thread/normalize-props";
 import { readDom } from "./main-thread/read-dom";
-import { getRootSelector, initialMainState } from "./main-thread/state";
+import { getRootSelector, initialMainState, makePatchTransferObject } from "./main-thread/state";
 import { watchForChanges } from "./main-thread/watch-changes";
 import { getOrAddKeyFromLookup } from "./shared/element-translations";
 import { createMessageStore, createStore, getWorker } from "./shared/store";
-import { BewegungProps, MainMessages, MainPatch, MainSchema, WorkerMessages } from "./types";
+import { BewegungProps, MainMessages, MainSchema, WorkerMessages } from "./types";
 /*
 TODOS:
  
 # performance
-- create a patch from the generalTransferObject and only send that
 - maybe a "task" message loop could help to break up larger functions (only on the main thread)
-
-#refactor
-- rethink the offset structure for the style entries. Finding entries with certain offsets is tedious.
 - rethink filtering. Maybe remove elements with all the same keyframes? Or all the elements are "translate(0,0) scale(0,0)"
 ? because some elements dont change but are affected from their parents and therefor influence their children
 * in that case we would need to get their parents.parents... to help with the scale
+
+#refactor
+- turn every data that is send between main <--> worker into a transferObject
+- rethink the offset structure for the style entries. Finding entries with certain offsets is tedious.
 - to be somewhat side-effect free, the messageStore should be part of the stores state
 - check for custom properties
 - background images
 - prefer reduced motion
+? what if we allow to add/remove elements in the keyframes
 
 #bugs
 - if an animation which added images is paused and another animation is called, these images will get included and will have more images created for it
@@ -39,6 +40,15 @@ TODOS:
 - the store.ts store is not perfectly typed
 - the MO callback needs to be throtteled differently => their callback arguments would need to be saved somewhere or they are lost
 - formatArraySyntax procudes wrong values when properties have mixed middle offsets but the same start and end values
+
+#reactivity performance 
+- create a patch from the generalTransferObject and only send that the second time
+
+
+# features
+- callbacks 
+- allow usage of elements as target which are not currently in the dom. The Element in question will can get appended in the dom (or deleted)
+
 */
 
 const allWorker = getWorker();
@@ -49,8 +59,8 @@ export const getAnimations = (props: BewegungProps) => {
 		sendMainTransferObject({ reply }, mainTransferObject) {
 			reply("receiveMainState", mainTransferObject);
 		},
-		sendMainTransferPatch({ reply }, patches) {
-			reply("receiveMainStatePatches", patches);
+		sendMainTransferPatch({ reply }, patchTransferObject) {
+			reply("receiveMainStatePatches", patchTransferObject);
 		},
 		sendGeneralTransferObject({ reply }, generalTransferObject) {
 			reply("receiveGeneralState", generalTransferObject);
@@ -99,16 +109,16 @@ export const getAnimations = (props: BewegungProps) => {
 			updateMainTransferObject({ state }, patches) {
 				const { mainTransferObject, elementTranslation } = state;
 
-				patches.forEach((patch) => {
-					if (patch.op === "+") {
-						patch.indices?.forEach((patchIndex) => {
-							mainTransferObject._keys[patchIndex].push(patch.key);
+				patches.op.forEach((operation, index) => {
+					if (operation === "+") {
+						patches.indices[index].forEach((patchIndex) => {
+							mainTransferObject._keys[patchIndex].push(patches.key[index]);
 						});
 						return;
 					}
-					elementTranslation.delete(patch.key);
+					elementTranslation.delete(patches.key[index]);
 					mainTransferObject._keys.forEach((exisitingKeys) => {
-						const indexInExistingKeys = exisitingKeys.indexOf(patch.key);
+						const indexInExistingKeys = exisitingKeys.indexOf(patches.key[index]);
 						if (indexInExistingKeys === -1) {
 							return;
 						}
@@ -125,19 +135,23 @@ export const getAnimations = (props: BewegungProps) => {
 				dispatch("sendGeneralTransferObject");
 			},
 			patchMainState({ dispatch, commit, state }, patch) {
-				const patches: MainPatch[] = [];
+				const patchTransferObject = makePatchTransferObject();
+
 				patch.addedElements.forEach((entry) => {
 					const key = getOrAddKeyFromLookup(entry[0], state.elementTranslation);
-					patches.push({ op: "+", key, indices: entry[1] });
+					patchTransferObject.op.push("+");
+					patchTransferObject.key.push(key);
+					patchTransferObject.indices.push(entry[1]);
 				});
 
 				patch.removedElements.forEach((entry) => {
 					const key = getOrAddKeyFromLookup(entry[0], state.elementTranslation);
-					patches.push({ op: "-", key });
+					patchTransferObject.op.push("+");
+					patchTransferObject.key.push(key);
 				});
 
-				messageStore.send("sendMainTransferPatch", patches);
-				commit("updateMainTransferObject", patches);
+				messageStore.send("sendMainTransferPatch", patchTransferObject);
+				commit("updateMainTransferObject", patchTransferObject);
 
 				dispatch("sendGeneralTransferObject");
 			},
