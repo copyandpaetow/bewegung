@@ -1,8 +1,11 @@
-import { BewegungsOptions } from "../types";
+import { NormalizedCustomKeyframeEffect, WorkerState } from "../types";
 import { highestNumber } from "../shared/utils";
 
-export const calculateTotalRuntime = (options: BewegungsOptions[]) => {
-	const runtimes = options.map((option) => option.endTime!);
+export const updateTotalRuntime = (
+	state: WorkerState,
+	options: NormalizedCustomKeyframeEffect[]
+) => {
+	const runtimes = options.map((customKeyframeEffect) => customKeyframeEffect[2].endTime!);
 
-	return highestNumber(runtimes);
+	state.totalRuntime = Math.max(highestNumber(runtimes), state.totalRuntime);
 };

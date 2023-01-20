@@ -10,7 +10,7 @@ export const createAnimationsFromKeyframes = (
 
 	const defaultAnimations = createDefaultAnimation(
 		defaultKeyframes,
-		state.elementTranslation,
+		state.translation,
 		totalRuntime
 	);
 	const imageAnimations = createImageAnimation(imageKeyframes, state, totalRuntime);

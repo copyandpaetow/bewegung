@@ -2,8 +2,9 @@ import { MainState } from "../types";
 
 export const observeResizes = (state: MainState, callback: VoidFunction) => {
 	const RO = new WeakMap<HTMLElement, ResizeObserver>();
+	const { translation } = state;
 
-	state.elementTranslation.forEach((element) => {
+	translation.forEach((element) => {
 		RO.get(element)?.disconnect();
 		let firstTime = true;
 		const observer = new ResizeObserver(() => {
@@ -18,7 +19,7 @@ export const observeResizes = (state: MainState, callback: VoidFunction) => {
 	});
 
 	return () =>
-		state.elementTranslation.forEach((element) => {
+		translation.forEach((element) => {
 			RO.get(element)?.disconnect();
 		});
 };

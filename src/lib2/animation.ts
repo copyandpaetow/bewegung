@@ -1,17 +1,23 @@
 import { createAnimationsFromKeyframes } from "./main-thread/create-animations-from-keyframes";
-import { saveOriginalStyle } from "./main-thread/css-resets";
-import {
-	compareRootElements,
-	getGeneralTransferObject,
-} from "./main-thread/find-affected-elements";
-import { normalizeElements } from "./main-thread/normalize-elements";
-import { unifyPropStructure } from "./main-thread/normalize-props";
+import { getGeneralTransferObject } from "./main-thread/find-affected-elements";
 import { readDom } from "./main-thread/read-dom";
-import { getRootSelector, initialMainState, makePatchTransferObject } from "./main-thread/state";
-import { watchForChanges } from "./main-thread/watch-changes";
-import { getOrAddKeyFromLookup } from "./shared/element-translations";
-import { createMessageStore, createStore, getWorker } from "./shared/store";
-import { BewegungProps, MainMessages, MainSchema, WorkerMessages } from "./types";
+import {
+	getSelectors,
+	replaceTargetInputWithKeys,
+	setElementRelatedState,
+} from "./main-thread/update-state";
+import { removeElementsFromTranslation, watchForChanges } from "./main-thread/watch-changes";
+import { BidirectionalMap } from "./shared/element-translations";
+import { createMessageStore, getWorker } from "./shared/store";
+import { deferred } from "./shared/utils";
+import {
+	CustomKeyframeEffect,
+	MainMessages,
+	MainState,
+	ReactivityCallbacks,
+	Result,
+	WorkerMessages,
+} from "./types";
 /*
 TODOS:
  
@@ -22,13 +28,10 @@ TODOS:
 * in that case we would need to get their parents.parents... to help with the scale
 
 #refactor
-- turn every data that is send between main <--> worker into a transferObject
 - rethink the offset structure for the style entries. Finding entries with certain offsets is tedious.
-- to be somewhat side-effect free, the messageStore should be part of the stores state
 - check for custom properties
 - background images
 - prefer reduced motion
-? what if we allow to add/remove elements in the keyframes
 
 #bugs
 - if an animation which added images is paused and another animation is called, these images will get included and will have more images created for it
@@ -41,9 +44,6 @@ TODOS:
 - the MO callback needs to be throtteled differently => their callback arguments would need to be saved somewhere or they are lost
 - formatArraySyntax procudes wrong values when properties have mixed middle offsets but the same start and end values
 
-#reactivity performance 
-- create a patch from the generalTransferObject and only send that the second time
-
 
 # features
 - callbacks 
@@ -51,131 +51,65 @@ TODOS:
 
 */
 
+const initMainState = (): MainState => ({
+	root: new Map<HTMLElement, HTMLElement>(),
+	resets: new Map<HTMLElement, Map<string, string>>(),
+	translation: new BidirectionalMap<string, HTMLElement>(),
+});
+
 const allWorker = getWorker();
 
-export const getAnimations = (props: BewegungProps) => {
+export const Animations = (props: CustomKeyframeEffect[]) => {
+	let state = initMainState();
+	let done = deferred();
+
 	const messageStore = createMessageStore<MainMessages, WorkerMessages>(allWorker.current(), {
-		cache: {},
-		sendMainTransferObject({ reply }, mainTransferObject) {
-			reply("receiveMainState", mainTransferObject);
+		initState({ reply }, initialProps) {
+			const keyedProps = replaceTargetInputWithKeys(state, initialProps);
+			reply("receiveMainState", keyedProps);
+			setElementRelatedState(state, keyedProps);
+			reply("receiveGeneralState", getGeneralTransferObject(state));
 		},
-		sendMainTransferPatch({ reply }, patchTransferObject) {
-			reply("receiveMainStatePatches", patchTransferObject);
-		},
-		sendGeneralTransferObject({ reply }, generalTransferObject) {
-			reply("receiveGeneralState", generalTransferObject);
-		},
-		sendReadout({ reply }, readouts) {
+		async receiveAppliableKeyframes({ reply }, appliableKeyframes) {
+			const { changeProperties, keyframes } = appliableKeyframes;
+			const readouts = await readDom(keyframes, changeProperties, state);
 			reply("receiveReadouts", readouts);
 		},
-		sendRequestKeyframes({ reply }) {
-			reply("receiveKeyframeRequest");
-		},
-		receiveAppliableKeyframes(_, appliableKeyframes) {
-			store.dispatch("sendAppliableKeyframes", appliableKeyframes);
-		},
 		receiveConstructedKeyframes(_, constructedKeyframes) {
-			console.log(constructedKeyframes);
-			store.dispatch("sendKeyframes", constructedKeyframes);
+			done.resolve(createAnimationsFromKeyframes(state, constructedKeyframes));
 		},
 	});
 
-	const store = createStore<MainSchema>({
-		state: initialMainState(),
-		methods: {
-			setMainTransferObject({ state }, initialProps) {
-				const { mainTransferObject, elementRoots, elementResets, elementSelectors } = state;
-
-				unifyPropStructure(initialProps).forEach((entry, index) => {
-					const [targets, keyframes, options] = entry;
-
-					const root = getRootSelector(options);
-
-					elementSelectors[index] = typeof targets === "string" ? targets : "";
-					const htmlElements = normalizeElements(targets);
-
-					const elementKeys = htmlElements.map((element) => {
-						elementResets.set(element, saveOriginalStyle(element));
-						elementRoots.set(element, compareRootElements(root, elementRoots.get(element)));
-
-						return getOrAddKeyFromLookup(element, state.elementTranslation);
-					});
-
-					mainTransferObject._keys[index] = elementKeys;
-					mainTransferObject.keyframes[index] = keyframes;
-					mainTransferObject.options[index] = options;
-				});
-			},
-			updateMainTransferObject({ state }, patches) {
-				const { mainTransferObject, elementTranslation } = state;
-
-				patches.op.forEach((operation, index) => {
-					if (operation === "+") {
-						patches.indices[index].forEach((patchIndex) => {
-							mainTransferObject._keys[patchIndex].push(patches.key[index]);
-						});
-						return;
-					}
-					elementTranslation.delete(patches.key[index]);
-					mainTransferObject._keys.forEach((exisitingKeys) => {
-						const indexInExistingKeys = exisitingKeys.indexOf(patches.key[index]);
-						if (indexInExistingKeys === -1) {
-							return;
-						}
-						exisitingKeys.splice(indexInExistingKeys, 1);
-					});
-				});
-			},
-		},
-		actions: {
-			initStateFromProps({ dispatch, commit, state }, initialProps) {
-				commit("setMainTransferObject", initialProps);
-				messageStore.send("sendMainTransferObject", state.mainTransferObject);
-
-				dispatch("sendGeneralTransferObject");
-			},
-			patchMainState({ dispatch, commit, state }, patch) {
-				const patchTransferObject = makePatchTransferObject();
-
-				patch.addedElements.forEach((entry) => {
-					const key = getOrAddKeyFromLookup(entry[0], state.elementTranslation);
-					patchTransferObject.op.push("+");
-					patchTransferObject.key.push(key);
-					patchTransferObject.indices.push(entry[1]);
-				});
-
-				patch.removedElements.forEach((entry) => {
-					const key = getOrAddKeyFromLookup(entry[0], state.elementTranslation);
-					patchTransferObject.op.push("+");
-					patchTransferObject.key.push(key);
-				});
-
-				messageStore.send("sendMainTransferPatch", patchTransferObject);
-				commit("updateMainTransferObject", patchTransferObject);
-
-				dispatch("sendGeneralTransferObject");
-			},
-			async sendAppliableKeyframes({ state }, appliableKeyframes) {
-				const { changeProperties, keyframes } = appliableKeyframes;
-				const readouts = await readDom(keyframes, changeProperties, state);
-				messageStore.send("sendReadout", readouts);
-			},
-			sendKeyframes({ state }, constructedKeyframes) {
-				state.finishCallback(createAnimationsFromKeyframes(state, constructedKeyframes));
-			},
-			sendGeneralTransferObject({ state }) {
-				messageStore.send("sendGeneralTransferObject", getGeneralTransferObject(state));
-			},
-		},
-	});
-	store.dispatch("initStateFromProps", props);
+	messageStore.send("initState", props);
 
 	return {
-		getResults() {
-			return store.state.result;
+		results() {
+			return done.promise;
 		},
 		observe(before: VoidFunction, after: VoidFunction) {
-			return watchForChanges(store, messageStore, [before, after]);
+			const callbacks: ReactivityCallbacks = {
+				onMainElementChange() {
+					state = initMainState();
+					done = deferred();
+					messageStore.send("initState", props);
+				},
+				onSecondaryElementChange(removedElements: HTMLElement[]) {
+					done = deferred();
+					removeElementsFromTranslation(state, removedElements);
+					messageStore.reply("receiveGeneralState", getGeneralTransferObject(state));
+				},
+				onDimensionOrPositionChange() {
+					done = deferred();
+					messageStore.reply("receiveKeyframeRequest");
+				},
+				before,
+				after,
+			};
+
+			return watchForChanges(state, callbacks, getSelectors(props), done);
+		},
+		finish() {
+			messageStore.terminate();
 		},
 	};
 };

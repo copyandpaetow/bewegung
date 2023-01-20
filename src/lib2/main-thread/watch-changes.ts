@@ -1,45 +1,61 @@
-import { Context, MainMessages, MainSchema, MessageContext, WorkerMessages } from "../types";
-import { getGeneralTransferObject } from "./find-affected-elements";
+import { throttle } from "../shared/utils";
+import { Deferred, MainState, ReactivityCallbacks } from "../types";
 import { observerDimensions } from "./watch-dimensions";
 import { observeMutations } from "./watch-mutations";
 import { observeResizes } from "./watch-resizes";
 
-export const watchForChanges = (
-	store: Context<MainSchema>,
-	messageStore: MessageContext<MainMessages, WorkerMessages>,
-	callbacks: [VoidFunction, VoidFunction]
-) => {
-	let delayedCallback: NodeJS.Timeout | undefined;
-	const [before, after] = callbacks;
+export const removeElementsFromTranslation = (state: MainState, removedElements: HTMLElement[]) =>
+	removedElements.forEach((element) => state.translation.delete(element));
 
-	const throttledCallback = (callback: VoidFunction) => {
-		delayedCallback && clearTimeout(delayedCallback);
-		delayedCallback = setTimeout(() => {
-			unobserve();
-			before();
-			callback();
-			after();
-		}, 100);
+export const watchForChanges = (
+	state: MainState,
+	callbacks: ReactivityCallbacks,
+	selectors: string[],
+	done: Deferred
+) => {
+	const { resets } = state;
+	const {
+		onDimensionOrPositionChange,
+		before,
+		after,
+		onMainElementChange,
+		onSecondaryElementChange,
+	} = callbacks;
+	const throttledDimensionChange = throttle();
+	const prefixedCallback = async (callback: VoidFunction) => {
+		unobserve();
+		before();
+		callback();
+		await done.promise;
+		after();
 	};
 
-	const dimensionChange = () => messageStore.send("sendRequestKeyframes", undefined);
+	const dimensionChange = () =>
+		throttledDimensionChange.fn(async () => {
+			prefixedCallback(onDimensionOrPositionChange);
+		});
+	const unobserveRO = observeResizes(state, dimensionChange);
+	const unobserveIO = observerDimensions(state, dimensionChange);
 
-	const unobserveRO = observeResizes(store.state, () => throttledCallback(dimensionChange));
-	const unobserveIO = observerDimensions(store.state, () => throttledCallback(dimensionChange));
 	const unobserveMO = observeMutations(
-		store.state,
-		(changedElements) =>
-			//TODO: this would not work twice, since the other patch was not coming through.
-			//calculateMainStatePatches can be delayed though
-			throttledCallback(() => store.dispatch("patchMainState", changedElements)),
-		() =>
-			throttledCallback(() => {
-				dimensionChange();
-				messageStore.send("sendGeneralTransferObject", getGeneralTransferObject(store.state));
-			})
+		state,
+		selectors,
+		(addedElements: HTMLElement[], removedElements: HTMLElement[]) => {
+			const mainElementAffected = [...addedElements, ...removedElements].some((element) => {
+				if (resets.has(element)) {
+					prefixedCallback(onMainElementChange);
+				}
+			});
+
+			if (mainElementAffected) {
+				return;
+			}
+			prefixedCallback(() => onSecondaryElementChange(removedElements));
+		}
 	);
 
 	const unobserve = () => {
+		throttledDimensionChange.clear();
 		unobserveRO();
 		unobserveIO();
 		unobserveMO();

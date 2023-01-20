@@ -28,11 +28,11 @@ export const createImageAnimation = (
 ) => {
 	const animations: Animation[] = [];
 	const onStart: VoidFunction[] = [];
-	const { elementTranslation, elementRoots } = state;
+	const { translation, root } = state;
 
 	imageKeyframes.forEach((imageEntry, elementString) => {
 		const { wrapperKeyframes, wrapperStyle, placeholderStyle, keyframes, override } = imageEntry;
-		const domElement = elementTranslation.get(elementString) as HTMLImageElement;
+		const domElement = translation.get(elementString) as HTMLImageElement;
 		const originalStyle = domElement.style.cssText;
 
 		const animation = new Animation(
@@ -40,7 +40,7 @@ export const createImageAnimation = (
 		);
 		const placeholder = getPlaceholderElement(domElement, placeholderStyle);
 		const wrapper = getWrapperElement(wrapperStyle);
-		const root = elementRoots.get(domElement)!;
+		const currentRoot = root.get(domElement)!;
 		const nextSibling = domElement.nextElementSibling;
 		const parent = domElement.parentElement!;
 
@@ -63,7 +63,7 @@ export const createImageAnimation = (
 				width: "100%",
 			});
 			wrapper.appendChild(domElement);
-			root.appendChild(wrapper);
+			currentRoot.appendChild(wrapper);
 		});
 
 		const wrapperAnimation = new Animation(

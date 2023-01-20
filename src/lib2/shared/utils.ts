@@ -1,4 +1,4 @@
-import { ElementReadouts, ValueOf } from "../types";
+import { Deferred, ElementReadouts, Result, ValueOf } from "../types";
 
 export const highestNumber = (numbers: number[]) =>
 	numbers.reduce((largest, current) => Math.max(largest, current));
@@ -31,3 +31,28 @@ export const isElement = (node: Node): boolean => node instanceof HTMLElement;
 export const toArray = <MaybeArrayType>(
 	maybeArray: MaybeArrayType | MaybeArrayType[]
 ): MaybeArrayType[] => (Array.isArray(maybeArray) ? maybeArray : [maybeArray]);
+
+export const deferred = (): Deferred => {
+	let resolve = (value: Result | PromiseLike<Result>) => {};
+	const promise = new Promise<Result>((res) => (resolve = res));
+
+	return {
+		promise,
+		resolve,
+	};
+};
+
+export const throttle = () => {
+	let delayedCallback: NodeJS.Timeout | undefined;
+	const clear = () => delayedCallback && clearTimeout(delayedCallback);
+
+	return {
+		fn(callback: VoidFunction) {
+			clear();
+			delayedCallback = setTimeout(() => {
+				callback();
+			}, 100);
+		},
+		clear,
+	};
+};
