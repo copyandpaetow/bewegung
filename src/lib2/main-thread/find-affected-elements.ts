@@ -1,7 +1,6 @@
 import { getOrAddKeyFromLookup } from "../shared/element-translations";
-import { MainState } from "../types";
+import { EntryType, MainState } from "../types";
 import { getRatio } from "./read-dom-properties";
-import { makeGeneralTransferObject } from "./state";
 
 const DOM = {
 	parent(element: HTMLElement): HTMLElement {
@@ -75,23 +74,23 @@ const isTextNode = (element: HTMLElement) => {
 const isImage = (mainElement: HTMLElement) => (mainElement.tagName === "IMG" ? "image" : false);
 
 export const getGeneralTransferObject = (state: MainState) => {
-	const { elementTranslation, elementRoots, mainTransferObject } = state;
+	const { translation, root, resets } = state;
 
 	const affectedElementsMap = new Map<string, Set<string>>();
 	const elementConnections = new Map<string, HTMLElement[]>();
-	const generalTransferObject = makeGeneralTransferObject();
-	const mainElements = new Set(mainTransferObject._keys.flat());
 
-	mainElements.forEach((elementString) => {
-		const domElement = elementTranslation.get(elementString)!;
-		const rootElement = elementRoots.get(domElement)!;
+	const mainElements = new Set(resets.keys());
+
+	mainElements.forEach((domElement) => {
+		const elementString = translation.get(domElement)!;
+		const rootElement = root.get(domElement)!;
 
 		elementConnections.set(elementString, findAffectedDOMElements(domElement, rootElement));
 	});
 
 	elementConnections.forEach((secondaryDomElements, mainElementString) => {
 		secondaryDomElements.forEach((secondaryDomElement) => {
-			const secondaryElementString = getOrAddKeyFromLookup(secondaryDomElement, elementTranslation);
+			const secondaryElementString = getOrAddKeyFromLookup(secondaryDomElement, translation);
 
 			affectedElementsMap.set(
 				secondaryElementString,
@@ -102,23 +101,36 @@ export const getGeneralTransferObject = (state: MainState) => {
 		});
 	});
 
-	elementTranslation.forEach((domElement, elementString) => {
+	const rootString = new Map<string, string>();
+	const parent = new Map<string, string>();
+	const affectedBy = new Map<string, string[]>();
+	const ratio = new Map<string, number>();
+	const type = new Map<string, EntryType>();
+
+	translation.forEach((domElement, elementString) => {
 		const elementType = isImage(domElement) || isTextNode(domElement) || "";
 		const affectedByMainElements = affectedElementsMap.get(elementString)!;
 
 		const rootElement = getRootElement(
 			Array.from(
 				affectedByMainElements,
-				(mainElementString: string) => elementRoots.get(elementTranslation.get(mainElementString)!)!
+				(mainElementString: string) => root.get(translation.get(mainElementString)!)!
 			)
 		);
-		elementRoots.set(domElement, rootElement);
-		generalTransferObject.root.push(elementTranslation.get(rootElement)!);
-		generalTransferObject.parent.push(elementTranslation.get(domElement.parentElement!)!);
-		generalTransferObject.type.push(elementType);
-		generalTransferObject.affectedBy.push([...affectedByMainElements]);
-		generalTransferObject.ratio.push(getRatio(domElement));
-		generalTransferObject._keys.push(elementString);
+		root.set(domElement, rootElement);
+
+		rootString.set(elementString, translation.get(rootElement)!);
+		parent.set(elementString, translation.get(domElement.parentElement!)!);
+		type.set(elementString, elementType);
+		affectedBy.set(elementString, [...affectedByMainElements]);
+		ratio.set(elementString, getRatio(domElement));
 	});
-	return generalTransferObject;
+
+	return {
+		root: rootString,
+		parent,
+		type,
+		affectedBy,
+		ratio,
+	};
 };

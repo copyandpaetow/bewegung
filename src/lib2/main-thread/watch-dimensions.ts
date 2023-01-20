@@ -16,12 +16,12 @@ const calculateRootMargin = (rootElement: HTMLElement, mainElement: HTMLElement)
 };
 
 export const observerDimensions = (state: MainState, callback: VoidFunction) => {
-	const { elementTranslation, elementRoots } = state;
+	const { translation, root } = state;
 	const IO = new WeakMap<HTMLElement, IntersectionObserver>();
 
-	elementTranslation.forEach((element) => {
+	translation.forEach((element) => {
 		IO.get(element)?.disconnect();
-		const root = elementRoots.get(element)!;
+		const rootElement = root.get(element)!;
 
 		let firstTime = true;
 		const observer = new IntersectionObserver(
@@ -33,9 +33,9 @@ export const observerDimensions = (state: MainState, callback: VoidFunction) => 
 				callback();
 			},
 			{
-				root,
+				root: rootElement,
 				threshold: [0.2, 0.4, 0.6, 0.8, 1],
-				rootMargin: calculateRootMargin(root, element),
+				rootMargin: calculateRootMargin(rootElement, element),
 			}
 		);
 
@@ -43,7 +43,7 @@ export const observerDimensions = (state: MainState, callback: VoidFunction) => 
 		IO.set(element, observer);
 	});
 	return () =>
-		state.elementTranslation.forEach((element) => {
+		state.translation.forEach((element) => {
 			IO.get(element)?.disconnect();
 		});
 };

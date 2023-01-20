@@ -1,80 +1,65 @@
 import { isElement } from "../shared/utils";
-import { ChangedElements, FullMOCallback, MainState } from "../types";
+import { MainState } from "../types";
 
-const handleElementAdditon =
-	(state: MainState, full: FullMOCallback, partial: VoidFunction) =>
-	(mutations: MutationRecord[]) => {
-		const addedElements: ChangedElements = [];
-		const removedElements: ChangedElements = [];
+const getChangedElements = (state: MainState, selectors: string[], mutations: MutationRecord[]) => {
+	const { translation, root } = state;
+	const addedElements: HTMLElement[] = [];
+	const removedElements: HTMLElement[] = [];
 
-		let secondaryStateAffected = false;
-		mutations
-			.flatMap((mutation) => Array.from(mutation.addedNodes))
-			.filter(isElement)
-			//@ts-expect-error ts doesnt recognize the filtering
-			.forEach((element: HTMLElement) => {
-				const indices = state.elementSelectors.flatMap((selector, index) => {
-					if (!element.matches(selector)) {
-						return [];
-					}
-					return index;
-				});
-				if (indices.length) {
-					addedElements.push([element, indices]);
+	mutations
+		.flatMap((mutation) => Array.from(mutation.addedNodes))
+		.filter(isElement)
+		//@ts-expect-error ts doesnt recognize the filtering
+		.forEach((element: HTMLElement) => {
+			selectors.forEach((selector) => {
+				if (!element.matches(selector)) {
 					return;
 				}
-
-				state.elementRoots.forEach((rootElement) => {
-					if (!rootElement.contains(element)) {
-						return;
-					}
-					secondaryStateAffected = true;
-				});
+				addedElements.push(element);
 			});
 
-		mutations
-			.flatMap((mutation) => Array.from(mutation.removedNodes))
-			.filter(isElement)
-			//@ts-expect-error ts doesnt recognize the filtering
-			.forEach((element: HTMLElement) => {
-				if (!state.elementTranslation.has(element)) {
+			root.forEach((rootElement) => {
+				if (!rootElement.contains(element)) {
 					return;
 				}
-				const elementString = state.elementTranslation.get(element)!;
-
-				const indices = state.mainTransferObject._keys.flatMap((keys, index) => {
-					if (!keys.includes(elementString)) {
-						return [];
-					}
-					return index;
-				});
-				if (indices.length) {
-					removedElements.push([element, indices]);
-					return;
-				}
-
-				secondaryStateAffected = true;
+				addedElements.push(element);
 			});
+		});
 
-		if (addedElements.length || removedElements.length) {
-			full({ addedElements, removedElements });
+	mutations
+		.flatMap((mutation) => Array.from(mutation.removedNodes))
+		.filter(isElement)
+		//@ts-expect-error ts doesnt recognize the filtering
+		.forEach((element: HTMLElement) => {
+			if (!translation.has(element)) {
+				return;
+			}
+			removedElements.push(element);
+		});
+
+	return { addedElements, removedElements };
+};
+
+export const observeMutations = (
+	state: MainState,
+	selectors: string[],
+	callback: (addedElements: HTMLElement[], removedElements: HTMLElement[]) => void
+) => {
+	const observer = new MutationObserver((mutations: MutationRecord[]) => {
+		const { addedElements, removedElements } = getChangedElements(state, selectors, mutations);
+
+		if (!addedElements.length && !removedElements.length) {
 			return;
 		}
 
-		if (secondaryStateAffected) {
-			partial();
-		}
-	};
-
-export const observeMutations = (state: MainState, full: FullMOCallback, partial: VoidFunction) => {
-	const callback: MutationCallback = handleElementAdditon(state, full, partial);
+		callback(addedElements, removedElements);
+	});
+	const rootElement = document.body;
 	const options: MutationObserverInit = {
 		childList: true,
 		subtree: true,
 	};
-	const rootElement = document.body;
 
-	const observer = new MutationObserver(callback);
 	observer.observe(rootElement, options);
 
 	return () => {

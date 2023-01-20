@@ -1,10 +1,10 @@
-import { getAnimations } from "./animation";
-import { createStateMachine } from "./fsm";
-import { AllPlayStates, BewegungAPI, BewegungProps, Result, StateMachine } from "./types";
+import { Animations } from "./animation";
+import { unifyPropStructure } from "./main-thread/normalize-props";
+import { AllPlayStates, BewegungAPI, BewegungProps, Result } from "./types";
 
 export class Bewegung implements BewegungAPI {
 	#now: number;
-	#state: { getResults: () => Promise<Result> };
+	#state: { results: () => Promise<Result> };
 	#playState: {
 		current(): AllPlayStates;
 		nextState(nextState: AllPlayStates): void;
@@ -12,7 +12,7 @@ export class Bewegung implements BewegungAPI {
 
 	constructor(...bewegungProps: BewegungProps) {
 		this.#now = Date.now();
-		this.#state = getAnimations(bewegungProps);
+		this.#state = Animations(unifyPropStructure(bewegungProps));
 		//this.#playState = createStateMachine(this.#state.getResults());
 	}
 
@@ -33,7 +33,7 @@ export class Bewegung implements BewegungAPI {
 
 	play() {
 		const awaitAnimations = async () => {
-			const { animations, onStart } = await this.#state.getResults();
+			const { animations, onStart } = await this.#state.results();
 
 			onStart.forEach((cb) => cb());
 			animations.forEach((animation) => {

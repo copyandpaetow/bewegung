@@ -10,22 +10,19 @@ export const readDom = async (
 	changeProperties: CssRuleName[],
 	state: MainState
 ) => {
-	const { elementResets, elementTranslation } = state;
+	const { resets, translation } = state;
 	const readouts = new Map<string, ElementReadouts>();
-	let offset;
+	const offset = elementChanges.values().next().value.offset;
 
 	await nextBrowserRender();
 	elementChanges.forEach((styleChange, elementString) => {
-		const domElement = elementTranslation.get(elementString)!;
+		const domElement = translation.get(elementString)!;
 		applyCSSStyles(domElement, styleChange);
-		if (offset === undefined) {
-			offset = styleChange.offset;
-		}
 	});
-	elementTranslation.forEach((domElement, elementString) => {
+	translation.forEach((domElement, elementString) => {
 		readouts.set(elementString, getCalculations(domElement, changeProperties, offset));
 	});
-	elementResets.forEach((reset, domElement) => {
+	resets.forEach((reset, domElement) => {
 		restoreOriginalStyle(domElement, reset);
 	});
 

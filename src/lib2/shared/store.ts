@@ -1,4 +1,4 @@
-import { Context, DefaultMessage, DefaultSchema, MessageContext } from "../types";
+import { DefaultMessage, MessageContext } from "../types";
 
 const spawnWorker = () =>
 	new Worker(new URL("../worker-thread/worker.ts", import.meta.url), {
@@ -17,20 +17,6 @@ export const getWorker = () => {
 			return current;
 		},
 	};
-};
-
-export const createStore = <Schema extends DefaultSchema>(schema: Schema) => {
-	const context: Context<Schema> = {
-		state: schema.state,
-		commit(method, payload) {
-			schema.methods[method]?.(context, payload);
-		},
-		dispatch(action, payload) {
-			schema.actions[action]?.(context, payload);
-		},
-	};
-
-	return context;
 };
 
 export const createMessageStore = <Sender extends DefaultMessage, Receiver extends DefaultMessage>(
@@ -69,7 +55,6 @@ export const createMessageStore = <Sender extends DefaultMessage, Receiver exten
 		send(replyMethod, replyMethodArguments) {
 			schema[replyMethod]?.(context, replyMethodArguments);
 		},
-		cache: schema.cache,
 	};
 
 	return context;

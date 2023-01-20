@@ -48,6 +48,18 @@ export type CustomKeyframeEffect = [
 	options: EveryOptionSyntax
 ];
 
+export type KeyedCustomKeyframeEffect = [
+	target: string[],
+	keyframes: EveryKeyframeSyntax,
+	options: EveryOptionSyntax
+];
+
+export type NormalizedCustomKeyframeEffect = [
+	target: string[],
+	keyframes: CustomKeyframe[],
+	options: BewegungsOptions
+];
+
 export type FillImplicitKeyframesOverload = {
 	(keyframes: Keyframe[]): Keyframe[];
 	(keyframes: CustomKeyframe[]): CustomKeyframe[];
@@ -125,7 +137,6 @@ export type Selector = {
 export interface WorkerState {
 	keyframes: Map<string, CustomKeyframe[]>;
 	options: Map<string, BewegungsOptions[]>;
-	selectors: Map<string, [CustomKeyframe[], BewegungsOptions]>;
 	totalRuntime: number;
 	changeTimings: number[];
 	changeProperties: CssRuleName[];
@@ -165,82 +176,12 @@ export interface DefaultKeyframes {
 	override: CustomKeyframe;
 }
 
-export type MainTransferObject = {
-	_keys: string[][];
-	keyframes: EveryKeyframeSyntax[];
-	options: EveryOptionSyntax[];
-};
-
-export type MainStateObject = {
-	_keys: string[][];
-	keyframes: CustomKeyframe[][];
-	options: BewegungsOptions[];
-};
-
-export type GeneralTransferObject = {
-	_keys: string[];
-	root: string[];
-	parent: string[];
-	type: EntryType[];
-	affectedBy: string[][];
-	ratio: number[];
-};
-
-export type PatchTransferObject = {
-	op: ("+" | "-")[];
-	key: string[];
-	indices: number[][];
-};
-
-export type ExpandEntry = {
-	(allTargets: string[][], entry: CustomKeyframe[][]): Map<string, CustomKeyframe[]>;
-	(allTargets: string[][], entry: BewegungsOptions[]): Map<string, BewegungsOptions[]>;
-	(allTargets: string[][], entry: [CustomKeyframe[][], BewegungsOptions[]]): Map<
-		string,
-		Selector[]
-	>;
-};
-
-export type WorkerActions = {
-	updateMainState(context: Context<WorkerSchema>, mainTransferObject: MainStateObject): void;
-	updateGeneralState(
-		context: Context<WorkerSchema>,
-		generalTransferObject: GeneralTransferObject
-	): void;
-	updateRemainingKeyframes(context: Context<WorkerSchema>): void;
-	updateReadouts(context: Context<WorkerSchema>, readouts: Map<string, ElementReadouts>): void;
-	requestKeyframes(context: Context<WorkerSchema>): void;
-	sendCurrentKeyframe(context: Context<WorkerSchema>): void;
-};
-
-export type WorkerMethods = {
-	setMainState(context: Context<WorkerSchema>, transferObject: MainStateObject): void;
-	clearState(context: Context<WorkerSchema>): void;
-	updateRemainingKeyframes(context: Context<WorkerSchema>, payload: number): void;
-	setReadouts(context: Context<WorkerSchema>, transferObject: Map<string, ElementReadouts>): void;
-	setGeneralState(context: Context<WorkerSchema>, transferObject: GeneralTransferObject): void;
-};
-
-export type WorkerSchema = {
-	state: WorkerState;
-	methods: WorkerMethods;
-	actions: WorkerActions;
-};
-
 export type MainState = {
-	elementSelectors: string[];
-	elementResets: Map<HTMLElement, Map<string, string>>;
-	elementRoots: Map<HTMLElement, HTMLElement>;
-	elementTranslation: BidirectionalMap<string, HTMLElement>;
-	mainTransferObject: MainTransferObject;
-	result: Promise<Result>;
-	finishCallback: (value: Result | PromiseLike<Result>) => void;
+	resets: Map<HTMLElement, Map<string, string>>;
+	root: Map<HTMLElement, HTMLElement>;
+	translation: BidirectionalMap<string, HTMLElement>;
 };
 
-export type MainMethods = {
-	setMainTransferObject(context: Context<MainSchema>, payload: BewegungProps): void;
-	updateMainTransferObject(context: Context<MainSchema>, patches: PatchTransferObject): void;
-};
 export type ResultingKeyframes = [Map<string, ImageState>, Map<string, DefaultKeyframes>, number];
 
 type AppliableKeyframes = {
@@ -249,54 +190,21 @@ type AppliableKeyframes = {
 	keyframes: Map<string, CustomKeyframe>;
 };
 
-type MainTransferObjectUpdates = {
-	addedElements: [HTMLElement, number[]][];
-	removedElements: [HTMLElement, number[]][];
-};
-
-export type MainActions = {
-	initStateFromProps(context: Context<MainSchema>, payload: BewegungProps): void;
-	patchMainState(context: Context<MainSchema>, payload: MainTransferObjectUpdates): void;
-	sendAppliableKeyframes(context: Context<MainSchema>, payload: AppliableKeyframes): Promise<void>;
-	sendKeyframes(context: Context<MainSchema>, payload: ResultingKeyframes): void;
-	sendGeneralTransferObject(context: Context<MainSchema>): void;
-};
-
-export type MainSchema = {
-	state: MainState;
-	methods: MainMethods;
-	actions: MainActions;
-};
-
-export type DefaultSchema = Record<"actions" | "methods" | "state", any>;
-
-export type Context<Schema extends DefaultSchema> = {
-	state: Schema["state"];
-	commit(method: keyof Schema["methods"], payload?: any): void;
-	dispatch(action: keyof Schema["actions"], payload?: any): void;
+export type GeneralTransferables = {
+	affectedBy: Map<string, string[]>;
+	parent: Map<string, string>;
+	root: Map<string, string>;
+	type: Map<string, EntryType>;
+	ratio: Map<string, number>;
 };
 
 export type DefaultMessage = Record<string, any>;
 
 export type MainMessages = {
-	cache: {};
-	sendMainTransferObject(
+	initState(
 		context: MessageContext<MainMessages, WorkerMessages>,
-		mainTransferObject: MainTransferObject
+		initialProps: CustomKeyframeEffect[]
 	): void;
-	sendMainTransferPatch(
-		context: MessageContext<MainMessages, WorkerMessages>,
-		patches: PatchTransferObject
-	): void;
-	sendGeneralTransferObject(
-		context: MessageContext<MainMessages, WorkerMessages>,
-		generalTransferObject: GeneralTransferObject
-	): void;
-	sendReadout(
-		context: MessageContext<MainMessages, WorkerMessages>,
-		readouts: Map<string, ElementReadouts>
-	): void;
-	sendRequestKeyframes(context: MessageContext<MainMessages, WorkerMessages>): void;
 	receiveAppliableKeyframes(
 		context: MessageContext<MainMessages, WorkerMessages>,
 		AppliableKeyframes: AppliableKeyframes
@@ -308,28 +216,17 @@ export type MainMessages = {
 };
 
 export type WorkerMessages = {
-	cache: {
-		mainState: MainTransferObject | null;
-	};
-	replyConstructedKeyframes(
-		context: MessageContext<WorkerMessages, MainMessages>,
-		constructedKeyframes: ResultingKeyframes
-	): void;
 	replyAppliableKeyframes(
 		context: MessageContext<WorkerMessages, MainMessages>,
 		appliableKeyframes: AppliableKeyframes
 	): void;
 	receiveMainState(
 		context: MessageContext<WorkerMessages, MainMessages>,
-		mainState: MainTransferObject
-	): void;
-	receiveMainStatePatches(
-		context: MessageContext<WorkerMessages, MainMessages>,
-		patches: PatchTransferObject
+		mainState: KeyedCustomKeyframeEffect[]
 	): void;
 	receiveGeneralState(
 		context: MessageContext<WorkerMessages, MainMessages>,
-		generalState: GeneralTransferObject
+		generalState: GeneralTransferables
 	): void;
 	receiveReadouts(
 		context: MessageContext<WorkerMessages, MainMessages>,
@@ -342,19 +239,21 @@ export type MessageContext<Sender, Receiver> = {
 	reply(queryMethodListener: keyof Receiver, queryMethodArguments?: any): void;
 	send(queryMethodListener: keyof Sender, queryMethodArguments?: any): void;
 	terminate(): void;
-	//@ts-expect-error
-	cache: Sender["cache"];
 };
 
 type ExtendedPlayStates = "scrolling" | "reversing";
 export type AllPlayStates = AnimationPlayState | ExtendedPlayStates;
 export type StateMachine = Record<AllPlayStates, Partial<Record<AllPlayStates, VoidFunction>>>;
 
-export type ChangedElements = [HTMLElement, number[]][];
-export type FullMOCallback = ({
-	addedElements,
-	removedElements,
-}: {
-	addedElements: ChangedElements;
-	removedElements: ChangedElements;
-}) => void;
+export type ReactivityCallbacks = {
+	onMainElementChange(): void;
+	onSecondaryElementChange(removedElements: HTMLElement[]): void;
+	onDimensionOrPositionChange(): void;
+	before: VoidFunction;
+	after: VoidFunction;
+};
+
+export type Deferred = {
+	promise: Promise<Result>;
+	resolve: (value: Result | PromiseLike<Result>) => void;
+};
