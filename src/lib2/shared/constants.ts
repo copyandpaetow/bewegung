@@ -33,7 +33,7 @@ export const defaultImageStyles: Partial<CSSStyleDeclaration> = {
 	imageOrientation: "initial",
 	imageRendering: "initial",
 	inset: "initial",
-	height: "initial",
+	height: "100%",
 	maxHeight: "initial",
 	maxWidth: "initial",
 	minHeight: "initial",
@@ -44,5 +44,5 @@ export const defaultImageStyles: Partial<CSSStyleDeclaration> = {
 	pointerEvents: "none",
 	position: "initial",
 	willChange: "initial",
-	width: "initial",
+	width: "100%",
 };

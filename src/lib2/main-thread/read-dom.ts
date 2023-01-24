@@ -1,21 +1,19 @@
-import { CssRuleName, CustomKeyframe, ElementReadouts, MainState } from "../types";
+import { AppliableKeyframes, ElementReadouts, MainState } from "../types";
 import { applyCSSStyles } from "./apply-styles";
 import { restoreOriginalStyle } from "./css-resets";
 import { getCalculations } from "./read-dom-properties";
 
 const nextBrowserRender = () => new Promise((resolve) => requestAnimationFrame(resolve));
 
-export const readDom = async (
-	elementChanges: Map<string, CustomKeyframe>,
-	changeProperties: CssRuleName[],
-	state: MainState
-) => {
+export const readDom = async (appliableKeyframes: AppliableKeyframes, state: MainState) => {
 	const { resets, translation } = state;
+	const { keyframes, changeProperties } = appliableKeyframes;
 	const readouts = new Map<string, ElementReadouts>();
-	const offset = elementChanges.values().next().value.offset;
+
+	const offset = keyframes.values().next().value.offset;
 
 	await nextBrowserRender();
-	elementChanges.forEach((styleChange, elementString) => {
+	keyframes.forEach((styleChange, elementString) => {
 		const domElement = translation.get(elementString)!;
 		applyCSSStyles(domElement, styleChange);
 	});

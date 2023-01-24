@@ -9,46 +9,45 @@ import {
 import { removeElementsFromTranslation, watchForChanges } from "./main-thread/watch-changes";
 import { BidirectionalMap } from "./shared/element-translations";
 import { createMessageStore, getWorker } from "./shared/store";
-import { deferred } from "./shared/utils";
+import { deferred, task } from "./shared/utils";
 import {
 	CustomKeyframeEffect,
 	MainMessages,
 	MainState,
 	ReactivityCallbacks,
-	Result,
 	WorkerMessages,
 } from "./types";
 /*
 TODOS:
  
 # performance
-- maybe a "task" message loop could help to break up larger functions (only on the main thread)
-- rethink filtering. Maybe remove elements with all the same keyframes? Or all the elements are "translate(0,0) scale(0,0)"
-? because some elements dont change but are affected from their parents and therefor influence their children
-* in that case we would need to get their parents.parents... to help with the scale
+- bigger functions can be split by adding a task between 
+? how does this behave on lower fps?
 
 #refactor
 - rethink the offset structure for the style entries. Finding entries with certain offsets is tedious.
-- check for custom properties
-- background images
-- prefer reduced motion
+- unify the order of function parameters, especially the state, should it be first or last?
 
 #bugs
+- sometimes the readouts for every offset are identical
+? is something wroong with the readout?
 - if an animation which added images is paused and another animation is called, these images will get included and will have more images created for it
-- all the main elements are also included in the GTO
+=> animations should have an ID, or a data-key to prevent double usage
+- all the main elements are also included in the affectedElement State
+? it would make sense that even main elements are affected by other easings but should their easing take priority?
 - if we scroll down far enough the translate values are wrong
 - a starting delay combined with a value that changes on offset 0 behaves wrongly => the change should be instantiously but it is a transition
 - shrinking elements distort text elements
 - clip-path for display none images doesnt show the border radius anymore
-- the store.ts store is not perfectly typed
-- the MO callback needs to be throtteled differently => their callback arguments would need to be saved somewhere or they are lost
 - formatArraySyntax procudes wrong values when properties have mixed middle offsets but the same start and end values
 
 
 # features
 - callbacks 
 - allow usage of elements as target which are not currently in the dom. The Element in question will can get appended in the dom (or deleted)
-
+- check for custom properties
+- background images
+- prefer reduced motion
 */
 
 const initMainState = (): MainState => ({
@@ -64,15 +63,15 @@ export const Animations = (props: CustomKeyframeEffect[]) => {
 	let done = deferred();
 
 	const messageStore = createMessageStore<MainMessages, WorkerMessages>(allWorker.current(), {
-		initState({ reply }, initialProps) {
+		async initState({ reply }, initialProps) {
 			const keyedProps = replaceTargetInputWithKeys(state, initialProps);
 			reply("receiveMainState", keyedProps);
 			setElementRelatedState(state, keyedProps);
+			await task();
 			reply("receiveGeneralState", getGeneralTransferObject(state));
 		},
 		async receiveAppliableKeyframes({ reply }, appliableKeyframes) {
-			const { changeProperties, keyframes } = appliableKeyframes;
-			const readouts = await readDom(keyframes, changeProperties, state);
+			const readouts = await readDom(appliableKeyframes, state);
 			reply("receiveReadouts", readouts);
 		},
 		receiveConstructedKeyframes(_, constructedKeyframes) {

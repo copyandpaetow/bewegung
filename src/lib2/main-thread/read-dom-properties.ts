@@ -8,7 +8,7 @@ export const getRatio = (domElement: HTMLElement): number =>
 
 export const getCalculations = (
 	element: HTMLElement,
-	changeProperties: CssRuleName[],
+	changeProperties: Set<CssRuleName>,
 	timing: number
 ): ElementReadouts => {
 	const { top, left, width, height } = element.getBoundingClientRect();

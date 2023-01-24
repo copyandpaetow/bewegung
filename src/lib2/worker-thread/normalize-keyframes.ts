@@ -12,8 +12,6 @@ export const updateOffsets = (
 		throw new Error("cant calculate with Infinity");
 	}
 
-	console.log({ keyframes });
-
 	const updatedFrames: CustomKeyframe[] = [];
 	const reversedEntry: CustomKeyframe[] = [...keyframes].reverse();
 
@@ -45,9 +43,11 @@ export const fillImplicitKeyframes: FillImplicitKeyframesOverload = (keyframes: 
 	const lastKeyframe = updatedKeyframes.at(-1)!;
 
 	if (firstKeyframe.offset !== 0) {
+		//updatedKeyframes.unshift({ ...firstKeyframe, offset: 0 });
 		updatedKeyframes.unshift({ offset: 0 });
 	}
 	if (lastKeyframe.offset !== 1) {
+		//updatedKeyframes.push({ ...lastKeyframe, offset: 1 });
 		updatedKeyframes.push({ offset: 1 });
 	}
 

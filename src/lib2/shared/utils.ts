@@ -14,9 +14,9 @@ export const isEntryVisible = (entry: ElementReadouts) =>
 
 export const checkForPositionStatic = (entry: ElementReadouts) => entry.position === "static";
 
-export const compareOffsetObjects = <Value>(
-	a: Record<string, Value>,
-	b: Record<string, Value>
+export const offsetObjectsAreEqual = <Value extends Record<string, any>>(
+	a: Value,
+	b: Value
 ): boolean =>
 	Object.entries(a).every(([key, value]) => {
 		if (key === "offset") {
@@ -56,3 +56,20 @@ export const throttle = () => {
 		clear,
 	};
 };
+
+const { port1, port2 } = new MessageChannel();
+port2.start();
+
+export const task = () =>
+	new Promise<void>((resolve) => {
+		const uid = Math.random();
+		const onMessage = (event: MessageEvent<number>) => {
+			if (event.data !== uid) {
+				return;
+			}
+			port2.removeEventListener("message", onMessage);
+			resolve();
+		};
+		port2.addEventListener("message", onMessage);
+		port1.postMessage(uid);
+	});
