@@ -59,8 +59,6 @@ export const createImageAnimation = (
 			applyStyleObject(domElement, {
 				...defaultImageStyles,
 				...override,
-				height: "100%",
-				width: "100%",
 			});
 			wrapper.appendChild(domElement);
 			currentRoot.appendChild(wrapper);

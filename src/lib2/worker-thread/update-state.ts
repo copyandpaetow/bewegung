@@ -1,4 +1,13 @@
-import { WorkerState, KeyedCustomKeyframeEffect, NormalizedCustomKeyframeEffect } from "../types";
+import { defaultChangeProperties } from "../shared/constants";
+import {
+	WorkerState,
+	KeyedCustomKeyframeEffect,
+	NormalizedCustomKeyframeEffect,
+	CustomKeyframe,
+	BewegungsOptions,
+	EntryType,
+	ElementReadouts,
+} from "../types";
 import {
 	updateChangeTimings,
 	updateChangeProperties,
@@ -8,6 +17,16 @@ import { updateTotalRuntime } from "./calculate-runtime";
 import { unifyKeyframeStructure } from "./normalize-keyframe-structure";
 import { fillImplicitKeyframes, updateOffsets } from "./normalize-keyframes";
 import { normalizeOptions } from "./normalize-options";
+
+const getOtherStateRelatedEntries = () => ({
+	root: new Map<string, string>(),
+	parent: new Map<string, string>(),
+	affectedBy: new Map<string, string[]>(),
+	ratio: new Map<string, number>(),
+	type: new Map<string, EntryType>(),
+	overrides: new Map<string, Partial<CSSStyleDeclaration>>(),
+	readouts: new Map<string, ElementReadouts[]>(),
+});
 
 const normalizeTransferables = ([
 	keys,
@@ -20,18 +39,18 @@ const normalizeTransferables = ([
 	return [keys, normalizedKeyframes, normalizedOptions];
 };
 
-export const setMainState = (
-	state: WorkerState,
-	mainTransferables: KeyedCustomKeyframeEffect[]
-) => {
+export const setMainState = (mainTransferables: KeyedCustomKeyframeEffect[]): WorkerState => {
 	const normalizedTransferables = mainTransferables.map(normalizeTransferables);
-	updateTotalRuntime(state, normalizedTransferables);
+	const keyframes = new Map<string, CustomKeyframe[]>();
+	const options = new Map<string, BewegungsOptions[]>();
+	const changeProperties = new Set(defaultChangeProperties);
+	const changeTimings = new Set([0, 1]);
+	const totalRuntime = updateTotalRuntime(normalizedTransferables);
 
 	normalizedTransferables.forEach(([keys, keyframeEntry, optionEntry]) => {
-		const { keyframes, options } = state;
-		const updatedKeyframes = updateOffsets(keyframeEntry, optionEntry, state.totalRuntime);
-		updateChangeTimings(state, updatedKeyframes);
-		updateChangeProperties(state, updatedKeyframes);
+		const updatedKeyframes = updateOffsets(keyframeEntry, optionEntry, totalRuntime);
+		updateChangeTimings(changeTimings, updatedKeyframes);
+		updateChangeProperties(changeProperties, updatedKeyframes);
 
 		keys.forEach((key) => {
 			keyframes.set(key, (keyframes.get(key) ?? []).concat(updatedKeyframes));
@@ -39,6 +58,15 @@ export const setMainState = (
 		});
 	});
 
-	state.appliableKeyframes = calculateAppliableKeyframes(state.keyframes, state.changeTimings);
-	state.remainingKeyframes = state.appliableKeyframes.length;
+	const sortedChangeTimings = Array.from(changeTimings).sort((a, b) => a - b);
+	const appliableKeyframes = calculateAppliableKeyframes(keyframes, sortedChangeTimings);
+
+	return {
+		options,
+		appliableKeyframes,
+		totalRuntime,
+		changeProperties: changeProperties,
+		changeTimings: sortedChangeTimings,
+		...getOtherStateRelatedEntries(),
+	};
 };

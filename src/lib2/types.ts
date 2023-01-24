@@ -135,19 +135,18 @@ export type Selector = {
 };
 
 export interface WorkerState {
-	keyframes: Map<string, CustomKeyframe[]>;
 	options: Map<string, BewegungsOptions[]>;
 	totalRuntime: number;
 	changeTimings: number[];
-	changeProperties: CssRuleName[];
-	appliableKeyframes: Map<string, CustomKeyframe>[];
-	remainingKeyframes: number;
+	changeProperties: Set<CssRuleName>;
+	appliableKeyframes: Map<number, Map<string, CustomKeyframe>>;
 	readouts: Map<string, ElementReadouts[]>;
 	affectedBy: Map<string, string[]>;
 	parent: Map<string, string>;
 	root: Map<string, string>;
 	type: Map<string, EntryType>;
 	ratio: Map<string, number>;
+	overrides: Map<string, Partial<CSSStyleDeclaration>>;
 }
 
 export interface ImageState {
@@ -184,9 +183,8 @@ export type MainState = {
 
 export type ResultingKeyframes = [Map<string, ImageState>, Map<string, DefaultKeyframes>, number];
 
-type AppliableKeyframes = {
-	done: boolean;
-	changeProperties: CssRuleName[];
+export type AppliableKeyframes = {
+	changeProperties: Set<CssRuleName>;
 	keyframes: Map<string, CustomKeyframe>;
 };
 

@@ -1,11 +1,8 @@
-import { NormalizedCustomKeyframeEffect, WorkerState } from "../types";
 import { highestNumber } from "../shared/utils";
+import { NormalizedCustomKeyframeEffect } from "../types";
 
-export const updateTotalRuntime = (
-	state: WorkerState,
-	options: NormalizedCustomKeyframeEffect[]
-) => {
+export const updateTotalRuntime = (options: NormalizedCustomKeyframeEffect[]) => {
 	const runtimes = options.map((customKeyframeEffect) => customKeyframeEffect[2].endTime!);
 
-	state.totalRuntime = Math.max(highestNumber(runtimes), state.totalRuntime);
+	return highestNumber(runtimes);
 };
