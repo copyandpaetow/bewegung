@@ -1,3 +1,5 @@
+import { emptyImageSrc } from "../shared/constants";
+
 export const saveOriginalStyle = (element: HTMLElement) => {
 	const allAttributes = new Map<string, string>([["style", ""]]);
 	element.getAttributeNames().forEach((attribute) => {
@@ -28,4 +30,11 @@ export const restoreOriginalStyle = (
 	currentAttributes.forEach((attribute) => {
 		element.removeAttribute(attribute);
 	});
+};
+
+export const setImageAttributes = (element: HTMLImageElement, relatedElement: HTMLElement) => {
+	relatedElement.getAttributeNames().forEach((attribute) => {
+		element.setAttribute(attribute, relatedElement.getAttribute(attribute)!);
+	});
+	element.src = emptyImageSrc;
 };

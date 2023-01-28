@@ -1,4 +1,4 @@
-import { DifferenceArray, ElementReadouts, ImageState } from "../types";
+import { CustomKeyframe, DifferenceArray, ElementReadouts, ImageData } from "../types";
 import { getTranslates, save } from "./calculate-dimension-differences";
 import { calculateBorderRadius } from "./calculate-style-tables";
 
@@ -12,9 +12,9 @@ export const getPlaceholderStyle = (readouts: ElementReadouts[]): Partial<CSSSty
 export const getWrapperStyle = (
 	readouts: ElementReadouts[],
 	rootReadouts: ElementReadouts[],
-	imageState: ImageState
-) => {
-	const { maxHeight, maxWidth } = imageState;
+	imageData: ImageData
+): CustomKeyframe => {
+	const { maxHeight, maxWidth } = imageData;
 
 	return {
 		position: "absolute",
@@ -25,23 +25,11 @@ export const getWrapperStyle = (
 		pointerEvents: "none",
 		overflow: "hidden",
 		gridArea: "1/1/2/2", //if the root element is a grid element, it will be absolutly positioned from its dedicated area and not from the edge of the element
-	} as Partial<CSSStyleDeclaration>;
+	};
 };
 
-export const initialImageState = (): ImageState => ({
-	wrapperStyle: {},
-	placeholderStyle: {},
-	ratio: 0,
-	maxWidth: 0,
-	maxHeight: 0,
-	easingTable: {},
-	wrapperKeyframes: [],
-	keyframes: [],
-	override: {},
-});
-
-export const calculateImageKeyframes = (readouts: ElementReadouts[], imageState: ImageState) => {
-	const { maxWidth, maxHeight, easingTable, ratio } = imageState;
+export const calculateImageKeyframes = (readouts: ElementReadouts[], imageData: ImageData) => {
+	const { maxWidth, maxHeight, easingTable, ratio } = imageData;
 
 	const keyframes: Keyframe[] = [];
 
@@ -117,11 +105,10 @@ export const findCorrespondingElement = (
 export const getWrapperKeyframes = (
 	readouts: ElementReadouts[],
 	rootReadouts: ElementReadouts[],
-	imageState: ImageState,
+	imageData: ImageData,
 	changeTimings: number[]
 ): Keyframe[] => {
-	const { maxWidth, maxHeight, easingTable } = imageState;
-
+	const { maxWidth, maxHeight, easingTable } = imageData;
 	return readouts.map((readout) => {
 		const correspondingRootEntry =
 			rootReadouts.find((entry) => entry.offset === readout.offset) ??

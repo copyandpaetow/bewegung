@@ -122,7 +122,7 @@ export interface TimelineEntry {
 export type Timeline = TimelineEntry[];
 
 export interface Result {
-	animations: Animation[];
+	animations: Map<HTMLElement, Animation>;
 	onStart: VoidFunction[];
 	timeKeeper: Animation;
 }
@@ -134,32 +134,54 @@ export type Selector = {
 	options: BewegungsOptions;
 };
 
-export interface WorkerState {
-	options: Map<string, BewegungsOptions[]>;
-	totalRuntime: number;
-	changeTimings: number[];
-	changeProperties: Set<CssRuleName>;
-	appliableKeyframes: Map<number, Map<string, CustomKeyframe>>;
-	readouts: Map<string, ElementReadouts[]>;
+export type GeneralState = {
 	affectedBy: Map<string, string[]>;
 	parent: Map<string, string>;
 	root: Map<string, string>;
 	type: Map<string, EntryType>;
 	ratio: Map<string, number>;
-	overrides: Map<string, Partial<CSSStyleDeclaration>>;
-}
+};
 
-export interface ImageState {
-	wrapperStyle: Partial<CSSStyleDeclaration>;
-	placeholderStyle: Partial<CSSStyleDeclaration>;
+export type KeyframeState = {
+	readouts: Map<string, ElementReadouts[]>;
+	remainingKeyframes: IterableIterator<Map<string, CustomKeyframe>>;
+};
+
+export type MainElementState = {
+	options: Map<string, BewegungsOptions[]>;
+	totalRuntime: number;
+	changeTimings: number[];
+	changeProperties: Set<CssRuleName>;
+	appliableKeyframes: Map<number, Map<string, CustomKeyframe>>;
+};
+
+export type ResultState = {
+	overrides: Map<string, CustomKeyframe>;
+	resultingStyle: Map<string, CustomKeyframe>;
+	keyframes: Map<string, Keyframe[]>;
+	totalRuntime: number;
+	defaultReadouts: Map<string, ElementReadouts[]>;
+	imageReadouts: Map<string, ElementReadouts[]>;
+	placeholders: Map<string, string>;
+	wrappers: Map<string, string>;
+} & Omit<MainElementState, "appliableKeyframes"> &
+	GeneralState;
+
+export type ResultTransferable = {
+	totalRuntime: number;
+	overrides: Map<string, CustomKeyframe>;
+	resultingStyle: Map<string, CustomKeyframe>;
+	keyframes: Map<string, Keyframe[]>;
+	placeholders: Map<string, string>;
+	wrappers: Map<string, string>;
+};
+
+export type ImageData = {
 	ratio: number;
 	maxWidth: number;
 	maxHeight: number;
 	easingTable: Record<number, string>;
-	wrapperKeyframes: Keyframe[];
-	keyframes: Keyframe[];
-	override: Partial<CSSStyleDeclaration>;
-}
+};
 
 export interface StyleTables {
 	borderRadiusTable: Record<number, string>;
@@ -169,19 +191,11 @@ export interface StyleTables {
 	easingTable: Record<number, string>;
 }
 
-export interface DefaultKeyframes {
-	keyframes: Keyframe[];
-	resultingStyle: CustomKeyframe;
-	override: CustomKeyframe;
-}
-
 export type MainState = {
 	resets: Map<HTMLElement, Map<string, string>>;
 	root: Map<HTMLElement, HTMLElement>;
 	translation: BidirectionalMap<string, HTMLElement>;
 };
-
-export type ResultingKeyframes = [Map<string, ImageState>, Map<string, DefaultKeyframes>, number];
 
 export type AppliableKeyframes = {
 	changeProperties: Set<CssRuleName>;
@@ -209,7 +223,7 @@ export type MainMessages = {
 	): void;
 	receiveConstructedKeyframes(
 		context: MessageContext<MainMessages, WorkerMessages>,
-		constructedKeyframes: ResultingKeyframes
+		constructedKeyframes: ResultTransferable
 	): void;
 };
 
