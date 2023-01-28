@@ -27,16 +27,17 @@ TODOS:
 # coding style
 - unify the names of state entries
 - unify the order of function parameters, especially the state, should it be first or last?
-
+- no boolean arguments
 
 #refactor
+- no boolean arguments
 - rethink the offset structure for the style entries. Finding entries with certain offsets is tedious.
 - ratio doesnt need to be send, when there is no information (0) included, this could just be the fallback
 - try to put the image wrapper etc directly where the real image is, since we need to make them a relative element anyways 
 => in that case we wouldnt need the rootMap in the worker
 ? if new image wrapper/placeholder are added and reactivity wise, the animation gets calculated again, how will they be treated
 ? should we have the readouts in the state and another imageReadout entry as well? They could get filtered and switched around instead of creating 2 Maps out of the readouts
-- lets put everything into one big worker state and see if the performance is okay
+
 
 #bugs
 - sometimes the readouts for every offset are identical
@@ -84,8 +85,8 @@ export const Animations = (props: CustomKeyframeEffect[]) => {
 			const readouts = await readDom(appliableKeyframes, state);
 			reply("receiveReadouts", readouts);
 		},
-		receiveConstructedKeyframes(_, constructedKeyframes) {
-			done.resolve(createAnimationsFromKeyframes(state, constructedKeyframes));
+		receiveConstructedKeyframes(_, resultTransferable) {
+			done.resolve(createAnimationsFromKeyframes(state, resultTransferable));
 		},
 	});
 

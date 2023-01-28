@@ -1,4 +1,4 @@
-import { CssRuleName } from "../types";
+import { CssRuleName, CustomKeyframe } from "../types";
 
 export const defaultChangeProperties: CssRuleName[] = [
 	"borderRadius",
@@ -27,7 +27,7 @@ export const defaultOptions: Partial<KeyframeEffectOptions> = {
 export const emptyImageSrc =
 	"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
 
-export const defaultImageStyles: Partial<CSSStyleDeclaration> = {
+export const defaultImageStyles: CustomKeyframe = {
 	aspectRatio: "initial",
 	display: "initial",
 	imageOrientation: "initial",

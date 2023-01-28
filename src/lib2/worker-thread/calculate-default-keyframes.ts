@@ -1,13 +1,5 @@
 import { defaultOptions } from "../shared/constants";
-import {
-	DimensionalDifferences,
-	StyleTables,
-	ElementReadouts,
-	EntryType,
-	DifferenceArray,
-} from "../types";
-import { calculateDimensionDifferences } from "./calculate-dimension-differences";
-import { findCorrespondingElement } from "./calculate-image-keyframes";
+import { DimensionalDifferences, StyleTables } from "../types";
 
 export const calculateDefaultKeyframes = (
 	calculations: DimensionalDifferences[],
@@ -36,31 +28,4 @@ export const calculateDefaultKeyframes = (
 				}),
 			} as Keyframe)
 	);
-};
-
-export const getCalcualtionsFromReadouts = (
-	readouts: ElementReadouts[],
-	parentReadouts: ElementReadouts[] | undefined,
-	textNode: EntryType,
-	changeTimings: number[]
-) => {
-	const isTextNode = textNode === "text";
-
-	return readouts.map((readout) => {
-		const child: DifferenceArray = [readout, readouts.at(-1)!];
-
-		if (!parentReadouts) {
-			return calculateDimensionDifferences(child, [undefined, undefined], isTextNode);
-		}
-
-		const correspondingParentEntry =
-			parentReadouts?.find((entry) => entry.offset === readout.offset) ??
-			findCorrespondingElement(readout, parentReadouts!, changeTimings);
-
-		return calculateDimensionDifferences(
-			child,
-			[correspondingParentEntry, parentReadouts.at(-1)!],
-			isTextNode
-		);
-	});
 };

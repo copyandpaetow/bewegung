@@ -1,14 +1,19 @@
-import { DefaultKeyframes, ElementReadouts, ImageState, WorkerState } from "../types";
 import { isEntryVisible } from "../shared/utils";
+import {
+	CustomKeyframe,
+	ElementReadouts,
+	EntryType,
+	GeneralState,
+	KeyframeState,
+	MainElementState,
+	ResultState,
+	ResultTransferable,
+} from "../types";
 import { getDefaultKeyframes } from "./create-default-keyframes";
 import { getImageKeyframes } from "./create-image-keyframes";
 
-const recalculateDisplayNoneValues = (readout: ElementReadouts[]): ElementReadouts[] => {
-	if (readout.every(isEntryVisible)) {
-		return readout;
-	}
-
-	return readout.map((entry, index, array) => {
+const recalculateDisplayNoneValues = (readout: ElementReadouts[]): ElementReadouts[] =>
+	readout.map((entry, index, array) => {
 		if (isEntryVisible(entry)) {
 			return entry;
 		}
@@ -28,54 +33,91 @@ const recalculateDisplayNoneValues = (readout: ElementReadouts[]): ElementReadou
 			offset: entry.offset,
 		};
 	});
-};
 
-export const constructKeyframes = (
-	workerState: WorkerState
-): [Map<string, ImageState>, Map<string, DefaultKeyframes>, number] => {
-	const { readouts, type, totalRuntime } = workerState;
+const doesElementChangeInScale = (readouts: ElementReadouts[]) =>
+	readouts.some(
+		(entry) =>
+			entry.unsaveWidth !== readouts.at(-1)!.unsaveWidth ||
+			entry.unsaveHeight !== readouts.at(-1)!.unsaveHeight
+	);
 
-	const imageReadouts = new Map<string, ImageState>();
-	const defaultReadouts = new Map<string, DefaultKeyframes>();
-
-	readouts.forEach((elementReadouts, elementString) => {
-		if (elementReadouts.every((entry) => !isEntryVisible(entry))) {
+const filterHiddenElements = (readouts: Map<string, ElementReadouts[]>) => {
+	readouts.forEach((elementReadouts, key) => {
+		if (elementReadouts.some((entry) => isEntryVisible(entry))) {
 			return;
 		}
+		readouts.delete(key);
+	});
+};
 
-		const isImage = type.get(elementString)! === "image";
-		const saveReadouts = recalculateDisplayNoneValues(elementReadouts);
-		isImage
-			? imageReadouts.set(
-					elementString,
-					getImageKeyframes(saveReadouts, elementString, workerState)
-			  )
-			: defaultReadouts.set(
-					elementString,
-					getDefaultKeyframes(saveReadouts, elementString, workerState)
-			  );
+const overrideDisplayNone = (readouts: Map<string, ElementReadouts[]>) => {
+	readouts.forEach((elementReadouts, key) => {
+		if (elementReadouts.every(isEntryVisible)) {
+			return;
+		}
+		readouts.set(key, recalculateDisplayNoneValues(elementReadouts));
+	});
+};
+
+const seperateReadouts = (
+	readouts: Map<string, ElementReadouts[]>,
+	type: Map<string, EntryType>
+) => {
+	const imageReadouts = new Map<string, ElementReadouts[]>();
+	const defaultReadouts = new Map<string, ElementReadouts[]>();
+
+	readouts.forEach((elementReadouts, key) => {
+		const isElementAnImage = type.get(key)! === "image";
+		if (isElementAnImage && doesElementChangeInScale(elementReadouts)) {
+			imageReadouts.set(key, elementReadouts);
+			return;
+		}
+		defaultReadouts.set(key, elementReadouts);
 	});
 
-	//* the calculations are off because of the images
-	// here there are already calculated as images and are not included within the defaultReadouts
-	// TODO: this filtering needs to happen earlier
+	return { imageReadouts, defaultReadouts };
+};
 
-	// imageReadouts.forEach((entry, elementString) => {
-	// 	if (new Set(entry.keyframes.map((frame) => frame.transform)).size > 1) {
-	// 		return;
-	// 	}
-	// 	console.log(entry);
-	// 	imageReadouts.delete(elementString);
-	// });
+export const deriveResultState = (
+	mainElementState: MainElementState,
+	generalState: GeneralState,
+	keyframeState: KeyframeState
+): ResultState => {
+	filterHiddenElements(keyframeState.readouts);
+	overrideDisplayNone(keyframeState.readouts);
 
-	// defaultReadouts.forEach((entry, elementString) => {
-	// 	if (new Set(entry.keyframes.map((frame) => frame.transform)).size > 1) {
-	// 		return;
-	// 	}
-	// 	console.log(entry);
+	const { appliableKeyframes, ...remainingMainState } = mainElementState;
+	const { imageReadouts, defaultReadouts } = seperateReadouts(
+		keyframeState.readouts,
+		generalState.type
+	);
 
-	// 	defaultReadouts.delete(elementString);
-	// });
+	return {
+		overrides: new Map<string, CustomKeyframe>(),
+		placeholders: new Map<string, string>(),
+		wrappers: new Map<string, string>(),
+		imageReadouts,
+		defaultReadouts,
+		resultingStyle: structuredClone(appliableKeyframes.get(1)!),
+		keyframes: new Map<string, Keyframe[]>(),
+		...remainingMainState,
+		...generalState,
+	};
+};
 
-	return [imageReadouts, defaultReadouts, totalRuntime];
+export const constructKeyframes = (resultState: ResultState): ResultTransferable => {
+	const { resultingStyle, keyframes, overrides, totalRuntime, wrappers, placeholders } =
+		resultState;
+
+	getDefaultKeyframes(resultState);
+	getImageKeyframes(resultState);
+
+	return {
+		resultingStyle,
+		keyframes,
+		overrides,
+		totalRuntime,
+		wrappers,
+		placeholders,
+	};
 };
