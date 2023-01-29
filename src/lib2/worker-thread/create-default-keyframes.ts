@@ -38,15 +38,16 @@ const setOverrides = (resultState: ResultState) => {
 				position: "absolute",
 				left: readouts.at(-1)!.currentLeft - (parentReadouts?.at(-1)!.currentLeft ?? 0) + "px",
 				top: readouts.at(-1)!.currentTop - (parentReadouts?.at(-1)!.currentTop ?? 0) + "px",
+				width: readouts.at(-1)!.currentWidth + "px",
+				height: readouts.at(-1)!.currentHeight + "px",
 			});
 
-			if (!parentKey || parentReadouts!.at(-1)!.position === "static") {
-				return;
+			if (parentKey && parentReadouts!.at(-1)!.position === "static") {
+				overrides.set(parentKey, {
+					...(overrides.get(parentKey) ?? {}),
+					position: "relative",
+				});
 			}
-			overrides.set(parentKey, {
-				...(overrides.get(parentKey) ?? {}),
-				position: "relative",
-			});
 		}
 
 		if (readouts.some(checkForBorderRadius)) {
@@ -56,12 +57,12 @@ const setOverrides = (resultState: ResultState) => {
 			});
 		}
 
-		if (readouts.some(checkForDisplayInline) && type.get(key)! === "text") {
-			overrides.set(key, {
-				...(overrides.get(key) ?? {}),
-				display: "inline-block",
-			});
-		}
+		// if (readouts.some(checkForDisplayInline) && type.get(key)! === "text") {
+		// 	overrides.set(key, {
+		// 		...(overrides.get(key) ?? {}),
+		// 		display: "inline-block",
+		// 	});
+		// }
 	});
 };
 
@@ -86,6 +87,8 @@ const calculateDifferences = (resultState: ResultState): Map<string, Dimensional
 	const { parent, type, defaultReadouts, changeTimings } = resultState;
 	const anchorParents = getAnchorParents(defaultReadouts, parent);
 	const differenceMap = new Map<string, DimensionalDifferences[]>();
+
+	//if we filter the elements again and then in here get the parent. if its not there, we will get its parent etc
 
 	defaultReadouts.forEach((elementReadouts, elementString) => {
 		const parentReadouts = parent.has(elementString)
@@ -119,6 +122,7 @@ const calculateDifferences = (resultState: ResultState): Map<string, Dimensional
 		// 	!anchorParents.has(elementString) &&
 		// 	differences.every((entry) => offsetObjectsAreEqual(entry, differences.at(-1)!))
 		// ) {
+		// 	console.log(elementString, elementReadouts);
 		// 	defaultReadouts.delete(elementString);
 		// 	return;
 		// }
