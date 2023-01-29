@@ -125,16 +125,25 @@ const setDefaultCallbacks = (
 	const { animations, onStart } = result;
 	const { translation } = state;
 
-	resultingStyle.forEach((elementStyle, key) => {
-		const domElement = translation.get(key)!;
-		const animation = animations.get(domElement)!;
-		const originalStyle = domElement.style.cssText;
-		const styleOverride = overrides.get(key) || {};
+	animations.forEach((animation, domElement) => {
+		const key = translation.get(domElement)!;
 
-		onStart.push(() => applyCSSStyles(domElement, { ...elementStyle, ...styleOverride }));
+		const originalStyle = domElement.style.cssText;
+		const elementStyle = resultingStyle.get(key);
+		const overrideStyle = overrides.get(key);
+
+		if (!elementStyle && !overrideStyle) {
+			return;
+		}
+
+		onStart.push(() => applyCSSStyles(domElement, { ...elementStyle, ...overrideStyle }));
+
 		animation.onfinish = () => {
 			domElement.style.cssText = originalStyle;
-			applyCSSStyles(domElement, { ...elementStyle });
+			if (!elementStyle) {
+				return;
+			}
+			applyCSSStyles(domElement, elementStyle);
 		};
 	});
 };

@@ -43,12 +43,12 @@ export const fillImplicitKeyframes: FillImplicitKeyframesOverload = (keyframes: 
 	const lastKeyframe = updatedKeyframes.at(-1)!;
 
 	if (firstKeyframe.offset !== 0) {
-		updatedKeyframes.unshift({ ...firstKeyframe, offset: 0 });
-		//updatedKeyframes.unshift({ offset: 0 });
+		//updatedKeyframes.unshift({ ...firstKeyframe, offset: 0 });
+		updatedKeyframes.unshift({ offset: 0 });
 	}
 	if (lastKeyframe.offset !== 1) {
-		updatedKeyframes.push({ ...lastKeyframe, offset: 1 });
-		//updatedKeyframes.push({ offset: 1 });
+		//updatedKeyframes.push({ ...lastKeyframe, offset: 1 });
+		updatedKeyframes.push({ offset: 1 });
 	}
 
 	return updatedKeyframes;

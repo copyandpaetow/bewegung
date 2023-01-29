@@ -22,6 +22,9 @@ TODOS:
  
 # performance
 - bigger functions can be split by adding a task between 
+- filter the keyframes as they come in and delete them if needed. If a display: none element needs a position relative parent, 
+or (more broadly), the animation needs a relative parent for the calculation, we just look if the parent of the current defaultReadouts entry
+has a parent (until we reach the root) and use that
 ? how does this behave on lower fps?
 
 # coding style
@@ -51,7 +54,7 @@ TODOS:
 - shrinking elements distort text elements
 - clip-path for display none images doesnt show the border radius anymore
 - formatArraySyntax procudes wrong values when properties have mixed middle offsets but the same start and end values
-
+- the override styles for display: inline are not working correctly. They are intendend for spans
 
 # features
 - callbacks 
