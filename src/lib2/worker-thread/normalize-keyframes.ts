@@ -37,6 +37,7 @@ export const updateOffsets = (
 	return updatedFrames;
 };
 
+//if the readouts get filtered, we need to include content within, otherwise just the offsets
 export const fillImplicitKeyframes: FillImplicitKeyframesOverload = (keyframes: any): any => {
 	const updatedKeyframes = [...keyframes];
 	const firstKeyframe = updatedKeyframes.at(0)!;

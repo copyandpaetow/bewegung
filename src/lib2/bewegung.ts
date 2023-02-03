@@ -38,9 +38,10 @@ export class Bewegung implements BewegungAPI {
 			onStart.forEach((cb) => cb());
 			animations.forEach((animation) => {
 				animation.play();
-				// setTimeout(() => {
-				// 	animation.pause();
-				// }, 4000);
+				//animation.pause();
+				setTimeout(() => {
+					animation.pause();
+				}, 3000);
 			});
 			console.log(`it took ${Date.now() - this.#now}ms`);
 		};

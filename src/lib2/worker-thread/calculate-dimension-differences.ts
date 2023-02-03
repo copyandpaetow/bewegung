@@ -130,12 +130,8 @@ export const calculateDimensionDifferences = (
 	} = getScales(child, parent, isTextNode);
 
 	if (!parent[0]) {
-		const scaleY = Math.min(1, heightDifference);
-		const scaleX = Math.min(1, heightDifference);
-
-		const leftDifference =
-			(currentLeftDifference - referenceLeftDifference - textCorrection) * scaleX;
-		const topDifference = (currentTopDifference - referenceTopDifference) / scaleY;
+		const leftDifference = currentLeftDifference - referenceLeftDifference - textCorrection;
+		const topDifference = currentTopDifference - referenceTopDifference;
 
 		return {
 			heightDifference: save(heightDifference, 1),
