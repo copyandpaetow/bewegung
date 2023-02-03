@@ -42,20 +42,20 @@ const doesElementChangeInScale = (readouts: ElementReadouts[]) =>
 	);
 
 const filterHiddenElements = (readouts: Map<string, ElementReadouts[]>) => {
-	readouts.forEach((elementReadouts, key) => {
+	readouts.forEach((elementReadouts, elementID) => {
 		if (elementReadouts.some(isEntryVisible)) {
 			return;
 		}
-		readouts.delete(key);
+		readouts.delete(elementID);
 	});
 };
 
 const overrideDisplayNone = (readouts: Map<string, ElementReadouts[]>) => {
-	readouts.forEach((elementReadouts, key) => {
+	readouts.forEach((elementReadouts, elementID) => {
 		if (elementReadouts.every(isEntryVisible)) {
 			return;
 		}
-		readouts.set(key, recalculateDisplayNoneValues(elementReadouts));
+		readouts.set(elementID, recalculateDisplayNoneValues(elementReadouts));
 	});
 };
 
@@ -66,13 +66,13 @@ const seperateReadouts = (
 	const imageReadouts = new Map<string, ElementReadouts[]>();
 	const defaultReadouts = new Map<string, ElementReadouts[]>();
 
-	readouts.forEach((elementReadouts, key) => {
-		const isElementAnImage = type.get(key)! === "image";
+	readouts.forEach((elementReadouts, elementID) => {
+		const isElementAnImage = type.get(elementID)! === "image";
 		if (isElementAnImage && doesElementChangeInScale(elementReadouts)) {
-			imageReadouts.set(key, elementReadouts);
+			imageReadouts.set(elementID, elementReadouts);
 			return;
 		}
-		defaultReadouts.set(key, elementReadouts);
+		defaultReadouts.set(elementID, elementReadouts);
 	});
 
 	return { imageReadouts, defaultReadouts };

@@ -11,24 +11,24 @@ const getTemporaryElements = (
 	const { placeholders, wrappers, resultingStyle } = resultTransferable;
 	const temporaryElementMap = new Map<string, HTMLElement>();
 
-	placeholders.forEach((placeholderString, elementString) => {
-		const relatedElement = translation.get(elementString)!;
+	placeholders.forEach((placeholderID, elementID) => {
+		const relatedElement = translation.get(elementID)!;
 		const placeholderElement = document.createElement("img");
-		const elementStyle = resultingStyle.get(placeholderString)!;
+		const elementStyle = resultingStyle.get(placeholderID)!;
 
 		applyCSSStyles(placeholderElement, elementStyle);
 		setImageAttributes(placeholderElement, relatedElement);
-		temporaryElementMap.set(placeholderString, placeholderElement);
-		resultingStyle.delete(placeholderString);
+		temporaryElementMap.set(placeholderID, placeholderElement);
+		resultingStyle.delete(placeholderID);
 	});
 
-	wrappers.forEach((wrapperString) => {
+	wrappers.forEach((wrapperID) => {
 		const wrapperElement = document.createElement("div");
-		const elementStyle = resultingStyle.get(wrapperString)!;
+		const elementStyle = resultingStyle.get(wrapperID)!;
 		applyCSSStyles(wrapperElement, elementStyle);
 
-		temporaryElementMap.set(wrapperString, wrapperElement);
-		resultingStyle.delete(wrapperString);
+		temporaryElementMap.set(wrapperID, wrapperElement);
+		resultingStyle.delete(wrapperID);
 	});
 
 	return temporaryElementMap;
@@ -44,9 +44,9 @@ const setWrapperCallbacks = (
 	const { animations, onStart } = result;
 	const { translation, root } = state;
 
-	wrappers.forEach((wrapperString, imageString) => {
-		const imageElement = translation.get(imageString)!;
-		const wrapperElement = temporaryElementMap.get(wrapperString)!;
+	wrappers.forEach((wrapperID, imageID) => {
+		const imageElement = translation.get(imageID)!;
+		const wrapperElement = temporaryElementMap.get(wrapperID)!;
 		const currentRoot = root.get(imageElement)!;
 		const animation = animations.get(wrapperElement)!;
 
@@ -72,9 +72,9 @@ const setPlaceholderCallbacks = (
 	const { animations, onStart } = result;
 	const { translation } = state;
 
-	placeholders.forEach((placeHolderString, imageString) => {
-		const imageElement = translation.get(imageString)!;
-		const placeholderElement = temporaryElementMap.get(placeHolderString)!;
+	placeholders.forEach((placeHolderID, imageID) => {
+		const imageElement = translation.get(imageID)!;
+		const placeholderElement = temporaryElementMap.get(placeHolderID)!;
 		const animation = new Animation(new KeyframeEffect(placeholderElement, null, totalRuntime));
 		const nextSibling = imageElement.nextElementSibling;
 		const parent = imageElement.parentElement!;
@@ -105,12 +105,12 @@ const createAnimations = (
 	const { animations } = result;
 	const { translation } = state;
 
-	keyframes.forEach((elementKeyframes, key) => {
+	keyframes.forEach((elementIDframes, key) => {
 		const domElement = translation.get(key) || temporaryElementMap.get(key)!;
 		animations.set(
 			domElement,
 			new Animation(
-				new KeyframeEffect(domElement, fillImplicitKeyframes(elementKeyframes), totalRuntime)
+				new KeyframeEffect(domElement, fillImplicitKeyframes(elementIDframes), totalRuntime)
 			)
 		);
 	});
@@ -149,8 +149,8 @@ const setDefaultCallbacks = (
 };
 
 export const createAnimationsFromKeyframes = (
-	state: MainState,
-	resultTransferable: ResultTransferable
+	resultTransferable: ResultTransferable,
+	state: MainState
 ): Result => {
 	const result: Result = {
 		animations: new Map<HTMLElement, Animation>(),

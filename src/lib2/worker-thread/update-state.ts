@@ -35,14 +35,14 @@ export const setMainState = (mainTransferables: KeyedCustomKeyframeEffect[]): Ma
 	const changeTimings = new Set([0, 1]);
 	const totalRuntime = updateTotalRuntime(normalizedTransferables);
 
-	normalizedTransferables.forEach(([keys, keyframeEntry, optionEntry]) => {
-		const updatedKeyframes = updateOffsets(keyframeEntry, optionEntry, totalRuntime);
+	normalizedTransferables.forEach(([elementIDs, currentKeyframes, currentOption]) => {
+		const updatedKeyframes = updateOffsets(currentKeyframes, currentOption, totalRuntime);
 		updateChangeTimings(changeTimings, updatedKeyframes);
 		updateChangeProperties(changeProperties, updatedKeyframes);
 
-		keys.forEach((key) => {
-			keyframes.set(key, (keyframes.get(key) ?? []).concat(updatedKeyframes));
-			options.set(key, (options.get(key) ?? []).concat(optionEntry));
+		elementIDs.forEach((currentID) => {
+			keyframes.set(currentID, (keyframes.get(currentID) ?? []).concat(updatedKeyframes));
+			options.set(currentID, (options.get(currentID) ?? []).concat(currentOption));
 		});
 	});
 

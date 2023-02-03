@@ -1,6 +1,6 @@
 import { MainState } from "../types";
 
-export const observeResizes = (state: MainState, callback: VoidFunction) => {
+export const observeResizes = (callback: VoidFunction, state: MainState) => {
 	const RO = new WeakMap<HTMLElement, ResizeObserver>();
 	const { translation } = state;
 

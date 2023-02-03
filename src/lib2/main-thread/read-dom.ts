@@ -13,12 +13,12 @@ export const readDom = async (appliableKeyframes: AppliableKeyframes, state: Mai
 	const offset = keyframes.values().next().value.offset;
 
 	await nextBrowserRender();
-	keyframes.forEach((styleChange, elementString) => {
-		const domElement = translation.get(elementString)!;
+	keyframes.forEach((styleChange, elementID) => {
+		const domElement = translation.get(elementID)!;
 		applyCSSStyles(domElement, styleChange);
 	});
-	translation.forEach((domElement, elementString) => {
-		readouts.set(elementString, getCalculations(domElement, changeProperties, offset));
+	translation.forEach((domElement, elementID) => {
+		readouts.set(elementID, getCalculations(domElement, changeProperties, offset));
 	});
 	resets.forEach((reset, domElement) => {
 		restoreOriginalStyle(domElement, reset);

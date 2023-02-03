@@ -82,21 +82,21 @@ export const getGeneralTransferObject = (state: MainState) => {
 	const mainElements = new Set(resets.keys());
 
 	mainElements.forEach((domElement) => {
-		const elementString = translation.get(domElement)!;
+		const elementID = translation.get(domElement)!;
 		const rootElement = root.get(domElement)!;
 
-		elementConnections.set(elementString, findAffectedDOMElements(domElement, rootElement));
+		elementConnections.set(elementID, findAffectedDOMElements(domElement, rootElement));
 	});
 
-	elementConnections.forEach((secondaryDomElements, mainElementString) => {
+	elementConnections.forEach((secondaryDomElements, mainElementID) => {
 		secondaryDomElements.forEach((secondaryDomElement) => {
-			const secondaryElementString = getOrAddKeyFromLookup(secondaryDomElement, translation);
+			const secondaryElementID = getOrAddKeyFromLookup(secondaryDomElement, translation);
+
+			secondaryDomElement.setAttribute("data-id", secondaryElementID);
 
 			affectedElementsMap.set(
-				secondaryElementString,
-				(affectedElementsMap.get(secondaryElementString) ?? new Set<string>()).add(
-					mainElementString
-				)
+				secondaryElementID,
+				(affectedElementsMap.get(secondaryElementID) ?? new Set<string>()).add(mainElementID)
 			);
 		});
 	});
@@ -107,23 +107,23 @@ export const getGeneralTransferObject = (state: MainState) => {
 	const ratio = new Map<string, number>();
 	const type = new Map<string, EntryType>();
 
-	translation.forEach((domElement, elementString) => {
+	translation.forEach((domElement, elementID) => {
 		const elementType = isImage(domElement) || isTextNode(domElement) || "";
-		const affectedByMainElements = affectedElementsMap.get(elementString)!;
+		const affectedByMainElements = affectedElementsMap.get(elementID)!;
 
 		const rootElement = getRootElement(
 			Array.from(
 				affectedByMainElements,
-				(mainElementString: string) => root.get(translation.get(mainElementString)!)!
+				(mainElementID: string) => root.get(translation.get(mainElementID)!)!
 			)
 		);
 		root.set(domElement, rootElement);
 
-		rootString.set(elementString, translation.get(rootElement)!);
-		parent.set(elementString, translation.get(domElement.parentElement!)!);
-		type.set(elementString, elementType);
-		affectedBy.set(elementString, [...affectedByMainElements]);
-		ratio.set(elementString, getRatio(domElement));
+		rootString.set(elementID, translation.get(rootElement)!);
+		parent.set(elementID, translation.get(domElement.parentElement!)!);
+		type.set(elementID, elementType);
+		affectedBy.set(elementID, [...affectedByMainElements]);
+		ratio.set(elementID, getRatio(domElement));
 	});
 
 	return {

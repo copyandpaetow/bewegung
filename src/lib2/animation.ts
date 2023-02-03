@@ -76,9 +76,9 @@ export const Animations = (props: CustomKeyframeEffect[]) => {
 
 	const messageStore = createMessageStore<MainMessages, WorkerMessages>(allWorker.current(), {
 		async initState({ reply }, initialProps) {
-			const keyedProps = replaceTargetInputWithKeys(state, initialProps);
+			const keyedProps = replaceTargetInputWithKeys(initialProps, state);
 			reply("receiveMainState", keyedProps);
-			setElementRelatedState(state, keyedProps);
+			setElementRelatedState(keyedProps, state);
 			await task();
 			reply("receiveGeneralState", getGeneralTransferObject(state));
 		},
@@ -87,7 +87,7 @@ export const Animations = (props: CustomKeyframeEffect[]) => {
 			reply("receiveReadouts", readouts);
 		},
 		receiveConstructedKeyframes(_, resultTransferable) {
-			done.resolve(createAnimationsFromKeyframes(state, resultTransferable));
+			done.resolve(createAnimationsFromKeyframes(resultTransferable, state));
 		},
 	});
 
@@ -106,7 +106,7 @@ export const Animations = (props: CustomKeyframeEffect[]) => {
 				},
 				onSecondaryElementChange(removedElements: HTMLElement[]) {
 					done = deferred();
-					removeElementsFromTranslation(state, removedElements);
+					removeElementsFromTranslation(removedElements, state);
 					messageStore.reply("receiveGeneralState", getGeneralTransferObject(state));
 				},
 				onDimensionOrPositionChange() {

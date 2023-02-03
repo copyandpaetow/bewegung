@@ -71,10 +71,10 @@ createMessageStore<WorkerMessages, MainMessages>(worker, {
 	},
 	receiveReadouts({ send }, readouts) {
 		send("replyAppliableKeyframes");
-		readouts.forEach((readout, elementString) => {
+		readouts.forEach((readout, elementID) => {
 			keyframeState.readouts.set(
-				elementString,
-				(keyframeState.readouts.get(elementString) ?? []).concat(readout)
+				elementID,
+				(keyframeState.readouts.get(elementID) ?? []).concat(readout)
 			);
 		});
 	},

@@ -36,8 +36,8 @@ export const getRootSelector = (options: EveryOptionSyntax): HTMLElement => {
 };
 
 export const replaceTargetInputWithKeys = (
-	state: MainState,
-	initialProps: CustomKeyframeEffect[]
+	initialProps: CustomKeyframeEffect[],
+	state: MainState
 ): KeyedCustomKeyframeEffect[] => {
 	const { translation } = state;
 
@@ -51,16 +51,18 @@ export const replaceTargetInputWithKeys = (
 };
 
 export const setElementRelatedState = (
-	state: MainState,
-	initialProps: KeyedCustomKeyframeEffect[]
+	initialProps: KeyedCustomKeyframeEffect[],
+	state: MainState
 ) => {
 	const { root, resets, translation } = state;
 
 	initialProps.forEach(([keys, _, options]) => {
 		const localRoot = getRootSelector(options);
 
-		keys.forEach((elementString) => {
-			const domElement = translation.get(elementString)!;
+		keys.forEach((elementID) => {
+			const domElement = translation.get(elementID)!;
+
+			domElement.setAttribute("data-id", elementID);
 			resets.set(domElement, saveOriginalStyle(domElement));
 			root.set(domElement, compareRootElements(localRoot, root.get(domElement)));
 		});
