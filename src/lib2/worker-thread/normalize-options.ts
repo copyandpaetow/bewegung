@@ -1,13 +1,21 @@
 import { defaultOptions } from "../shared/constants";
 import { BewegungsOptions, EveryOptionSyntax } from "../types";
 
-export const normalizeOptions = (options: EveryOptionSyntax): BewegungsOptions => {
-	//TODO: this could be clearer
-	const userOptions = !options ? {} : typeof options === "number" ? { duration: options } : options;
+const getUserOptions = (options: EveryOptionSyntax) => {
+	if (!options) {
+		return {};
+	}
+	if (typeof options === "number") {
+		return { duration: options };
+	}
 
+	return options;
+};
+
+export const normalizeOptions = (options: EveryOptionSyntax): BewegungsOptions => {
 	const input = {
 		...defaultOptions,
-		...userOptions,
+		...getUserOptions(options),
 	};
 
 	const activeDuration = Number(input.duration) * input.iterations!;

@@ -77,42 +77,14 @@ export const calculateImageKeyframes = (readouts: ElementReadouts[], imageData: 
 	return keyframes;
 };
 
-export const findCorrespondingElement = (
-	currentReadout: ElementReadouts,
-	rootReadouts: ElementReadouts[],
-	changeTimings: number[]
-) => {
-	if (rootReadouts.length === 1) {
-		return rootReadouts[0];
-	}
-
-	const offsetPosition = changeTimings.findIndex((offset) => offset === currentReadout.offset);
-	const partialChangeTimings = changeTimings.slice(offsetPosition);
-	let result = currentReadout;
-
-	partialChangeTimings.some((offset) => {
-		const resultAtCurrentOffset = rootReadouts.find((readout) => readout.offset === offset);
-		if (resultAtCurrentOffset) {
-			result = resultAtCurrentOffset;
-			return true;
-		}
-		return false;
-	})!;
-
-	return result;
-};
-
 export const getWrapperKeyframes = (
 	readouts: ElementReadouts[],
 	rootReadouts: ElementReadouts[],
-	imageData: ImageData,
-	changeTimings: number[]
+	imageData: ImageData
 ): Keyframe[] => {
 	const { maxWidth, maxHeight, easingTable } = imageData;
 	return readouts.map((readout) => {
-		const correspondingRootEntry =
-			rootReadouts.find((entry) => entry.offset === readout.offset) ??
-			findCorrespondingElement(readout, rootReadouts, changeTimings);
+		const correspondingRootEntry = rootReadouts.find((entry) => entry.offset === readout.offset)!;
 
 		const rootScaleY = correspondingRootEntry.currentHeight / rootReadouts.at(-1)!.currentHeight;
 		const rootScaleX = correspondingRootEntry.currentWidth / rootReadouts.at(-1)!.currentWidth;

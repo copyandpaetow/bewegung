@@ -9,11 +9,13 @@ const initFilter = () => {
 				document.querySelectorAll(`img[data-color=${element.value}]`)
 			).map((element) => element.parentElement) as HTMLElement[];
 			if (element.checked) {
-				new Bewegung(
+				const animation = new Bewegung(
 					selectedImages,
 					{ display: "" },
 					{ duration: 1400, rootSelector: "main" }
-				).play();
+				);
+				animation.play();
+				animation.pause();
 			} else {
 				const animation = new Bewegung(
 					selectedImages,
@@ -21,6 +23,7 @@ const initFilter = () => {
 					{ duration: 1400, rootSelector: "main" }
 				);
 				animation.play();
+				animation.pause();
 			}
 		})
 	);

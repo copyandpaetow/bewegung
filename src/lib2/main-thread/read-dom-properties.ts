@@ -1,11 +1,5 @@
 import { CssRuleName, ElementReadouts } from "../types";
 
-export const getRatio = (domElement: HTMLElement): number =>
-	domElement.tagName !== "IMG"
-		? 0
-		: (domElement as HTMLImageElement).naturalWidth /
-		  (domElement as HTMLImageElement).naturalHeight;
-
 export const getCalculations = (
 	element: HTMLElement,
 	changeProperties: Set<CssRuleName>,

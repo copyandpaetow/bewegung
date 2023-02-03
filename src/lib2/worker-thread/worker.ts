@@ -40,6 +40,7 @@ const initMainElementState = (): MainElementState => ({
 	appliableKeyframes: new Map<number, Map<string, CustomKeyframe>>(),
 });
 
+//these could be promises maybe?
 let mainElementState = initMainElementState();
 let generalState = initGeneralState();
 let keyframeState = deriveKeyframeState(mainElementState.appliableKeyframes);
@@ -50,10 +51,9 @@ createMessageStore<WorkerMessages, MainMessages>(worker, {
 		const { done, value: keyframes } = keyframeState.remainingKeyframes.next();
 
 		if (done) {
-			queueMicrotask(() => {
-				const resultState = deriveResultState(mainElementState, generalState, keyframeState);
-				reply("receiveConstructedKeyframes", constructKeyframes(resultState));
-			});
+			const resultState = deriveResultState(mainElementState, generalState, keyframeState);
+			reply("receiveConstructedKeyframes", constructKeyframes(resultState));
+
 			return;
 		}
 
@@ -69,14 +69,14 @@ createMessageStore<WorkerMessages, MainMessages>(worker, {
 	receiveGeneralState(_, generalTransferable) {
 		generalState = generalTransferable;
 	},
-	receiveReadouts({ send }, readouts) {
-		send("replyAppliableKeyframes");
-		readouts.forEach((readout, elementID) => {
+	receiveReadouts({ send }, newReadouts) {
+		newReadouts.forEach((readout, elementID) => {
 			keyframeState.readouts.set(
 				elementID,
 				(keyframeState.readouts.get(elementID) ?? []).concat(readout)
 			);
 		});
+		send("replyAppliableKeyframes");
 	},
 	receiveKeyframeRequest({ send }) {
 		keyframeState = deriveKeyframeState(mainElementState.appliableKeyframes);
