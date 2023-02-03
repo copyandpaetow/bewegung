@@ -8,37 +8,41 @@ import {
 } from "../types";
 import { calculateDefaultKeyframes } from "./calculate-default-keyframes";
 import { calculateDimensionDifferences } from "./calculate-dimension-differences";
-import { findCorrespondingElement } from "./calculate-image-keyframes";
 import { calculateKeyframeTables } from "./calculate-style-tables";
 
-const getNextParent = (parentKey: string, resultState: ResultState) => {
+const getNextParent = (elementID: string, resultState: ResultState) => {
 	const { parent, defaultReadouts, root } = resultState;
-	const isRoot = root.get(parentKey) === parentKey;
+	const isRoot = root.get(elementID) === elementID;
+	const parentID = parent.get(elementID)!;
 
-	if (defaultReadouts.has(parentKey) || isRoot) {
-		return parentKey;
+	if (isRoot) {
+		return elementID;
 	}
-	getNextParent(parent.get(parentKey)!, resultState);
+	if (defaultReadouts.has(parentID)) {
+		return parentID;
+	}
+
+	return getNextParent(parentID, resultState);
 };
 
 const setOverrides = (resultState: ResultState) => {
 	const { overrides, root, defaultReadouts } = resultState;
 
-	defaultReadouts.forEach((readouts, key) => {
-		const parentKey = getNextParent(key, resultState);
+	defaultReadouts.forEach((readouts, elementID) => {
+		const parentKey = getNextParent(elementID, resultState);
 		const parentReadouts = parentKey ? defaultReadouts.get(parentKey) : undefined;
-		const isRoot = root.get(key) === key;
+		const isRoot = root.get(elementID) === elementID;
 
 		if (isRoot && readouts.at(-1)!.position === "static") {
-			overrides.set(key, {
-				...(overrides.get(key) ?? {}),
+			overrides.set(elementID, {
+				...(overrides.get(elementID) ?? {}),
 				position: "relative",
 			});
 		}
 
 		if (checkForDisplayNone(readouts.at(-1)!)) {
-			overrides.set(key, {
-				...(overrides.get(key) ?? {}),
+			overrides.set(elementID, {
+				...(overrides.get(elementID) ?? {}),
 				display: "",
 				position: "absolute",
 				left: readouts.at(-1)!.currentLeft - (parentReadouts?.at(-1)!.currentLeft ?? 0) + "px",
@@ -46,7 +50,6 @@ const setOverrides = (resultState: ResultState) => {
 				width: readouts.at(-1)!.currentWidth + "px",
 				height: readouts.at(-1)!.currentHeight + "px",
 			});
-
 			if (parentKey && parentReadouts!.at(-1)!.position === "static") {
 				overrides.set(parentKey, {
 					...(overrides.get(parentKey) ?? {}),
@@ -56,15 +59,15 @@ const setOverrides = (resultState: ResultState) => {
 		}
 
 		if (readouts.some(checkForBorderRadius)) {
-			overrides.set(key, {
-				...(overrides.get(key) ?? {}),
+			overrides.set(elementID, {
+				...(overrides.get(elementID) ?? {}),
 				borderRadius: "0px",
 			});
 		}
 
-		// if (readouts.some(checkForDisplayInline) && type.get(key)! === "text") {
-		// 	overrides.set(key, {
-		// 		...(overrides.get(key) ?? {}),
+		// if (readouts.some(checkForDisplayInline) && type.get(elementID)! === "text") {
+		// 	overrides.set(elementID, {
+		// 		...(overrides.get(elementID) ?? {}),
 		// 		display: "inline-block",
 		// 	});
 		// }
@@ -78,14 +81,14 @@ const hasElementChanged = (entry: DimensionalDifferences) =>
 	entry.widthDifference !== 1;
 
 const calculateDifferences = (resultState: ResultState) => {
-	const { parent, type, defaultReadouts, changeTimings } = resultState;
+	const { parent, type, defaultReadouts } = resultState;
 	const differenceMap = new Map<string, DimensionalDifferences[]>();
 
 	defaultReadouts.forEach((elementReadouts, elementID) => {
 		const parentReadouts = parent.has(elementID)
 			? defaultReadouts.get(parent.get(elementID)!)
 			: undefined;
-		const isText = type.get(elementID)! === "text";
+		const isText = type.get(elementID) === "text";
 
 		if (!parentReadouts) {
 			const differences = elementReadouts.map((currentReadout) => {
@@ -98,9 +101,9 @@ const calculateDifferences = (resultState: ResultState) => {
 
 		const differences = elementReadouts.map((currentReadout) => {
 			const child: DifferenceArray = [currentReadout, elementReadouts.at(-1)!];
-			const correspondingParentEntry =
-				parentReadouts?.find((entry) => entry.offset === currentReadout.offset) ??
-				findCorrespondingElement(currentReadout, parentReadouts!, changeTimings);
+			const correspondingParentEntry = parentReadouts?.find(
+				(entry) => entry.offset === currentReadout.offset
+			)!;
 
 			return calculateDimensionDifferences(
 				child,

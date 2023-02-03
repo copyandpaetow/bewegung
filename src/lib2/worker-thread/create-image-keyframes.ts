@@ -5,7 +5,7 @@ import { calculateEasingMap } from "./calculate-easings";
 import {
 	calculateImageKeyframes,
 	getWrapperKeyframes,
-	getWrapperStyle
+	getWrapperStyle,
 } from "./calculate-image-keyframes";
 
 const setImageOverride = (resultState: ResultState) => {
@@ -48,7 +48,6 @@ const setImageData = (resultState: ResultState) => {
 export const getImageKeyframes = (resultState: ResultState) => {
 	const {
 		root,
-		changeTimings,
 		imageReadouts,
 		defaultReadouts,
 		resultingStyle,
@@ -68,18 +67,12 @@ export const getImageKeyframes = (resultState: ResultState) => {
 			height: elementReadouts.at(-1)!.unsaveHeight + "px",
 			width: elementReadouts.at(-1)!.unsaveWidth + "px",
 		});
-
 		resultingStyle.set(wrapper, getWrapperStyle(elementReadouts, rootReadout, imageData));
-
 		resultingStyle.set(elementID, {
 			...(resultingStyle.get(elementID) ?? {}),
 		});
 
-		keyframes.set(
-			wrapper,
-			getWrapperKeyframes(elementReadouts, rootReadout, imageData, changeTimings)
-		);
-
+		keyframes.set(wrapper, getWrapperKeyframes(elementReadouts, rootReadout, imageData));
 		keyframes.set(elementID, calculateImageKeyframes(elementReadouts, imageData));
 
 		wrappers.set(elementID, wrapper);

@@ -1,6 +1,6 @@
 import { getOrAddKeyFromLookup } from "../shared/element-translations";
+import { task } from "../shared/utils";
 import { EntryType, MainState } from "../types";
-import { getRatio } from "./read-dom-properties";
 
 const DOM = {
 	parent(element: HTMLElement): HTMLElement {
@@ -62,18 +62,7 @@ const getRootElement = (entries: HTMLElement[]): HTMLElement => {
 	return root as HTMLElement;
 };
 
-const isTextNode = (element: HTMLElement) => {
-	if (!element.hasChildNodes()) {
-		return false;
-	}
-
-	return Array.from(element.childNodes).every((node) => Boolean(node.textContent?.trim()))
-		? "text"
-		: false;
-};
-const isImage = (mainElement: HTMLElement) => (mainElement.tagName === "IMG" ? "image" : false);
-
-export const getGeneralTransferObject = (state: MainState) => {
+const getAffectedElements = (state: MainState) => {
 	const { translation, root, resets } = state;
 
 	const affectedElementsMap = new Map<string, Set<string>>();
@@ -92,6 +81,7 @@ export const getGeneralTransferObject = (state: MainState) => {
 		secondaryDomElements.forEach((secondaryDomElement) => {
 			const secondaryElementID = getOrAddKeyFromLookup(secondaryDomElement, translation);
 
+			//TODO: remove
 			secondaryDomElement.setAttribute("data-id", secondaryElementID);
 
 			affectedElementsMap.set(
@@ -101,16 +91,28 @@ export const getGeneralTransferObject = (state: MainState) => {
 		});
 	});
 
-	const rootString = new Map<string, string>();
-	const parent = new Map<string, string>();
+	return affectedElementsMap;
+};
+
+const getAffectedByElements = (affectedElementsMap: Map<string, Set<string>>, state: MainState) => {
+	const { translation } = state;
+
 	const affectedBy = new Map<string, string[]>();
-	const ratio = new Map<string, number>();
-	const type = new Map<string, EntryType>();
+
+	translation.forEach((_, elementID) => {
+		const affectedByMainElements = affectedElementsMap.get(elementID)!;
+		affectedBy.set(elementID, [...affectedByMainElements]);
+	});
+
+	return affectedBy;
+};
+
+const getRoot = (affectedElementsMap: Map<string, Set<string>>, state: MainState) => {
+	const { translation, root } = state;
+	const rootString = new Map<string, string>();
 
 	translation.forEach((domElement, elementID) => {
-		const elementType = isImage(domElement) || isTextNode(domElement) || "";
 		const affectedByMainElements = affectedElementsMap.get(elementID)!;
-
 		const rootElement = getRootElement(
 			Array.from(
 				affectedByMainElements,
@@ -118,19 +120,73 @@ export const getGeneralTransferObject = (state: MainState) => {
 			)
 		);
 		root.set(domElement, rootElement);
-
 		rootString.set(elementID, translation.get(rootElement)!);
-		parent.set(elementID, translation.get(domElement.parentElement!)!);
-		type.set(elementID, elementType);
-		affectedBy.set(elementID, [...affectedByMainElements]);
-		ratio.set(elementID, getRatio(domElement));
 	});
 
+	return rootString;
+};
+
+const getParent = (state: MainState) => {
+	const { translation } = state;
+	const parent = new Map<string, string>();
+	translation.forEach((domElement, elementID) => {
+		parent.set(elementID, translation.get(domElement.parentElement!)!);
+	});
+
+	return parent;
+};
+
+export const getRatio = (state: MainState) => {
+	const { translation } = state;
+	const ratio = new Map<string, number>();
+
+	translation.forEach((domElement, elementID) => {
+		if (domElement.tagName !== "IMG") {
+			return;
+		}
+		ratio.set(
+			elementID,
+			(domElement as HTMLImageElement).naturalWidth / (domElement as HTMLImageElement).naturalHeight
+		);
+	});
+	return ratio;
+};
+
+const isTextNode = (element: HTMLElement) => {
+	if (!element.hasChildNodes()) {
+		return false;
+	}
+
+	return Array.from(element.childNodes).every((node) => Boolean(node.textContent?.trim()))
+		? "text"
+		: false;
+};
+
+const getType = (state: MainState) => {
+	const { translation } = state;
+	const type = new Map<string, EntryType>();
+
+	translation.forEach((domElement, elementID) => {
+		if (domElement.tagName === "IMG") {
+			type.set(elementID, "image");
+		}
+
+		if (isTextNode(domElement)) {
+			type.set(elementID, "text");
+		}
+	});
+
+	return type;
+};
+
+export const getGeneralTransferObject = async (state: MainState) => {
+	const affectedElementsMap = getAffectedElements(state);
+	await task();
 	return {
-		root: rootString,
-		parent,
-		type,
-		affectedBy,
-		ratio,
+		affectedBy: getAffectedByElements(affectedElementsMap, state),
+		root: getRoot(affectedElementsMap, state),
+		parent: getParent(state),
+		ratio: getRatio(state),
+		type: getType(state),
 	};
 };

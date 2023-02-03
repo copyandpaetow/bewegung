@@ -20,29 +20,11 @@ import {
 /*
 TODOS:
  
-# performance
-- bigger functions can be split by adding a task between 
-
-# coding style
-- unify the names of state entries
-- unify the order of function parameters, especially the state, should it be first or last?
-- no boolean arguments
-
 #refactor
-- small utility functions like updating a map entry etc
 - no boolean arguments
-- rethink the offset structure for the style entries. Finding entries with certain offsets is tedious.
-- ratio doesnt need to be send, when there is no information (0) included, this could just be the fallback
-- try to put the image wrapper etc directly where the real image is, since we need to make them a relative element anyways 
-=> in that case we wouldnt need the rootMap in the worker
-? if new image wrapper/placeholder are added and reactivity wise, the animation gets calculated again, how will they be treated
-? should we have the readouts in the state and another imageReadout entry as well? They could get filtered and switched around instead of creating 2 Maps out of the readouts
-
+- how handle properties that are not layout related but cant be animated in a good way? like colors? 
 
 #bugs
-- text elements only have a vertical correction
-- sometimes the readouts for every offset are identical
-? is something wroong with the readout?
 - if an animation which added images is paused and another animation is called, these images will get included and will have more images created for it
 => animations should have an ID, or a data-key to prevent double usage
 - all the main elements are also included in the affectedElement State
@@ -79,8 +61,7 @@ export const Animations = (props: CustomKeyframeEffect[]) => {
 			const keyedProps = replaceTargetInputWithKeys(initialProps, state);
 			reply("receiveMainState", keyedProps);
 			setElementRelatedState(keyedProps, state);
-			await task();
-			reply("receiveGeneralState", getGeneralTransferObject(state));
+			reply("receiveGeneralState", await getGeneralTransferObject(state));
 		},
 		async receiveAppliableKeyframes({ reply }, appliableKeyframes) {
 			const readouts = await readDom(appliableKeyframes, state);

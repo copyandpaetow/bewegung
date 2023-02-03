@@ -67,7 +67,7 @@ const seperateReadouts = (
 	const defaultReadouts = new Map<string, ElementReadouts[]>();
 
 	readouts.forEach((elementReadouts, elementID) => {
-		const isElementAnImage = type.get(elementID)! === "image";
+		const isElementAnImage = type.get(elementID) === "image";
 		if (isElementAnImage && doesElementChangeInScale(elementReadouts)) {
 			imageReadouts.set(elementID, elementReadouts);
 			return;
