@@ -22,10 +22,6 @@ TODOS:
  
 # performance
 - bigger functions can be split by adding a task between 
-- filter the keyframes as they come in and delete them if needed. If a display: none element needs a position relative parent, 
-or (more broadly), the animation needs a relative parent for the calculation, we just look if the parent of the current defaultReadouts entry
-has a parent (until we reach the root) and use that
-? how does this behave on lower fps?
 
 # coding style
 - unify the names of state entries
@@ -33,6 +29,7 @@ has a parent (until we reach the root) and use that
 - no boolean arguments
 
 #refactor
+- small utility functions like updating a map entry etc
 - no boolean arguments
 - rethink the offset structure for the style entries. Finding entries with certain offsets is tedious.
 - ratio doesnt need to be send, when there is no information (0) included, this could just be the fallback
@@ -43,6 +40,7 @@ has a parent (until we reach the root) and use that
 
 
 #bugs
+- text elements only have a vertical correction
 - sometimes the readouts for every offset are identical
 ? is something wroong with the readout?
 - if an animation which added images is paused and another animation is called, these images will get included and will have more images created for it

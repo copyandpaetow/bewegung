@@ -1,14 +1,8 @@
-import {
-	checkForBorderRadius,
-	checkForDisplayInline,
-	checkForDisplayNone,
-	offsetObjectsAreEqual,
-} from "../shared/utils";
+import { checkForBorderRadius, checkForDisplayNone } from "../shared/utils";
 import {
 	BewegungsOptions,
 	DifferenceArray,
 	DimensionalDifferences,
-	ElementReadouts,
 	ResultState,
 	StyleTables,
 } from "../types";
@@ -17,14 +11,25 @@ import { calculateDimensionDifferences } from "./calculate-dimension-differences
 import { findCorrespondingElement } from "./calculate-image-keyframes";
 import { calculateKeyframeTables } from "./calculate-style-tables";
 
+const getNextParent = (parentKey: string, resultState: ResultState) => {
+	const { parent, defaultReadouts, root } = resultState;
+	const isRoot = root.get(parentKey) === parentKey;
+
+	if (defaultReadouts.has(parentKey) || isRoot) {
+		return parentKey;
+	}
+	getNextParent(parent.get(parentKey)!, resultState);
+};
+
 const setOverrides = (resultState: ResultState) => {
-	const { overrides, parent, type, defaultReadouts } = resultState;
+	const { overrides, root, defaultReadouts } = resultState;
 
 	defaultReadouts.forEach((readouts, key) => {
-		const parentKey = parent.get(key);
+		const parentKey = getNextParent(key, resultState);
 		const parentReadouts = parentKey ? defaultReadouts.get(parentKey) : undefined;
+		const isRoot = root.get(key) === key;
 
-		if (!parentKey && readouts.at(-1)!.position === "static") {
+		if (isRoot && readouts.at(-1)!.position === "static") {
 			overrides.set(key, {
 				...(overrides.get(key) ?? {}),
 				position: "relative",
@@ -66,29 +71,15 @@ const setOverrides = (resultState: ResultState) => {
 	});
 };
 
-const getAnchorParents = (
-	readouts: Map<string, ElementReadouts[]>,
-	parentMap: Map<string, string>
-) => {
-	const anchorParents = new Set<string>();
-	readouts.forEach((elementReadouts, elementString) => {
-		if (!checkForDisplayNone(elementReadouts.at(-1)!)) {
-			return;
-		}
-		const parentKey = parentMap.get(elementString);
-		const withRoot = parentKey || elementString;
-		anchorParents.add(withRoot);
-	});
+const hasElementChanged = (entry: DimensionalDifferences) =>
+	entry.heightDifference !== 1 ||
+	entry.leftDifference !== 0 ||
+	entry.topDifference !== 0 ||
+	entry.widthDifference !== 1;
 
-	return anchorParents;
-};
-
-const calculateDifferences = (resultState: ResultState): Map<string, DimensionalDifferences[]> => {
+const calculateDifferences = (resultState: ResultState) => {
 	const { parent, type, defaultReadouts, changeTimings } = resultState;
-	const anchorParents = getAnchorParents(defaultReadouts, parent);
 	const differenceMap = new Map<string, DimensionalDifferences[]>();
-
-	//if we filter the elements again and then in here get the parent. if its not there, we will get its parent etc
 
 	defaultReadouts.forEach((elementReadouts, elementString) => {
 		const parentReadouts = parent.has(elementString)
@@ -118,17 +109,23 @@ const calculateDifferences = (resultState: ResultState): Map<string, Dimensional
 			);
 		});
 
-		// if (
-		// 	!anchorParents.has(elementString) &&
-		// 	differences.every((entry) => offsetObjectsAreEqual(entry, differences.at(-1)!))
-		// ) {
-		// 	console.log(elementString, elementReadouts);
-		// 	defaultReadouts.delete(elementString);
-		// 	return;
-		// }
 		differenceMap.set(elementString, differences);
 	});
 
+	return differenceMap;
+};
+
+const filterDifferences = (
+	differenceMap: Map<string, DimensionalDifferences[]>,
+	resultState: ResultState
+) => {
+	differenceMap.forEach((differences, elementString) => {
+		if (differences.some(hasElementChanged)) {
+			return;
+		}
+		resultState.defaultReadouts.delete(elementString);
+		differenceMap.delete(elementString);
+	});
 	return differenceMap;
 };
 
@@ -149,13 +146,12 @@ const calculateStyleTables = (resultState: ResultState) => {
 };
 
 export const getDefaultKeyframes = (resultState: ResultState) => {
-	const { keyframes } = resultState;
-	const differenceMap = calculateDifferences(resultState);
+	const differenceMap = filterDifferences(calculateDifferences(resultState), resultState);
 	const styleTableMap = calculateStyleTables(resultState);
 	setOverrides(resultState);
 
 	differenceMap.forEach((differences, elementString) => {
 		const styleTables = styleTableMap.get(elementString)!;
-		keyframes.set(elementString, calculateDefaultKeyframes(differences, styleTables));
+		resultState.keyframes.set(elementString, calculateDefaultKeyframes(differences, styleTables));
 	});
 };

@@ -43,7 +43,7 @@ const doesElementChangeInScale = (readouts: ElementReadouts[]) =>
 
 const filterHiddenElements = (readouts: Map<string, ElementReadouts[]>) => {
 	readouts.forEach((elementReadouts, key) => {
-		if (elementReadouts.some((entry) => isEntryVisible(entry))) {
+		if (elementReadouts.some(isEntryVisible)) {
 			return;
 		}
 		readouts.delete(key);
