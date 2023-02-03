@@ -24,13 +24,13 @@ export const calculateAppliableKeyframes = (
 
 	changeTimings.forEach((timing) => {
 		const resultingStyle = new Map<string, CustomKeyframe>();
-		keyframes.forEach((keyframe, elementString) => {
+		keyframes.forEach((keyframe, elementID) => {
 			const combinedKeyframe = filterMatchingStyleFromKeyframes(keyframe, timing);
 
 			if (!combinedKeyframe) {
 				return;
 			}
-			resultingStyle.set(elementString, combinedKeyframe);
+			resultingStyle.set(elementID, combinedKeyframe);
 		});
 		appliableKeyframes.set(timing, resultingStyle);
 	});

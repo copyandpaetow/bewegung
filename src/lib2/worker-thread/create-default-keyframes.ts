@@ -81,18 +81,18 @@ const calculateDifferences = (resultState: ResultState) => {
 	const { parent, type, defaultReadouts, changeTimings } = resultState;
 	const differenceMap = new Map<string, DimensionalDifferences[]>();
 
-	defaultReadouts.forEach((elementReadouts, elementString) => {
-		const parentReadouts = parent.has(elementString)
-			? defaultReadouts.get(parent.get(elementString)!)
+	defaultReadouts.forEach((elementReadouts, elementID) => {
+		const parentReadouts = parent.has(elementID)
+			? defaultReadouts.get(parent.get(elementID)!)
 			: undefined;
-		const isText = type.get(elementString)! === "text";
+		const isText = type.get(elementID)! === "text";
 
 		if (!parentReadouts) {
 			const differences = elementReadouts.map((currentReadout) => {
 				const child: DifferenceArray = [currentReadout, elementReadouts.at(-1)!];
 				return calculateDimensionDifferences(child, [undefined, undefined], isText);
 			});
-			differenceMap.set(elementString, differences);
+			differenceMap.set(elementID, differences);
 			return;
 		}
 
@@ -109,7 +109,7 @@ const calculateDifferences = (resultState: ResultState) => {
 			);
 		});
 
-		differenceMap.set(elementString, differences);
+		differenceMap.set(elementID, differences);
 	});
 
 	return differenceMap;
@@ -119,12 +119,12 @@ const filterDifferences = (
 	differenceMap: Map<string, DimensionalDifferences[]>,
 	resultState: ResultState
 ) => {
-	differenceMap.forEach((differences, elementString) => {
+	differenceMap.forEach((differences, elementID) => {
 		if (differences.some(hasElementChanged)) {
 			return;
 		}
-		resultState.defaultReadouts.delete(elementString);
-		differenceMap.delete(elementString);
+		resultState.defaultReadouts.delete(elementID);
+		differenceMap.delete(elementID);
 	});
 	return differenceMap;
 };
@@ -132,12 +132,12 @@ const filterDifferences = (
 const calculateStyleTables = (resultState: ResultState) => {
 	const { affectedBy, options, totalRuntime, defaultReadouts } = resultState;
 	const styleTableMap = new Map<string, StyleTables>();
-	defaultReadouts.forEach((elementReadouts, elementString) => {
+	defaultReadouts.forEach((elementReadouts, elementID) => {
 		const easings = new Set<BewegungsOptions>(
-			affectedBy.get(elementString)!.flatMap((elementString) => options.get(elementString) ?? [])
+			affectedBy.get(elementID)!.flatMap((elementID) => options.get(elementID) ?? [])
 		);
 		styleTableMap.set(
-			elementString,
+			elementID,
 			calculateKeyframeTables(elementReadouts, [...easings], totalRuntime)
 		);
 	});
@@ -150,8 +150,8 @@ export const getDefaultKeyframes = (resultState: ResultState) => {
 	const styleTableMap = calculateStyleTables(resultState);
 	setOverrides(resultState);
 
-	differenceMap.forEach((differences, elementString) => {
-		const styleTables = styleTableMap.get(elementString)!;
-		resultState.keyframes.set(elementString, calculateDefaultKeyframes(differences, styleTables));
+	differenceMap.forEach((differences, elementID) => {
+		const styleTables = styleTableMap.get(elementID)!;
+		resultState.keyframes.set(elementID, calculateDefaultKeyframes(differences, styleTables));
 	});
 };

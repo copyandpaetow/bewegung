@@ -4,7 +4,7 @@ import { observerDimensions } from "./watch-dimensions";
 import { observeMutations } from "./watch-mutations";
 import { observeResizes } from "./watch-resizes";
 
-export const removeElementsFromTranslation = (state: MainState, removedElements: HTMLElement[]) =>
+export const removeElementsFromTranslation = (removedElements: HTMLElement[], state: MainState) =>
 	removedElements.forEach((element) => state.translation.delete(element));
 
 export const watchForChanges = (
@@ -34,8 +34,8 @@ export const watchForChanges = (
 		throttledDimensionChange.fn(async () => {
 			prefixedCallback(onDimensionOrPositionChange);
 		});
-	const unobserveRO = observeResizes(state, dimensionChange);
-	const unobserveIO = observerDimensions(state, dimensionChange);
+	const unobserveRO = observeResizes(dimensionChange, state);
+	const unobserveIO = observerDimensions(dimensionChange, state);
 
 	const unobserveMO = observeMutations(
 		state,
