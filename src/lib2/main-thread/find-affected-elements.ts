@@ -1,6 +1,10 @@
+import { BEWEGUNG_DATA_ATTRIBUTE } from "../shared/constants";
 import { getOrAddKeyFromLookup } from "../shared/element-translations";
 import { task } from "../shared/utils";
 import { EntryType, MainState } from "../types";
+
+const filterPlaceholderElements = (element: HTMLElement) =>
+	!element.hasAttribute(BEWEGUNG_DATA_ATTRIBUTE);
 
 const DOM = {
 	parent(element: HTMLElement): HTMLElement {
@@ -32,7 +36,10 @@ export const findAffectedDOMElements = (
 	//? should all decendants for all elements be really included? This has huge performance implications
 
 	const relatives = new Set(
-		DOM.ancestors(element, rootElement).concat(DOM.siblings(element)).flatMap(DOM.decendants)
+		DOM.ancestors(element, rootElement)
+			.concat(DOM.siblings(element))
+			.flatMap(DOM.decendants)
+			.filter(filterPlaceholderElements)
 	);
 
 	return Array.from(relatives) as HTMLElement[];
@@ -80,9 +87,6 @@ const getAffectedElements = (state: MainState) => {
 	elementConnections.forEach((secondaryDomElements, mainElementID) => {
 		secondaryDomElements.forEach((secondaryDomElement) => {
 			const secondaryElementID = getOrAddKeyFromLookup(secondaryDomElement, translation);
-
-			//TODO: remove
-			secondaryDomElement.setAttribute("data-id", secondaryElementID);
 
 			affectedElementsMap.set(
 				secondaryElementID,
@@ -182,6 +186,7 @@ const getType = (state: MainState) => {
 export const getGeneralTransferObject = async (state: MainState) => {
 	const affectedElementsMap = getAffectedElements(state);
 	await task();
+
 	return {
 		affectedBy: getAffectedByElements(affectedElementsMap, state),
 		root: getRoot(affectedElementsMap, state),

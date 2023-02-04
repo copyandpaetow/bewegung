@@ -27,6 +27,10 @@ export const defaultOptions: Partial<KeyframeEffectOptions> = {
 export const emptyImageSrc =
 	"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
 
+export const BEWEGUNG_DATA_ATTRIBUTE = "data-bewegung";
+export const BEWEGUNG_PLACEHOLDER = "placeholder";
+export const BEWEGUNG_WRAPPER = "wrapper";
+
 export const defaultImageStyles: CustomKeyframe = {
 	aspectRatio: "initial",
 	display: "initial",

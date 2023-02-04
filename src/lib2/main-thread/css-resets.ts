@@ -1,4 +1,4 @@
-import { emptyImageSrc } from "../shared/constants";
+import { BEWEGUNG_DATA_ATTRIBUTE, BEWEGUNG_PLACEHOLDER, emptyImageSrc } from "../shared/constants";
 
 export const saveOriginalStyle = (element: HTMLElement) => {
 	const allAttributes = new Map<string, string>([["style", ""]]);
@@ -37,4 +37,5 @@ export const setImageAttributes = (element: HTMLImageElement, relatedElement: HT
 		element.setAttribute(attribute, relatedElement.getAttribute(attribute)!);
 	});
 	element.src = emptyImageSrc;
+	element.setAttribute(BEWEGUNG_DATA_ATTRIBUTE, BEWEGUNG_PLACEHOLDER);
 };

@@ -62,8 +62,6 @@ export const setElementRelatedState = (
 		keys.forEach((elementID) => {
 			const domElement = translation.get(elementID)!;
 
-			//TODO: remove
-			domElement.setAttribute("data-id", elementID);
 			resets.set(domElement, saveOriginalStyle(domElement));
 			root.set(domElement, compareRootElements(localRoot, root.get(domElement)));
 		});

@@ -1,3 +1,4 @@
+import { BEWEGUNG_DATA_ATTRIBUTE, BEWEGUNG_WRAPPER } from "../shared/constants";
 import { BidirectionalMap } from "../shared/element-translations";
 import { MainState, Result, ResultTransferable } from "../types";
 import { fillImplicitKeyframes } from "../worker-thread/normalize-keyframes";
@@ -27,6 +28,7 @@ const getTemporaryElements = (
 		const elementStyle = resultingStyle.get(wrapperID)!;
 		applyCSSStyles(wrapperElement, elementStyle);
 
+		wrapperElement.setAttribute(BEWEGUNG_DATA_ATTRIBUTE, BEWEGUNG_WRAPPER);
 		temporaryElementMap.set(wrapperID, wrapperElement);
 		resultingStyle.delete(wrapperID);
 	});

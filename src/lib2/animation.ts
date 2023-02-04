@@ -9,7 +9,7 @@ import {
 import { removeElementsFromTranslation, watchForChanges } from "./main-thread/watch-changes";
 import { BidirectionalMap } from "./shared/element-translations";
 import { createMessageStore, getWorker } from "./shared/store";
-import { deferred, task } from "./shared/utils";
+import { deferred } from "./shared/utils";
 import {
 	CustomKeyframeEffect,
 	MainMessages,
@@ -20,16 +20,21 @@ import {
 /*
 TODOS:
  
+# performance
+- if the general state takes to long, we already get a keyframe-request before the GS is done
+=> if we split the getGeneralTransferObject function it works, but the tasks takes a lot of time (like 10ms)
+
 #refactor
 - no boolean arguments
 - how handle properties that are not layout related but cant be animated in a good way? like colors? 
 
 #bugs
-- if an animation which added images is paused and another animation is called, these images will get included and will have more images created for it
-=> animations should have an ID, or a data-key to prevent double usage
 - all the main elements are also included in the affectedElement State
 ? it would make sense that even main elements are affected by other easings but should their easing take priority?
 - if we scroll down far enough the translate values are wrong
+=> the root element has no correction via the parent. It is tied to the viewport
+=> we could either add the roots parent and not animating it
+=> or correct the parent while readouting => this may lead to bugs 
 - a starting delay combined with a value that changes on offset 0 behaves wrongly => the change should be instantiously but it is a transition
 - shrinking elements distort text elements
 - clip-path for display none images doesnt show the border radius anymore
