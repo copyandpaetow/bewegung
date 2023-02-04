@@ -88,6 +88,8 @@ export const getOrAddKeyFromLookup = (
 	}
 	const key = uuid(element.tagName);
 	lookup.set(key, element);
+	//TODO THis is for debugging, remove later
+	element.setAttribute("data-key", key);
 
 	return key;
 };

@@ -15,7 +15,6 @@ const initFilter = () => {
 					{ duration: 1400, rootSelector: "main" }
 				);
 				animation.play();
-				animation.pause();
 			} else {
 				const animation = new Bewegung(
 					selectedImages,
@@ -23,7 +22,6 @@ const initFilter = () => {
 					{ duration: 1400, rootSelector: "main" }
 				);
 				animation.play();
-				animation.pause();
 			}
 		})
 	);
