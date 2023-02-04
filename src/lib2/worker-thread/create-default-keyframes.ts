@@ -122,11 +122,13 @@ const filterDifferences = (
 	differenceMap: Map<string, DimensionalDifferences[]>,
 	resultState: ResultState
 ) => {
+	const { defaultReadouts, root } = resultState;
+
 	differenceMap.forEach((differences, elementID) => {
-		if (differences.some(hasElementChanged)) {
+		if (differences.some(hasElementChanged) || root.get(elementID) === elementID) {
 			return;
 		}
-		resultState.defaultReadouts.delete(elementID);
+		defaultReadouts.delete(elementID);
 		differenceMap.delete(elementID);
 	});
 	return differenceMap;
