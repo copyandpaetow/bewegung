@@ -81,16 +81,13 @@ const hasElementChanged = (entry: DimensionalDifferences) =>
 	entry.widthDifference !== 1;
 
 const calculateDifferences = (resultState: ResultState) => {
-	const { parent, type, defaultReadouts } = resultState;
+	const { parent, root, type, defaultReadouts } = resultState;
 	const differenceMap = new Map<string, DimensionalDifferences[]>();
 
 	defaultReadouts.forEach((elementReadouts, elementID) => {
-		const parentReadouts = parent.has(elementID)
-			? defaultReadouts.get(parent.get(elementID)!)
-			: undefined;
+		const isRoot = root.get(elementID) === elementID;
 		const isText = type.get(elementID) === "text";
-
-		if (!parentReadouts) {
+		if (isRoot) {
 			const differences = elementReadouts.map((currentReadout) => {
 				const child: DifferenceArray = [currentReadout, elementReadouts.at(-1)!];
 				return calculateDimensionDifferences(child, [undefined, undefined], isText);
@@ -99,6 +96,7 @@ const calculateDifferences = (resultState: ResultState) => {
 			return;
 		}
 
+		const parentReadouts = defaultReadouts.get(parent.get(elementID)!)!;
 		const differences = elementReadouts.map((currentReadout) => {
 			const child: DifferenceArray = [currentReadout, elementReadouts.at(-1)!];
 			const correspondingParentEntry = parentReadouts?.find(

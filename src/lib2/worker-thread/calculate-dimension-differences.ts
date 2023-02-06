@@ -130,8 +130,24 @@ export const calculateDimensionDifferences = (
 	} = getScales(child, parent, isTextNode);
 
 	if (!parent[0]) {
-		const leftDifference = currentLeftDifference - referenceLeftDifference - textCorrection;
-		const topDifference = currentTopDifference - referenceTopDifference;
+		/*
+		Apparently, the browser will keep the viewport from jumping when the size of an element is changed,
+		depending on where the element-to-be-changed is, this will move either everything below the element but keep it in view or move everything above 
+		(by jumping down in the page) and lead to weird behaviour
+		The first condition can be true if the element shrinks, so therefore we also need to check if the element needs to be scaled down
+
+		*/
+
+		const weirdBrowserBehaviorCorrectionTop =
+			currentTopDifference > referenceTopDifference && heightDifference < 1 ? -1 : 1;
+		const weirdBrowserBehaviorCorrectionLeft =
+			currentLeftDifference > referenceLeftDifference && widthDifference < 1 ? -1 : 1;
+
+		const leftDifference =
+			(currentLeftDifference - referenceLeftDifference - textCorrection) *
+			weirdBrowserBehaviorCorrectionLeft;
+		const topDifference =
+			(currentTopDifference - referenceTopDifference) * weirdBrowserBehaviorCorrectionTop;
 
 		return {
 			heightDifference: save(heightDifference, 1),
