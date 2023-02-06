@@ -31,15 +31,15 @@ TODOS:
 #bugs
 - all the main elements are also included in the affectedElement State
 ? it would make sense that even main elements are affected by other easings but should their easing take priority?
-- if we scroll down far enough the translate values are wrong
-=> the root element has no correction via the parent. It is tied to the viewport
-=> we could either add the roots parent and not animating it
-=> or correct the parent while readouting => this may lead to bugs 
+
 - a starting delay combined with a value that changes on offset 0 behaves wrongly => the change should be instantiously but it is a transition
 - shrinking elements distort text elements
 - clip-path for display none images doesnt show the border radius anymore
+=> this can happen when the parent element has the border radius and it gets removed there...
+=> maybe it would be better to use the parent instead of the root after all
 - formatArraySyntax procudes wrong values when properties have mixed middle offsets but the same start and end values
 - the override styles for display: inline are not working correctly. They are intendend for spans
+- maybe rounding the input values could reduce the unsharpness
 
 # features
 - callbacks 
