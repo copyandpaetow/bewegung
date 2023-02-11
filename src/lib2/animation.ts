@@ -25,6 +25,10 @@ TODOS:
 => if we split the getGeneralTransferObject function it works, but the tasks takes a lot of time (like 10ms)
 
 #refactor
+- the affectedElements need to be calculated differently
+=> do we need one root or can they be multiple? If so, we could remove a lot of calculations there
+=> for the affectedElements, they can be the root.querySelectorAll(*)
+=> we would need to calculate if an element is related to the main Element (decendent, ancestor, sibling)
 - no boolean arguments
 - how handle properties that are not layout related but cant be animated in a good way? like colors? 
 
@@ -32,17 +36,21 @@ TODOS:
 - all the main elements are also included in the affectedElement State
 ? it would make sense that even main elements are affected by other easings but should their easing take priority?
 
+- easings are wrong when counter-scaling and need to get calculated
+=> parents should dictate the easings for their children
+=> if the easing cant be calculated, the keyframes need to be expanded to be explicit. This would also need some additional easing calculation
+because just spreading them out would be linear easing
+
 - a starting delay combined with a value that changes on offset 0 behaves wrongly => the change should be instantiously but it is a transition
 - shrinking elements distort text elements
-- clip-path for display none images doesnt show the border radius anymore
-=> this can happen when the parent element has the border radius and it gets removed there...
-=> maybe it would be better to use the parent instead of the root after all
 - formatArraySyntax procudes wrong values when properties have mixed middle offsets but the same start and end values
 - the override styles for display: inline are not working correctly. They are intendend for spans
 - maybe rounding the input values could reduce the unsharpness
 
 # features
 - callbacks 
+- maybe we can send the keyframes one by one and create the animation on the fly. They will get synchronized with their own timeline
+=> this could also be usefull for reactivty, when restoreing the currentTime
 - allow usage of elements as target which are not currently in the dom. The Element in question will can get appended in the dom (or deleted)
 - check for custom properties
 - background images

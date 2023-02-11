@@ -47,7 +47,7 @@ const setImageData = (resultState: ResultState) => {
 
 export const getImageKeyframes = (resultState: ResultState) => {
 	const {
-		root,
+		parent,
 		imageReadouts,
 		defaultReadouts,
 		resultingStyle,
@@ -59,7 +59,7 @@ export const getImageKeyframes = (resultState: ResultState) => {
 
 	imageReadouts.forEach((elementReadouts, elementID) => {
 		const imageData = imageDataMap.get(elementID)!;
-		const rootReadout = defaultReadouts.get(root.get(elementID)!)!;
+		const parentReadout = defaultReadouts.get(parent.get(elementID)!)!;
 		const placeholder = `${elementID}-placeholder`;
 		const wrapper = `${elementID}-wrapper`;
 
@@ -67,12 +67,12 @@ export const getImageKeyframes = (resultState: ResultState) => {
 			height: elementReadouts.at(-1)!.unsaveHeight + "px",
 			width: elementReadouts.at(-1)!.unsaveWidth + "px",
 		});
-		resultingStyle.set(wrapper, getWrapperStyle(elementReadouts, rootReadout, imageData));
+		resultingStyle.set(wrapper, getWrapperStyle(elementReadouts, parentReadout, imageData));
 		resultingStyle.set(elementID, {
 			...(resultingStyle.get(elementID) ?? {}),
 		});
 
-		keyframes.set(wrapper, getWrapperKeyframes(elementReadouts, rootReadout, imageData));
+		keyframes.set(wrapper, getWrapperKeyframes(elementReadouts, parentReadout, imageData));
 		keyframes.set(elementID, calculateImageKeyframes(elementReadouts, imageData));
 
 		wrappers.set(elementID, wrapper);

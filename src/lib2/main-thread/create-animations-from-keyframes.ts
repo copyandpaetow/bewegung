@@ -44,12 +44,12 @@ const setWrapperCallbacks = (
 ) => {
 	const { wrappers } = resultTransferable;
 	const { animations, onStart } = result;
-	const { translation, root } = state;
+	const { translation } = state;
 
 	wrappers.forEach((wrapperID, imageID) => {
 		const imageElement = translation.get(imageID)!;
 		const wrapperElement = temporaryElementMap.get(wrapperID)!;
-		const currentRoot = root.get(imageElement)!;
+		const parent = imageElement.parentElement!;
 		const animation = animations.get(wrapperElement)!;
 
 		animation.onfinish = () => {
@@ -58,8 +58,7 @@ const setWrapperCallbacks = (
 		};
 
 		onStart.push(() => {
-			wrapperElement.appendChild(imageElement);
-			currentRoot.appendChild(wrapperElement);
+			parent.appendChild(wrapperElement).appendChild(imageElement);
 		});
 	});
 };
