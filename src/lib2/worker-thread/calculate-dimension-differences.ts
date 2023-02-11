@@ -60,7 +60,7 @@ export const getTranslates = (
 	};
 };
 
-const getScales = (
+export const getScales = (
 	child: DifferenceArray,
 	parent: DifferenceArray | [undefined, undefined],
 	isTextNode: boolean

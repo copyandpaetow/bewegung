@@ -109,8 +109,8 @@ export const constructKeyframes = (resultState: ResultState): ResultTransferable
 	const { resultingStyle, keyframes, overrides, totalRuntime, wrappers, placeholders } =
 		resultState;
 
-	getDefaultKeyframes(resultState);
 	getImageKeyframes(resultState);
+	getDefaultKeyframes(resultState);
 
 	return {
 		resultingStyle,

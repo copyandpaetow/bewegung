@@ -26,19 +26,11 @@ const getNextParent = (elementID: string, resultState: ResultState) => {
 };
 
 const setOverrides = (resultState: ResultState) => {
-	const { overrides, root, defaultReadouts } = resultState;
+	const { overrides, defaultReadouts } = resultState;
 
 	defaultReadouts.forEach((readouts, elementID) => {
 		const parentKey = getNextParent(elementID, resultState);
 		const parentReadouts = parentKey ? defaultReadouts.get(parentKey) : undefined;
-		const isRoot = root.get(elementID) === elementID;
-
-		if (isRoot && readouts.at(-1)!.position === "static") {
-			overrides.set(elementID, {
-				...(overrides.get(elementID) ?? {}),
-				position: "relative",
-			});
-		}
 
 		if (checkForDisplayNone(readouts.at(-1)!)) {
 			overrides.set(elementID, {
