@@ -26,19 +26,15 @@ const setImageOverride = (resultState: ResultState) => {
 };
 
 const setImageData = (resultState: ResultState) => {
-	const { ratio, totalRuntime, affectedBy, options, imageReadouts } = resultState;
+	const { ratio, imageReadouts, easings } = resultState;
 	const imageDataMap = new Map<string, ImageData>();
 
 	imageReadouts.forEach((elementReadouts, elementID) => {
-		const easings = new Set<BewegungsOptions>(
-			affectedBy.get(elementID)!.flatMap((elementID) => options.get(elementID) ?? [])
-		);
-
 		imageDataMap.set(elementID, {
 			ratio: ratio.get(elementID)!,
 			maxHeight: highestNumber(elementReadouts.map((entry) => entry.currentHeight)),
 			maxWidth: highestNumber(elementReadouts.map((entry) => entry.currentWidth)),
-			easingTable: calculateEasingMap([...easings], totalRuntime),
+			easingTable: easings.get(elementID)!,
 		});
 	});
 
@@ -54,12 +50,15 @@ export const getImageKeyframes = (resultState: ResultState) => {
 		keyframes,
 		wrappers,
 		placeholders,
+		easings,
 	} = resultState;
 	const imageDataMap = setImageData(resultState);
 
 	imageReadouts.forEach((elementReadouts, elementID) => {
 		const imageData = imageDataMap.get(elementID)!;
-		const parentReadout = defaultReadouts.get(parent.get(elementID)!)!;
+		const parentID = parent.get(elementID)!;
+		const parentReadout = defaultReadouts.get(parentID)!;
+		const parentEasing = easings.get(parentID)!;
 		const placeholder = `${elementID}-placeholder`;
 		const wrapper = `${elementID}-wrapper`;
 
@@ -72,7 +71,10 @@ export const getImageKeyframes = (resultState: ResultState) => {
 			...(resultingStyle.get(elementID) ?? {}),
 		});
 
-		keyframes.set(wrapper, getWrapperKeyframes(elementReadouts, parentReadout, imageData));
+		keyframes.set(
+			wrapper,
+			getWrapperKeyframes(elementReadouts, parentReadout, imageData, parentEasing)
+		);
 		keyframes.set(elementID, calculateImageKeyframes(elementReadouts, imageData));
 
 		wrappers.set(elementID, wrapper);

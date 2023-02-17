@@ -1,5 +1,6 @@
 import { isEntryVisible } from "../shared/utils";
 import {
+	BewegungsOptions,
 	CustomKeyframe,
 	ElementReadouts,
 	EntryType,
@@ -9,6 +10,7 @@ import {
 	ResultState,
 	ResultTransferable,
 } from "../types";
+import { calculateEasingMap } from "./calculate-easings";
 import { getDefaultKeyframes } from "./create-default-keyframes";
 import { getImageKeyframes } from "./create-image-keyframes";
 
@@ -78,6 +80,18 @@ const seperateReadouts = (
 	return { imageReadouts, defaultReadouts };
 };
 
+const getEasingMap = (mainElementState: MainElementState, generalState: GeneralState) => {
+	const { options, totalRuntime } = mainElementState;
+	const easingMap = new Map<string, Record<number, string>>();
+	generalState.affectedBy.forEach((affectedBy, elementID) => {
+		const easings = new Set<BewegungsOptions>(
+			affectedBy.flatMap((mainElementID) => options.get(mainElementID) ?? [])
+		);
+		easingMap.set(elementID, calculateEasingMap([...easings], totalRuntime));
+	});
+	return easingMap;
+};
+
 export const deriveResultState = (
 	mainElementState: MainElementState,
 	generalState: GeneralState,
@@ -91,6 +105,7 @@ export const deriveResultState = (
 		keyframeState.readouts,
 		generalState.type
 	);
+	const easings = getEasingMap(mainElementState, generalState);
 
 	return {
 		overrides: new Map<string, CustomKeyframe>(),
@@ -98,6 +113,7 @@ export const deriveResultState = (
 		wrappers: new Map<string, string>(),
 		imageReadouts,
 		defaultReadouts,
+		easings,
 		resultingStyle: structuredClone(appliableKeyframes.get(1)!),
 		keyframes: new Map<string, Keyframe[]>(),
 		...remainingMainState,

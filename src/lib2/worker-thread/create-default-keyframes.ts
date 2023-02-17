@@ -125,16 +125,10 @@ const filterDifferences = (
 };
 
 const calculateStyleTables = (resultState: ResultState) => {
-	const { affectedBy, options, totalRuntime, defaultReadouts } = resultState;
+	const { defaultReadouts, easings } = resultState;
 	const styleTableMap = new Map<string, StyleTables>();
 	defaultReadouts.forEach((elementReadouts, elementID) => {
-		const easings = new Set<BewegungsOptions>(
-			affectedBy.get(elementID)!.flatMap((elementID) => options.get(elementID) ?? [])
-		);
-		styleTableMap.set(
-			elementID,
-			calculateKeyframeTables(elementReadouts, [...easings], totalRuntime)
-		);
+		styleTableMap.set(elementID, calculateKeyframeTables(elementReadouts, easings.get(elementID)!));
 	});
 
 	return styleTableMap;

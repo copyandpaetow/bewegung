@@ -80,7 +80,8 @@ export const calculateImageKeyframes = (readouts: ElementReadouts[], imageData: 
 export const getWrapperKeyframes = (
 	readouts: ElementReadouts[],
 	parentReadout: ElementReadouts[],
-	imageData: ImageData
+	imageData: ImageData,
+	parentEasing: Record<number, string>
 ): Keyframe[] => {
 	const { maxWidth, maxHeight, easingTable } = imageData;
 	return readouts.map((readout) => {
@@ -111,6 +112,8 @@ export const getWrapperKeyframes = (
 		const translateY =
 			(currentTopDifference - referenceTopDifference) / parentHeightDifference -
 			referenceVerticalInset;
+
+		console.log({ parentEasing });
 
 		return {
 			offset: readout.offset,

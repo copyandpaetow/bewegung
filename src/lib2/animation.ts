@@ -25,17 +25,11 @@ TODOS:
 => if we split the getGeneralTransferObject function it works, but the tasks takes a lot of time (like 10ms)
 
 #refactor
-- the affectedElements need to be calculated differently
-=> do we need one root or can they be multiple? If so, we could remove a lot of calculations there
-=> for the affectedElements, they can be the root.querySelectorAll(*)
-=> we would need to calculate if an element is related to the main Element (decendent, ancestor, sibling)
 - no boolean arguments
 - how handle properties that are not layout related but cant be animated in a good way? like colors? 
+- filling the main state in replaceTargetInputWithKeys is not really clear
 
 #bugs
-- all the main elements are also included in the affectedElement State
-? it would make sense that even main elements are affected by other easings but should their easing take priority?
-
 - easings are wrong when counter-scaling and need to get calculated
 => parents should dictate the easings for their children
 => if the easing cant be calculated, the keyframes need to be expanded to be explicit. This would also need some additional easing calculation
@@ -51,6 +45,7 @@ because just spreading them out would be linear easing
 - callbacks 
 - maybe we can send the keyframes one by one and create the animation on the fly. They will get synchronized with their own timeline
 => this could also be usefull for reactivty, when restoreing the currentTime
+=> it can only work if all the callbacks get executed before 
 - allow usage of elements as target which are not currently in the dom. The Element in question will can get appended in the dom (or deleted)
 - check for custom properties
 - background images
