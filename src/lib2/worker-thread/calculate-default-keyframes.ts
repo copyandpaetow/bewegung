@@ -5,7 +5,7 @@ export const calculateDefaultKeyframes = (
 	calculations: DimensionalDifferences[],
 	styleTables: StyleTables
 ) => {
-	const { easingTable, userTransformTable, borderRadiusTable, opacityTable, filterTable } =
+	const { userTransformTable, borderRadiusTable, opacityTable, filterTable, easingTable } =
 		styleTables;
 
 	return calculations.map(

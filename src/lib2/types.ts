@@ -164,6 +164,7 @@ export type ResultState = {
 	imageReadouts: Map<string, ElementReadouts[]>;
 	placeholders: Map<string, string>;
 	wrappers: Map<string, string>;
+	easings: Map<string, Record<number, string>>;
 } & Omit<MainElementState, "appliableKeyframes"> &
 	GeneralState;
 

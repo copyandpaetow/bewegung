@@ -88,12 +88,11 @@ export const getUserTransforms = (calculatedProperties: ElementReadouts[]) => {
 
 export const calculateKeyframeTables = (
 	elementReadouts: ElementReadouts[],
-	easings: BewegungsOptions[],
-	totalRoundtime: number
+	easings: Record<number, string>
 ): StyleTables => ({
 	borderRadiusTable: getBorderRadius(elementReadouts),
 	opacityTable: getOpacity(elementReadouts),
 	filterTable: getFilter(elementReadouts),
 	userTransformTable: getUserTransforms(elementReadouts),
-	easingTable: calculateEasingMap(easings, totalRoundtime),
+	easingTable: easings,
 });

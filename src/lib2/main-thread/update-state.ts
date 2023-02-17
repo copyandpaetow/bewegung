@@ -63,7 +63,7 @@ export const setElementRelatedState = (
 			const domElement = translation.get(elementID)!;
 
 			resets.set(domElement, saveOriginalStyle(domElement));
-			root.set(domElement, compareRootElements(localRoot, root.get(domElement)));
+			root.set(domElement, localRoot);
 		});
 	});
 };
