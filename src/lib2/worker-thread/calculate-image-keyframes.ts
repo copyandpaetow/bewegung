@@ -33,17 +33,17 @@ export const calculateImageKeyframes = (readouts: ElementReadouts[], imageData: 
 
 	const keyframes: Keyframe[] = [];
 
-	readouts.forEach((entry) => {
-		let scaleWidth: number = entry.unsaveWidth / maxWidth;
-		let scaleHeight: number = entry.unsaveHeight / maxHeight;
+	readouts.forEach((readout) => {
+		let scaleWidth: number = readout.unsaveWidth / maxWidth;
+		let scaleHeight: number = readout.unsaveHeight / maxHeight;
 
 		let translateX: number = 0;
 		let translateY: number = 0;
 
-		if (entry.objectFit === "cover") {
+		if (readout.objectFit === "cover") {
 			const alternateScaleWidth = (ratio * maxHeight) / maxWidth;
 			const alternateScaleHeight = maxWidth / ratio / maxHeight;
-			const currentRatio = entry.unsaveWidth / entry.unsaveHeight;
+			const currentRatio = readout.unsaveWidth / readout.unsaveHeight;
 
 			if (currentRatio < ratio) {
 				scaleWidth = alternateScaleWidth * scaleHeight;
@@ -52,25 +52,25 @@ export const calculateImageKeyframes = (readouts: ElementReadouts[], imageData: 
 			}
 		}
 
-		if (entry.objectPosition !== "50% 50%") {
-			const [xAchis, yAchis] = entry.objectPosition!.split(" ").map((value, index) => {
+		if (readout.objectPosition !== "50% 50%") {
+			const [xAchis, yAchis] = readout.objectPosition!.split(" ").map((value, index) => {
 				if (value.includes("%")) {
 					return (parseFloat(value) - 100) / 100;
 				}
-				return parseFloat(value) / (index === 0 ? entry.currentWidth : entry.currentHeight);
+				return parseFloat(value) / (index === 0 ? readout.currentWidth : readout.currentHeight);
 			});
 
-			translateX = save((maxWidth * scaleWidth - entry.currentWidth) / 2, 0) * xAchis * -1;
-			translateY = save((maxHeight * scaleHeight - entry.currentHeight) / 2, 0) * yAchis * -1;
+			translateX = save((maxWidth * scaleWidth - readout.currentWidth) / 2, 0) * xAchis * -1;
+			translateY = save((maxHeight * scaleHeight - readout.currentHeight) / 2, 0) * yAchis * -1;
 		}
 
 		keyframes.push({
-			offset: entry.offset,
+			offset: readout.offset,
 			transform: `translate(${translateX}px, ${translateY}px) scale(${save(scaleWidth, 1)}, ${save(
 				scaleHeight,
 				1
 			)})`,
-			easing: easingTable[entry.offset] ?? "ease",
+			easing: easingTable[readout.offset] ?? "ease",
 		});
 	});
 
@@ -80,8 +80,7 @@ export const calculateImageKeyframes = (readouts: ElementReadouts[], imageData: 
 export const getWrapperKeyframes = (
 	readouts: ElementReadouts[],
 	parentReadout: ElementReadouts[],
-	imageData: ImageData,
-	parentEasing: Record<number, string>
+	imageData: ImageData
 ): Keyframe[] => {
 	const { maxWidth, maxHeight, easingTable } = imageData;
 	return readouts.map((readout) => {
@@ -112,8 +111,6 @@ export const getWrapperKeyframes = (
 		const translateY =
 			(currentTopDifference - referenceTopDifference) / parentHeightDifference -
 			referenceVerticalInset;
-
-		console.log({ parentEasing });
 
 		return {
 			offset: readout.offset,

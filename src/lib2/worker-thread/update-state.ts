@@ -36,7 +36,9 @@ export const setMainState = (mainTransferables: KeyedCustomKeyframeEffect[]): Ma
 	const totalRuntime = updateTotalRuntime(normalizedTransferables);
 
 	normalizedTransferables.forEach(([elementIDs, currentKeyframes, currentOption]) => {
-		const updatedKeyframes = updateOffsets(currentKeyframes, currentOption, totalRuntime);
+		const updatedKeyframes = fillImplicitKeyframes(
+			updateOffsets(currentKeyframes, currentOption, totalRuntime)
+		);
 		updateChangeTimings(changeTimings, updatedKeyframes);
 		updateChangeProperties(changeProperties, updatedKeyframes);
 

@@ -35,7 +35,6 @@ TODOS:
 => if the easing cant be calculated, the keyframes need to be expanded to be explicit. This would also need some additional easing calculation
 because just spreading them out would be linear easing
 
-- a starting delay combined with a value that changes on offset 0 behaves wrongly => the change should be instantiously but it is a transition
 - shrinking elements distort text elements
 - formatArraySyntax procudes wrong values when properties have mixed middle offsets but the same start and end values
 - the override styles for display: inline are not working correctly. They are intendend for spans
@@ -43,9 +42,6 @@ because just spreading them out would be linear easing
 
 # features
 - callbacks 
-- maybe we can send the keyframes one by one and create the animation on the fly. They will get synchronized with their own timeline
-=> this could also be usefull for reactivty, when restoreing the currentTime
-=> it can only work if all the callbacks get executed before 
 - allow usage of elements as target which are not currently in the dom. The Element in question will can get appended in the dom (or deleted)
 - check for custom properties
 - background images

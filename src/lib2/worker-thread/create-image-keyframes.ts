@@ -58,7 +58,7 @@ export const getImageKeyframes = (resultState: ResultState) => {
 		const imageData = imageDataMap.get(elementID)!;
 		const parentID = parent.get(elementID)!;
 		const parentReadout = defaultReadouts.get(parentID)!;
-		const parentEasing = easings.get(parentID)!;
+		//const parentEasing = easings.get(parentID)!;
 		const placeholder = `${elementID}-placeholder`;
 		const wrapper = `${elementID}-wrapper`;
 
@@ -71,10 +71,7 @@ export const getImageKeyframes = (resultState: ResultState) => {
 			...(resultingStyle.get(elementID) ?? {}),
 		});
 
-		keyframes.set(
-			wrapper,
-			getWrapperKeyframes(elementReadouts, parentReadout, imageData, parentEasing)
-		);
+		keyframes.set(wrapper, getWrapperKeyframes(elementReadouts, parentReadout, imageData));
 		keyframes.set(elementID, calculateImageKeyframes(elementReadouts, imageData));
 
 		wrappers.set(elementID, wrapper);

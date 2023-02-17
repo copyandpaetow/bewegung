@@ -33,7 +33,6 @@ export const updateOffsets = (
 			});
 		});
 	});
-
 	return updatedFrames;
 };
 
@@ -45,11 +44,11 @@ export const fillImplicitKeyframes: FillImplicitKeyframesOverload = (keyframes: 
 
 	if (firstKeyframe.offset !== 0) {
 		//updatedKeyframes.unshift({ ...firstKeyframe, offset: 0 });
-		updatedKeyframes.unshift({ offset: 0 });
+		updatedKeyframes.unshift({ offset: firstKeyframe.offset - 0.01 });
 	}
 	if (lastKeyframe.offset !== 1) {
 		//updatedKeyframes.push({ ...lastKeyframe, offset: 1 });
-		updatedKeyframes.push({ offset: 1 });
+		updatedKeyframes.push({ offset: lastKeyframe.offset + 0.01 });
 	}
 
 	return updatedKeyframes;
