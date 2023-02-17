@@ -52,7 +52,7 @@ export const getTimelineFractions = (
 
 	if (timeline.length === 1) {
 		const { start, end, easing } = timeline[0];
-		return [...sortedTimeline, { start, end, easing: Array.isArray(easing) ? easing[0] : easing }];
+		return [{ start, end, easing: transformEasings(toArray(easing)) }];
 	}
 
 	// find lowest number
