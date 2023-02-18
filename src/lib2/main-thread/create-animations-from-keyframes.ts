@@ -1,7 +1,6 @@
 import { BEWEGUNG_DATA_ATTRIBUTE, BEWEGUNG_WRAPPER } from "../shared/constants";
 import { BidirectionalMap } from "../shared/element-translations";
 import { MainState, Result, ResultTransferable } from "../types";
-import { fillImplicitKeyframes } from "../worker-thread/normalize-keyframes";
 import { applyCSSStyles } from "./apply-styles";
 import { setImageAttributes } from "./css-resets";
 
@@ -110,9 +109,7 @@ const createAnimations = (
 		const domElement = translation.get(key) || temporaryElementMap.get(key)!;
 		animations.set(
 			domElement,
-			new Animation(
-				new KeyframeEffect(domElement, fillImplicitKeyframes(elementIDframes), totalRuntime)
-			)
+			new Animation(new KeyframeEffect(domElement, elementIDframes, totalRuntime))
 		);
 	});
 };

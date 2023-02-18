@@ -36,7 +36,6 @@ TODOS:
 because just spreading them out would be linear easing
 
 - shrinking elements distort text elements
-- formatArraySyntax procudes wrong values when properties have mixed middle offsets but the same start and end values
 - the override styles for display: inline are not working correctly. They are intendend for spans
 - maybe rounding the input values could reduce the unsharpness
 
