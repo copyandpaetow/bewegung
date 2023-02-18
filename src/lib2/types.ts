@@ -60,11 +60,6 @@ export type NormalizedCustomKeyframeEffect = [
 	options: BewegungsOptions
 ];
 
-export type FillImplicitKeyframesOverload = {
-	(keyframes: Keyframe[]): Keyframe[];
-	(keyframes: CustomKeyframe[]): CustomKeyframe[];
-};
-
 export interface BewegungAPI {
 	play: () => void;
 	pause: () => void;

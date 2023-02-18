@@ -13,7 +13,11 @@ import {
 } from "./calculate-dom-changes";
 import { updateTotalRuntime } from "./calculate-runtime";
 import { unifyKeyframeStructure } from "./normalize-keyframe-structure";
-import { fillImplicitKeyframes, updateOffsets } from "./normalize-keyframes";
+import {
+	correctKeyframesToRespectDelays,
+	fillImplicitKeyframes,
+	updateOffsets,
+} from "./normalize-keyframes";
 import { normalizeOptions } from "./normalize-options";
 
 const normalizeTransferables = ([
@@ -36,7 +40,7 @@ export const setMainState = (mainTransferables: KeyedCustomKeyframeEffect[]): Ma
 	const totalRuntime = updateTotalRuntime(normalizedTransferables);
 
 	normalizedTransferables.forEach(([elementIDs, currentKeyframes, currentOption]) => {
-		const updatedKeyframes = fillImplicitKeyframes(
+		const updatedKeyframes = correctKeyframesToRespectDelays(
 			updateOffsets(currentKeyframes, currentOption, totalRuntime)
 		);
 		updateChangeTimings(changeTimings, updatedKeyframes);

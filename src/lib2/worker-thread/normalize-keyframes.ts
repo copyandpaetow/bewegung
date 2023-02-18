@@ -1,4 +1,4 @@
-import { BewegungsOptions, CustomKeyframe, FillImplicitKeyframesOverload } from "../types";
+import { BewegungsOptions, CustomKeyframe } from "../types";
 
 //?: if the lastOffset is equal to the newOffset, their keyframes will get mashed together eventually
 // with newOffset === lastOffset ? newOffset + 0.0001 : newOffset, this could be avoided but it creates a flicker and doesnt look that great
@@ -33,23 +33,38 @@ export const updateOffsets = (
 			});
 		});
 	});
+
 	return updatedFrames;
 };
 
 //if the readouts get filtered, we need to include content within, otherwise just the offsets
-export const fillImplicitKeyframes: FillImplicitKeyframesOverload = (keyframes: any): any => {
+export const fillImplicitKeyframes = (keyframes: CustomKeyframe[]): CustomKeyframe[] => {
 	const updatedKeyframes = [...keyframes];
 	const firstKeyframe = updatedKeyframes.at(0)!;
 	const lastKeyframe = updatedKeyframes.at(-1)!;
 
 	if (firstKeyframe.offset !== 0) {
 		//updatedKeyframes.unshift({ ...firstKeyframe, offset: 0 });
-		updatedKeyframes.unshift({ offset: firstKeyframe.offset - 0.01 });
+		updatedKeyframes.unshift({ offset: 0 });
 	}
 	if (lastKeyframe.offset !== 1) {
 		//updatedKeyframes.push({ ...lastKeyframe, offset: 1 });
-		updatedKeyframes.push({ offset: lastKeyframe.offset + 0.01 });
+		updatedKeyframes.push({ offset: 0 });
 	}
 
+	return updatedKeyframes;
+};
+
+export const correctKeyframesToRespectDelays = (keyframes: CustomKeyframe[]): CustomKeyframe[] => {
+	const updatedKeyframes = [...keyframes];
+	const firstKeyframeOffset = updatedKeyframes.at(0)!.offset as number;
+	const lastKeyframeOffset = updatedKeyframes.at(-1)!.offset as number;
+
+	if (firstKeyframeOffset !== 0) {
+		updatedKeyframes.unshift({ offset: firstKeyframeOffset - 0.001 });
+	}
+	if (lastKeyframeOffset !== 1) {
+		updatedKeyframes.push({ offset: lastKeyframeOffset + 0.001 });
+	}
 	return updatedKeyframes;
 };
