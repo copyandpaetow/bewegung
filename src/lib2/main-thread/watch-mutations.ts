@@ -1,7 +1,7 @@
 import { isElement } from "../shared/utils";
-import { MainState } from "../types";
+import { Result } from "../types";
 
-const getChangedElements = (state: MainState, selectors: string[], mutations: MutationRecord[]) => {
+const getChangedElements = (state: Result, selectors: string[], mutations: MutationRecord[]) => {
 	const { translation, root } = state;
 	const addedElements: HTMLElement[] = [];
 	const removedElements: HTMLElement[] = [];
@@ -41,7 +41,7 @@ const getChangedElements = (state: MainState, selectors: string[], mutations: Mu
 };
 
 export const observeMutations = (
-	state: MainState,
+	state: Result,
 	selectors: string[],
 	callback: (addedElements: HTMLElement[], removedElements: HTMLElement[]) => void
 ) => {

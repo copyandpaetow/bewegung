@@ -1,6 +1,6 @@
 import { BEWEGUNG_DATA_ATTRIBUTE, BEWEGUNG_WRAPPER } from "../shared/constants";
 import { BidirectionalMap } from "../shared/element-translations";
-import { MainState, Result, ResultTransferable } from "../types";
+import { AtomicWorker, MainState, Result, ResultTransferable } from "../types";
 import { applyCSSStyles } from "./apply-styles";
 import { setImageAttributes } from "./css-resets";
 
@@ -38,12 +38,10 @@ const getTemporaryElements = (
 const setWrapperCallbacks = (
 	resultTransferable: ResultTransferable,
 	result: Result,
-	state: MainState,
 	temporaryElementMap: Map<string, HTMLElement>
 ) => {
 	const { wrappers } = resultTransferable;
-	const { animations, onStart } = result;
-	const { translation } = state;
+	const { animations, onStart, translation } = result;
 
 	wrappers.forEach((wrapperID, imageID) => {
 		const imageElement = translation.get(imageID)!;
@@ -65,12 +63,10 @@ const setWrapperCallbacks = (
 const setPlaceholderCallbacks = (
 	resultTransferable: ResultTransferable,
 	result: Result,
-	state: MainState,
 	temporaryElementMap: Map<string, HTMLElement>
 ) => {
 	const { placeholders, totalRuntime } = resultTransferable;
-	const { animations, onStart } = result;
-	const { translation } = state;
+	const { animations, onStart, translation } = result;
 
 	placeholders.forEach((placeHolderID, imageID) => {
 		const imageElement = translation.get(imageID)!;
@@ -98,12 +94,10 @@ const setPlaceholderCallbacks = (
 const createAnimations = (
 	resultTransferable: ResultTransferable,
 	result: Result,
-	state: MainState,
 	temporaryElementMap: Map<string, HTMLElement>
 ) => {
 	const { keyframes, totalRuntime } = resultTransferable;
-	const { animations } = result;
-	const { translation } = state;
+	const { animations, translation } = result;
 
 	keyframes.forEach((elementIDframes, key) => {
 		const domElement = translation.get(key) || temporaryElementMap.get(key)!;
@@ -114,14 +108,9 @@ const createAnimations = (
 	});
 };
 
-const setDefaultCallbacks = (
-	resultTransferable: ResultTransferable,
-	result: Result,
-	state: MainState
-) => {
+const setDefaultCallbacks = (resultTransferable: ResultTransferable, result: Result) => {
 	const { resultingStyle, overrides } = resultTransferable;
-	const { animations, onStart } = result;
-	const { translation } = state;
+	const { animations, onStart, translation } = result;
 
 	animations.forEach((animation, domElement) => {
 		const key = translation.get(domElement)!;
@@ -154,16 +143,25 @@ export const createAnimationsFromKeyframes = (
 		animations: new Map<HTMLElement, Animation>(),
 		onStart: [],
 		timeKeeper: new Animation(new KeyframeEffect(null, null, resultTransferable.totalRuntime)),
+		...state,
 	};
 
 	const temporaryElementMap = getTemporaryElements(resultTransferable, state.translation);
 
 	console.log(resultTransferable);
 
-	createAnimations(resultTransferable, result, state, temporaryElementMap);
-	setWrapperCallbacks(resultTransferable, result, state, temporaryElementMap);
-	setPlaceholderCallbacks(resultTransferable, result, state, temporaryElementMap);
-	setDefaultCallbacks(resultTransferable, result, state);
+	createAnimations(resultTransferable, result, temporaryElementMap);
+	setWrapperCallbacks(resultTransferable, result, temporaryElementMap);
+	setPlaceholderCallbacks(resultTransferable, result, temporaryElementMap);
+	setDefaultCallbacks(resultTransferable, result);
 
 	return result;
+};
+
+export const getResults = async (useWorker: AtomicWorker, state: MainState) => {
+	const { onMessage } = useWorker("receiveConstructedKeyframes");
+
+	return (await onMessage((resultTransferable) =>
+		createAnimationsFromKeyframes(resultTransferable, state)
+	)) as Result;
 };

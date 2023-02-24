@@ -5,7 +5,6 @@ import {
 	ElementReadouts,
 	EntryType,
 	GeneralState,
-	KeyframeState,
 	MainElementState,
 	ResultState,
 	ResultTransferable,
@@ -94,15 +93,14 @@ const getEasingMap = (mainElementState: MainElementState, generalState: GeneralS
 
 export const deriveResultState = (
 	mainElementState: MainElementState,
-	generalState: GeneralState,
-	keyframeState: KeyframeState
+	generalState: GeneralState
 ): ResultState => {
-	filterHiddenElements(keyframeState.readouts);
-	overrideDisplayNone(keyframeState.readouts);
+	filterHiddenElements(mainElementState.readouts);
+	overrideDisplayNone(mainElementState.readouts);
 
 	const { appliableKeyframes, ...remainingMainState } = mainElementState;
 	const { imageReadouts, defaultReadouts } = seperateReadouts(
-		keyframeState.readouts,
+		mainElementState.readouts,
 		generalState.type
 	);
 	const easings = getEasingMap(mainElementState, generalState);

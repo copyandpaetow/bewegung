@@ -2,6 +2,7 @@ import { defaultChangeProperties } from "../shared/constants";
 import {
 	BewegungsOptions,
 	CustomKeyframe,
+	ElementReadouts,
 	KeyedCustomKeyframeEffect,
 	MainElementState,
 	NormalizedCustomKeyframeEffect,
@@ -13,11 +14,7 @@ import {
 } from "./calculate-dom-changes";
 import { updateTotalRuntime } from "./calculate-runtime";
 import { unifyKeyframeStructure } from "./normalize-keyframe-structure";
-import {
-	correctKeyframesToRespectDelays,
-	fillImplicitKeyframes,
-	updateOffsets,
-} from "./normalize-keyframes";
+import { fillImplicitKeyframes, updateOffsets } from "./normalize-keyframes";
 import { normalizeOptions } from "./normalize-options";
 
 const normalizeTransferables = ([
@@ -40,9 +37,7 @@ export const setMainState = (mainTransferables: KeyedCustomKeyframeEffect[]): Ma
 	const totalRuntime = updateTotalRuntime(normalizedTransferables);
 
 	normalizedTransferables.forEach(([elementIDs, currentKeyframes, currentOption]) => {
-		const updatedKeyframes = correctKeyframesToRespectDelays(
-			updateOffsets(currentKeyframes, currentOption, totalRuntime)
-		);
+		const updatedKeyframes = updateOffsets(currentKeyframes, currentOption, totalRuntime);
 		updateChangeTimings(changeTimings, updatedKeyframes);
 		updateChangeProperties(changeProperties, updatedKeyframes);
 
@@ -61,5 +56,6 @@ export const setMainState = (mainTransferables: KeyedCustomKeyframeEffect[]): Ma
 		totalRuntime,
 		changeProperties: changeProperties,
 		changeTimings: sortedChangeTimings,
+		readouts: new Map<string, ElementReadouts[]>(),
 	};
 };

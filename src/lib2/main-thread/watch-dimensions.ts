@@ -1,4 +1,4 @@
-import { MainState } from "../types";
+import { Result } from "../types";
 
 const calculateRootMargin = (rootElement: HTMLElement, mainElement: HTMLElement) => {
 	const { clientWidth, clientHeight } = rootElement;
@@ -15,7 +15,7 @@ const calculateRootMargin = (rootElement: HTMLElement, mainElement: HTMLElement)
 	return rootMargins.map((px) => `${-1 * Math.floor(px - buffer)}px`).join(" ");
 };
 
-export const observerDimensions = (callback: VoidFunction, state: MainState) => {
+export const observerDimensions = (callback: VoidFunction, state: Result) => {
 	const { translation, root } = state;
 	const IO = new WeakMap<HTMLElement, IntersectionObserver>();
 

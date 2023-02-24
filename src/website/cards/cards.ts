@@ -17,19 +17,16 @@ const initCards = () => {
 		const value = (to - from) / steps;
 		return Array.from({ length: steps }, (_, num) => from + value * num).concat(to);
 	};
-	const heights = getRange(50, 25, 1).map((num) => num + "vh");
+	const height = getRange(60, 25, 1).map((num) => num + "vh");
+	const width = getRange(30, 100, 5).map((num) => num + "%");
 
 	const highlight = () => {
 		const highlightCard: CustomKeyframeEffect = [
 			cards[activeIndex],
 			{
-				height: heights,
+				height,
 			},
-			{
-				duration: 4000,
-				easing: "ease",
-				rootSelector: "main",
-			},
+			{ delay: 1000, duration: 4000, easing: "ease", rootSelector: "main" },
 		];
 
 		const hideOthers: CustomKeyframeEffect = [
@@ -54,7 +51,7 @@ const initCards = () => {
 			10500,
 		];
 
-		return new Bewegung(highlightCard);
+		return new Bewegung(highlightCard, hideOthers);
 	};
 
 	let animation: Bewegung | undefined;

@@ -1,22 +1,10 @@
-import { createAnimationsFromKeyframes } from "./main-thread/create-animations-from-keyframes";
-import { getGeneralTransferObject } from "./main-thread/find-affected-elements";
-import { readDom } from "./main-thread/read-dom";
-import {
-	getSelectors,
-	replaceTargetInputWithKeys,
-	setElementRelatedState,
-} from "./main-thread/update-state";
-import { removeElementsFromTranslation, watchForChanges } from "./main-thread/watch-changes";
-import { BidirectionalMap } from "./shared/element-translations";
-import { createMessageStore, getWorker } from "./shared/store";
-import { deferred } from "./shared/utils";
-import {
-	CustomKeyframeEffect,
-	MainMessages,
-	MainState,
-	ReactivityCallbacks,
-	WorkerMessages,
-} from "./types";
+import { getResults } from "./main-thread/create-animations-from-keyframes";
+import { getGeneralState } from "./main-thread/find-affected-elements";
+import { calculateDomChanges } from "./main-thread/read-dom";
+import { getMainState } from "./main-thread/update-state";
+import { getEmptyResults } from "./shared/object-creators";
+
+import { AnimationFactory, AtomicWorker, CustomKeyframeEffect, Result } from "./types";
 /*
 TODOS:
  
@@ -27,7 +15,6 @@ TODOS:
 #refactor
 - no boolean arguments
 - how handle properties that are not layout related but cant be animated in a good way? like colors? 
-- filling the main state in replaceTargetInputWithKeys is not really clear
 
 #bugs
 - easings are wrong when counter-scaling and need to get calculated
@@ -47,64 +34,37 @@ because just spreading them out would be linear easing
 - prefer reduced motion
 */
 
-const initMainState = (): MainState => ({
-	root: new Map<HTMLElement, HTMLElement>(),
-	resets: new Map<HTMLElement, Map<string, string>>(),
-	translation: new BidirectionalMap<string, HTMLElement>(),
-});
+export const animationFactory = (
+	userInput: CustomKeyframeEffect[],
+	useWorker: AtomicWorker
+): AnimationFactory => {
+	const state = getMainState(userInput, useWorker);
 
-const allWorker = getWorker();
+	let generalState: null | number = null;
+	let domChanges: null | number = null;
+	let result: null | Result = null;
 
-export const Animations = (props: CustomKeyframeEffect[]) => {
-	let state = initMainState();
-	let done = deferred();
-
-	const messageStore = createMessageStore<MainMessages, WorkerMessages>(allWorker.current(), {
-		async initState({ reply }, initialProps) {
-			const keyedProps = replaceTargetInputWithKeys(initialProps, state);
-			reply("receiveMainState", keyedProps);
-			setElementRelatedState(keyedProps, state);
-			reply("receiveGeneralState", await getGeneralTransferObject(state));
+	const context = {
+		async results() {
+			try {
+				generalState ??= await getGeneralState(useWorker, state);
+				domChanges ??= await calculateDomChanges(useWorker, state);
+				result ??= await getResults(useWorker, state);
+			} catch (error) {
+				result = getEmptyResults();
+			} finally {
+				return result as Result;
+			}
 		},
-		async receiveAppliableKeyframes({ reply }, appliableKeyframes) {
-			const readouts = await readDom(appliableKeyframes, state);
-			reply("receiveReadouts", readouts);
+		invalidateDomChanges() {
+			domChanges = null;
+			result = null;
 		},
-		receiveConstructedKeyframes(_, resultTransferable) {
-			done.resolve(createAnimationsFromKeyframes(resultTransferable, state));
-		},
-	});
-
-	messageStore.send("initState", props);
-
-	return {
-		results() {
-			return done.promise;
-		},
-		observe(before: VoidFunction, after: VoidFunction) {
-			const callbacks: ReactivityCallbacks = {
-				onMainElementChange() {
-					state = initMainState();
-					done = deferred();
-					messageStore.send("initState", props);
-				},
-				onSecondaryElementChange(removedElements: HTMLElement[]) {
-					done = deferred();
-					removeElementsFromTranslation(removedElements, state);
-					messageStore.reply("receiveGeneralState", getGeneralTransferObject(state));
-				},
-				onDimensionOrPositionChange() {
-					done = deferred();
-					messageStore.reply("receiveKeyframeRequest");
-				},
-				before,
-				after,
-			};
-
-			return watchForChanges(state, callbacks, getSelectors(props), done);
-		},
-		finish() {
-			messageStore.terminate();
+		invalidateGeneralState() {
+			generalState = null;
+			context.invalidateDomChanges();
 		},
 	};
+
+	return context;
 };

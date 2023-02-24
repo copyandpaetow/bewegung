@@ -1,16 +1,25 @@
-import { AppliableKeyframes, ElementReadouts, MainState } from "../types";
+import {
+	DomChangeTransferable,
+	AtomicWorker,
+	ElementReadouts,
+	MainState,
+	CustomKeyframe,
+	CssRuleName,
+} from "../types";
 import { applyCSSStyles } from "./apply-styles";
 import { restoreOriginalStyle } from "./css-resets";
 import { getCalculations } from "./read-dom-properties";
 
 const nextBrowserRender = () => new Promise((resolve) => requestAnimationFrame(resolve));
 
-export const readDom = async (appliableKeyframes: AppliableKeyframes, state: MainState) => {
+export const readDom = async (
+	keyframes: Map<string, CustomKeyframe>,
+	state: MainState,
+	context: { offset: number; changeProperties: Set<CssRuleName> }
+) => {
 	const { resets, translation } = state;
-	const { keyframes, changeProperties } = appliableKeyframes;
+	const { offset, changeProperties } = context;
 	const readouts = new Map<string, ElementReadouts>();
-
-	const offset = keyframes.values().next().value.offset;
 
 	await nextBrowserRender();
 	keyframes.forEach((styleChange, elementID) => {
@@ -25,4 +34,24 @@ export const readDom = async (appliableKeyframes: AppliableKeyframes, state: Mai
 	});
 
 	return readouts;
+};
+
+export const calculateDomChanges = async (useWorker: AtomicWorker, state: MainState) => {
+	const { reply, onMessage, cleanup } = useWorker("domChanges"); //maybe the worker and a schema could be added beforehand
+
+	reply("receiveKeyframeRequest", undefined);
+
+	await onMessage(async (domChangeTransferable) => {
+		const { appliableKeyframes, changeProperties } = domChangeTransferable;
+		cleanup();
+
+		for await (const [offset, keyframes] of appliableKeyframes) {
+			reply("receiveReadouts", {
+				value: await readDom(keyframes, state, { offset, changeProperties }),
+				done: offset === 1,
+			});
+		}
+	});
+
+	return Date.now();
 };
