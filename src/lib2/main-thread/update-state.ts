@@ -1,5 +1,7 @@
 import { getOrAddKeyFromLookup } from "../shared/element-translations";
+import { initMainState } from "../shared/object-creators";
 import {
+	AtomicWorker,
 	CustomKeyframeEffect,
 	EveryOptionSyntax,
 	KeyedCustomKeyframeEffect,
@@ -66,4 +68,16 @@ export const setElementRelatedState = (
 			root.set(domElement, localRoot);
 		});
 	});
+
+	return state;
+};
+
+export const getMainState = (userInput: CustomKeyframeEffect[], useWorker: AtomicWorker) => {
+	const { reply } = useWorker("sendMainState"); //maybe a special "task" function could split things up?
+	const state = initMainState();
+	const updatedUserInput = replaceTargetInputWithKeys(userInput, state);
+	setElementRelatedState(updatedUserInput, state);
+	reply("receiveMainState", updatedUserInput);
+
+	return state;
 };

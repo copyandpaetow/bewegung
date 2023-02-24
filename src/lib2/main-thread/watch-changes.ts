@@ -1,61 +1,37 @@
-import { throttle } from "../shared/utils";
-import { Deferred, MainState, ReactivityCallbacks } from "../types";
+import { ReactivityCallbacks, Result } from "../types";
 import { observerDimensions } from "./watch-dimensions";
 import { observeMutations } from "./watch-mutations";
 import { observeResizes } from "./watch-resizes";
 
-export const removeElementsFromTranslation = (removedElements: HTMLElement[], state: MainState) =>
-	removedElements.forEach((element) => state.translation.delete(element));
-
-export const watchForChanges = (
-	state: MainState,
-	callbacks: ReactivityCallbacks,
+export const reactivity = (
+	results: Result,
 	selectors: string[],
-	done: Deferred
-) => {
-	const { resets } = state;
-	const {
+	{
 		onDimensionOrPositionChange,
-		before,
-		after,
-		onMainElementChange,
 		onSecondaryElementChange,
-	} = callbacks;
-	const throttledDimensionChange = throttle();
-	const prefixedCallback = async (callback: VoidFunction) => {
-		unobserve();
-		before();
-		callback();
-		await done.promise;
-		after();
-	};
-
-	const dimensionChange = () =>
-		throttledDimensionChange.fn(async () => {
-			prefixedCallback(onDimensionOrPositionChange);
-		});
-	const unobserveRO = observeResizes(dimensionChange, state);
-	const unobserveIO = observerDimensions(dimensionChange, state);
+		onMainElementChange,
+	}: ReactivityCallbacks
+) => {
+	const unobserveRO = observeResizes(onDimensionOrPositionChange, results);
+	const unobserveIO = observerDimensions(onDimensionOrPositionChange, results);
 
 	const unobserveMO = observeMutations(
-		state,
+		results,
 		selectors,
 		(addedElements: HTMLElement[], removedElements: HTMLElement[]) => {
-			const mainElementAffected = [...addedElements, ...removedElements].some((element) => {
-				if (resets.has(element)) {
-					prefixedCallback(onMainElementChange);
-				}
-			});
+			const addedMainElements = addedElements.filter((element) => results.resets.has(element));
+			const removedMainElements = addedElements.filter((element) => results.resets.has(element));
 
-			if (mainElementAffected) {
+			if (addedMainElements.length || removedMainElements.length) {
+				onMainElementChange(addedMainElements, removedMainElements);
 				return;
 			}
-			prefixedCallback(() => onSecondaryElementChange(removedElements));
+
+			onSecondaryElementChange(removedElements);
 		}
 	);
 
 	const unobserve = () => {
-		throttledDimensionChange.clear();
 		unobserveRO();
 		unobserveIO();
 		unobserveMO();

@@ -1,4 +1,5 @@
 import { CustomKeyframeEffect, CustomKeyframe, BewegungProps } from "../types";
+import { normalizeElements } from "./normalize-elements";
 
 const convertToCustomKeyframe = (keyframeEffect: KeyframeEffect): CustomKeyframeEffect => {
 	const { target, getKeyframes, getComputedTiming, composite, pseudoElement, iterationComposite } =
@@ -30,4 +31,23 @@ export const unifyPropStructure = (props: BewegungProps): CustomKeyframeEffect[]
 	return (props as (CustomKeyframeEffect | KeyframeEffect)[]).map((propEntry) =>
 		propEntry instanceof KeyframeEffect ? convertToCustomKeyframe(propEntry) : propEntry
 	);
+};
+
+export const updateUserInput = (
+	userInput: CustomKeyframeEffect[],
+	removedElements: HTMLElement[],
+	addedElements: HTMLElement[]
+): CustomKeyframeEffect[] => {
+	return userInput.map((entry) => {
+		const [targets, keyframe, options] = entry;
+		if (typeof targets === "string") {
+			return entry;
+		}
+
+		const updatedTargets = normalizeElements(targets)
+			.filter((element) => !removedElements.includes(element))
+			.concat(...addedElements);
+
+		return [updatedTargets, keyframe, options];
+	});
 };

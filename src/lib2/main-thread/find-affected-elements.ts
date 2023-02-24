@@ -1,7 +1,7 @@
 import { BEWEGUNG_DATA_ATTRIBUTE } from "../shared/constants";
 import { getOrAddKeyFromLookup } from "../shared/element-translations";
 import { task } from "../shared/utils";
-import { EntryType, MainState } from "../types";
+import { AtomicWorker, EntryType, MainState } from "../types";
 
 const filterPlaceholderElements = (element: HTMLElement) =>
 	!element.hasAttribute(BEWEGUNG_DATA_ATTRIBUTE);
@@ -157,4 +157,11 @@ export const getGeneralTransferObject = async (state: MainState) => {
 		ratio: getRatio(state),
 		type: getType(state),
 	};
+};
+
+export const getGeneralState = async (useWorker: AtomicWorker, state: MainState) => {
+	const { reply } = useWorker("sendGeneralState");
+
+	reply("receiveGeneralState", await getGeneralTransferObject(state));
+	return Date.now();
 };

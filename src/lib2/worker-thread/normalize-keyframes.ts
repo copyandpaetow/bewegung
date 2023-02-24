@@ -7,13 +7,25 @@ export const updateOffsets = (
 	options: BewegungsOptions,
 	totalRuntime: number
 ): CustomKeyframe[] => {
-	const { duration, delay: start, endDelay, iterations, direction } = options;
+	const { duration, delay: start, endDelay, iterations, direction, endTime } = options;
 	if (iterations === Infinity) {
 		throw new Error("cant calculate with Infinity");
 	}
 
 	const updatedFrames: CustomKeyframe[] = [];
 	const reversedEntry: CustomKeyframe[] = [...keyframes].reverse();
+
+	if (start! > 0) {
+		updatedFrames.push({
+			offset: (start! - 0.01) / totalRuntime,
+		});
+	}
+
+	if (endDelay! > 0) {
+		updatedFrames.push({
+			offset: (endTime! - endDelay! + 0.01) / totalRuntime,
+		});
+	}
 
 	Array.from(Array(iterations), (_, iteration) => {
 		const isForward =
@@ -33,7 +45,7 @@ export const updateOffsets = (
 			});
 		});
 	});
-
+	console.log(updatedFrames);
 	return updatedFrames;
 };
 
@@ -52,19 +64,5 @@ export const fillImplicitKeyframes = (keyframes: CustomKeyframe[]): CustomKeyfra
 		updatedKeyframes.push({ offset: 0 });
 	}
 
-	return updatedKeyframes;
-};
-
-export const correctKeyframesToRespectDelays = (keyframes: CustomKeyframe[]): CustomKeyframe[] => {
-	const updatedKeyframes = [...keyframes];
-	const firstKeyframeOffset = updatedKeyframes.at(0)!.offset as number;
-	const lastKeyframeOffset = updatedKeyframes.at(-1)!.offset as number;
-
-	if (firstKeyframeOffset !== 0) {
-		updatedKeyframes.unshift({ offset: firstKeyframeOffset - 0.001 });
-	}
-	if (lastKeyframeOffset !== 1) {
-		updatedKeyframes.push({ offset: lastKeyframeOffset + 0.001 });
-	}
 	return updatedKeyframes;
 };

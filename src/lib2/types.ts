@@ -116,18 +116,13 @@ export interface TimelineEntry {
 }
 export type Timeline = TimelineEntry[];
 
-export interface Result {
+export type Result = {
 	animations: Map<HTMLElement, Animation>;
 	onStart: VoidFunction[];
 	timeKeeper: Animation;
-}
+} & MainState;
 
 export type EntryType = "image" | "text" | "";
-
-export type Selector = {
-	keyframes: CustomKeyframe[];
-	options: BewegungsOptions;
-};
 
 export type GeneralState = {
 	affectedBy: Map<string, string[]>;
@@ -137,17 +132,13 @@ export type GeneralState = {
 	ratio: Map<string, number>;
 };
 
-export type KeyframeState = {
-	readouts: Map<string, ElementReadouts[]>;
-	remainingKeyframes: IterableIterator<Map<string, CustomKeyframe>>;
-};
-
 export type MainElementState = {
 	options: Map<string, BewegungsOptions[]>;
 	totalRuntime: number;
 	changeTimings: number[];
 	changeProperties: Set<CssRuleName>;
 	appliableKeyframes: Map<number, Map<string, CustomKeyframe>>;
+	readouts: Map<string, ElementReadouts[]>;
 };
 
 export type ResultState = {
@@ -193,9 +184,9 @@ export type MainState = {
 	translation: BidirectionalMap<string, HTMLElement>;
 };
 
-export type AppliableKeyframes = {
+export type DomChangeTransferable = {
 	changeProperties: Set<CssRuleName>;
-	keyframes: Map<string, CustomKeyframe>;
+	appliableKeyframes: Map<number, Map<string, CustomKeyframe>>;
 };
 
 export type GeneralTransferables = {
@@ -206,47 +197,20 @@ export type GeneralTransferables = {
 	ratio: Map<string, number>;
 };
 
-export type DefaultMessage = Record<string, any>;
+type Readouts = { done: boolean; value: Map<string, ElementReadouts> };
 
 export type MainMessages = {
-	initState(
-		context: MessageContext<MainMessages, WorkerMessages>,
-		initialProps: CustomKeyframeEffect[]
-	): void;
-	receiveAppliableKeyframes(
-		context: MessageContext<MainMessages, WorkerMessages>,
-		AppliableKeyframes: AppliableKeyframes
-	): void;
-	receiveConstructedKeyframes(
-		context: MessageContext<MainMessages, WorkerMessages>,
-		constructedKeyframes: ResultTransferable
-	): void;
+	domChanges: DomChangeTransferable;
+	receiveConstructedKeyframes: ResultTransferable;
+	sendMainState: undefined;
+	sendGeneralState: undefined;
 };
 
 export type WorkerMessages = {
-	replyAppliableKeyframes(
-		context: MessageContext<WorkerMessages, MainMessages>,
-		appliableKeyframes: AppliableKeyframes
-	): void;
-	receiveMainState(
-		context: MessageContext<WorkerMessages, MainMessages>,
-		mainState: KeyedCustomKeyframeEffect[]
-	): void;
-	receiveGeneralState(
-		context: MessageContext<WorkerMessages, MainMessages>,
-		generalState: GeneralTransferables
-	): void;
-	receiveReadouts(
-		context: MessageContext<WorkerMessages, MainMessages>,
-		readouts: Map<string, ElementReadouts>
-	): void;
-	receiveKeyframeRequest(context: MessageContext<WorkerMessages, MainMessages>): void;
-};
-
-export type MessageContext<Sender, Receiver> = {
-	reply(queryMethodListener: keyof Receiver, queryMethodArguments?: any): void;
-	send(queryMethodListener: keyof Sender, queryMethodArguments?: any): void;
-	terminate(): void;
+	receiveMainState: KeyedCustomKeyframeEffect[];
+	receiveGeneralState: GeneralTransferables;
+	receiveKeyframeRequest: undefined;
+	receiveReadouts: Readouts;
 };
 
 type ExtendedPlayStates = "scrolling" | "reversing";
@@ -254,14 +218,41 @@ export type AllPlayStates = AnimationPlayState | ExtendedPlayStates;
 export type StateMachine = Record<AllPlayStates, Partial<Record<AllPlayStates, VoidFunction>>>;
 
 export type ReactivityCallbacks = {
-	onMainElementChange(): void;
+	onMainElementChange(removedElements: HTMLElement[], addedElements: HTMLElement[]): void;
 	onSecondaryElementChange(removedElements: HTMLElement[]): void;
 	onDimensionOrPositionChange(): void;
-	before: VoidFunction;
-	after: VoidFunction;
 };
 
-export type Deferred = {
-	promise: Promise<Result>;
-	resolve: (value: Result | PromiseLike<Result>) => void;
+export type AnimationFactory = {
+	results(): Promise<Result>;
+	invalidateDomChanges(): void;
+	invalidateGeneralState(): void;
 };
+
+export type WorkerCallback<Current extends keyof Self, Self, Target> = (
+	replyMethodArguments: Self[Current],
+	context: WorkerContext<Current, Self, Target>
+) => any;
+
+export type WorkerError = (event: ErrorEvent) => void;
+
+export type WorkerCallbackTypes<Current extends keyof Self, Self, Target> = {
+	onMessage: WorkerCallback<Current, Self, Target>;
+	onError: WorkerError;
+};
+
+export type WorkerMessageEvent<Current extends keyof Self, Self> = {
+	replyMethodArguments: Self[Current];
+	replyMethod: Current;
+};
+
+export type WorkerContext<Current extends keyof Self, Self, Target> = {
+	reply(replyMethod: keyof Target, replyMethodArguments: Target[keyof Target]): void;
+	cleanup(): void;
+	onMessage(callback: WorkerCallback<Current, Self, Target>): Promise<unknown>;
+	onError(errorCallback: WorkerError): void;
+};
+
+export type AtomicWorker = <Current extends keyof MainMessages>(
+	eventName: Current
+) => WorkerContext<Current, MainMessages, WorkerMessages>;
