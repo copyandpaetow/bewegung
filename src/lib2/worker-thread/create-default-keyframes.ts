@@ -1,11 +1,5 @@
 import { checkForBorderRadius, checkForDisplayNone } from "../shared/utils";
-import {
-	BewegungsOptions,
-	DifferenceArray,
-	DimensionalDifferences,
-	ResultState,
-	StyleTables,
-} from "../types";
+import { DifferenceArray, DimensionalDifferences, ResultState, StyleTables } from "../types";
 import { calculateDefaultKeyframes } from "./calculate-default-keyframes";
 import { calculateDimensionDifferences } from "./calculate-dimension-differences";
 import { calculateKeyframeTables } from "./calculate-style-tables";

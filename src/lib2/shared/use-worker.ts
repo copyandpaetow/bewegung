@@ -1,12 +1,10 @@
 import {
-	MainMessages,
-	ValueOf,
+	AtomicWorker,
 	WorkerCallback,
 	WorkerCallbackTypes,
 	WorkerContext,
 	WorkerError,
 	WorkerMessageEvent,
-	WorkerMessages,
 } from "../types";
 
 const spawnWorker = () =>
@@ -57,6 +55,7 @@ export const useWorker =
 					replyMethod,
 					replyMethodArguments,
 				});
+				return context;
 			},
 			cleanup() {
 				worker.removeEventListener("message", handleMessage);
@@ -77,3 +76,9 @@ export const useWorker =
 
 		return context;
 	};
+
+export const task = async (useWorker: AtomicWorker) => {
+	await useWorker("task")
+		.reply("receiveTask")
+		.onMessage(() => {});
+};

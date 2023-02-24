@@ -46,3 +46,8 @@ workerAtom("receiveReadouts").onMessage((newReadouts, { reply }) => {
 	const resultState = deriveResultState(mainElementState, generalState);
 	reply("receiveConstructedKeyframes", constructKeyframes(resultState));
 });
+
+workerAtom("receiveTask").onMessage((_, { reply }) => {
+	console.log("here on worker");
+	reply("task");
+});
