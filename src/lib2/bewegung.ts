@@ -1,5 +1,8 @@
 import { animationFactory } from "./animation";
 import { unifyPropStructure, updateUserInput } from "./main-thread/normalize-props";
+import { getSelectors } from "./main-thread/update-state";
+import { reactivity } from "./main-thread/watch-changes";
+import { getWorker, useWorker } from "./shared/use-worker";
 import {
 	AllPlayStates,
 	AnimationFactory,
@@ -7,12 +10,8 @@ import {
 	BewegungProps,
 	CustomKeyframeEffect,
 	MainMessages,
-	Result,
 	WorkerMessages,
 } from "./types";
-import { useWorker, getWorker } from "./shared/use-worker";
-import { getSelectors } from "./main-thread/update-state";
-import { reactivity } from "./main-thread/watch-changes";
 
 const allWorker = getWorker();
 

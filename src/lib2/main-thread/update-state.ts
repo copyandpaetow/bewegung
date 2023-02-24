@@ -8,7 +8,6 @@ import {
 	MainState,
 } from "../types";
 import { saveOriginalStyle } from "./css-resets";
-import { compareRootElements } from "./find-affected-elements";
 import { normalizeElements } from "./normalize-elements";
 
 export const getSelectors = (props: CustomKeyframeEffect[]): string[] => {

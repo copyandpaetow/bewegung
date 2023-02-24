@@ -204,6 +204,7 @@ export type MainMessages = {
 	receiveConstructedKeyframes: ResultTransferable;
 	sendMainState: undefined;
 	sendGeneralState: undefined;
+	task: undefined;
 };
 
 export type WorkerMessages = {
@@ -211,6 +212,7 @@ export type WorkerMessages = {
 	receiveGeneralState: GeneralTransferables;
 	receiveKeyframeRequest: undefined;
 	receiveReadouts: Readouts;
+	receiveTask: undefined;
 };
 
 type ExtendedPlayStates = "scrolling" | "reversing";
@@ -247,7 +249,10 @@ export type WorkerMessageEvent<Current extends keyof Self, Self> = {
 };
 
 export type WorkerContext<Current extends keyof Self, Self, Target> = {
-	reply(replyMethod: keyof Target, replyMethodArguments: Target[keyof Target]): void;
+	reply(
+		replyMethod: keyof Target,
+		replyMethodArguments?: Target[keyof Target]
+	): WorkerContext<Current, Self, Target>;
 	cleanup(): void;
 	onMessage(callback: WorkerCallback<Current, Self, Target>): Promise<unknown>;
 	onError(errorCallback: WorkerError): void;

@@ -1,7 +1,6 @@
 import { defaultImageStyles } from "../shared/constants";
 import { checkForBorderRadius, highestNumber } from "../shared/utils";
-import { BewegungsOptions, ImageData, ResultState } from "../types";
-import { calculateEasingMap } from "./calculate-easings";
+import { ImageData, ResultState } from "../types";
 import {
 	calculateImageKeyframes,
 	getWrapperKeyframes,

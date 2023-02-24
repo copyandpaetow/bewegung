@@ -1,11 +1,4 @@
-import {
-	DomChangeTransferable,
-	AtomicWorker,
-	ElementReadouts,
-	MainState,
-	CustomKeyframe,
-	CssRuleName,
-} from "../types";
+import { AtomicWorker, CssRuleName, CustomKeyframe, ElementReadouts, MainState } from "../types";
 import { applyCSSStyles } from "./apply-styles";
 import { restoreOriginalStyle } from "./css-resets";
 import { getCalculations } from "./read-dom-properties";
@@ -39,7 +32,7 @@ export const readDom = async (
 export const calculateDomChanges = async (useWorker: AtomicWorker, state: MainState) => {
 	const { reply, onMessage, cleanup } = useWorker("domChanges"); //maybe the worker and a schema could be added beforehand
 
-	reply("receiveKeyframeRequest", undefined);
+	reply("receiveKeyframeRequest");
 
 	await onMessage(async (domChangeTransferable) => {
 		const { appliableKeyframes, changeProperties } = domChangeTransferable;

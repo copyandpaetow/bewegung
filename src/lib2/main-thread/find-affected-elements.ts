@@ -1,6 +1,6 @@
 import { BEWEGUNG_DATA_ATTRIBUTE } from "../shared/constants";
 import { getOrAddKeyFromLookup } from "../shared/element-translations";
-import { task } from "../shared/utils";
+import { task } from "../shared/use-worker";
 import { AtomicWorker, EntryType, MainState } from "../types";
 
 const filterPlaceholderElements = (element: HTMLElement) =>
@@ -146,9 +146,10 @@ const getType = (state: MainState) => {
 	return type;
 };
 
-export const getGeneralTransferObject = async (state: MainState) => {
+export const getGeneralTransferObject = async (useWorker: AtomicWorker, state: MainState) => {
 	const affectedElementsMap = getAffectedElements(state);
-	await task();
+
+	await task(useWorker);
 
 	return {
 		affectedBy: getAffectedByElements(affectedElementsMap, state),
@@ -162,6 +163,6 @@ export const getGeneralTransferObject = async (state: MainState) => {
 export const getGeneralState = async (useWorker: AtomicWorker, state: MainState) => {
 	const { reply } = useWorker("sendGeneralState");
 
-	reply("receiveGeneralState", await getGeneralTransferObject(state));
+	reply("receiveGeneralState", await getGeneralTransferObject(useWorker, state));
 	return Date.now();
 };

@@ -45,7 +45,6 @@ export const updateOffsets = (
 			});
 		});
 	});
-	console.log(updatedFrames);
 	return updatedFrames;
 };
 
