@@ -148,7 +148,6 @@ const getType = (state: MainState) => {
 
 export const getGeneralTransferObject = async (useWorker: AtomicWorker, state: MainState) => {
 	const affectedElementsMap = getAffectedElements(state);
-
 	await task(useWorker);
 
 	return {
@@ -161,8 +160,9 @@ export const getGeneralTransferObject = async (useWorker: AtomicWorker, state: M
 };
 
 export const getGeneralState = async (useWorker: AtomicWorker, state: MainState) => {
-	const { reply } = useWorker("sendGeneralState");
+	const { reply, cleanup } = useWorker("sendGeneralState");
 
+	cleanup();
 	reply("receiveGeneralState", await getGeneralTransferObject(useWorker, state));
 	return Date.now();
 };

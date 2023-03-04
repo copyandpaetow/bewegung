@@ -69,7 +69,7 @@ export interface BewegungAPI {
 	commitStyles: () => void;
 	finish: () => void;
 	updatePlaybackRate: (newPlaybackRate: number) => void;
-	readonly finished: Promise<void>;
+	readonly finished: Promise<Animation[]>;
 	readonly playState: AnimationPlayState;
 }
 
@@ -120,6 +120,7 @@ export type Result = {
 	animations: Map<HTMLElement, Animation>;
 	onStart: VoidFunction[];
 	timeKeeper: Animation;
+	totalRuntime: number;
 } & MainState;
 
 export type EntryType = "image" | "text" | "";
@@ -229,6 +230,7 @@ export type AnimationFactory = {
 	results(): Promise<Result>;
 	invalidateDomChanges(): void;
 	invalidateGeneralState(): void;
+	styleResultsOnly(): Promise<Map<HTMLElement, CustomKeyframe>>;
 };
 
 export type WorkerCallback<Current extends keyof Self, Self, Target> = (

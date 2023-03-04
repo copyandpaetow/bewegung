@@ -34,6 +34,9 @@ export const useWorker =
 			onError: () => {},
 		};
 
+		const controller = new AbortController();
+		const { signal } = controller;
+
 		const handleMessage = (event: MessageEvent<WorkerMessageEvent<Current, Self>>) => {
 			const { replyMethod, replyMethodArguments } = event.data;
 			if (replyMethod !== eventName) {
@@ -46,8 +49,8 @@ export const useWorker =
 			callbacks.onError(event);
 		};
 
-		worker.addEventListener("message", handleMessage);
-		worker.addEventListener("error", handleError);
+		worker.addEventListener("message", handleMessage, { signal });
+		worker.addEventListener("error", handleError, { signal });
 
 		const context: WorkerContext<Current, Self, Target> = {
 			reply(replyMethod, replyMethodArguments) {
@@ -58,8 +61,7 @@ export const useWorker =
 				return context;
 			},
 			cleanup() {
-				worker.removeEventListener("message", handleMessage);
-				worker.removeEventListener("error", handleError);
+				controller.abort();
 			},
 			onMessage(callback: WorkerCallback<Current, Self, Target>) {
 				return new Promise((resolve) => {

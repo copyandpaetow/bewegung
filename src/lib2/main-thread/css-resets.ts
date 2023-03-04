@@ -10,8 +10,8 @@ export const saveOriginalStyle = (element: HTMLElement) => {
 };
 
 export const restoreOriginalStyle = (
-	element: HTMLElement,
-	savedAttributes: Map<string, string> | undefined
+	savedAttributes: Map<string, string> | undefined,
+	element: HTMLElement
 ) => {
 	if (!savedAttributes) {
 		return;

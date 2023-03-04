@@ -16,7 +16,7 @@ const getTemporaryElements = (
 		const placeholderElement = document.createElement("img");
 		const elementStyle = resultingStyle.get(placeholderID)!;
 
-		applyCSSStyles(placeholderElement, elementStyle);
+		applyCSSStyles(elementStyle, placeholderElement);
 		setImageAttributes(placeholderElement, relatedElement);
 		temporaryElementMap.set(placeholderID, placeholderElement);
 		resultingStyle.delete(placeholderID);
@@ -25,7 +25,8 @@ const getTemporaryElements = (
 	wrappers.forEach((wrapperID) => {
 		const wrapperElement = document.createElement("div");
 		const elementStyle = resultingStyle.get(wrapperID)!;
-		applyCSSStyles(wrapperElement, elementStyle);
+
+		applyCSSStyles(elementStyle, wrapperElement);
 
 		wrapperElement.setAttribute(BEWEGUNG_DATA_ATTRIBUTE, BEWEGUNG_WRAPPER);
 		temporaryElementMap.set(wrapperID, wrapperElement);
@@ -123,14 +124,14 @@ const setDefaultCallbacks = (resultTransferable: ResultTransferable, result: Res
 			return;
 		}
 
-		onStart.push(() => applyCSSStyles(domElement, { ...elementStyle, ...overrideStyle }));
+		onStart.push(() => applyCSSStyles({ ...elementStyle, ...overrideStyle }, domElement));
 
 		animation.onfinish = () => {
 			domElement.style.cssText = originalStyle;
 			if (!elementStyle) {
 				return;
 			}
-			applyCSSStyles(domElement, elementStyle);
+			applyCSSStyles(elementStyle, domElement);
 		};
 	});
 };
@@ -143,6 +144,7 @@ export const createAnimationsFromKeyframes = (
 		animations: new Map<HTMLElement, Animation>(),
 		onStart: [],
 		timeKeeper: new Animation(new KeyframeEffect(null, null, resultTransferable.totalRuntime)),
+		totalRuntime: resultTransferable.totalRuntime,
 		...state,
 	};
 
@@ -159,9 +161,11 @@ export const createAnimationsFromKeyframes = (
 };
 
 export const getResults = async (useWorker: AtomicWorker, state: MainState) => {
-	const { onMessage } = useWorker("receiveConstructedKeyframes");
+	const { onMessage, cleanup } = useWorker("receiveConstructedKeyframes");
 
-	return (await onMessage((resultTransferable) =>
+	const resultPromise = (await onMessage((resultTransferable) =>
 		createAnimationsFromKeyframes(resultTransferable, state)
-	)) as Result;
+	)) as Promise<Result>;
+	cleanup();
+	return resultPromise;
 };

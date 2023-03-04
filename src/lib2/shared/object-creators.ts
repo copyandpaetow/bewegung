@@ -8,14 +8,17 @@ import {
 	MainElementState,
 	MainState,
 } from "../types";
+import { defaultOptions } from "./constants";
 import { BidirectionalMap } from "./element-translations";
 
-export const getEmptyResults = () => ({
-	animations: new Map(),
-	onStart: [() => {}],
-	timeKeeper: new Animation(null, null),
-	...initMainState(),
-});
+export const getEmptyResults = () =>
+	Promise.resolve({
+		animations: new Map(),
+		onStart: [() => {}],
+		timeKeeper: new Animation(null, null),
+		totalRuntime: defaultOptions.duration as number,
+		...initMainState(),
+	});
 
 export const initMainState = (): MainState => ({
 	root: new Map<HTMLElement, HTMLElement>(),

@@ -17,14 +17,12 @@ export const readDom = async (
 	await nextBrowserRender();
 	keyframes.forEach((styleChange, elementID) => {
 		const domElement = translation.get(elementID)!;
-		applyCSSStyles(domElement, styleChange);
+		applyCSSStyles(styleChange, domElement);
 	});
 	translation.forEach((domElement, elementID) => {
 		readouts.set(elementID, getCalculations(domElement, changeProperties, offset));
 	});
-	resets.forEach((reset, domElement) => {
-		restoreOriginalStyle(domElement, reset);
-	});
+	resets.forEach(restoreOriginalStyle);
 
 	return readouts;
 };
@@ -37,6 +35,7 @@ export const calculateDomChanges = async (useWorker: AtomicWorker, state: MainSt
 	await onMessage(async (domChangeTransferable) => {
 		const { appliableKeyframes, changeProperties } = domChangeTransferable;
 		cleanup();
+		console.log("called calculateDomChanges");
 
 		for await (const [offset, keyframes] of appliableKeyframes) {
 			reply("receiveReadouts", {
@@ -47,4 +46,26 @@ export const calculateDomChanges = async (useWorker: AtomicWorker, state: MainSt
 	});
 
 	return Date.now();
+};
+
+export const getStyleChangesOnly = async (useWorker: AtomicWorker, state: MainState) => {
+	const { reply, onMessage, cleanup } = useWorker("domChanges"); //maybe the worker and a schema could be added beforehand
+
+	reply("receiveKeyframeRequest");
+
+	const resultingStyles = (await onMessage(async (domChangeTransferable) => {
+		const { appliableKeyframes } = domChangeTransferable;
+		cleanup();
+
+		return appliableKeyframes.get(1);
+	})) as Map<string, CustomKeyframe>;
+
+	const translateStyles = new Map<HTMLElement, CustomKeyframe>();
+
+	resultingStyles.forEach((keyframe, elementID) => {
+		const domElement = state.translation.get(elementID)!;
+		translateStyles.set(domElement, keyframe);
+	});
+
+	return translateStyles;
 };

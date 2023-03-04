@@ -20,7 +20,7 @@ const applyAttributes = (element: HTMLElement, attributes: string[]) => {
 	});
 };
 
-export const applyCSSStyles = (element: HTMLElement, resultingStyle: CustomKeyframe) => {
+export const applyCSSStyles = (resultingStyle: CustomKeyframe, element: HTMLElement) => {
 	const { offset, attribute, class: cssClass, ...style } = resultingStyle;
 
 	style && applyStyleObject(element, style as Partial<CSSStyleDeclaration>);
