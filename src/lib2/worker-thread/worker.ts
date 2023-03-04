@@ -48,6 +48,5 @@ workerAtom("receiveReadouts").onMessage((newReadouts, { reply }) => {
 });
 
 workerAtom("receiveTask").onMessage((_, { reply }) => {
-	console.log("here on worker");
 	reply("task");
 });

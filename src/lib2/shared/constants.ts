@@ -50,3 +50,31 @@ export const defaultImageStyles: CustomKeyframe = {
 	willChange: "initial",
 	width: "100%",
 };
+
+export const stateDefinition = {
+	idle: {
+		running: "running",
+		finished: "finished",
+		scrolling: "scrolling",
+		reversing: "reversing",
+	},
+	running: {
+		paused: "paused",
+		reversing: "reversing",
+	},
+	paused: {
+		running: "running",
+		scrolling: "scrolling",
+		reversing: "reversing",
+	},
+	scrolling: {
+		paused: "paused",
+		running: "running",
+		reversing: "reversing",
+	},
+	reversing: {
+		paused: "paused",
+		running: "running",
+	},
+	finished: {},
+};

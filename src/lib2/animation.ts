@@ -1,6 +1,6 @@
 import { getResults } from "./main-thread/create-animations-from-keyframes";
 import { getGeneralState } from "./main-thread/find-affected-elements";
-import { calculateDomChanges } from "./main-thread/read-dom";
+import { calculateDomChanges, getStyleChangesOnly } from "./main-thread/read-dom";
 import { getMainState } from "./main-thread/update-state";
 import { getEmptyResults } from "./shared/object-creators";
 
@@ -9,8 +9,6 @@ import { AnimationFactory, AtomicWorker, CustomKeyframeEffect, Result } from "./
 TODOS:
  
 # performance
-- if the general state takes to long, we already get a keyframe-request before the GS is done
-=> if we split the getGeneralTransferObject function it works, but the tasks takes a lot of time (like 10ms)
 
 #refactor
 - no boolean arguments
@@ -24,7 +22,6 @@ because just spreading them out would be linear easing
 
 - shrinking elements distort text elements
 - the override styles for display: inline are not working correctly. They are intendend for spans
-- maybe rounding the input values could reduce the unsharpness
 
 # features
 - callbacks 
@@ -40,20 +37,20 @@ export const animationFactory = (
 ): AnimationFactory => {
 	const state = getMainState(userInput, useWorker);
 
-	let generalState: null | number = null;
-	let domChanges: null | number = null;
-	let result: null | Result = null;
+	let generalState: null | Promise<number> = null;
+	let domChanges: null | Promise<number> = null;
+	let result: null | Promise<Result> = null;
 
 	const context = {
 		async results() {
 			try {
-				generalState ??= await getGeneralState(useWorker, state);
-				domChanges ??= await calculateDomChanges(useWorker, state);
-				result ??= await getResults(useWorker, state);
+				generalState ??= getGeneralState(useWorker, state);
+				domChanges ??= calculateDomChanges(useWorker, state);
+				result ??= getResults(useWorker, state);
 			} catch (error) {
 				result = getEmptyResults();
 			} finally {
-				return result as Result;
+				return (await result) as Result;
 			}
 		},
 		invalidateDomChanges() {
@@ -63,6 +60,9 @@ export const animationFactory = (
 		invalidateGeneralState() {
 			generalState = null;
 			context.invalidateDomChanges();
+		},
+		async styleResultsOnly() {
+			return await getStyleChangesOnly(useWorker, state);
 		},
 	};
 

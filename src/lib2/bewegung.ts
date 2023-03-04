@@ -1,7 +1,10 @@
 import { animationFactory } from "./animation";
+import { applyCSSStyles } from "./main-thread/apply-styles";
+import { restoreOriginalStyle } from "./main-thread/css-resets";
 import { unifyPropStructure, updateUserInput } from "./main-thread/normalize-props";
 import { getSelectors } from "./main-thread/update-state";
 import { reactivity } from "./main-thread/watch-changes";
+import { stateDefinition } from "./shared/constants";
 import { getWorker, useWorker } from "./shared/use-worker";
 import {
 	AllPlayStates,
@@ -18,10 +21,7 @@ const allWorker = getWorker();
 export class Bewegung implements BewegungAPI {
 	#now: number;
 	#state: AnimationFactory;
-	#playState: {
-		current(): AllPlayStates;
-		nextState(nextState: AllPlayStates): void;
-	};
+	#playState: AllPlayStates = "idle";
 	#worker: Worker;
 	#userInput: CustomKeyframeEffect[];
 	#unobserveReactivity = () => {};
@@ -34,7 +34,6 @@ export class Bewegung implements BewegungAPI {
 			this.#userInput,
 			useWorker<MainMessages, WorkerMessages>(this.#worker)
 		);
-		//this.#playState = createStateMachine(this.#state.getResults());
 	}
 
 	async #addReactivity() {
@@ -60,19 +59,39 @@ export class Bewegung implements BewegungAPI {
 		});
 	}
 
+	#updatePlayState(
+		newState: AllPlayStates,
+		onStateChange?: (oldState: AllPlayStates, newState: AllPlayStates) => void
+	) {
+		const oldState = this.#playState;
+		this.#playState = stateDefinition[oldState][newState] ?? oldState;
+
+		if (this.#playState === oldState) {
+			return;
+		}
+		onStateChange?.(oldState, this.#playState);
+	}
+
 	get playState() {
-		// if (["scrolling", "reversing"].includes(this.#playState.current())) {
-		// 	return "running";
-		// }
-		// if (["running", "finished", "paused"].includes(this.#playState.current())) {
-		// 	return this.#playState.current() as AnimationPlayState;
-		// }
+		if (["scrolling", "reversing"].includes(this.#playState)) {
+			return "running";
+		}
+		if (["running", "finished", "paused"].includes(this.#playState)) {
+			return this.#playState as AnimationPlayState;
+		}
 
 		return "idle" as AnimationPlayState;
 	}
 
 	get finished() {
-		return Promise.resolve();
+		return this.#state
+			.results()
+			.then(({ animations }) => {
+				return Array.from(animations.values(), (animation) => animation.finished);
+			})
+			.then((animationPromises) => {
+				return Promise.all(animationPromises);
+			});
 	}
 
 	async precalc() {
@@ -84,21 +103,90 @@ export class Bewegung implements BewegungAPI {
 	async play() {
 		const { animations, onStart } = await this.#state.results();
 
-		onStart.forEach((cb) => cb());
+		this.#updatePlayState("running", (oldState) => {
+			if (oldState === "idle") {
+				onStart.forEach((cb) => cb());
+			}
+		});
+
 		animations.forEach((animation) => {
 			animation.play();
-			//animation.pause();
-			// setTimeout(() => {
-			// 	animation.pause();
-			// }, 1990);
 		});
+
 		console.log(`it took ${Date.now() - this.#now}ms`);
 	}
-	pause() {}
-	scroll(progress: number, done?: boolean) {}
-	reverse() {}
-	cancel() {}
-	finish() {}
-	commitStyles() {}
-	updatePlaybackRate(rate: number) {}
+	async pause() {
+		const { animations } = await this.#state.results();
+		this.#updatePlayState("paused");
+
+		animations.forEach((animation) => {
+			animation.pause();
+		});
+		this.#addReactivity();
+	}
+	async scroll(progress: number, done?: boolean) {
+		const { animations, onStart, totalRuntime } = await this.#state.results();
+
+		this.#updatePlayState("scrolling", (oldState) => {
+			if (oldState === "idle") {
+				onStart.forEach((cb) => cb());
+			}
+		});
+
+		if (done) {
+			this.finish();
+			return;
+		}
+		const currentFrame =
+			-1 * Math.min(Math.max(progress, 0.001), done === undefined ? 1 : 0.999) * totalRuntime;
+
+		animations.forEach((animation) => {
+			animation.currentTime = currentFrame;
+		});
+	}
+	async reverse() {
+		const { animations, onStart } = await this.#state.results();
+
+		this.#updatePlayState("running", (oldState) => {
+			if (oldState === "idle") {
+				onStart.forEach((cb) => cb());
+			}
+		});
+
+		animations.forEach((animation) => {
+			animation.reverse();
+		});
+	}
+	async cancel() {
+		const { animations, resets } = await this.#state.results();
+		this.#updatePlayState("finished");
+
+		animations.forEach((animation) => {
+			animation.cancel();
+		});
+		resets.forEach(restoreOriginalStyle);
+	}
+	async finish() {
+		const { animations } = await this.#state.results();
+		this.#updatePlayState("finished");
+
+		animations.forEach((animation) => {
+			animation.finish();
+		});
+	}
+	async commitStyles() {
+		if (this.#playState === "idle") {
+			const styles = await this.#state.styleResultsOnly();
+			styles.forEach(applyCSSStyles);
+			this.#updatePlayState("finished");
+			return;
+		}
+		await this.finish();
+	}
+	async updatePlaybackRate(rate: number) {
+		const { animations } = await this.#state.results();
+		animations.forEach((animation) => {
+			animation.updatePlaybackRate(rate);
+		});
+	}
 }
