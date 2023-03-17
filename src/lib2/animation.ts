@@ -13,12 +13,20 @@ TODOS:
 #refactor
 - no boolean arguments
 - how handle properties that are not layout related but cant be animated in a good way? like colors? 
+- getGeneralState implies that there is a state, it is only a number 
+=> should be renamed in something like "wasGeneralStateSend" or something which hints at the cache invalidation
+
+
+- maybe to future proof this, we could move to a setup where a function is called to change something, which returns a function to undo it
+and in the end, we will just call all the change functions (without their undo) functions
+=> does the function need to get send to the worker?
 
 #bugs
 - easings are wrong when counter-scaling and need to get calculated
 => parents should dictate the easings for their children
 => if the easing cant be calculated, the keyframes need to be expanded to be explicit. This would also need some additional easing calculation
 because just spreading them out would be linear easing
+==> for now maybe overflow hidden will help here
 
 - shrinking elements distort text elements
 - the override styles for display: inline are not working correctly. They are intendend for spans

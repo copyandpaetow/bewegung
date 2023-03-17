@@ -16,6 +16,7 @@ const addOffsetToKeyframe = (
 			};
 		});
 	}
+	//TODO: this is still flawed
 	if (keyframes.length <= offsets.length || offsets.at(-1) === 1) {
 		return keyframes.map((keyframe, index) => ({
 			...keyframe,
