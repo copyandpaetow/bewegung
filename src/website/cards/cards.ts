@@ -1,12 +1,14 @@
 import { Bewegung } from "../../lib2/bewegung";
 import { CustomKeyframeEffect } from "../../lib/types";
+import { testThis } from "./test";
+import { bewegung2 } from "../../lib3/bewegung";
 
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
 	const cardsPlayButton = document.querySelector(".cards__button--play");
 	const cardsPauseButton = document.querySelector(".cards__button--pause");
 	let activeIndex = 1;
-	const cards = document.querySelectorAll(".card");
+	const cards = Array.from(document.querySelectorAll(".card"));
 
 	const updateIndex = (index: number) => {
 		activeIndex = Math.abs((activeIndex + index) % cards.length);
@@ -21,37 +23,55 @@ const initCards = () => {
 	const width = getRange(30, 100, 5).map((num) => num + "%");
 
 	const highlight = () => {
-		const highlightCard: CustomKeyframeEffect = [
-			cards[activeIndex],
-			{
-				height,
-			},
-			{ delay: 1000, duration: 4000, easing: "ease", rootSelector: "main" },
-		];
+		// const highlightCard: CustomKeyframeEffect = [
+		// 	cards[activeIndex],
+		// 	{
+		// 		height,
+		// 	},
+		// 	{ delay: 1000, duration: 4000, easing: "ease", rootSelector: "main" },
+		// ];
 
-		const hideOthers: CustomKeyframeEffect = [
-			".card:not(.main)",
-			{
-				height: "",
-			},
-			{ duration: 2000, easing: "ease-in", rootSelector: "main" },
-		];
+		// const hideOthers: CustomKeyframeEffect = [
+		// 	".card:not(.main)",
+		// 	{
+		// 		height: "",
+		// 	},
+		// 	{ duration: 2000, easing: "ease-in", rootSelector: "main" },
+		// ];
 
-		const hidePauseButton: CustomKeyframeEffect = [
-			cards[activeIndex],
+		// const hidePauseButton: CustomKeyframeEffect = [
+		// 	cards[activeIndex],
+		// 	[
+		// 		{
+		// 			display: "none",
+		// 			offset: 0.2,
+		// 		},
+		// 		{
+		// 			display: "",
+		// 		},
+		// 	],
+		// 	10500,
+		// ];
+
+		const changeWidth = () => {
+			const element = cards[activeIndex] as HTMLElement;
+			element.style.width = "100%";
+		};
+		const resetOthers = () => {
+			const otherElements = [...cards].splice(activeIndex, 1) as HTMLElement[];
+
+			otherElements.forEach((element) => {
+				element.style.width = "";
+			});
+		};
+
+		return bewegung2(
 			[
-				{
-					display: "none",
-					offset: 0.2,
-				},
-				{
-					display: "",
-				},
+				[changeWidth, { duration: 2000, at: 200 }],
+				[resetOthers, { duration: 4000, at: -500 }],
 			],
-			10500,
-		];
-
-		return new Bewegung(highlightCard, hideOthers);
+			{ easing: "ease" }
+		) as Bewegung;
 	};
 
 	let animation: Bewegung | undefined;
