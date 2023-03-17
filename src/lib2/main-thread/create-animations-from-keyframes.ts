@@ -150,8 +150,6 @@ export const createAnimationsFromKeyframes = (
 
 	const temporaryElementMap = getTemporaryElements(resultTransferable, state.translation);
 
-	console.log(resultTransferable);
-
 	createAnimations(resultTransferable, result, temporaryElementMap);
 	setWrapperCallbacks(resultTransferable, result, temporaryElementMap);
 	setPlaceholderCallbacks(resultTransferable, result, temporaryElementMap);

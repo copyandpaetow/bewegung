@@ -18,6 +18,16 @@ import {
 
 const allWorker = getWorker();
 
+/*
+# timekeeper
+- callbacks
+- keep and restore progress
+
+maybe it would be nicer to move the complexity somehwere else, currently its really crowded and repetitive
+
+
+*/
+
 export class Bewegung implements BewegungAPI {
 	#now: number;
 	#state: AnimationFactory;
@@ -72,27 +82,7 @@ export class Bewegung implements BewegungAPI {
 		onStateChange?.(oldState, this.#playState);
 	}
 
-	get playState() {
-		if (["scrolling", "reversing"].includes(this.#playState)) {
-			return "running";
-		}
-		if (["running", "finished", "paused"].includes(this.#playState)) {
-			return this.#playState as AnimationPlayState;
-		}
-
-		return "idle" as AnimationPlayState;
-	}
-
-	get finished() {
-		return this.#state
-			.results()
-			.then(({ animations }) => {
-				return Array.from(animations.values(), (animation) => animation.finished);
-			})
-			.then((animationPromises) => {
-				return Promise.all(animationPromises);
-			});
-	}
+	#onStart() {}
 
 	async precalc() {
 		await this.#state.results();
@@ -188,5 +178,27 @@ export class Bewegung implements BewegungAPI {
 		animations.forEach((animation) => {
 			animation.updatePlaybackRate(rate);
 		});
+	}
+
+	get playState() {
+		if (["scrolling", "reversing"].includes(this.#playState)) {
+			return "running";
+		}
+		if (["running", "finished", "paused"].includes(this.#playState)) {
+			return this.#playState as AnimationPlayState;
+		}
+
+		return "idle" as AnimationPlayState;
+	}
+
+	get finished() {
+		return this.#state
+			.results()
+			.then(({ animations }) => {
+				return Array.from(animations.values(), (animation) => animation.finished);
+			})
+			.then((animationPromises) => {
+				return Promise.all(animationPromises);
+			});
 	}
 }
