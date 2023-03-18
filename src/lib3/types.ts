@@ -17,3 +17,14 @@ type OptinalConfigBlock = [BewegungsConfig?];
 export type Bewegung = [...BewegungsBlock[], ...OptinalConfigBlock];
 
 export type BewegungsOptions = [VoidFunction, Options];
+
+export type ElementRelatedState = {
+	parents: Map<HTMLElement, HTMLElement>;
+	sibilings: Map<HTMLElement, HTMLElement | null>;
+	elementResets: Map<HTMLElement, Map<string, string>>;
+};
+
+export type DimensionState = {
+	dimensions: Map<HTMLElement, DOMRect[]>;
+	changes: IterableIterator<Set<VoidFunction>>;
+};

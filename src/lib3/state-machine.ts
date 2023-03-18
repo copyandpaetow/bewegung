@@ -1,11 +1,12 @@
-type PayloadFunction = (...payload: any[]) => void;
+type PayloadFunction = (...payload: any[]) => Promise<void>;
+type PromiseFunction = () => Promise<void>;
 
 type StateMachineDefinition = Record<
 	string,
 	{
 		actions?: {
-			onEnter?: VoidFunction;
-			onExit?: VoidFunction;
+			onEnter?: PromiseFunction;
+			onExit?: PromiseFunction;
 		};
 		transitions: Record<
 			string,
@@ -24,7 +25,7 @@ export const createMachine = (initialState: string, definition: StateMachineDefi
 		get() {
 			return state;
 		},
-		transition(event: string, payload?: any) {
+		async transition(event: string, payload?: any) {
 			const currentDefinition = definition[state];
 			const nextTransition = currentDefinition.transitions[event];
 			if (!nextTransition) {
@@ -33,9 +34,9 @@ export const createMachine = (initialState: string, definition: StateMachineDefi
 			const nextState = nextTransition.target;
 			const nextDefinition = definition[nextState];
 
-			nextTransition.action?.(payload);
-			currentDefinition.actions?.onExit?.();
-			nextDefinition.actions?.onEnter?.();
+			await nextTransition.action?.(payload);
+			await currentDefinition.actions?.onExit?.();
+			await nextDefinition.actions?.onEnter?.();
 
 			state = nextState;
 
