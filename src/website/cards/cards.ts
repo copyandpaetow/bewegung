@@ -53,9 +53,9 @@ const initCards = () => {
 		// 	10500,
 		// ];
 
-		const changeWidth = () => {
+		const changeWidth = (newWidth: number) => {
 			const element = cards[activeIndex] as HTMLElement;
-			element.style.width = "100%";
+			element.style.width = `${newWidth}%`;
 		};
 		const resetOthers = () => {
 			const otherElements = [...cards].splice(activeIndex, 1) as HTMLElement[];
@@ -67,10 +67,12 @@ const initCards = () => {
 
 		return bewegung2(
 			[
-				[changeWidth, { duration: 2000, at: 200 }],
-				[resetOthers, { duration: 4000, at: -500 }],
+				[() => changeWidth(100), { duration: 2000, at: 200 }],
+				[() => changeWidth(10), { duration: 2000 }],
 			],
-			{ easing: "ease" }
+			{
+				easing: "ease",
+			}
 		) as Bewegung;
 	};
 
@@ -86,7 +88,6 @@ const initCards = () => {
 		animation.finished.then(() => {
 			animation = undefined;
 			updateIndex(+1);
-			console.log("finished");
 		});
 	});
 	cardsPauseButton?.addEventListener("click", () => {
