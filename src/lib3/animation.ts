@@ -1,5 +1,14 @@
+import { BidirectionalMap, getOrAddKeyFromLookup } from "./element-translations";
 import { createMachine } from "./state-machine";
-import { BewegungsOptions, DimensionState, ElementOrSelector, ElementRelatedState } from "./types";
+import {
+	BewegungsOptions,
+	DimensionState,
+	ElementOrSelector,
+	ElementRelatedState,
+	MainMessages,
+	WorkerMessages,
+} from "./types";
+import { getWorker, useWorker } from "./use-worker";
 
 /*
 - we need to store the current element state with attributes and cssText / CSSStyleDeclaration
@@ -53,6 +62,8 @@ const setElementRelatedState = (props: BewegungsOptions[]): ElementRelatedState 
 	const parents = new Map<HTMLElement, HTMLElement>();
 	const sibilings = new Map<HTMLElement, HTMLElement | null>();
 	const elementResets = new Map<HTMLElement, Map<string, string>>();
+	const translations = new BidirectionalMap<string, HTMLElement>();
+	const worker = useWorker<MainMessages, WorkerMessages>(getWorker().current());
 
 	props.forEach((entry) => {
 		const { root } = entry[1];
@@ -64,6 +75,7 @@ const setElementRelatedState = (props: BewegungsOptions[]): ElementRelatedState 
 			parents.set(element, element.parentElement!);
 			sibilings.set(element, element.nextElementSibling as HTMLElement | null);
 			elementResets.set(element, saveOriginalStyle(element));
+			getOrAddKeyFromLookup(element, translations);
 		});
 	});
 
@@ -71,21 +83,8 @@ const setElementRelatedState = (props: BewegungsOptions[]): ElementRelatedState 
 		parents,
 		sibilings,
 		elementResets,
-	};
-};
-
-const setDimensionState = (
-	state: ElementRelatedState,
-	timeline: Map<number, Set<VoidFunction>>
-): DimensionState => {
-	const dimensions = new Map<HTMLElement, DOMRect[]>();
-	const changes = timeline.values();
-
-	Array.from(state.elementResets.keys(), (element) => dimensions.set(element, []));
-
-	return {
-		dimensions,
-		changes,
+		translations,
+		worker,
 	};
 };
 
@@ -96,10 +95,16 @@ const observe = (observer: MutationObserver) =>
 		attributes: true,
 	});
 
-const saveElementDimensions = (dimensionState: Map<HTMLElement, DOMRect[]>) => {
-	dimensionState.forEach((domRects, element) => {
-		domRects.push(element.getBoundingClientRect());
+const saveElementDimensions = (elementState: ElementRelatedState) => {
+	const { worker, translations } = elementState;
+
+	const currentChange = new Map<string, DOMRect>();
+
+	translations.forEach((domElement, elementString) => {
+		currentChange.set(elementString, domElement.getBoundingClientRect());
 	});
+
+	worker("domChanges").reply("sendDOMRects", currentChange);
 };
 
 const resetStyle = (entry: MutationRecord, saveMap: Map<HTMLElement, Map<string, string>>) => {
@@ -121,17 +126,15 @@ const resetElements = (entry: MutationRecord, elementState: ElementRelatedState)
 };
 
 export const setObserver = (elementState: ElementRelatedState, dimensionState: DimensionState) => {
-	const { dimensions, changes } = dimensionState;
-	let currentChange = changes.next();
+	let currentChange = dimensionState.next();
 	let wasCallbackCalled = true;
 	//TODO: this we only need conditionally, if not change is that the element should start on/from
-	saveElementDimensions(dimensions);
+	saveElementDimensions(elementState);
 
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
 		wasCallbackCalled = true;
-		console.log("observer start");
-		saveElementDimensions(dimensions);
+		saveElementDimensions(elementState);
 
 		entries.forEach((entry) => {
 			switch (entry.type) {
@@ -148,12 +151,11 @@ export const setObserver = (elementState: ElementRelatedState, dimensionState: D
 			}
 		});
 
-		currentChange = changes.next();
+		currentChange = dimensionState.next();
 
 		console.log("observer done?", currentChange.done);
 
 		if (currentChange.done) {
-			console.log(dimensions);
 			return;
 		}
 
@@ -194,7 +196,7 @@ export const getAnimationStateMachine = (
 
 	const resetState = () => {
 		elementState ??= setElementRelatedState(props);
-		dimensionState ??= setDimensionState(elementState, timeline);
+		dimensionState ??= timeline.values();
 		timeKeeper ??= setTimekeeper(totalRuntime, () => machine.transition("finished"));
 	};
 
