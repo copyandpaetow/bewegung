@@ -1,26 +1,22 @@
 import { getAnimationStateMachine } from "./animation";
-import { calculateTotalRuntime, computeTimeline, normalizeProps } from "./normalize-props";
+import { createContext } from "./normalize-props";
 import { BewegungsBlock, BewegungsConfig } from "./types";
 
 const isReduced = () => window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
 
 export const bewegung2 = (props: BewegungsBlock[], globalConfig?: BewegungsConfig) => {
-	//TODO: This could be part of the web worker but these function are so small, the transfer is like longer
-	const normalizedProps = normalizeProps(props, globalConfig);
-	const totalRuntime = calculateTotalRuntime(normalizedProps);
-	const timeline = computeTimeline(normalizedProps, totalRuntime);
-	const machine = getAnimationStateMachine(normalizedProps, totalRuntime, timeline);
+	const machine = getAnimationStateMachine(createContext(props, globalConfig));
 
 	if (isReduced()) {
 		machine.transition("finish");
 		return;
 	}
 
-	machine.transition("play");
+	machine.transition("load");
 
 	return {
 		play() {
-			machine.transition("play");
+			machine.transition("load");
 		},
 		pause() {
 			machine.transition("pause");

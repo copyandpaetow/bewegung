@@ -49,10 +49,12 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 
 export type MainMessages = {
 	domChanges: Map<string, DOMRect>;
+	animations: Map<string, CSSStyleDeclaration>;
 };
 
 export type WorkerMessages = {
 	sendDOMRects: Map<string, DOMRect>;
+	sendAnimations: Map<string, CSSStyleDeclaration>;
 };
 
 export type AtomicWorker = <Current extends keyof MainMessages>(
@@ -64,7 +66,17 @@ export type ElementRelatedState = {
 	sibilings: Map<HTMLElement, HTMLElement | null>;
 	elementResets: Map<HTMLElement, Map<string, string>>;
 	translations: BidirectionalMap<string, HTMLElement>;
-	worker: AtomicWorker;
 };
 
-export type DimensionState = IterableIterator<Set<VoidFunction>>;
+export type DimensionState = {
+	changes: IterableIterator<Set<VoidFunction>>;
+	animations: Animation[];
+};
+
+export type Context = {
+	userInput: BewegungsOptions[];
+	totalRuntime: number;
+	timeline: Map<number, Set<VoidFunction>>;
+	worker: AtomicWorker;
+	timekeeper: Animation;
+};

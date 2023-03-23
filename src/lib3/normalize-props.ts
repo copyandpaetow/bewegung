@@ -1,5 +1,14 @@
 import { defaultOptions } from "./constants";
-import { BewegungsBlock, BewegungsConfig, BewegungsOptions } from "./types";
+import {
+	AtomicWorker,
+	BewegungsBlock,
+	BewegungsConfig,
+	BewegungsOptions,
+	Context,
+	MainMessages,
+	WorkerMessages,
+} from "./types";
+import { getWorker, useWorker } from "./use-worker";
 
 export const normalizeProps = (
 	props: BewegungsBlock[],
@@ -63,7 +72,7 @@ const splitPartialHits = (
 	return [entry];
 };
 
-export const computeTimeline = (props: BewegungsOptions[], totalRuntime: number) => {
+export const computeTimeline = (props: BewegungsOptions[]) => {
 	let currentTime = 0;
 	const timings = new Set([currentTime]);
 	const propTimeline: [number, number, VoidFunction][] = [];
@@ -94,4 +103,19 @@ export const computeTimeline = (props: BewegungsOptions[], totalRuntime: number)
 		});
 
 	return timeline;
+};
+
+const workerManager = getWorker();
+
+export const createContext = (props: BewegungsBlock[], globalConfig?: BewegungsConfig): Context => {
+	const normalizedProps = normalizeProps(props, globalConfig);
+	const totalRuntime = calculateTotalRuntime(normalizedProps);
+
+	return {
+		userInput: normalizedProps,
+		totalRuntime,
+		timeline: computeTimeline(normalizedProps),
+		worker: useWorker<MainMessages, WorkerMessages>(workerManager.current()),
+		timekeeper: new Animation(new KeyframeEffect(null, null, totalRuntime)),
+	};
 };
