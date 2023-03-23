@@ -1,42 +1,13 @@
 import { BidirectionalMap, getOrAddKeyFromLookup } from "./element-translations";
 import { createMachine } from "./state-machine";
 import {
+	AtomicWorker,
 	BewegungsOptions,
+	Context,
 	DimensionState,
 	ElementOrSelector,
 	ElementRelatedState,
-	MainMessages,
-	WorkerMessages,
 } from "./types";
-import { getWorker, useWorker } from "./use-worker";
-
-/*
-- we need to store the current element state with attributes and cssText / CSSStyleDeclaration
-- we also need to store the dimensions/styles and the parents and previous siblings
-- we would need to create a sort of list which function will be called according to their order (even multiple times when they got iterations)
-- we would need to register the MO early
-
-- if we do the calculations in a webworker, we need to translate the elements into something transferable again
-
-- maybe we can directly start everything as a stateMachine from the beginning=?
-
-- maybe we should start the animation directly but still allow to pause/unpause
-
-
-
-
-*/
-
-const setTimekeeper = (totalRuntime: number, callback: VoidFunction) => {
-	let time = Date.now();
-	const animation = new Animation(new KeyframeEffect(null, null, totalRuntime));
-	animation.onfinish = () => {
-		console.log(`it took ${Date.now() - time}ms`);
-		callback();
-	};
-
-	return animation;
-};
 
 const getElement = (element: ElementOrSelector) => {
 	if (typeof element !== "string") {
@@ -58,25 +29,32 @@ const saveOriginalStyle = (element: HTMLElement) => {
 	return attributes;
 };
 
-const setElementRelatedState = (props: BewegungsOptions[]): ElementRelatedState => {
+const setDimensionRelatedState = (context: Context): DimensionState => {
+	const { timeline, timekeeper } = context;
+
+	return {
+		changes: timeline.values(),
+		animations: [timekeeper],
+	};
+};
+
+const setElementRelatedState = (userInput: BewegungsOptions[]): ElementRelatedState => {
 	const parents = new Map<HTMLElement, HTMLElement>();
 	const sibilings = new Map<HTMLElement, HTMLElement | null>();
 	const elementResets = new Map<HTMLElement, Map<string, string>>();
 	const translations = new BidirectionalMap<string, HTMLElement>();
-	const worker = useWorker<MainMessages, WorkerMessages>(getWorker().current());
 
-	props.forEach((entry) => {
-		const { root } = entry[1];
+	const allElements = new Set(
+		userInput.flatMap(
+			(entry) => Array.from(getElement(entry[1].root).querySelectorAll("*")) as HTMLElement[]
+		)
+	);
 
-		const rootElement = getElement(root);
-		const allElements = Array.from(rootElement.querySelectorAll("*")) as HTMLElement[];
-
-		allElements.forEach((element) => {
-			parents.set(element, element.parentElement!);
-			sibilings.set(element, element.nextElementSibling as HTMLElement | null);
-			elementResets.set(element, saveOriginalStyle(element));
-			getOrAddKeyFromLookup(element, translations);
-		});
+	allElements.forEach((element) => {
+		parents.set(element, element.parentElement!);
+		sibilings.set(element, element.nextElementSibling as HTMLElement | null);
+		elementResets.set(element, saveOriginalStyle(element));
+		getOrAddKeyFromLookup(element, translations);
 	});
 
 	return {
@@ -84,7 +62,6 @@ const setElementRelatedState = (props: BewegungsOptions[]): ElementRelatedState 
 		sibilings,
 		elementResets,
 		translations,
-		worker,
 	};
 };
 
@@ -95,15 +72,17 @@ const observe = (observer: MutationObserver) =>
 		attributes: true,
 	});
 
-const saveElementDimensions = (elementState: ElementRelatedState) => {
-	const { worker, translations } = elementState;
+const saveElementDimensions = (elementState: ElementRelatedState, worker: AtomicWorker) => {
+	const { translations } = elementState;
 
 	const currentChange = new Map<string, DOMRect>();
 
 	translations.forEach((domElement, elementString) => {
+		//TODO: we might need more information like from window.getComputedStyle
 		currentChange.set(elementString, domElement.getBoundingClientRect());
 	});
 
+	//TODO: we need to know if this is the last change or not via a done property
 	worker("domChanges").reply("sendDOMRects", currentChange);
 };
 
@@ -125,16 +104,20 @@ const resetElements = (entry: MutationRecord, elementState: ElementRelatedState)
 	parentElement.insertBefore(target, nextSibiling);
 };
 
-export const setObserver = (elementState: ElementRelatedState, dimensionState: DimensionState) => {
-	let currentChange = dimensionState.next();
+export const setObserver = (
+	elementState: ElementRelatedState,
+	dimensionState: DimensionState,
+	context: Context
+) => {
+	let currentChange = dimensionState.changes.next();
 	let wasCallbackCalled = true;
 	//TODO: this we only need conditionally, if not change is that the element should start on/from
-	saveElementDimensions(elementState);
+	saveElementDimensions(elementState, context.worker);
 
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
 		wasCallbackCalled = true;
-		saveElementDimensions(elementState);
+		saveElementDimensions(elementState, context.worker);
 
 		entries.forEach((entry) => {
 			switch (entry.type) {
@@ -146,12 +129,16 @@ export const setObserver = (elementState: ElementRelatedState, dimensionState: D
 					resetElements(entry, elementState);
 					break;
 
+				case "characterData":
+					//TODO: how to handle this?
+					break;
+
 				default:
 					break;
 			}
 		});
 
-		currentChange = dimensionState.next();
+		currentChange = dimensionState.changes.next();
 
 		console.log("observer done?", currentChange.done);
 
@@ -182,42 +169,63 @@ export const setObserver = (elementState: ElementRelatedState, dimensionState: D
 	return observer;
 };
 
-export const getAnimationStateMachine = (
-	props: BewegungsOptions[],
-	totalRuntime: number,
-	timeline: Map<number, Set<VoidFunction>>
-) => {
+export const getAnimationStateMachine = (context: Context) => {
+	const { userInput, timekeeper, worker } = context;
+
+	let time = 0;
+
 	let elementState: null | ElementRelatedState = null;
 	let dimensionState: null | DimensionState = null;
-	let timeKeeper: null | Animation = null;
 	let observer: null | MutationObserver = null;
 
-	console.log({ timeline });
-
 	const resetState = () => {
-		elementState ??= setElementRelatedState(props);
-		dimensionState ??= timeline.values();
-		timeKeeper ??= setTimekeeper(totalRuntime, () => machine.transition("finished"));
+		elementState ??= setElementRelatedState(userInput);
+		dimensionState ??= setDimensionRelatedState(context);
+		observer ??= setObserver(elementState!, dimensionState!, context);
+		console.log({ ...context, ...elementState });
 	};
 
-	resetState();
-
+	//TODO: scoll is missing => we might need a payload for where to go after successful load
 	const machine = createMachine("idle", {
 		idle: {
+			actions: {
+				onExit() {
+					timekeeper.onfinish = () => machine.transition("finish");
+					time = Date.now();
+				},
+			},
+			transitions: {
+				load: {
+					target: "loading",
+				},
+			},
+		},
+		loading: {
+			actions: {
+				onEnter() {
+					resetState();
+					const { onError, onMessage } = worker("animations");
+					onMessage(() => {
+						machine.transition("play");
+					});
+					onError(() => {
+						machine.transition("cancel");
+					});
+				},
+				onExit() {
+					console.log(`calulation took ${Date.now() - time}ms`);
+				},
+			},
 			transitions: {
 				play: {
 					target: "playing",
 				},
+				cancel: {
+					target: "canceled",
+				},
 			},
 		},
 		playing: {
-			actions: {
-				async onEnter() {
-					// setup states if they dont exist
-					resetState();
-					observer ??= setObserver(elementState!, dimensionState!);
-				},
-			},
 			transitions: {
 				pause: {
 					target: "paused",
@@ -229,22 +237,32 @@ export const getAnimationStateMachine = (
 		},
 		paused: {
 			actions: {
-				async onEnter() {
-					//setup reactivity
+				onEnter() {
+					//TODO: setup reactivity
 				},
 			},
 			transitions: {
 				play: {
-					target: "playing",
-					async action() {
-						//disable reactivity
+					target: "loading",
+					action() {
+						//TODO: disable reactivity
 					},
 				},
 			},
 		},
 		finished: {
 			actions: {
-				async onEnter() {},
+				onEnter() {
+					//TODO: cleanup here
+				},
+			},
+			transitions: {},
+		},
+		canceled: {
+			actions: {
+				onEnter() {
+					//TODO: cleanup here
+				},
 			},
 			transitions: {},
 		},
