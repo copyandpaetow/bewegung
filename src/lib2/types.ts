@@ -80,3 +80,39 @@ export type Context = {
 	worker: AtomicWorker;
 	timekeeper: Animation;
 };
+
+export type Payload = {
+	nextPlayState?: "scroll" | "play";
+	progress?: number;
+	done?: boolean;
+};
+
+export type PayloadFunction = (payload: Payload) => void;
+
+type Guard = {
+	condition: string | string[];
+	altTarget: string;
+	action?: string | string[];
+};
+
+export type TransitionEntry = {
+	target: string;
+	action?: string | string[];
+};
+
+type Transition = Record<string, TransitionEntry>;
+
+export type Definition = {
+	on: Transition;
+	exit?: string | string[];
+	entry?: string | string[];
+	action?: string | string[];
+	guard?: Guard | Guard[];
+};
+
+export type StateMachineDefinition = {
+	initialState: string;
+	states: Record<string, Definition>;
+	actions?: Record<string, PayloadFunction>;
+	guards?: Record<string, () => boolean>;
+};

@@ -12,17 +12,15 @@ export const bewegung2 = (props: BewegungsBlock[], globalConfig?: BewegungsConfi
 		return;
 	}
 
-	machine.transition("load");
-
 	return {
 		play() {
-			machine.transition("load");
+			machine.transition("play");
 		},
 		pause() {
 			machine.transition("pause");
 		},
-		scroll(scrollAmount: number) {
-			machine.transition("scroll", { scrollAmount });
+		scroll(scrollAmount: number, done = false) {
+			machine.transition("load", { scrollAmount, done, nextPlayState: "scroll" });
 		},
 		cancel() {
 			machine.transition("cancel");
@@ -31,6 +29,7 @@ export const bewegung2 = (props: BewegungsBlock[], globalConfig?: BewegungsConfi
 			machine.transition("finish");
 		},
 		get finished() {
+			//TODO: THis needs to be better
 			return Promise.resolve();
 		},
 	};

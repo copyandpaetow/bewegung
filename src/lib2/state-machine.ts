@@ -1,44 +1,66 @@
-type PayloadFunction = (...payload: any[]) => void;
+import { Definition, StateMachineDefinition } from "./types";
 
-type StateMachineDefinition = Record<
-	string,
-	{
-		actions?: {
-			onEnter?: VoidFunction;
-			onExit?: VoidFunction;
-		};
-		transitions: Record<
-			string,
-			{
-				action?: PayloadFunction;
-				target: string;
-			}
-		>;
+const toArray = <Value>(maybeArray: Value | Value[]): Value[] =>
+	Array.isArray(maybeArray) ? maybeArray : [maybeArray];
+
+const checkForGuards = (nextDefinition: Definition, allDefinition: StateMachineDefinition) => {
+	let alternative: string | undefined;
+
+	if (!nextDefinition.guard) {
+		return alternative;
 	}
->;
 
-export const createMachine = (initialState: string, definition: StateMachineDefinition) => {
-	let state = initialState;
+	toArray(nextDefinition.guard).every((guard) => {
+		const allConditionsTrue = toArray(guard.condition).every((condition) =>
+			Boolean(allDefinition.guards?.[condition]())
+		);
+		if (allConditionsTrue) {
+			return true;
+		}
+		alternative = guard.altTarget;
+		return false;
+	});
+
+	return alternative;
+};
+
+export const createMachine = (definition: StateMachineDefinition) => {
+	let state = definition.initialState;
+
+	const callAction = (currentAction: string | string[] | undefined, payload?: any) => {
+		if (!currentAction || !definition.actions) {
+			return;
+		}
+		toArray(currentAction).forEach((action) => {
+			definition.actions?.[action](payload);
+		});
+	};
 
 	const machine = {
 		get() {
 			return state;
 		},
 		transition(event: string, payload?: any) {
-			const currentDefinition = definition[state];
-			const nextTransition = currentDefinition.transitions[event];
+			const currentDefinition = definition.states[state];
+			const nextTransition = currentDefinition.on[event];
+			console.log({ event, nextTransition });
 
 			if (!nextTransition) {
 				return;
 			}
 			const nextState = nextTransition.target;
-			const nextDefinition = definition[nextState];
+			const nextDefinition = definition.states[nextState];
+			const alternativeRoute = checkForGuards(nextDefinition, definition);
 
-			nextTransition.action?.(payload);
-			currentDefinition.actions?.onExit?.();
-			nextDefinition.actions?.onEnter?.();
+			if (alternativeRoute) {
+				return machine.transition(alternativeRoute, payload);
+			}
 
 			state = nextState;
+
+			callAction(nextDefinition.action);
+			callAction(currentDefinition.exit, payload);
+			callAction(nextDefinition.entry, payload);
 
 			return state;
 		},
