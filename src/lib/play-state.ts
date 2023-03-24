@@ -1,8 +1,8 @@
-import { AllPlayStates, AnimationFactory } from "./types";
+import { AllPlayStates, AnimationFactory, InternalPayload, PlayStateManager } from "./types";
 
 const stateDefinition = {
 	idle: {
-		async running(animationFactory: AnimationFactory, payload: { onEnd: VoidFunction }) {
+		async running(animationFactory: AnimationFactory, payload: InternalPayload) {
 			const { onStart, animations, timeKeeper } = await animationFactory.results();
 			onStart.forEach((cb) => cb());
 			animations.forEach((animation) => {
@@ -10,86 +10,120 @@ const stateDefinition = {
 			});
 			timeKeeper.onfinish = payload.onEnd;
 		},
-		finished() {
-			animations.forEach((_, element) => {
-				onStart(element);
-				onEnd(element);
+		async finished(animationFactory: AnimationFactory, payload: InternalPayload) {
+			const { onStart } = await animationFactory.results();
+			onStart.forEach((cb) => cb());
+			payload.onEnd();
+		},
+		async scrolling(
+			animationFactory: AnimationFactory,
+			payload: { onEnd: VoidFunction; done: boolean; progress: number }
+		) {
+			const { onStart, animations, timeKeeper, totalRuntime } = await animationFactory.results();
+
+			onStart.forEach((cb) => cb());
+			timeKeeper.onfinish = payload.onEnd;
+
+			if (payload.done) {
+				animations.forEach((animation) => {
+					animation.finish();
+				});
+				return;
+			}
+			const currentFrame =
+				-1 *
+				Math.min(Math.max(payload.progress, 0.001), payload.done === undefined ? 1 : 0.999) *
+				totalRuntime;
+
+			animations.forEach((animation) => {
+				animation.currentTime = currentFrame;
 			});
 		},
-		scrolling() {
-			animations.forEach((_, element) => {
-				onStart(element);
-			});
-		},
-		reversing() {
-			animations.forEach((animation, element) => {
-				onStart(element);
+		async reversing(animationFactory: AnimationFactory, payload: InternalPayload) {
+			const { onStart, animations, timeKeeper } = await animationFactory.results();
+			onStart.forEach((cb) => cb());
+			animations.forEach((animation) => {
 				animation.reverse();
 			});
+			timeKeeper.onfinish = payload.onEnd;
 		},
 	},
 	running: {
-		paused() {
+		async paused(animationFactory: AnimationFactory) {
+			const { animations } = await animationFactory.results();
+
 			animations.forEach((animation) => {
 				animation.pause();
 			});
 		},
-		finished() {
-			animations.forEach((_, element) => {
-				onEnd(element);
+		async finished(animationFactory: AnimationFactory) {
+			const { animations } = await animationFactory.results();
+
+			animations.forEach((animation) => {
+				animation.finish();
 			});
 		},
-		reversing() {
+		async reversing(animationFactory: AnimationFactory) {
+			const { animations } = await animationFactory.results();
+
 			animations.forEach((animation) => {
 				animation.reverse();
 			});
 		},
 	},
 	paused: {
-		running() {
+		async running(animationFactory: AnimationFactory) {
+			const { animations } = await animationFactory.results();
+
 			animations.forEach((animation) => {
 				animation.play();
 			});
 		},
-		finished() {
-			animations.forEach((_, element) => {
-				onEnd(element);
+		async finished(animationFactory: AnimationFactory) {
+			const { animations } = await animationFactory.results();
+
+			animations.forEach((animation) => {
+				animation.finish();
 			});
 		},
-		reversing() {
+		async reversing(animationFactory: AnimationFactory) {
+			const { animations } = await animationFactory.results();
+
 			animations.forEach((animation) => {
 				animation.reverse();
 			});
 		},
 	},
 	scrolling: {
-		finished() {
-			animations.forEach((_, element) => {
-				onEnd(element);
-			});
-		},
+		finished() {},
 	},
 	reversing: {
-		paused() {
+		async paused(animationFactory: AnimationFactory) {
+			const { animations } = await animationFactory.results();
+
 			animations.forEach((animation) => {
 				animation.pause();
 			});
 		},
-		finished() {
-			animations.forEach((_, element) => {
-				onEnd(element);
-			});
-		},
-		running() {
+		async running(animationFactory: AnimationFactory) {
+			const { animations } = await animationFactory.results();
+
 			animations.forEach((animation) => {
 				animation.play();
+			});
+		},
+		async finished(animationFactory: AnimationFactory) {
+			const { animations } = await animationFactory.results();
+
+			animations.forEach((animation) => {
+				animation.finish();
 			});
 		},
 	},
 	finished: {},
 };
 
-export const getPlayState = (animationFactory: AnimationFactory) => {
+export const getPlayState = (animationFactory: AnimationFactory): PlayStateManager => {
 	let playState: AllPlayStates = "idle";
 
 	const internalPayload = {
@@ -110,8 +144,9 @@ export const getPlayState = (animationFactory: AnimationFactory) => {
 			return "idle" as AnimationPlayState;
 		},
 
-		next(newState: AllPlayStates, payload?: {}) {
-			const nextState = this.stateDefinition[playState]?.[newState];
+		async next(newState: AllPlayStates, payload?: { progress: number; done: boolean }) {
+			//@ts-expect-error
+			const nextState = await stateDefinition[playState]?.[newState];
 
 			if (!nextState) {
 				return playState;
@@ -119,6 +154,7 @@ export const getPlayState = (animationFactory: AnimationFactory) => {
 
 			nextState(animationFactory, { ...payload, ...internalPayload });
 			playState = newState;
+			return playState;
 		},
 	};
 
