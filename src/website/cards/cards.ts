@@ -1,7 +1,7 @@
-import { Bewegung } from "../../lib2/bewegung";
+import { Bewegung } from "../../lib/bewegung";
 import { CustomKeyframeEffect } from "../../lib/types";
 import { testThis } from "./test";
-import { bewegung2 } from "../../lib3/bewegung";
+import { bewegung2 } from "../../lib2/bewegung";
 
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
