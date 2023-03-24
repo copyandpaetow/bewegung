@@ -263,3 +263,15 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 export type AtomicWorker = <Current extends keyof MainMessages>(
 	eventName: Current
 ) => WorkerContext<Current, MainMessages, WorkerMessages>;
+
+export type InternalPayload = {
+	onEnd: VoidFunction;
+};
+
+export type PlayStateManager = {
+	current: () => AllPlayStates;
+	next: (
+		newState: AllPlayStates,
+		payload?: { progress: number; done: boolean } | undefined
+	) => Promise<AllPlayStates>;
+};
