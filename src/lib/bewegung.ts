@@ -1,18 +1,16 @@
 import { animationFactory } from "./animation";
-import { applyCSSStyles } from "./main-thread/apply-styles";
-import { restoreOriginalStyle } from "./main-thread/css-resets";
 import { unifyPropStructure, updateUserInput } from "./main-thread/normalize-props";
 import { getSelectors } from "./main-thread/update-state";
 import { reactivity } from "./main-thread/watch-changes";
-import { stateDefinition } from "./shared/constants";
+import { getPlayState } from "./play-state";
 import { getWorker, useWorker } from "./shared/use-worker";
 import {
-	AllPlayStates,
 	AnimationFactory,
 	BewegungAPI,
 	BewegungProps,
 	CustomKeyframeEffect,
 	MainMessages,
+	PlayStateManager,
 	WorkerMessages,
 } from "./types";
 
@@ -31,7 +29,7 @@ maybe it would be nicer to move the complexity somehwere else, currently its rea
 export class Bewegung implements BewegungAPI {
 	#now: number;
 	#state: AnimationFactory;
-	#playState: AllPlayStates = "idle";
+	#playStateManager: PlayStateManager;
 	#worker: Worker;
 	#userInput: CustomKeyframeEffect[];
 	#unobserveReactivity = () => {};
@@ -44,6 +42,7 @@ export class Bewegung implements BewegungAPI {
 			this.#userInput,
 			useWorker<MainMessages, WorkerMessages>(this.#worker)
 		);
+		this.#playStateManager = getPlayState(this.#state);
 	}
 
 	async #addReactivity() {
@@ -69,21 +68,6 @@ export class Bewegung implements BewegungAPI {
 		});
 	}
 
-	#updatePlayState(
-		newState: AllPlayStates,
-		onStateChange?: (oldState: AllPlayStates, newState: AllPlayStates) => void
-	) {
-		const oldState = this.#playState;
-		this.#playState = stateDefinition[oldState][newState] ?? oldState;
-
-		if (this.#playState === oldState) {
-			return;
-		}
-		onStateChange?.(oldState, this.#playState);
-	}
-
-	#onStart() {}
-
 	async precalc() {
 		await this.#state.results();
 		this.#addReactivity();
@@ -91,101 +75,39 @@ export class Bewegung implements BewegungAPI {
 	}
 
 	async play() {
-		const { animations, onStart } = await this.#state.results();
-
-		this.#updatePlayState("running", (oldState) => {
-			if (oldState === "idle") {
-				onStart.forEach((cb) => cb());
-			}
-		});
-
-		animations.forEach((animation) => {
-			animation.play();
-		});
+		await this.#playStateManager.next("running");
 
 		console.log(`it took ${Date.now() - this.#now}ms`);
 	}
 	async pause() {
-		const { animations } = await this.#state.results();
-		this.#updatePlayState("paused");
-
-		animations.forEach((animation) => {
-			animation.pause();
-		});
+		await this.#playStateManager.next("paused");
 		this.#addReactivity();
 	}
-	async scroll(progress: number, done?: boolean) {
-		const { animations, onStart, totalRuntime } = await this.#state.results();
-
-		this.#updatePlayState("scrolling", (oldState) => {
-			if (oldState === "idle") {
-				onStart.forEach((cb) => cb());
-			}
-		});
-
-		if (done) {
-			this.finish();
-			return;
-		}
-		const currentFrame =
-			-1 * Math.min(Math.max(progress, 0.001), done === undefined ? 1 : 0.999) * totalRuntime;
-
-		animations.forEach((animation) => {
-			animation.currentTime = currentFrame;
-		});
+	async scroll(progress: number, done: boolean = false) {
+		await this.#playStateManager.next("paused", { progress, done });
 	}
 	async reverse() {
-		const { animations, onStart } = await this.#state.results();
-
-		this.#updatePlayState("running", (oldState) => {
-			if (oldState === "idle") {
-				onStart.forEach((cb) => cb());
-			}
-		});
-
-		animations.forEach((animation) => {
-			animation.reverse();
-		});
+		await this.#playStateManager.next("reversing");
 	}
 	async cancel() {
-		const { animations, resets } = await this.#state.results();
-		this.#updatePlayState("finished");
-
-		animations.forEach((animation) => {
-			animation.cancel();
-		});
-		resets.forEach(restoreOriginalStyle);
+		await this.#playStateManager.next("finished");
 	}
 	async finish() {
-		const { animations } = await this.#state.results();
-		this.#updatePlayState("finished");
-
-		animations.forEach((animation) => {
-			animation.finish();
-		});
+		await this.#playStateManager.next("finished");
 	}
 	async commitStyles() {
-		if (this.#playState === "idle") {
-			const styles = await this.#state.styleResultsOnly();
-			styles.forEach(applyCSSStyles);
-			this.#updatePlayState("finished");
-			return;
-		}
-		await this.finish();
+		await this.#playStateManager.next("finished");
 	}
 	async updatePlaybackRate(rate: number) {
-		const { animations } = await this.#state.results();
-		animations.forEach((animation) => {
-			animation.updatePlaybackRate(rate);
-		});
+		await this.#playStateManager.next("finished");
 	}
 
 	get playState() {
-		if (["scrolling", "reversing"].includes(this.#playState)) {
+		if (["scrolling", "reversing"].includes(this.#playStateManager.current())) {
 			return "running";
 		}
-		if (["running", "finished", "paused"].includes(this.#playState)) {
-			return this.#playState as AnimationPlayState;
+		if (["running", "finished", "paused"].includes(this.#playStateManager.current())) {
+			return this.#playStateManager.current() as AnimationPlayState;
 		}
 
 		return "idle" as AnimationPlayState;
