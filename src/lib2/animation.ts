@@ -1,7 +1,7 @@
 import { BidirectionalMap, getOrAddKeyFromLookup } from "./element-translations";
+import { setObserver } from "./observe-dom";
 import { createMachine } from "./state-machine";
 import {
-	AtomicWorker,
 	BewegungsOptions,
 	Context,
 	DimensionState,
@@ -65,114 +65,10 @@ const setElementRelatedState = (userInput: BewegungsOptions[]): ElementRelatedSt
 	};
 };
 
-const observe = (observer: MutationObserver) =>
-	observer.observe(document.body, {
-		childList: true,
-		subtree: true,
-		attributes: true,
-	});
-
-const saveElementDimensions = (elementState: ElementRelatedState, worker: AtomicWorker) => {
-	const { translations } = elementState;
-
-	const currentChange = new Map<string, DOMRect>();
-
-	translations.forEach((domElement, elementString) => {
-		//TODO: we might need more information like from window.getComputedStyle
-		currentChange.set(elementString, domElement.getBoundingClientRect());
-	});
-
-	//TODO: we need to know if this is the last change or not via a done property
-	worker("domChanges").reply("sendDOMRects", currentChange);
-};
-
-const resetStyle = (entry: MutationRecord, saveMap: Map<HTMLElement, Map<string, string>>) => {
-	const target = entry.target as HTMLElement;
-	const savedAttributes = saveMap.get(target)?.get(entry.attributeName!);
-	if (entry.attributeName === "style") {
-		target.style.cssText = savedAttributes!;
-	}
-};
-
-const resetElements = (entry: MutationRecord, elementState: ElementRelatedState) => {
-	const { parents, sibilings } = elementState;
-	const [target] = entry.removedNodes;
-
-	const parentElement = parents.get(target as HTMLElement)!;
-	const nextSibiling = sibilings.get(target as HTMLElement)!;
-
-	parentElement.insertBefore(target, nextSibiling);
-};
-
-export const setObserver = (
-	elementState: ElementRelatedState,
-	dimensionState: DimensionState,
-	context: Context
-) => {
-	let currentChange = dimensionState.changes.next();
-	let wasCallbackCalled = true;
-	//TODO: this we only need conditionally, if not change is that the element should start on/from
-	saveElementDimensions(elementState, context.worker);
-
-	const observerCallback: MutationCallback = (entries, observer) => {
-		observer.disconnect();
-		wasCallbackCalled = true;
-		saveElementDimensions(elementState, context.worker);
-
-		entries.forEach((entry) => {
-			switch (entry.type) {
-				case "attributes":
-					resetStyle(entry, elementState.elementResets);
-					break;
-
-				case "childList":
-					resetElements(entry, elementState);
-					break;
-
-				case "characterData":
-					//TODO: how to handle this?
-					break;
-
-				default:
-					break;
-			}
-		});
-
-		currentChange = dimensionState.changes.next();
-
-		console.log("observer done?", currentChange.done);
-
-		if (currentChange.done) {
-			return;
-		}
-
-		observe(observer);
-		requestAnimationFrame(() => {
-			wasCallbackCalled = false;
-			currentChange.value.forEach((callback) => {
-				callback();
-			});
-			requestAnimationFrame(() => {
-				if (wasCallbackCalled) {
-					return;
-				}
-				observerCallback([], observer);
-			});
-		});
-	};
-
-	const observer = new MutationObserver(observerCallback);
-	observe(observer);
-
-	requestAnimationFrame(() => currentChange.value.forEach((callback) => callback()));
-
-	return observer;
-};
-
 export const getAnimationStateMachine = (context: Context) => {
 	const { userInput, timekeeper, worker } = context;
 
-	let time = 0;
+	let nextPlayState = "play";
 
 	let elementState: null | ElementRelatedState = null;
 	let dimensionState: null | DimensionState = null;
@@ -181,90 +77,153 @@ export const getAnimationStateMachine = (context: Context) => {
 	const resetState = () => {
 		elementState ??= setElementRelatedState(userInput);
 		dimensionState ??= setDimensionRelatedState(context);
-		observer ??= setObserver(elementState!, dimensionState!, context);
-		console.log({ ...context, ...elementState });
+		observer = setObserver(elementState, dimensionState, context);
 	};
 
-	//TODO: scoll is missing => we might need a payload for where to go after successful load
-	const machine = createMachine("idle", {
-		idle: {
-			actions: {
-				onExit() {
-					timekeeper.onfinish = () => machine.transition("finish");
-					time = Date.now();
-				},
+	const machine = createMachine({
+		initialState: "idle",
+		actions: {
+			loadState() {
+				resetState();
+				const { onError, onMessage, cleanup } = worker("animations");
+				onMessage(() => {
+					machine.transition(nextPlayState);
+					cleanup();
+				});
+				onError(() => {
+					machine.transition("cancel");
+					cleanup();
+				});
 			},
-			transitions: {
-				load: {
-					target: "loading",
-				},
+			setFinishTransitionOnTimekeeper() {
+				timekeeper.onfinish = () => machine.transition("finish");
 			},
-		},
-		loading: {
-			actions: {
-				onEnter() {
-					resetState();
-					const { onError, onMessage } = worker("animations");
-					onMessage(() => {
-						machine.transition("play");
-					});
-					onError(() => {
-						machine.transition("cancel");
-					});
-				},
-				onExit() {
-					console.log(`calulation took ${Date.now() - time}ms`);
-				},
+			setNextStateAfterLoadingToPlay() {
+				nextPlayState = "play";
 			},
-			transitions: {
-				play: {
-					target: "playing",
-				},
-				cancel: {
-					target: "canceled",
-				},
+			setNextStateAfterLoadingToScroll() {
+				nextPlayState = "scroll";
 			},
-		},
-		playing: {
-			transitions: {
-				pause: {
-					target: "paused",
-				},
-				finish: {
-					target: "finished",
-				},
+			playAnimations() {
+				console.log("play");
+			},
+			scrollAnimations() {
+				console.log("scroll");
+			},
+			enableReactivity() {
+				console.log("enableReactivity");
+			},
+			disableReactivity() {
+				console.log("disableReactivity");
+			},
+			finishAnimation() {
+				console.log("finishAnimation");
+			},
+			cleanup() {
+				console.log("cleanup");
+			},
+			resetElements() {
+				console.log("resetElements");
 			},
 		},
-		paused: {
-			actions: {
-				onEnter() {
-					//TODO: setup reactivity
-				},
+		guards: {
+			isStateLoaded() {
+				return [elementState, dimensionState].every(Boolean);
 			},
-			transitions: {
-				play: {
-					target: "loading",
-					action() {
-						//TODO: disable reactivity
+		},
+		states: {
+			idle: {
+				on: {
+					play: {
+						target: "playing",
+						action: "setNextStateAfterLoadingToPlay",
+					},
+					scroll: {
+						target: "scrolling",
+						action: "setNextStateAfterLoadingToScroll",
+					},
+					finish: {
+						target: "finished",
+					},
+				},
+				exit: "setFinishTransitionOnTimekeeper",
+			},
+			loading: {
+				entry: "loadState",
+				on: {
+					play: {
+						target: "playing",
+					},
+					scroll: {
+						target: "scrolling",
+					},
+					cancel: {
+						target: "canceled",
 					},
 				},
 			},
-		},
-		finished: {
-			actions: {
-				onEnter() {
-					//TODO: cleanup here
+			playing: {
+				guard: [{ condition: "isStateLoaded", altTarget: "loading" }],
+				entry: "playAnimations",
+				on: {
+					pause: {
+						target: "pausing",
+					},
+					scroll: {
+						target: "scrolling",
+					},
+					cancel: {
+						target: "canceled",
+					},
+					finish: {
+						target: "finished",
+					},
 				},
 			},
-			transitions: {},
-		},
-		canceled: {
-			actions: {
-				onEnter() {
-					//TODO: cleanup here
+			scrolling: {
+				guard: [{ condition: "isStateLoaded", altTarget: "loading" }],
+				entry: "scrollAnimations",
+				on: {
+					pause: {
+						target: "pausing",
+					},
+					play: {
+						target: "playing",
+					},
+					cancel: {
+						target: "canceled",
+					},
+					finish: {
+						target: "finished",
+					},
 				},
 			},
-			transitions: {},
+			paused: {
+				on: {
+					play: {
+						target: "playing",
+					},
+					scroll: {
+						target: "scrolling",
+					},
+					cancel: {
+						target: "canceled",
+					},
+					finish: {
+						target: "finished",
+					},
+				},
+				entry: "enableReactivity",
+				exit: "disableReactivity",
+			},
+			finished: {
+				on: {},
+				entry: ["finishAnimation", "cleanup"],
+			},
+			canceled: {
+				on: {},
+				entry: ["resetElements", "cleanup"],
+			},
 		},
 	});
 
