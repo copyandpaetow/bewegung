@@ -1,178 +1,183 @@
-import { getAnimations } from "./animation";
-import { AllPlayStates, BewegungAPI, BewegungProps, Result, StateMachine } from "./types";
+import { animationFactory } from "./animation";
+import { applyCSSStyles } from "./main-thread/apply-styles";
+import { restoreOriginalStyle } from "./main-thread/css-resets";
+import { unifyPropStructure, updateUserInput } from "./main-thread/normalize-props";
+import { getSelectors } from "./main-thread/update-state";
+import { reactivity } from "./main-thread/watch-changes";
+import { stateDefinition } from "./shared/constants";
+import { getWorker, useWorker } from "./shared/use-worker";
+import {
+	AllPlayStates,
+	AnimationFactory,
+	BewegungAPI,
+	BewegungProps,
+	CustomKeyframeEffect,
+	MainMessages,
+	WorkerMessages,
+} from "./types";
+
+const allWorker = getWorker();
+
+/*
+# timekeeper
+- callbacks
+- keep and restore progress
+
+maybe it would be nicer to move the complexity somehwere else, currently its really crowded and repetitive
+
+
+*/
 
 export class Bewegung implements BewegungAPI {
 	#now: number;
-	#state: Promise<Result>;
+	#state: AnimationFactory;
 	#playState: AllPlayStates = "idle";
-	#stateMachine: StateMachine;
-
-	#currentTime = 0;
-	#progressTime = 0;
-	#unobserve = () => {};
+	#worker: Worker;
+	#userInput: CustomKeyframeEffect[];
+	#unobserveReactivity = () => {};
 
 	constructor(...bewegungProps: BewegungProps) {
 		this.#now = Date.now();
-		this.#state = getAnimations(...bewegungProps);
-		this.#setStateMachine();
-		this.#makeReactive();
-		this.finished.then(() => {
-			this.#unobserve;
-			this.#updatePlayState("finished");
+		this.#worker = allWorker.current();
+		this.#userInput = unifyPropStructure(bewegungProps);
+		this.#state = animationFactory(
+			this.#userInput,
+			useWorker<MainMessages, WorkerMessages>(this.#worker)
+		);
+	}
+
+	async #addReactivity() {
+		const result = await this.#state.results();
+		this.#unobserveReactivity = reactivity(result, getSelectors(this.#userInput), {
+			onDimensionOrPositionChange: () => {
+				this.#unobserveReactivity();
+				this.#state.invalidateDomChanges();
+			},
+			onSecondaryElementChange: (elements) => {
+				this.#unobserveReactivity();
+				elements.forEach((element) => result.translation.delete(element));
+				this.#state.invalidateGeneralState();
+			},
+			onMainElementChange: (removedElements, addedElements) => {
+				this.#unobserveReactivity();
+				this.#userInput = updateUserInput(this.#userInput, removedElements, addedElements);
+				this.#state = animationFactory(
+					this.#userInput,
+					useWorker<MainMessages, WorkerMessages>(this.#worker)
+				);
+			},
 		});
 	}
 
-	async #setStateMachine() {
-		const { animations, onStart, onEnd } = await this.#state;
-		console.log(`calculation took ${Date.now() - this.#now}ms`);
-		this.#stateMachine = {
-			idle: {
-				running() {
-					animations.forEach((animation, element) => {
-						onStart(element);
-						animation.play();
-					});
-				},
-				finished() {
-					animations.forEach((_, element) => {
-						onStart(element);
-						onEnd(element);
-					});
-				},
-				scrolling() {
-					animations.forEach((_, element) => {
-						onStart(element);
-					});
-				},
-				reversing() {
-					animations.forEach((animation, element) => {
-						onStart(element);
-						animation.reverse();
-					});
-				},
-			},
-			running: {
-				paused() {
-					animations.forEach((animation) => {
-						animation.pause();
-					});
-				},
-				finished() {
-					animations.forEach((_, element) => {
-						onEnd(element);
-					});
-				},
-				reversing() {
-					animations.forEach((animation) => {
-						animation.reverse();
-					});
-				},
-			},
-			paused: {
-				running() {
-					animations.forEach((animation) => {
-						animation.play();
-					});
-				},
-				finished() {
-					animations.forEach((_, element) => {
-						onEnd(element);
-					});
-				},
-				reversing() {
-					animations.forEach((animation) => {
-						animation.reverse();
-					});
-				},
-			},
-			scrolling: {
-				finished() {
-					animations.forEach((_, element) => {
-						onEnd(element);
-					});
-				},
-			},
-			reversing: {
-				paused() {
-					animations.forEach((animation) => {
-						animation.pause();
-					});
-				},
-				finished() {
-					animations.forEach((_, element) => {
-						onEnd(element);
-					});
-				},
-				running() {
-					animations.forEach((animation) => {
-						animation.play();
-					});
-				},
-			},
-			finished: {},
-		};
+	#updatePlayState(
+		newState: AllPlayStates,
+		onStateChange?: (oldState: AllPlayStates, newState: AllPlayStates) => void
+	) {
+		const oldState = this.#playState;
+		this.#playState = stateDefinition[oldState][newState] ?? oldState;
+
+		if (this.#playState === oldState) {
+			return;
+		}
+		onStateChange?.(oldState, this.#playState);
 	}
 
-	async #updatePlayState(newState: AllPlayStates) {
-		await this.#state;
+	#onStart() {}
 
-		const nextState: VoidFunction | undefined = this.#stateMachine[this.#playState]?.[newState];
-
-		if (nextState) {
-			nextState();
-			this.#playState = newState;
-		}
+	async precalc() {
+		await this.#state.results();
+		this.#addReactivity();
+		return this;
 	}
 
-	async #keepProgress() {
-		const state = await this.#state;
-		const currentTime = state.timekeeper.currentTime ?? 0;
-		if (this.playState === "running") {
-			this.#currentTime = performance.now();
-			this.#progressTime = currentTime;
-		}
+	async play() {
+		const { animations, onStart } = await this.#state.results();
 
-		if (this.playState === "paused") {
-			this.#currentTime = 0;
-			this.#progressTime = currentTime;
-		}
+		this.#updatePlayState("running", (oldState) => {
+			if (oldState === "idle") {
+				onStart.forEach((cb) => cb());
+			}
+		});
+
+		animations.forEach((animation) => {
+			animation.play();
+		});
+
+		console.log(`it took ${Date.now() - this.#now}ms`);
 	}
+	async pause() {
+		const { animations } = await this.#state.results();
+		this.#updatePlayState("paused");
 
-	async #makeReactive() {
-		const state = await this.#state;
+		animations.forEach((animation) => {
+			animation.pause();
+		});
+		this.#addReactivity();
+	}
+	async scroll(progress: number, done?: boolean) {
+		const { animations, onStart, totalRuntime } = await this.#state.results();
 
-		const before = () => {
-			if (this.playState === "idle") {
-				return;
+		this.#updatePlayState("scrolling", (oldState) => {
+			if (oldState === "idle") {
+				onStart.forEach((cb) => cb());
 			}
-			this.#now = Date.now();
-			this.#keepProgress();
-			state.animations.forEach((animation, element) => {
-				animation.cancel();
-				state.resetStyle(element);
-			});
-		};
+		});
 
-		const after = () => {
-			if (this.playState === "idle") {
-				return;
-			}
-			let progress = this.#progressTime;
-			if (this.#currentTime !== 0) {
-				progress += Date.now() - this.#currentTime;
-			}
+		if (done) {
+			this.finish();
+			return;
+		}
+		const currentFrame =
+			-1 * Math.min(Math.max(progress, 0.001), done === undefined ? 1 : 0.999) * totalRuntime;
 
-			state.animations.forEach((animation, element) => {
-				state.onStart(element);
-				animation.currentTime = progress;
-			});
-		};
-		setTimeout(() => {
-			if (this.playState === "running") {
-				return;
+		animations.forEach((animation) => {
+			animation.currentTime = currentFrame;
+		});
+	}
+	async reverse() {
+		const { animations, onStart } = await this.#state.results();
+
+		this.#updatePlayState("running", (oldState) => {
+			if (oldState === "idle") {
+				onStart.forEach((cb) => cb());
 			}
-			this.#unobserve = state.observe(before, after);
-		}, 10);
+		});
+
+		animations.forEach((animation) => {
+			animation.reverse();
+		});
+	}
+	async cancel() {
+		const { animations, resets } = await this.#state.results();
+		this.#updatePlayState("finished");
+
+		animations.forEach((animation) => {
+			animation.cancel();
+		});
+		resets.forEach(restoreOriginalStyle);
+	}
+	async finish() {
+		const { animations } = await this.#state.results();
+		this.#updatePlayState("finished");
+
+		animations.forEach((animation) => {
+			animation.finish();
+		});
+	}
+	async commitStyles() {
+		if (this.#playState === "idle") {
+			const styles = await this.#state.styleResultsOnly();
+			styles.forEach(applyCSSStyles);
+			this.#updatePlayState("finished");
+			return;
+		}
+		await this.finish();
+	}
+	async updatePlaybackRate(rate: number) {
+		const { animations } = await this.#state.results();
+		animations.forEach((animation) => {
+			animation.updatePlaybackRate(rate);
+		});
 	}
 
 	get playState() {
@@ -183,79 +188,17 @@ export class Bewegung implements BewegungAPI {
 			return this.#playState as AnimationPlayState;
 		}
 
-		return "idle";
+		return "idle" as AnimationPlayState;
 	}
 
 	get finished() {
-		const awaitAnimations = async () => {
-			const { animations } = await this.#state;
-			await Promise.all(Array.from(animations.values()).map((animation) => animation.finished));
-		};
-		return awaitAnimations();
-	}
-
-	play() {
-		this.#updatePlayState("running");
-	}
-	pause() {
-		this.#keepProgress();
-		this.#makeReactive();
-		this.#updatePlayState("paused");
-	}
-	scroll(progress: number, done?: boolean) {
-		if (done) {
-			this.#updatePlayState("finished");
-			return;
-		}
-
-		const awaitAnimations = async () => {
-			const { animations, scroll } = await this.#state;
-			const currentFrame = scroll(progress, done);
-			this.#updatePlayState("scrolling");
-			animations.forEach((animation) => {
-				animation.currentTime = currentFrame;
+		return this.#state
+			.results()
+			.then(({ animations }) => {
+				return Array.from(animations.values(), (animation) => animation.finished);
+			})
+			.then((animationPromises) => {
+				return Promise.all(animationPromises);
 			});
-
-			this.#progressTime = currentFrame;
-		};
-		return awaitAnimations();
-	}
-	reverse() {
-		this.#updatePlayState("reversing");
-	}
-	cancel() {
-		const awaitAnimations = async () => {
-			const { animations } = await this.#state;
-			animations.forEach((animation) => {
-				animation.cancel();
-			});
-			this.#unobserve();
-		};
-		return awaitAnimations();
-	}
-	finish() {
-		this.#updatePlayState("finished");
-	}
-	commitStyles() {
-		const awaitAnimations = async () => {
-			const { animations, onEnd, onStart } = await this.#state;
-			animations.forEach((animation, element) => {
-				animation.cancel();
-				onStart(element);
-				onEnd(element);
-			});
-			this.#unobserve();
-		};
-		return awaitAnimations();
-	}
-	updatePlaybackRate(rate: number) {
-		const awaitAnimations = async () => {
-			const { animations } = await this.#state;
-			animations.forEach((animation) => {
-				animation.updatePlaybackRate(rate);
-			});
-			this.#unobserve();
-		};
-		return awaitAnimations();
 	}
 }

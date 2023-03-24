@@ -1,78 +1,272 @@
-import { getResults } from "./main-thread/create-animations-from-keyframes";
-import { getGeneralState } from "./main-thread/find-affected-elements";
-import { calculateDomChanges, getStyleChangesOnly } from "./main-thread/read-dom";
-import { getMainState } from "./main-thread/update-state";
-import { getEmptyResults } from "./shared/object-creators";
+import { BidirectionalMap, getOrAddKeyFromLookup } from "./element-translations";
+import { createMachine } from "./state-machine";
+import {
+	AtomicWorker,
+	BewegungsOptions,
+	Context,
+	DimensionState,
+	ElementOrSelector,
+	ElementRelatedState,
+} from "./types";
 
-import { AnimationFactory, AtomicWorker, CustomKeyframeEffect, Result } from "./types";
-/*
-TODOS:
- 
-# performance
+const getElement = (element: ElementOrSelector) => {
+	if (typeof element !== "string") {
+		return element as HTMLElement;
+	}
+	return document.querySelector(element) as HTMLElement;
+};
 
-#refactor
-- no boolean arguments
-- how handle properties that are not layout related but cant be animated in a good way? like colors? 
-- getGeneralState implies that there is a state, it is only a number 
-=> should be renamed in something like "wasGeneralStateSend" or something which hints at the cache invalidation
+const saveOriginalStyle = (element: HTMLElement) => {
+	const attributes = new Map<string, string>();
 
+	element.getAttributeNames().forEach((attribute) => {
+		attributes.set(attribute, element.getAttribute(attribute)!);
+	});
+	if (!attributes.has("style")) {
+		attributes.set("style", element.style.cssText);
+	}
 
-- maybe to future proof this, we could move to a setup where a function is called to change something, which returns a function to undo it
-and in the end, we will just call all the change functions (without their undo) functions
-=> does the function need to get send to the worker?
+	return attributes;
+};
 
-#bugs
-- easings are wrong when counter-scaling and need to get calculated
-=> parents should dictate the easings for their children
-=> if the easing cant be calculated, the keyframes need to be expanded to be explicit. This would also need some additional easing calculation
-because just spreading them out would be linear easing
-==> for now maybe overflow hidden will help here
+const setDimensionRelatedState = (context: Context): DimensionState => {
+	const { timeline, timekeeper } = context;
 
-- shrinking elements distort text elements
-- the override styles for display: inline are not working correctly. They are intendend for spans
+	return {
+		changes: timeline.values(),
+		animations: [timekeeper],
+	};
+};
 
-# features
-- callbacks 
-- allow usage of elements as target which are not currently in the dom. The Element in question will can get appended in the dom (or deleted)
-- check for custom properties
-- background images
-- prefer reduced motion
-*/
+const setElementRelatedState = (userInput: BewegungsOptions[]): ElementRelatedState => {
+	const parents = new Map<HTMLElement, HTMLElement>();
+	const sibilings = new Map<HTMLElement, HTMLElement | null>();
+	const elementResets = new Map<HTMLElement, Map<string, string>>();
+	const translations = new BidirectionalMap<string, HTMLElement>();
 
-export const animationFactory = (
-	userInput: CustomKeyframeEffect[],
-	useWorker: AtomicWorker
-): AnimationFactory => {
-	const state = getMainState(userInput, useWorker);
+	const allElements = new Set(
+		userInput.flatMap(
+			(entry) => Array.from(getElement(entry[1].root).querySelectorAll("*")) as HTMLElement[]
+		)
+	);
 
-	let generalState: null | Promise<number> = null;
-	let domChanges: null | Promise<number> = null;
-	let result: null | Promise<Result> = null;
+	allElements.forEach((element) => {
+		parents.set(element, element.parentElement!);
+		sibilings.set(element, element.nextElementSibling as HTMLElement | null);
+		elementResets.set(element, saveOriginalStyle(element));
+		getOrAddKeyFromLookup(element, translations);
+	});
 
-	const context = {
-		async results() {
-			try {
-				generalState ??= getGeneralState(useWorker, state);
-				domChanges ??= calculateDomChanges(useWorker, state);
-				result ??= getResults(useWorker, state);
-			} catch (error) {
-				result = getEmptyResults();
-			} finally {
-				return (await result) as Result;
+	return {
+		parents,
+		sibilings,
+		elementResets,
+		translations,
+	};
+};
+
+const observe = (observer: MutationObserver) =>
+	observer.observe(document.body, {
+		childList: true,
+		subtree: true,
+		attributes: true,
+	});
+
+const saveElementDimensions = (elementState: ElementRelatedState, worker: AtomicWorker) => {
+	const { translations } = elementState;
+
+	const currentChange = new Map<string, DOMRect>();
+
+	translations.forEach((domElement, elementString) => {
+		//TODO: we might need more information like from window.getComputedStyle
+		currentChange.set(elementString, domElement.getBoundingClientRect());
+	});
+
+	//TODO: we need to know if this is the last change or not via a done property
+	worker("domChanges").reply("sendDOMRects", currentChange);
+};
+
+const resetStyle = (entry: MutationRecord, saveMap: Map<HTMLElement, Map<string, string>>) => {
+	const target = entry.target as HTMLElement;
+	const savedAttributes = saveMap.get(target)?.get(entry.attributeName!);
+	if (entry.attributeName === "style") {
+		target.style.cssText = savedAttributes!;
+	}
+};
+
+const resetElements = (entry: MutationRecord, elementState: ElementRelatedState) => {
+	const { parents, sibilings } = elementState;
+	const [target] = entry.removedNodes;
+
+	const parentElement = parents.get(target as HTMLElement)!;
+	const nextSibiling = sibilings.get(target as HTMLElement)!;
+
+	parentElement.insertBefore(target, nextSibiling);
+};
+
+export const setObserver = (
+	elementState: ElementRelatedState,
+	dimensionState: DimensionState,
+	context: Context
+) => {
+	let currentChange = dimensionState.changes.next();
+	let wasCallbackCalled = true;
+	//TODO: this we only need conditionally, if not change is that the element should start on/from
+	saveElementDimensions(elementState, context.worker);
+
+	const observerCallback: MutationCallback = (entries, observer) => {
+		observer.disconnect();
+		wasCallbackCalled = true;
+		saveElementDimensions(elementState, context.worker);
+
+		entries.forEach((entry) => {
+			switch (entry.type) {
+				case "attributes":
+					resetStyle(entry, elementState.elementResets);
+					break;
+
+				case "childList":
+					resetElements(entry, elementState);
+					break;
+
+				case "characterData":
+					//TODO: how to handle this?
+					break;
+
+				default:
+					break;
 			}
-		},
-		invalidateDomChanges() {
-			domChanges = null;
-			result = null;
-		},
-		invalidateGeneralState() {
-			generalState = null;
-			context.invalidateDomChanges();
-		},
-		async styleResultsOnly() {
-			return await getStyleChangesOnly(useWorker, state);
-		},
+		});
+
+		currentChange = dimensionState.changes.next();
+
+		console.log("observer done?", currentChange.done);
+
+		if (currentChange.done) {
+			return;
+		}
+
+		observe(observer);
+		requestAnimationFrame(() => {
+			wasCallbackCalled = false;
+			currentChange.value.forEach((callback) => {
+				callback();
+			});
+			requestAnimationFrame(() => {
+				if (wasCallbackCalled) {
+					return;
+				}
+				observerCallback([], observer);
+			});
+		});
 	};
 
-	return context;
+	const observer = new MutationObserver(observerCallback);
+	observe(observer);
+
+	requestAnimationFrame(() => currentChange.value.forEach((callback) => callback()));
+
+	return observer;
+};
+
+export const getAnimationStateMachine = (context: Context) => {
+	const { userInput, timekeeper, worker } = context;
+
+	let time = 0;
+
+	let elementState: null | ElementRelatedState = null;
+	let dimensionState: null | DimensionState = null;
+	let observer: null | MutationObserver = null;
+
+	const resetState = () => {
+		elementState ??= setElementRelatedState(userInput);
+		dimensionState ??= setDimensionRelatedState(context);
+		observer ??= setObserver(elementState!, dimensionState!, context);
+		console.log({ ...context, ...elementState });
+	};
+
+	//TODO: scoll is missing => we might need a payload for where to go after successful load
+	const machine = createMachine("idle", {
+		idle: {
+			actions: {
+				onExit() {
+					timekeeper.onfinish = () => machine.transition("finish");
+					time = Date.now();
+				},
+			},
+			transitions: {
+				load: {
+					target: "loading",
+				},
+			},
+		},
+		loading: {
+			actions: {
+				onEnter() {
+					resetState();
+					const { onError, onMessage } = worker("animations");
+					onMessage(() => {
+						machine.transition("play");
+					});
+					onError(() => {
+						machine.transition("cancel");
+					});
+				},
+				onExit() {
+					console.log(`calulation took ${Date.now() - time}ms`);
+				},
+			},
+			transitions: {
+				play: {
+					target: "playing",
+				},
+				cancel: {
+					target: "canceled",
+				},
+			},
+		},
+		playing: {
+			transitions: {
+				pause: {
+					target: "paused",
+				},
+				finish: {
+					target: "finished",
+				},
+			},
+		},
+		paused: {
+			actions: {
+				onEnter() {
+					//TODO: setup reactivity
+				},
+			},
+			transitions: {
+				play: {
+					target: "loading",
+					action() {
+						//TODO: disable reactivity
+					},
+				},
+			},
+		},
+		finished: {
+			actions: {
+				onEnter() {
+					//TODO: cleanup here
+				},
+			},
+			transitions: {},
+		},
+		canceled: {
+			actions: {
+				onEnter() {
+					//TODO: cleanup here
+				},
+			},
+			transitions: {},
+		},
+	});
+
+	return machine;
 };

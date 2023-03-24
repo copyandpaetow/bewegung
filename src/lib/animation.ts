@@ -1,138 +1,78 @@
-import { initialState, initialAnimationState, initialWatchState } from "./initial-states";
-import { normalizeProps } from "./normalize/props";
-import { computeSecondaryProperties } from "./prepare/affected-elements";
-import { updateCallbackOffsets, updateKeyframeOffsets } from "./prepare/offsets";
-import { calculateTotalRuntime } from "./prepare/runtime";
-import { setState } from "./prepare/state";
-import { setCallbackAnimations } from "./read/callbacks";
-import { setDefaultCalculations } from "./read/calculations-default";
-import { setImageCalculations } from "./read/calculations-image";
-import { restoreOriginalStyle } from "./read/apply-styles";
-import { setDomReadouts } from "./read/dom";
-import { addStyleOverrides } from "./read/overrides";
-import { adjustReadoutsForDisplayNone } from "./read/adjust-readouts";
-import { scheduleCallback } from "./scheduler";
-import { AnimationEntry, BewegungProps, Result } from "./types";
-import { observerDimensions } from "./watch/dimensions";
-import { observeMutations } from "./watch/mutations";
-import { observeResizes } from "./watch/resizes";
+import { getResults } from "./main-thread/create-animations-from-keyframes";
+import { getGeneralState } from "./main-thread/find-affected-elements";
+import { calculateDomChanges, getStyleChangesOnly } from "./main-thread/read-dom";
+import { getMainState } from "./main-thread/update-state";
+import { getEmptyResults } from "./shared/object-creators";
 
-if (typeof window !== "undefined") {
-	// @ts-expect-error polyfill for requestIdleCallback
-	window.requestIdleCallback ??= window.requestAnimationFrame;
-}
+import { AnimationFactory, AtomicWorker, CustomKeyframeEffect, Result } from "./types";
+/*
+TODOS:
+ 
+# performance
 
-export const getAnimations = (...props: BewegungProps) =>
-	new Promise<Result>((resolve) => {
-		const state = initialState();
+#refactor
+- no boolean arguments
+- how handle properties that are not layout related but cant be animated in a good way? like colors? 
+- getGeneralState implies that there is a state, it is only a number 
+=> should be renamed in something like "wasGeneralStateSend" or something which hints at the cache invalidation
 
-		init();
 
-		function init() {
-			const animtionEntries: AnimationEntry[] = [];
-			const tasks = [
-				() => normalizeProps(animtionEntries, ...props),
-				() => setState(state, animtionEntries),
-				prepare,
-			];
+- maybe to future proof this, we could move to a setup where a function is called to change something, which returns a function to undo it
+and in the end, we will just call all the change functions (without their undo) functions
+=> does the function need to get send to the worker?
 
-			tasks.forEach(scheduleCallback);
-		}
+#bugs
+- easings are wrong when counter-scaling and need to get calculated
+=> parents should dictate the easings for their children
+=> if the easing cant be calculated, the keyframes need to be expanded to be explicit. This would also need some additional easing calculation
+because just spreading them out would be linear easing
+==> for now maybe overflow hidden will help here
 
-		//TODO: put these code blocks into try catch blocks and try to come up with a fallback like animation with only applying styles
-		//TODO: this could then also work for prefer reduced motion
-		function prepare() {
-			const { totalRuntime } = state;
+- shrinking elements distort text elements
+- the override styles for display: inline are not working correctly. They are intendend for spans
 
-			const tasks = [
-				() => computeSecondaryProperties(state),
-				() => calculateTotalRuntime(state),
-				() => updateKeyframeOffsets(state, totalRuntime),
-				() => updateCallbackOffsets(state, totalRuntime),
-				read,
-			];
+# features
+- callbacks 
+- allow usage of elements as target which are not currently in the dom. The Element in question will can get appended in the dom (or deleted)
+- check for custom properties
+- background images
+- prefer reduced motion
+*/
 
-			tasks.forEach(scheduleCallback);
-		}
+export const animationFactory = (
+	userInput: CustomKeyframeEffect[],
+	useWorker: AtomicWorker
+): AnimationFactory => {
+	const state = getMainState(userInput, useWorker);
 
-		function read() {
-			const animationState = initialAnimationState();
+	let generalState: null | Promise<number> = null;
+	let domChanges: null | Promise<number> = null;
+	let result: null | Promise<Result> = null;
 
-			//if we are reacting and calculate entries again, we need to replace instead of push
-			const tasks = [
-				() => setDomReadouts(animationState, state),
-				() => adjustReadoutsForDisplayNone(animationState),
-				() => addStyleOverrides(animationState, state),
-				() => setDefaultCalculations(animationState, state),
-				() => setImageCalculations(animationState, state),
-				() => setCallbackAnimations(state),
-				complete,
-			];
+	const context = {
+		async results() {
+			try {
+				generalState ??= getGeneralState(useWorker, state);
+				domChanges ??= calculateDomChanges(useWorker, state);
+				result ??= getResults(useWorker, state);
+			} catch (error) {
+				result = getEmptyResults();
+			} finally {
+				return (await result) as Result;
+			}
+		},
+		invalidateDomChanges() {
+			domChanges = null;
+			result = null;
+		},
+		invalidateGeneralState() {
+			generalState = null;
+			context.invalidateDomChanges();
+		},
+		async styleResultsOnly() {
+			return await getStyleChangesOnly(useWorker, state);
+		},
+	};
 
-			tasks.forEach(scheduleCallback);
-		}
-
-		function scroll(progress: number, done?: boolean) {
-			return (
-				-1 *
-				Math.min(Math.max(progress, 0.001), done === undefined ? 1 : 0.999) *
-				state.totalRuntime
-			);
-		}
-
-		function complete() {
-			resolve({
-				animations: state.animations,
-				timekeeper: state.timeKeeper,
-				resetStyle: (element) => restoreOriginalStyle(element, state.cssStyleReset.get(element)),
-				onStart: (element) => state.onStart.get(element)?.forEach((callback) => callback()),
-				onEnd: (element) => state.onEnd.get(element)?.forEach((callback) => callback()),
-				observe: (before, after) => watch(before, after),
-				scroll,
-			});
-		}
-
-		function watch(before: VoidFunction, after: VoidFunction) {
-			const watchState = initialWatchState();
-
-			let resizeIdleCallback: NodeJS.Timeout | undefined;
-
-			const disconnect: VoidFunction = () => {
-				const { MO, RO, IO } = watchState;
-				const { mainElements, secondaryElements } = state;
-				MO?.disconnect();
-				mainElements.forEach((element) => {
-					IO.get(element)?.disconnect();
-					RO.get(element)?.disconnect();
-				});
-				secondaryElements.forEach((element) => {
-					IO.get(element)?.disconnect();
-					RO.get(element)?.disconnect();
-				});
-			};
-
-			const throttledCallback = (callback: VoidFunction) => {
-				resizeIdleCallback && clearTimeout(resizeIdleCallback);
-				resizeIdleCallback = setTimeout(() => {
-					disconnect();
-					before();
-					callback();
-					after();
-				}, 100);
-			};
-
-			const tasks = [
-				() =>
-					observeMutations(watchState, state, {
-						partial: () => throttledCallback(read),
-						full: () => throttledCallback(prepare),
-					}),
-				() => observeResizes(watchState, state, () => throttledCallback(read)),
-				() => observerDimensions(watchState, state, () => throttledCallback(read)),
-			];
-
-			tasks.forEach(scheduleCallback);
-
-			return disconnect;
-		}
-	});
+	return context;
+};
