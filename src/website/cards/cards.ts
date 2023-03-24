@@ -1,7 +1,5 @@
 import { Bewegung } from "../../lib2/bewegung";
 import { CustomKeyframeEffect } from "../../lib/types";
-import { testThis } from "./test";
-import { bewegung2 } from "../../lib3/bewegung";
 
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
@@ -23,57 +21,37 @@ const initCards = () => {
 	const width = getRange(30, 100, 5).map((num) => num + "%");
 
 	const highlight = () => {
-		// const highlightCard: CustomKeyframeEffect = [
-		// 	cards[activeIndex],
-		// 	{
-		// 		height,
-		// 	},
-		// 	{ delay: 1000, duration: 4000, easing: "ease", rootSelector: "main" },
-		// ];
-
-		// const hideOthers: CustomKeyframeEffect = [
-		// 	".card:not(.main)",
-		// 	{
-		// 		height: "",
-		// 	},
-		// 	{ duration: 2000, easing: "ease-in", rootSelector: "main" },
-		// ];
-
-		// const hidePauseButton: CustomKeyframeEffect = [
-		// 	cards[activeIndex],
-		// 	[
-		// 		{
-		// 			display: "none",
-		// 			offset: 0.2,
-		// 		},
-		// 		{
-		// 			display: "",
-		// 		},
-		// 	],
-		// 	10500,
-		// ];
-
-		const changeWidth = (newWidth: number) => {
-			const element = cards[activeIndex] as HTMLElement;
-			element.style.width = `${newWidth}%`;
-		};
-		const resetOthers = () => {
-			const otherElements = [...cards].splice(activeIndex, 1) as HTMLElement[];
-
-			otherElements.forEach((element) => {
-				element.style.width = "";
-			});
-		};
-
-		return bewegung2(
-			[
-				[() => changeWidth(100), { duration: 2000, at: 200 }],
-				[() => changeWidth(10), { duration: 2000 }],
-			],
+		const highlightCard: CustomKeyframeEffect = [
+			cards[activeIndex],
 			{
-				easing: "ease",
-			}
-		) as Bewegung;
+				height,
+			},
+			{ delay: 1000, duration: 4000, easing: "ease", rootSelector: "main" },
+		];
+
+		const hideOthers: CustomKeyframeEffect = [
+			".card:not(.main)",
+			{
+				height: "",
+			},
+			{ duration: 2000, easing: "ease-in", rootSelector: "main" },
+		];
+
+		const hidePauseButton: CustomKeyframeEffect = [
+			cards[activeIndex],
+			[
+				{
+					display: "none",
+					offset: 0.2,
+				},
+				{
+					display: "",
+				},
+			],
+			10500,
+		];
+
+		return new Bewegung(highlightCard, hideOthers, hidePauseButton);
 	};
 
 	let animation: Bewegung | undefined;

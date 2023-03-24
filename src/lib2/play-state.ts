@@ -111,7 +111,7 @@ export const getPlayState = (animationFactory: AnimationFactory) => {
 		},
 
 		next(newState: AllPlayStates, payload?: {}) {
-			const nextState = this.stateDefinition[playState]?.[newState];
+			const nextState = stateDefinition[playState]?.[newState];
 
 			if (!nextState) {
 				return playState;
