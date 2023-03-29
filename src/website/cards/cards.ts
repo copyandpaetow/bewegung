@@ -1,7 +1,7 @@
-import { Bewegung } from "../../lib/bewegung";
 import { CustomKeyframeEffect } from "../../lib/types";
 import { testThis } from "./test";
-import { bewegung2 } from "../../lib2/bewegung";
+import { bewegung2, Bewegung } from "../../lib2/bewegung";
+import { BewegungsBlock } from "../../lib2/types";
 
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
@@ -65,15 +65,14 @@ const initCards = () => {
 			});
 		};
 
-		return bewegung2(
-			[
-				[() => changeWidth(100), { duration: 2000, at: 200 }],
-				[() => changeWidth(10), { duration: 2000 }],
-			],
-			{
-				easing: "ease",
-			}
-		) as Bewegung;
+		const sequence: BewegungsBlock[] = [
+			[() => changeWidth(100), { duration: 2000, at: 200 }],
+			[() => changeWidth(10), { duration: 2000, at: -200, easing: "ease-out" }],
+		];
+
+		return bewegung2(sequence, {
+			easing: "ease",
+		});
 	};
 
 	let animation: Bewegung | undefined;
@@ -83,7 +82,7 @@ const initCards = () => {
 		if (!animation) {
 			animation = highlight();
 		}
-		animation.playState !== "running" ? animation.play() : animation.pause();
+		animation.playState !== "playing" ? animation.play() : animation.pause();
 		paused && animation.pause();
 		animation.finished.then(() => {
 			animation = undefined;
@@ -109,21 +108,21 @@ const initAdditionalImages = () => {
 		element.addEventListener("click", () => {
 			const image = element.querySelector("img")! || element.querySelector("div")!;
 
-			if (imageExpandedState[index]) {
-				const animation = new Bewegung(
-					[element, { height: "", width: "" }, { duration: 4000, easing: "ease-in" }],
-					[image, { height: "", width: "" }, { duration: 4000, easing: "ease-in" }]
-				);
-				animation.play();
-				imageExpandedState[index] = false;
-			} else {
-				const animation = new Bewegung(
-					[element, { height: "20vh", width: "30vh" }, { duration: 4000, easing: "ease-in" }],
-					[image, { width: "20vh" }, { duration: 4000, easing: "ease-in" }]
-				);
-				animation.play();
-				imageExpandedState[index] = true;
-			}
+			// if (imageExpandedState[index]) {
+			// 	const animation = new Bewegung(
+			// 		[element, { height: "", width: "" }, { duration: 4000, easing: "ease-in" }],
+			// 		[image, { height: "", width: "" }, { duration: 4000, easing: "ease-in" }]
+			// 	);
+			// 	animation.play();
+			// 	imageExpandedState[index] = false;
+			// } else {
+			// 	const animation = new Bewegung(
+			// 		[element, { height: "20vh", width: "30vh" }, { duration: 4000, easing: "ease-in" }],
+			// 		[image, { width: "20vh" }, { duration: 4000, easing: "ease-in" }]
+			// 	);
+			// 	animation.play();
+			// 	imageExpandedState[index] = true;
+			// }
 		});
 	});
 };

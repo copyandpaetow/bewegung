@@ -2,6 +2,7 @@ import { BidirectionalMap, getOrAddKeyFromLookup } from "./element-translations"
 import { setObserver } from "./observe-dom";
 import { createMachine } from "./state-machine";
 import {
+	AllPlayStates,
 	BewegungsOptions,
 	Context,
 	DimensionState,
@@ -30,25 +31,34 @@ const saveOriginalStyle = (element: HTMLElement) => {
 };
 
 const setDimensionRelatedState = (context: Context): DimensionState => {
-	const { timeline, timekeeper } = context;
+	const { timeline, timekeeper, worker } = context;
+
+	const callbacksOnly = new Map<number, Set<VoidFunction>>();
+	const easingsOnly = new Map<number, Set<string>>();
+	timeline.forEach((entry) => {
+		const { callbacks, end, easings } = entry;
+		callbacksOnly.set(end, callbacks);
+		easingsOnly.set(end, easings);
+	});
+
+	worker("easings").reply("sendEasings", easingsOnly);
 
 	return {
-		changes: timeline.values(),
+		changes: callbacksOnly.entries(),
 		animations: [timekeeper],
 	};
 };
 
-const setElementRelatedState = (userInput: BewegungsOptions[]): ElementRelatedState => {
+const getDecendents = (element: HTMLElement) =>
+	Array.from(element.querySelectorAll("*")) as HTMLElement[];
+
+const setElementRelatedState = (rootElements: Set<ElementOrSelector>): ElementRelatedState => {
 	const parents = new Map<HTMLElement, HTMLElement>();
 	const sibilings = new Map<HTMLElement, HTMLElement | null>();
 	const elementResets = new Map<HTMLElement, Map<string, string>>();
 	const translations = new BidirectionalMap<string, HTMLElement>();
 
-	const allElements = new Set(
-		userInput.flatMap(
-			(entry) => Array.from(getElement(entry[1].root).querySelectorAll("*")) as HTMLElement[]
-		)
-	);
+	const allElements = new Set(Array.from(rootElements).map(getElement).flatMap(getDecendents));
 
 	allElements.forEach((element) => {
 		parents.set(element, element.parentElement!);
@@ -66,16 +76,17 @@ const setElementRelatedState = (userInput: BewegungsOptions[]): ElementRelatedSt
 };
 
 export const getAnimationStateMachine = (context: Context) => {
-	const { userInput, timekeeper, worker } = context;
+	const { rootElements, timekeeper, worker } = context;
 
 	let nextPlayState = "play";
+	let time = Date.now();
 
 	let elementState: null | ElementRelatedState = null;
 	let dimensionState: null | DimensionState = null;
 	let observer: null | MutationObserver = null;
 
 	const resetState = () => {
-		elementState ??= setElementRelatedState(userInput);
+		elementState ??= setElementRelatedState(rootElements);
 		dimensionState ??= setDimensionRelatedState(context);
 		observer = setObserver(elementState, dimensionState, context);
 	};
@@ -87,6 +98,7 @@ export const getAnimationStateMachine = (context: Context) => {
 				resetState();
 				const { onError, onMessage, cleanup } = worker("animations");
 				onMessage(() => {
+					console.log({ nextPlayState });
 					machine.transition(nextPlayState);
 					cleanup();
 				});
@@ -98,6 +110,7 @@ export const getAnimationStateMachine = (context: Context) => {
 			setFinishTransitionOnTimekeeper() {
 				timekeeper.onfinish = () => machine.transition("finish");
 			},
+
 			setNextStateAfterLoadingToPlay() {
 				nextPlayState = "play";
 			},
@@ -106,6 +119,9 @@ export const getAnimationStateMachine = (context: Context) => {
 			},
 			playAnimations() {
 				console.log("play");
+				console.log(`calculation took ${Date.now() - time}ms`);
+
+				dimensionState?.animations.forEach((animation) => animation.play());
 			},
 			scrollAnimations() {
 				console.log("scroll");
@@ -129,6 +145,9 @@ export const getAnimationStateMachine = (context: Context) => {
 		guards: {
 			isStateLoaded() {
 				return [elementState, dimensionState].every(Boolean);
+			},
+			isAnimationWanted() {
+				return window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === false;
 			},
 		},
 		states: {
@@ -163,11 +182,14 @@ export const getAnimationStateMachine = (context: Context) => {
 				},
 			},
 			playing: {
-				guard: [{ condition: "isStateLoaded", altTarget: "loading" }],
+				guard: [
+					{ condition: "isStateLoaded", altTarget: "loading" },
+					{ condition: "isAnimationWanted", altTarget: "finished" },
+				],
 				entry: "playAnimations",
 				on: {
 					pause: {
-						target: "pausing",
+						target: "paused",
 					},
 					scroll: {
 						target: "scrolling",
@@ -181,11 +203,14 @@ export const getAnimationStateMachine = (context: Context) => {
 				},
 			},
 			scrolling: {
-				guard: [{ condition: "isStateLoaded", altTarget: "loading" }],
+				guard: [
+					{ condition: "isStateLoaded", altTarget: "loading" },
+					{ condition: "isAnimationWanted", altTarget: "finished" },
+				],
 				entry: "scrollAnimations",
 				on: {
 					pause: {
-						target: "pausing",
+						target: "paused",
 					},
 					play: {
 						target: "playing",
