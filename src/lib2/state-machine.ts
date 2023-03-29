@@ -1,13 +1,14 @@
-import { Definition, StateMachineDefinition } from "./types";
+import { Definition, StateMachineDefinition, TransitionEntry } from "./types";
 
 const toArray = <Value>(maybeArray: Value | Value[]): Value[] =>
 	Array.isArray(maybeArray) ? maybeArray : [maybeArray];
 
-const checkForGuards = (nextDefinition: Definition, allDefinition: StateMachineDefinition) => {
-	let alternative: string | undefined;
+const checkForGuards = (nextTransition: TransitionEntry, allDefinition: StateMachineDefinition) => {
+	const nextDefinition = allDefinition.states[nextTransition.target];
+	let nextState = nextTransition.target;
 
-	if (!nextDefinition.guard) {
-		return alternative;
+	if (!nextDefinition?.guard) {
+		return nextState;
 	}
 
 	toArray(nextDefinition.guard).every((guard) => {
@@ -17,11 +18,11 @@ const checkForGuards = (nextDefinition: Definition, allDefinition: StateMachineD
 		if (allConditionsTrue) {
 			return true;
 		}
-		alternative = guard.altTarget;
+		nextState = guard.altTarget;
 		return false;
 	});
 
-	return alternative;
+	return nextState;
 };
 
 export const createMachine = (definition: StateMachineDefinition) => {
@@ -43,18 +44,12 @@ export const createMachine = (definition: StateMachineDefinition) => {
 		transition(event: string, payload?: any) {
 			const currentDefinition = definition.states[state];
 			const nextTransition = currentDefinition.on[event];
-			console.log({ event, nextTransition });
 
 			if (!nextTransition) {
 				return;
 			}
-			const nextState = nextTransition.target;
+			const nextState = checkForGuards(nextTransition, definition);
 			const nextDefinition = definition.states[nextState];
-			const alternativeRoute = checkForGuards(nextDefinition, definition);
-
-			if (alternativeRoute) {
-				return machine.transition(alternativeRoute, payload);
-			}
 
 			state = nextState;
 

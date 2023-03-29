@@ -20,6 +20,20 @@ export type Bewegung = [...BewegungsBlock[], ...OptinalConfigBlock];
 
 export type BewegungsOptions = [VoidFunction, Options];
 
+export type Timeline = {
+	start: number;
+	end: number;
+	easings: Set<string>;
+	callbacks: Set<VoidFunction>;
+}[];
+
+export type TimelineEntry = {
+	start: number;
+	end: number;
+	easing: string;
+	callback: VoidFunction;
+};
+
 export type WorkerCallback<Current extends keyof Self, Self, Target> = (
 	replyMethodArguments: Self[Current],
 	context: WorkerContext<Current, Self, Target>
@@ -47,14 +61,21 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 	onError(errorCallback: WorkerError): void;
 };
 
+type DomChangeTransferable = {
+	changes: Map<string, DOMRect>;
+	end: number;
+};
+
 export type MainMessages = {
-	domChanges: Map<string, DOMRect>;
+	domChanges: DomChangeTransferable;
 	animations: Map<string, CSSStyleDeclaration>;
+	easings: Map<number, Set<string>>;
 };
 
 export type WorkerMessages = {
-	sendDOMRects: Map<string, DOMRect>;
+	sendDOMRects: DomChangeTransferable;
 	sendAnimations: Map<string, CSSStyleDeclaration>;
+	sendEasings: Map<number, Set<string>>;
 };
 
 export type AtomicWorker = <Current extends keyof MainMessages>(
@@ -69,16 +90,19 @@ export type ElementRelatedState = {
 };
 
 export type DimensionState = {
-	changes: IterableIterator<Set<VoidFunction>>;
+	changes: IterableIterator<[number, Set<VoidFunction>]>;
 	animations: Animation[];
 };
 
 export type Context = {
-	userInput: BewegungsOptions[];
+	rootElements: Set<ElementOrSelector>;
 	totalRuntime: number;
-	timeline: Map<number, Set<VoidFunction>>;
+	timeline: Timeline;
 	worker: AtomicWorker;
 	timekeeper: Animation;
+	finishPromise: Promise<void>;
+	resolve: (value: void | PromiseLike<void>) => void;
+	reject: (reason?: any) => void;
 };
 
 export type Payload = {
@@ -89,21 +113,36 @@ export type Payload = {
 
 export type PayloadFunction = (payload: Payload) => void;
 
+type Events = {
+	play: TransitionEntry;
+	pause: TransitionEntry;
+	finish: TransitionEntry;
+	scroll: TransitionEntry;
+	cancel: TransitionEntry;
+};
+
+export type AllPlayStates =
+	| "finished"
+	| "idle"
+	| "paused"
+	| "playing"
+	| "scrolling"
+	| "loading"
+	| "canceled";
+
 type Guard = {
 	condition: string | string[];
-	altTarget: string;
 	action?: string | string[];
+	altTarget: AllPlayStates;
 };
 
 export type TransitionEntry = {
-	target: string;
+	target: AllPlayStates;
 	action?: string | string[];
 };
 
-type Transition = Record<string, TransitionEntry>;
-
 export type Definition = {
-	on: Transition;
+	on: Partial<Events>;
 	exit?: string | string[];
 	entry?: string | string[];
 	action?: string | string[];
@@ -111,8 +150,8 @@ export type Definition = {
 };
 
 export type StateMachineDefinition = {
-	initialState: string;
-	states: Record<string, Definition>;
+	initialState: AllPlayStates;
+	states: Record<AllPlayStates, Definition>;
 	actions?: Record<string, PayloadFunction>;
 	guards?: Record<string, () => boolean>;
 };

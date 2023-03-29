@@ -7,7 +7,7 @@ const observe = (observer: MutationObserver) =>
 		attributes: true,
 	});
 
-const saveElementDimensions = (elementState: ElementRelatedState, worker: AtomicWorker) => {
+const saveElementDimensions = (elementState: ElementRelatedState) => {
 	const { translations } = elementState;
 
 	const currentChange = new Map<string, DOMRect>();
@@ -17,8 +17,7 @@ const saveElementDimensions = (elementState: ElementRelatedState, worker: Atomic
 		currentChange.set(elementString, domElement.getBoundingClientRect());
 	});
 
-	//TODO: we need to know if this is the last change or not via a done property
-	worker("domChanges").reply("sendDOMRects", currentChange);
+	return currentChange;
 };
 
 const resetStyle = (entry: MutationRecord, saveMap: Map<HTMLElement, Map<string, string>>) => {
@@ -44,15 +43,38 @@ export const setObserver = (
 	dimensionState: DimensionState,
 	context: Context
 ) => {
+	const { reply, cleanup } = context.worker("domChanges");
 	let currentChange = dimensionState.changes.next();
 	let wasCallbackCalled = true;
-	//TODO: this we only need conditionally, if not change is that the element should start on/from
-	saveElementDimensions(elementState, context.worker);
+
+	const nextChange = () => {
+		currentChange = dimensionState.changes.next();
+		return currentChange;
+	};
+
+	const callNextChange = (observer: MutationObserver) => {
+		requestAnimationFrame(() => {
+			wasCallbackCalled = false;
+			currentChange.value[1].forEach((callback) => {
+				callback();
+			});
+			requestAnimationFrame(() => {
+				if (wasCallbackCalled) {
+					return;
+				}
+				observerCallback([], observer);
+			});
+		});
+	};
 
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
 		wasCallbackCalled = true;
-		saveElementDimensions(elementState, context.worker);
+
+		reply("sendDOMRects", {
+			changes: saveElementDimensions(elementState),
+			end: currentChange.value[0],
+		});
 
 		entries.forEach((entry) => {
 			switch (entry.type) {
@@ -73,33 +95,18 @@ export const setObserver = (
 			}
 		});
 
-		currentChange = dimensionState.changes.next();
-
-		console.log("observer done?", currentChange.done);
-
-		if (currentChange.done) {
+		if (nextChange().done) {
+			cleanup();
 			return;
 		}
 
 		observe(observer);
-		requestAnimationFrame(() => {
-			wasCallbackCalled = false;
-			currentChange.value.forEach((callback) => {
-				callback();
-			});
-			requestAnimationFrame(() => {
-				if (wasCallbackCalled) {
-					return;
-				}
-				observerCallback([], observer);
-			});
-		});
+		callNextChange(observer);
 	};
 
 	const observer = new MutationObserver(observerCallback);
 	observe(observer);
-
-	requestAnimationFrame(() => currentChange.value.forEach((callback) => callback()));
+	callNextChange(observer);
 
 	return observer;
 };

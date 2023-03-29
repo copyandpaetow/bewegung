@@ -1,16 +1,32 @@
 import { getAnimationStateMachine } from "./animation";
 import { createContext } from "./normalize-props";
-import { BewegungsBlock, BewegungsConfig } from "./types";
+import { AllPlayStates, BewegungsBlock, BewegungsConfig } from "./types";
 
-const isReduced = () => window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
+export type Bewegung = {
+	play(): void;
+	pause(): void;
+	scroll(scrollAmount: number, done?: boolean): void;
+	cancel(): void;
+	finish(): void;
+	finished: Promise<void>;
+	playState: AllPlayStates;
+};
 
-export const bewegung2 = (props: BewegungsBlock[], globalConfig?: BewegungsConfig) => {
-	const machine = getAnimationStateMachine(createContext(props, globalConfig));
+/*
+TODO:
 
-	if (isReduced()) {
-		machine.transition("finish");
-		return;
-	}
+- the animation callbacks need to be stacked e.g. if there is a sequence with 3 callbacks
+=> they need to be in the order of 1, 1+2, 1+2+3, because we restore the individual callbacks (and not 1, 2, 3)
+
+
+*/
+
+export const bewegung2 = (
+	props: BewegungsBlock[],
+	globalConfig?: Partial<BewegungsConfig>
+): Bewegung => {
+	const context = createContext(props, globalConfig);
+	const machine = getAnimationStateMachine(context);
 
 	return {
 		play() {
@@ -29,8 +45,10 @@ export const bewegung2 = (props: BewegungsBlock[], globalConfig?: BewegungsConfi
 			machine.transition("finish");
 		},
 		get finished() {
-			//TODO: THis needs to be better
-			return Promise.resolve();
+			return context.finishPromise;
+		},
+		get playState() {
+			return machine.get();
 		},
 	};
 };
