@@ -1,4 +1,4 @@
-import { Definition, StateMachineDefinition, TransitionEntry } from "./types";
+import { StateMachineDefinition, TransitionEntry } from "./types";
 
 const toArray = <Value>(maybeArray: Value | Value[]): Value[] =>
 	Array.isArray(maybeArray) ? maybeArray : [maybeArray];
@@ -38,7 +38,7 @@ export const createMachine = (definition: StateMachineDefinition) => {
 	};
 
 	const machine = {
-		get() {
+		state() {
 			return state;
 		},
 		transition(event: string, payload?: any) {

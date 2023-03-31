@@ -63,7 +63,8 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 
 type DomChangeTransferable = {
 	changes: Map<string, DOMRect>;
-	end: number;
+	start: number;
+	done: boolean;
 };
 
 export type MainMessages = {
@@ -97,7 +98,7 @@ export type DimensionState = {
 export type Context = {
 	rootElements: Set<ElementOrSelector>;
 	totalRuntime: number;
-	timeline: Timeline;
+	timeline: Map<number, Set<VoidFunction>>;
 	worker: AtomicWorker;
 	timekeeper: Animation;
 	finishPromise: Promise<void>;

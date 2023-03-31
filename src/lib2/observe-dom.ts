@@ -55,7 +55,7 @@ export const setObserver = (
 	const callNextChange = (observer: MutationObserver) => {
 		requestAnimationFrame(() => {
 			wasCallbackCalled = false;
-			currentChange.value[1].forEach((callback) => {
+			currentChange.value[1].forEach((callback: VoidFunction) => {
 				callback();
 			});
 			requestAnimationFrame(() => {
@@ -73,7 +73,8 @@ export const setObserver = (
 
 		reply("sendDOMRects", {
 			changes: saveElementDimensions(elementState),
-			end: currentChange.value[0],
+			start: currentChange.value[0],
+			done: Boolean(nextChange().done),
 		});
 
 		entries.forEach((entry) => {
@@ -95,7 +96,7 @@ export const setObserver = (
 			}
 		});
 
-		if (nextChange().done) {
+		if (currentChange.done) {
 			cleanup();
 			return;
 		}

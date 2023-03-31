@@ -2,12 +2,10 @@ import { BidirectionalMap, getOrAddKeyFromLookup } from "./element-translations"
 import { setObserver } from "./observe-dom";
 import { createMachine } from "./state-machine";
 import {
-	AllPlayStates,
-	BewegungsOptions,
 	Context,
 	DimensionState,
 	ElementOrSelector,
-	ElementRelatedState,
+	ElementRelatedState
 } from "./types";
 
 const getElement = (element: ElementOrSelector) => {
@@ -31,20 +29,10 @@ const saveOriginalStyle = (element: HTMLElement) => {
 };
 
 const setDimensionRelatedState = (context: Context): DimensionState => {
-	const { timeline, timekeeper, worker } = context;
-
-	const callbacksOnly = new Map<number, Set<VoidFunction>>();
-	const easingsOnly = new Map<number, Set<string>>();
-	timeline.forEach((entry) => {
-		const { callbacks, end, easings } = entry;
-		callbacksOnly.set(end, callbacks);
-		easingsOnly.set(end, easings);
-	});
-
-	worker("easings").reply("sendEasings", easingsOnly);
+	const { timeline, timekeeper } = context;
 
 	return {
-		changes: callbacksOnly.entries(),
+		changes: timeline.entries(),
 		animations: [timekeeper],
 	};
 };
@@ -137,6 +125,7 @@ export const getAnimationStateMachine = (context: Context) => {
 			},
 			cleanup() {
 				console.log("cleanup");
+				observer?.disconnect();
 			},
 			resetElements() {
 				console.log("resetElements");

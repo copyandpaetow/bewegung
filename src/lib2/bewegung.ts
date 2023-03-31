@@ -15,9 +15,6 @@ export type Bewegung = {
 /*
 TODO:
 
-- the animation callbacks need to be stacked e.g. if there is a sequence with 3 callbacks
-=> they need to be in the order of 1, 1+2, 1+2+3, because we restore the individual callbacks (and not 1, 2, 3)
-
 
 */
 
@@ -36,7 +33,7 @@ export const bewegung2 = (
 			machine.transition("pause");
 		},
 		scroll(scrollAmount: number, done = false) {
-			machine.transition("load", { scrollAmount, done, nextPlayState: "scroll" });
+			machine.transition("scroll", { scrollAmount, done });
 		},
 		cancel() {
 			machine.transition("cancel");
@@ -48,7 +45,7 @@ export const bewegung2 = (
 			return context.finishPromise;
 		},
 		get playState() {
-			return machine.get();
+			return machine.state();
 		},
 	};
 };

@@ -15,10 +15,10 @@ workerAtom("sendEasings").onMessage((easings) => {
 });
 
 workerAtom("sendDOMRects").onMessage((domChanges) => {
-	const { changes, end } = domChanges;
-	state.dimensions.set(end, changes);
+	const { changes, done, start } = domChanges;
+	state.dimensions.set(start, changes);
 
-	if (end === 1) {
+	if (done) {
 		console.log(state);
 		//workerAtom("sendAnimations").reply("animations", new Map<string, CSSStyleDeclaration>());
 	}
@@ -28,7 +28,7 @@ workerAtom("sendDOMRects").onMessage((domChanges) => {
 	What do we need
 
 	- dimensions
-	- easings for the timeline
+	- easings for the timeline => options
 	- parent/root/sibling relations for the calculations
 	- images or ratios
 

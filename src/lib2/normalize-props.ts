@@ -87,7 +87,7 @@ const condenseTimelineEnties = (accumulator: Timeline, current: TimelineEntry) =
 const getAllRootElements = (props: BewegungsOptions[]) =>
 	new Set(props.map((entry) => entry[1].root));
 
-const computeTimeline = (props: BewegungsOptions[], totalRuntime: number) => {
+const computeTimeline2 = (props: BewegungsOptions[], totalRuntime: number) => {
 	let currentTime = 0;
 	let lowestTime = 1;
 
@@ -107,7 +107,10 @@ const computeTimeline = (props: BewegungsOptions[], totalRuntime: number) => {
 		propTimeline.push({ start: 0, end: lowestTime, easing: "linear", callback: () => {} });
 	}
 
-	return Array.from(timings)
+	//TODO: these function need to stack
+	//TODO: currently this is the easing calculation that can happen in the worker
+
+	const timeline = Array.from(timings)
 		.sort((a, b) => a - b)
 		.flatMap((time, index, array) =>
 			propTimeline
@@ -115,9 +118,55 @@ const computeTimeline = (props: BewegungsOptions[], totalRuntime: number) => {
 				.flatMap((entry) => splitPartialHits(entry, time, array.at(index + 1)))
 		)
 		.reduce(condenseTimelineEnties, [] as Timeline);
+
+	//start with lowest start time
+	//find element with second lowest start time => this is the end for the first callback-block
+
+	return timeline;
+};
+
+const computeTimeline = (props: BewegungsOptions[], totalRuntime: number) => {
+	const callbackMap = new Map<number, Set<VoidFunction>>();
+	let currentTime = 0;
+
+	const timings = new Set([currentTime]);
+	const propTimeline: TimelineEntry[] = props
+		.map((entry) => {
+			const [callback, options] = entry;
+			const { duration, at, easing } = options;
+
+			const start = (currentTime = currentTime + at) / totalRuntime;
+			const end = (currentTime = currentTime + duration) / totalRuntime;
+			timings.add(start);
+			return { start, end, easing, callback };
+		})
+		.sort((a, b) => a.start - b.start);
+
+	timings.forEach((time) => {
+		const entries = propTimeline.filter((entry) => entry.start <= time);
+
+		callbackMap.set(time, new Set(entries.map((entry) => entry.callback)));
+	});
+
+	return callbackMap;
 };
 
 const workerManager = getWorker();
+
+const outsidePromise = () => {
+	const api = {
+		resolve(value: any) {},
+		reject(value: any) {},
+	};
+	const finishPromise = new Promise<void>((res, rej) => {
+		api.resolve = res;
+		api.reject = rej;
+	});
+
+	return { ...api, finishPromise };
+};
+
+//TODO: we likely need a mapping between the elements and a stringID and maybe between the callback and a stringID
 
 export const createContext = (
 	props: BewegungsBlock[],
@@ -125,14 +174,7 @@ export const createContext = (
 ): Context => {
 	const normalizedProps = normalizeProps(props, globalConfig);
 	const totalRuntime = calculateTotalRuntime(normalizedProps);
-	let resolve = (value: any) => {
-		value;
-	};
-	let reject = () => {};
-	const finishPromise = new Promise<void>((res, rej) => {
-		resolve = res;
-		reject = rej;
-	});
+	const { finishPromise, reject, resolve } = outsidePromise();
 
 	return {
 		finishPromise,
