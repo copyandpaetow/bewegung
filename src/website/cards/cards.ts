@@ -66,14 +66,14 @@ const initCards = () => {
 		};
 
 		const sequence: BewegungsBlock[] = [
-			[() => changeWidth(100), { duration: 2000, at: 200 }],
-			[() => changeWidth(10), { duration: 2000, at: -200, easing: "ease-out" }],
+			[() => changeWidth(100), { duration: 2000, at: 0 }],
+			[() => changeWidth(10), { duration: 2000, at: 200, easing: "ease-out" }],
 			[
 				() => {
 					const element = cards[activeIndex] as HTMLElement;
 					element.remove();
 				},
-				{ duration: 2000 },
+				{ duration: 2000, at: -200 },
 			],
 		];
 
