@@ -15,6 +15,11 @@ export type Bewegung = {
 /*
 TODO:
 
+- iterations need to be included in the calculations
+- "at" needs to be more refined
+- options need to be rechecked. Should more be included? 
+
+
 
 */
 

@@ -1,17 +1,23 @@
-import { MainMessages, WorkerMessages } from "./types";
+import { MainMessages, TimelineEntry, WorkerMessages } from "./types";
 import { useWorker } from "./use-worker";
 
 //@ts-expect-error typescript doesnt
 const worker = self as Worker;
 const workerAtom = useWorker<WorkerMessages, MainMessages>(worker);
 
-const state = {
-	dimensions: new Map<number, Map<string, DOMRect>>(),
-	easings: new Map<number, Set<string>>(),
+let state = {
+	dimensions: new Map<number, Map<string, Partial<CSSStyleDeclaration>>>(),
+	parents: new Map<string, string>(),
+	easings: new Map<string, Set<TimelineEntry>>(),
+	ratios: new Map<string, number>(),
+	types: new Set<string>(),
 };
 
-workerAtom("sendEasings").onMessage((easings) => {
-	state.easings = easings;
+workerAtom("sendState").onMessage((stateTransferable) => {
+	state = {
+		...stateTransferable,
+		dimensions: new Map<number, Map<string, Partial<CSSStyleDeclaration>>>(),
+	};
 });
 
 workerAtom("sendDOMRects").onMessage((domChanges) => {

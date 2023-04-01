@@ -12,6 +12,12 @@ export type BewegungsConfig = {
 
 export type Options = Required<BewegungsConfig>;
 
+export type NormalizedOptions = Omit<Options, "at" | "duration" | "root"> & {
+	start: number;
+	end: number;
+	root: string;
+};
+
 export type BewegungsBlock = [VoidFunction, BewegungsConfig] | VoidFunction;
 
 type OptinalConfigBlock = [BewegungsConfig?];
@@ -31,7 +37,6 @@ export type TimelineEntry = {
 	start: number;
 	end: number;
 	easing: string;
-	callback: VoidFunction;
 };
 
 export type WorkerCallback<Current extends keyof Self, Self, Target> = (
@@ -62,21 +67,28 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 };
 
 type DomChangeTransferable = {
-	changes: Map<string, DOMRect>;
+	changes: Map<string, Partial<CSSStyleDeclaration>>;
 	start: number;
 	done: boolean;
+};
+
+type StateTransferable = {
+	parents: Map<string, string>;
+	easings: Map<string, Set<TimelineEntry>>;
+	ratios: Map<string, number>;
+	types: Set<string>;
 };
 
 export type MainMessages = {
 	domChanges: DomChangeTransferable;
 	animations: Map<string, CSSStyleDeclaration>;
-	easings: Map<number, Set<string>>;
+	state: StateTransferable;
 };
 
 export type WorkerMessages = {
 	sendDOMRects: DomChangeTransferable;
 	sendAnimations: Map<string, CSSStyleDeclaration>;
-	sendEasings: Map<number, Set<string>>;
+	sendState: StateTransferable;
 };
 
 export type AtomicWorker = <Current extends keyof MainMessages>(
@@ -87,7 +99,6 @@ export type ElementRelatedState = {
 	parents: Map<HTMLElement, HTMLElement>;
 	sibilings: Map<HTMLElement, HTMLElement | null>;
 	elementResets: Map<HTMLElement, Map<string, string>>;
-	translations: BidirectionalMap<string, HTMLElement>;
 };
 
 export type DimensionState = {
@@ -96,14 +107,16 @@ export type DimensionState = {
 };
 
 export type Context = {
-	rootElements: Set<ElementOrSelector>;
+	options: Map<string, NormalizedOptions>;
+	callbackTranslation: BidirectionalMap<string, VoidFunction>;
+	elementTranslations: BidirectionalMap<string, HTMLElement>;
 	totalRuntime: number;
-	timeline: Map<number, Set<VoidFunction>>;
-	worker: AtomicWorker;
+	callbacks: Map<number, Set<VoidFunction>>;
 	timekeeper: Animation;
 	finishPromise: Promise<void>;
 	resolve: (value: void | PromiseLike<void>) => void;
 	reject: (reason?: any) => void;
+	worker: AtomicWorker;
 };
 
 export type Payload = {

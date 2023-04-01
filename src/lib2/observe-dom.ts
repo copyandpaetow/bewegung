@@ -1,4 +1,6 @@
-import { ElementRelatedState, AtomicWorker, DimensionState, Context } from "./types";
+import { defaultChangeProperties } from "./constants";
+import { BidirectionalMap } from "./element-translations";
+import { Context, DimensionState, ElementRelatedState } from "./types";
 
 const observe = (observer: MutationObserver) =>
 	observer.observe(document.body, {
@@ -7,14 +9,26 @@ const observe = (observer: MutationObserver) =>
 		attributes: true,
 	});
 
-const saveElementDimensions = (elementState: ElementRelatedState) => {
-	const { translations } = elementState;
+const getElementStyles = (element: HTMLElement) => {
+	const { top, left, width, height } = element.getBoundingClientRect();
+	const computedElementStyle = window.getComputedStyle(element);
 
-	const currentChange = new Map<string, DOMRect>();
+	const computedStyles = Object.entries(defaultChangeProperties).reduce(
+		(accumulator, [key, property]) => {
+			accumulator[key] = computedElementStyle.getPropertyValue(property);
+			return accumulator;
+		},
+		{} as Partial<CSSStyleDeclaration>
+	);
+
+	return { top, left, width, height, ...computedStyles };
+};
+
+const saveElementDimensions = (translations: BidirectionalMap<string, HTMLElement>) => {
+	const currentChange = new Map<string, Partial<CSSStyleDeclaration>>();
 
 	translations.forEach((domElement, elementString) => {
-		//TODO: we might need more information like from window.getComputedStyle
-		currentChange.set(elementString, domElement.getBoundingClientRect());
+		currentChange.set(elementString, getElementStyles(domElement));
 	});
 
 	return currentChange;
@@ -72,7 +86,7 @@ export const setObserver = (
 		wasCallbackCalled = true;
 
 		reply("sendDOMRects", {
-			changes: saveElementDimensions(elementState),
+			changes: saveElementDimensions(context.elementTranslations),
 			start: currentChange.value[0],
 			done: Boolean(nextChange().done),
 		});
