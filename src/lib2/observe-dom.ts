@@ -25,16 +25,16 @@ const getElementStyles = (element: HTMLElement, offset: number) => {
 };
 
 const saveElementDimensions = (
-	elementReadouts: Map<string, ElementReadouts[]>,
 	translations: BidirectionalMap<string, HTMLElement>,
 	offset: number
 ) => {
-	elementReadouts.forEach((readouts, elementID) => {
-		const domElement = translations.get(elementID)!;
-		readouts.push(getElementStyles(domElement, offset));
+	const currentChange = new Map<string, ElementReadouts>();
+
+	translations.forEach((domElement, elementString) => {
+		currentChange.set(elementString, getElementStyles(domElement, offset));
 	});
 
-	return elementReadouts;
+	return currentChange;
 };
 
 const resetStyle = (entry: MutationRecord, saveMap: Map<HTMLElement, Map<string, string>>) => {
@@ -60,23 +60,12 @@ const resetElements = (entry: MutationRecord, elementState: ElementRelatedState)
 	});
 };
 
-const getElementReadouts = (translations: BidirectionalMap<string, HTMLElement>) => {
-	const readouts = new Map<string, ElementReadouts[]>();
-
-	translations.forEach((_, elementKey) => {
-		readouts.set(elementKey, []);
-	});
-
-	return readouts;
-};
-
 export const setObserver = (
 	elementState: ElementRelatedState,
 	dimensionState: DimensionState,
 	context: Context
 ) => {
 	const { reply, cleanup } = context.worker("domChanges");
-	const elementReadouts = getElementReadouts(context.elementTranslations);
 	let currentChange = dimensionState.changes.next();
 	let wasCallbackCalled = true;
 
@@ -106,7 +95,7 @@ export const setObserver = (
 		const offset = currentChange.value[0];
 
 		reply("sendDOMRects", {
-			changes: saveElementDimensions(elementReadouts, context.elementTranslations, offset),
+			changes: saveElementDimensions(context.elementTranslations, offset),
 			done: Boolean(nextChange().done),
 		});
 

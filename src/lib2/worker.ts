@@ -23,21 +23,12 @@ workerAtom("sendState").onMessage((stateTransferable) => {
 
 workerAtom("sendDOMRects").onMessage((domChanges) => {
 	const { changes, done } = domChanges;
-	state.dimensions = changes;
+	changes.forEach((readouts, elementID) => {
+		state.dimensions.set(elementID, (state.dimensions.get(elementID) ?? []).concat(readouts));
+	});
 
 	if (done) {
 		console.log(state);
 		workerAtom("sendAnimations").reply("animations", createKeyframes(state));
 	}
 });
-
-/*
-	What do we need
-
-	- dimensions
-	- easings for the timeline => options
-	- parent/root/sibling relations for the calculations
-	- images or ratios
-
-
-*/
