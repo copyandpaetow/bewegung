@@ -1,19 +1,7 @@
-import { BidirectionalMap, getOrAddKeyFromLookup } from "./element-translations";
+import { getOrAddKeyFromLookup } from "./element-translations";
 import { setObserver } from "./observe-dom";
 import { createMachine } from "./state-machine";
-import {
-	Context,
-	DimensionState,
-	ElementOrSelector,
-	ElementRelatedState
-} from "./types";
-
-const getElement = (element: ElementOrSelector) => {
-	if (typeof element !== "string") {
-		return element as HTMLElement;
-	}
-	return document.querySelector(element) as HTMLElement;
-};
+import { Context, DimensionState, ElementRelatedState, TimelineEntry } from "./types";
 
 const saveOriginalStyle = (element: HTMLElement) => {
 	const attributes = new Map<string, string>();
@@ -29,10 +17,10 @@ const saveOriginalStyle = (element: HTMLElement) => {
 };
 
 const setDimensionRelatedState = (context: Context): DimensionState => {
-	const { timeline, timekeeper } = context;
+	const { callbacks, timekeeper } = context;
 
 	return {
-		changes: timeline.entries(),
+		changes: callbacks.entries(),
 		animations: [timekeeper],
 	};
 };
@@ -40,31 +28,85 @@ const setDimensionRelatedState = (context: Context): DimensionState => {
 const getDecendents = (element: HTMLElement) =>
 	Array.from(element.querySelectorAll("*")) as HTMLElement[];
 
-const setElementRelatedState = (rootElements: Set<ElementOrSelector>): ElementRelatedState => {
+const isTextNode = (element: HTMLElement) => {
+	if (!element.hasChildNodes()) {
+		return;
+	}
+
+	return Array.from(element.childNodes).every((node) => Boolean(node.textContent?.trim()));
+};
+
+const setElementRelatedState = (context: Context): ElementRelatedState => {
+	const { options, elementTranslations, worker } = context;
+
 	const parents = new Map<HTMLElement, HTMLElement>();
 	const sibilings = new Map<HTMLElement, HTMLElement | null>();
 	const elementResets = new Map<HTMLElement, Map<string, string>>();
-	const translations = new BidirectionalMap<string, HTMLElement>();
 
-	const allElements = new Set(Array.from(rootElements).map(getElement).flatMap(getDecendents));
+	const transferableParents = new Map<string, string>();
+	const easings = new Map<string, Set<TimelineEntry>>();
+	const ratios = new Map<string, number>();
+	const types = new Set<string>();
 
-	allElements.forEach((element) => {
+	const elementRelations = new Map<HTMLElement, Set<string>>();
+
+	options.forEach((option, id) => {
+		const rootElement = elementTranslations.get(option.root)!;
+		getDecendents(rootElement).forEach((element) => {
+			elementRelations.set(element, (elementRelations.get(element) ?? new Set()).add(id));
+		});
+		elementResets.set(rootElement, saveOriginalStyle(rootElement));
+	});
+
+	elementRelations.forEach((ids, element) => {
+		const key = getOrAddKeyFromLookup(element, elementTranslations);
+		elementResets.set(element, saveOriginalStyle(element));
 		parents.set(element, element.parentElement!);
 		sibilings.set(element, element.nextElementSibling as HTMLElement | null);
-		elementResets.set(element, saveOriginalStyle(element));
-		getOrAddKeyFromLookup(element, translations);
+		transferableParents.set(
+			key,
+			getOrAddKeyFromLookup(element.parentElement!, elementTranslations)
+		);
+		easings.set(
+			key,
+			new Set(
+				Array.from(ids, (id) => {
+					const { start, end, easing } = options.get(id)!;
+					return {
+						start,
+						end,
+						easing,
+					};
+				})
+			)
+		);
+		if (element.tagName === "IMG") {
+			ratios.set(
+				key,
+				(element as HTMLImageElement).naturalWidth / (element as HTMLImageElement).naturalHeight
+			);
+		}
+		if (isTextNode(element)) {
+			types.add(key);
+		}
+	});
+
+	worker("state").reply("sendState", {
+		parents: transferableParents,
+		easings,
+		ratios,
+		types,
 	});
 
 	return {
 		parents,
 		sibilings,
 		elementResets,
-		translations,
 	};
 };
 
 export const getAnimationStateMachine = (context: Context) => {
-	const { rootElements, timekeeper, worker } = context;
+	const { timekeeper, worker } = context;
 
 	let nextPlayState = "play";
 	let time = Date.now();
@@ -74,7 +116,7 @@ export const getAnimationStateMachine = (context: Context) => {
 	let observer: null | MutationObserver = null;
 
 	const resetState = () => {
-		elementState ??= setElementRelatedState(rootElements);
+		elementState ??= setElementRelatedState(context);
 		dimensionState ??= setDimensionRelatedState(context);
 		observer = setObserver(elementState, dimensionState, context);
 	};
