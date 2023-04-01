@@ -67,7 +67,7 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 };
 
 type DomChangeTransferable = {
-	changes: Map<string, ElementReadouts[]>;
+	changes: Map<string, ElementReadouts>;
 	done: boolean;
 };
 
