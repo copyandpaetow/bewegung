@@ -67,8 +67,7 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 };
 
 type DomChangeTransferable = {
-	changes: Map<string, Partial<CSSStyleDeclaration>>;
-	start: number;
+	changes: Map<string, ElementReadouts[]>;
 	done: boolean;
 };
 
@@ -81,13 +80,13 @@ type StateTransferable = {
 
 export type MainMessages = {
 	domChanges: DomChangeTransferable;
-	animations: Map<string, CSSStyleDeclaration>;
+	animations: Map<string, Keyframe>;
 	state: StateTransferable;
 };
 
 export type WorkerMessages = {
 	sendDOMRects: DomChangeTransferable;
-	sendAnimations: Map<string, CSSStyleDeclaration>;
+	sendAnimations: Map<string, Keyframe>;
 	sendState: StateTransferable;
 };
 
@@ -168,4 +167,23 @@ export type StateMachineDefinition = {
 	states: Record<AllPlayStates, Definition>;
 	actions?: Record<string, PayloadFunction>;
 	guards?: Record<string, () => boolean>;
+};
+
+export type ElementReadouts = Omit<
+	Partial<CSSStyleDeclaration>,
+	"offset" | "top" | "left" | "width" | "height"
+> & {
+	top: number;
+	left: number;
+	width: number;
+	height: number;
+	offset: number;
+};
+
+export type WorkerState = {
+	dimensions: Map<string, ElementReadouts[]>;
+	parents: Map<string, string>;
+	easings: Map<string, Set<TimelineEntry>>;
+	ratios: Map<string, number>;
+	types: Set<string>;
 };

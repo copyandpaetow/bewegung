@@ -1,12 +1,13 @@
-import { MainMessages, TimelineEntry, WorkerMessages } from "./types";
+import { createKeyframes } from "./create-keyframes";
+import { ElementReadouts, MainMessages, TimelineEntry, WorkerMessages, WorkerState } from "./types";
 import { useWorker } from "./use-worker";
 
 //@ts-expect-error typescript doesnt
 const worker = self as Worker;
 const workerAtom = useWorker<WorkerMessages, MainMessages>(worker);
 
-let state = {
-	dimensions: new Map<number, Map<string, Partial<CSSStyleDeclaration>>>(),
+let state: WorkerState = {
+	dimensions: new Map<string, ElementReadouts[]>(),
 	parents: new Map<string, string>(),
 	easings: new Map<string, Set<TimelineEntry>>(),
 	ratios: new Map<string, number>(),
@@ -16,17 +17,17 @@ let state = {
 workerAtom("sendState").onMessage((stateTransferable) => {
 	state = {
 		...stateTransferable,
-		dimensions: new Map<number, Map<string, Partial<CSSStyleDeclaration>>>(),
+		dimensions: new Map<string, ElementReadouts[]>(),
 	};
 });
 
 workerAtom("sendDOMRects").onMessage((domChanges) => {
-	const { changes, done, start } = domChanges;
-	state.dimensions.set(start, changes);
+	const { changes, done } = domChanges;
+	state.dimensions = changes;
 
 	if (done) {
 		console.log(state);
-		//workerAtom("sendAnimations").reply("animations", new Map<string, CSSStyleDeclaration>());
+		workerAtom("sendAnimations").reply("animations", createKeyframes(state));
 	}
 });
 

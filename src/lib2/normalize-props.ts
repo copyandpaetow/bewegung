@@ -142,13 +142,13 @@ const computeCallbacks = (props: BewegungsOptions[], totalRuntime: number) => {
 
 			const start = (currentTime = currentTime + at) / totalRuntime;
 			const end = (currentTime = currentTime + duration) / totalRuntime;
-			timings.add(start);
+			timings.add(end);
 			return { start, end, callback };
 		})
 		.sort((a, b) => a.start - b.start);
 
 	timings.forEach((time) => {
-		const entries = propTimeline.filter((entry) => entry.start <= time);
+		const entries = propTimeline.filter((entry) => entry.end <= time);
 
 		callbacks.set(time, new Set(entries.map((entry) => entry.callback)));
 	});

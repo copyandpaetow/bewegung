@@ -1,6 +1,6 @@
 import { defaultChangeProperties } from "./constants";
 import { BidirectionalMap } from "./element-translations";
-import { Context, DimensionState, ElementRelatedState } from "./types";
+import { Context, DimensionState, ElementReadouts, ElementRelatedState } from "./types";
 
 const observe = (observer: MutationObserver) =>
 	observer.observe(document.body, {
@@ -9,7 +9,7 @@ const observe = (observer: MutationObserver) =>
 		attributes: true,
 	});
 
-const getElementStyles = (element: HTMLElement) => {
+const getElementStyles = (element: HTMLElement, offset: number) => {
 	const { top, left, width, height } = element.getBoundingClientRect();
 	const computedElementStyle = window.getComputedStyle(element);
 
@@ -18,20 +18,23 @@ const getElementStyles = (element: HTMLElement) => {
 			accumulator[key] = computedElementStyle.getPropertyValue(property);
 			return accumulator;
 		},
-		{} as Partial<CSSStyleDeclaration>
+		{} as ElementReadouts
 	);
 
-	return { top, left, width, height, ...computedStyles };
+	return { ...computedStyles, top, left, width, height, offset };
 };
 
-const saveElementDimensions = (translations: BidirectionalMap<string, HTMLElement>) => {
-	const currentChange = new Map<string, Partial<CSSStyleDeclaration>>();
-
-	translations.forEach((domElement, elementString) => {
-		currentChange.set(elementString, getElementStyles(domElement));
+const saveElementDimensions = (
+	elementReadouts: Map<string, ElementReadouts[]>,
+	translations: BidirectionalMap<string, HTMLElement>,
+	offset: number
+) => {
+	elementReadouts.forEach((readouts, elementID) => {
+		const domElement = translations.get(elementID)!;
+		readouts.push(getElementStyles(domElement, offset));
 	});
 
-	return currentChange;
+	return elementReadouts;
 };
 
 const resetStyle = (entry: MutationRecord, saveMap: Map<HTMLElement, Map<string, string>>) => {
@@ -44,12 +47,27 @@ const resetStyle = (entry: MutationRecord, saveMap: Map<HTMLElement, Map<string,
 
 const resetElements = (entry: MutationRecord, elementState: ElementRelatedState) => {
 	const { parents, sibilings } = elementState;
-	const [target] = entry.removedNodes;
 
-	const parentElement = parents.get(target as HTMLElement)!;
-	const nextSibiling = sibilings.get(target as HTMLElement)!;
+	entry.removedNodes.forEach((target) => {
+		if (!(target instanceof HTMLElement)) {
+			return;
+		}
 
-	parentElement.insertBefore(target, nextSibiling);
+		const parentElement = parents.get(target as HTMLElement)!;
+		const nextSibiling = sibilings.get(target as HTMLElement)!;
+
+		parentElement.insertBefore(target, nextSibiling);
+	});
+};
+
+const getElementReadouts = (translations: BidirectionalMap<string, HTMLElement>) => {
+	const readouts = new Map<string, ElementReadouts[]>();
+
+	translations.forEach((_, elementKey) => {
+		readouts.set(elementKey, []);
+	});
+
+	return readouts;
 };
 
 export const setObserver = (
@@ -58,6 +76,7 @@ export const setObserver = (
 	context: Context
 ) => {
 	const { reply, cleanup } = context.worker("domChanges");
+	const elementReadouts = getElementReadouts(context.elementTranslations);
 	let currentChange = dimensionState.changes.next();
 	let wasCallbackCalled = true;
 
@@ -84,10 +103,10 @@ export const setObserver = (
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
 		wasCallbackCalled = true;
+		const offset = currentChange.value[0];
 
 		reply("sendDOMRects", {
-			changes: saveElementDimensions(context.elementTranslations),
-			start: currentChange.value[0],
+			changes: saveElementDimensions(elementReadouts, context.elementTranslations, offset),
 			done: Boolean(nextChange().done),
 		});
 
