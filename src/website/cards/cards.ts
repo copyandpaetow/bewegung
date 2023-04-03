@@ -66,14 +66,21 @@ const initCards = () => {
 		};
 
 		const sequence: BewegungsBlock[] = [
-			[() => changeWidth(100), { duration: 2000, at: 0 }],
+			[() => changeWidth(100), { duration: 2000, at: 0, easing: "ease" }],
 			[() => changeWidth(10), { duration: 2000, at: 200, easing: "ease-out" }],
+			[
+				() => {
+					const element = cards[0].cloneNode(true) as HTMLElement;
+					cards[0].parentElement?.append(element);
+				},
+				{ duration: 2000 },
+			],
 			[
 				() => {
 					const element = cards[activeIndex] as HTMLElement;
 					element.remove();
 				},
-				{ duration: 2000, at: -200 },
+				{ duration: 2000, at: -200, easing: "cubic-bezier(.5,.25,.8,.6)" },
 			],
 		];
 

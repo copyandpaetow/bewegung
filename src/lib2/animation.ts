@@ -1,9 +1,10 @@
+import { createAnimations } from "./create-animations";
 import { getOrAddKeyFromLookup } from "./element-translations";
 import { setObserver } from "./observe-dom";
 import { createMachine } from "./state-machine";
 import { Context, DimensionState, ElementRelatedState, TimelineEntry } from "./types";
 
-const saveOriginalStyle = (element: HTMLElement) => {
+export const saveOriginalStyle = (element: HTMLElement) => {
 	const attributes = new Map<string, string>();
 
 	element.getAttributeNames().forEach((attribute) => {
@@ -33,17 +34,17 @@ const isTextNode = (element: HTMLElement) => {
 		return;
 	}
 
+	//TODO: investigate if node.nodeType === 3 is faster
 	return Array.from(element.childNodes).every((node) => Boolean(node.textContent?.trim()));
 };
 
 const setElementRelatedState = (context: Context): ElementRelatedState => {
 	const { options, elementTranslations, worker } = context;
 
-	const parents = new Map<HTMLElement, HTMLElement>();
-	const sibilings = new Map<HTMLElement, HTMLElement | null>();
-	const elementResets = new Map<HTMLElement, Map<string, string>>();
+	const parents = new Map<string, string>();
+	const sibilings = new Map<string, string | null>();
+	const elementResets = new Map<string, Map<string, string>>();
 
-	const transferableParents = new Map<string, string>();
 	const easings = new Map<string, Set<TimelineEntry>>();
 	const ratios = new Map<string, number>();
 	const types = new Set<string>();
@@ -55,18 +56,18 @@ const setElementRelatedState = (context: Context): ElementRelatedState => {
 		getDecendents(rootElement).forEach((element) => {
 			elementRelations.set(element, (elementRelations.get(element) ?? new Set()).add(id));
 		});
-		elementResets.set(rootElement, saveOriginalStyle(rootElement));
+		elementResets.set(option.root, saveOriginalStyle(rootElement));
 	});
 
 	elementRelations.forEach((ids, element) => {
 		const key = getOrAddKeyFromLookup(element, elementTranslations);
-		elementResets.set(element, saveOriginalStyle(element));
-		parents.set(element, element.parentElement!);
-		sibilings.set(element, element.nextElementSibling as HTMLElement | null);
-		transferableParents.set(
-			key,
-			getOrAddKeyFromLookup(element.parentElement!, elementTranslations)
-		);
+		const siblingKey = element.nextElementSibling
+			? getOrAddKeyFromLookup(element.nextElementSibling as HTMLElement, elementTranslations)
+			: null;
+		elementResets.set(key, saveOriginalStyle(element));
+
+		sibilings.set(key, siblingKey);
+		parents.set(key, getOrAddKeyFromLookup(element.parentElement!, elementTranslations));
 		easings.set(
 			key,
 			new Set(
@@ -92,7 +93,7 @@ const setElementRelatedState = (context: Context): ElementRelatedState => {
 	});
 
 	worker("state").reply("sendState", {
-		parents: transferableParents,
+		parents,
 		easings,
 		ratios,
 		types,
@@ -127,8 +128,9 @@ export const getAnimationStateMachine = (context: Context) => {
 			loadState() {
 				resetState();
 				const { onError, onMessage, cleanup } = worker("animations");
-				onMessage(() => {
-					console.log({ nextPlayState });
+				onMessage((animationTransferable) => {
+					createAnimations(animationTransferable);
+					//TODO: this can be done better
 					machine.transition(nextPlayState);
 					cleanup();
 				});
@@ -162,8 +164,13 @@ export const getAnimationStateMachine = (context: Context) => {
 			disableReactivity() {
 				console.log("disableReactivity");
 			},
-			finishAnimation() {
-				console.log("finishAnimation");
+			finishAnimations() {
+				console.log("finishAnimations");
+				context.resolve();
+			},
+			cancelAnimations() {
+				console.log("cancelAnimations");
+				context.reject();
 			},
 			cleanup() {
 				console.log("cleanup");
@@ -274,11 +281,11 @@ export const getAnimationStateMachine = (context: Context) => {
 			},
 			finished: {
 				on: {},
-				entry: ["finishAnimation", "cleanup"],
+				entry: ["finishAnimations", "cleanup"],
 			},
 			canceled: {
 				on: {},
-				entry: ["resetElements", "cleanup"],
+				entry: ["cancelAnimations", "resetElements", "cleanup"],
 			},
 		},
 	});

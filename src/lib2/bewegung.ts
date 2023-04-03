@@ -19,7 +19,7 @@ TODO:
 - "at" needs to be more refined
 - options need to be rechecked. Should more be included? 
 
-
+- dimensions need to be renamed to readouts
 
 */
 

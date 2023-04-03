@@ -1,5 +1,6 @@
+import { calculateEasings } from "./calculations/easings";
 import { createKeyframes } from "./create-keyframes";
-import { ElementReadouts, MainMessages, TimelineEntry, WorkerMessages, WorkerState } from "./types";
+import { EasingTable, ElementReadouts, MainMessages, WorkerMessages, WorkerState } from "./types";
 import { useWorker } from "./use-worker";
 
 //@ts-expect-error typescript doesnt
@@ -9,7 +10,7 @@ const workerAtom = useWorker<WorkerMessages, MainMessages>(worker);
 let state: WorkerState = {
 	dimensions: new Map<string, ElementReadouts[]>(),
 	parents: new Map<string, string>(),
-	easings: new Map<string, Set<TimelineEntry>>(),
+	easings: new Map<string, EasingTable>(),
 	ratios: new Map<string, number>(),
 	types: new Set<string>(),
 };
@@ -17,6 +18,7 @@ let state: WorkerState = {
 workerAtom("sendState").onMessage((stateTransferable) => {
 	state = {
 		...stateTransferable,
+		easings: calculateEasings(stateTransferable.easings),
 		dimensions: new Map<string, ElementReadouts[]>(),
 	};
 });
