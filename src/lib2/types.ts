@@ -6,7 +6,13 @@ export type BewegungsConfig = {
 	duration: number;
 	iterations?: number;
 	root?: ElementOrSelector;
-	easing?: "ease" | "ease-in" | "ease-out" | "ease-in-out";
+	easing?:
+		| "ease"
+		| "ease-in"
+		| "ease-out"
+		| "ease-in-out"
+		| "linear"
+		| `cubic-bezier(${number},${number},${number},${number})`;
 	at?: number;
 };
 
@@ -26,17 +32,18 @@ export type Bewegung = [...BewegungsBlock[], ...OptinalConfigBlock];
 
 export type BewegungsOptions = [VoidFunction, Options];
 
-export type Timeline = {
-	start: number;
-	end: number;
-	easings: Set<string>;
-	callbacks: Set<VoidFunction>;
-}[];
+export type Timeline = TimelineEntry[] | TempTimelineEntry[];
 
 export type TimelineEntry = {
 	start: number;
 	end: number;
 	easing: string;
+};
+
+export type TempTimelineEntry = {
+	start: number;
+	end: number;
+	easing: Set<string>;
 };
 
 export type WorkerCallback<Current extends keyof Self, Self, Target> = (
@@ -78,15 +85,19 @@ type StateTransferable = {
 	types: Set<string>;
 };
 
+export type AnimationTransferable = {
+	animations: Map<string, Keyframe>;
+};
+
 export type MainMessages = {
 	domChanges: DomChangeTransferable;
-	animations: Map<string, Keyframe>;
+	animations: AnimationTransferable;
 	state: StateTransferable;
 };
 
 export type WorkerMessages = {
 	sendDOMRects: DomChangeTransferable;
-	sendAnimations: Map<string, Keyframe>;
+	sendAnimations: AnimationTransferable;
 	sendState: StateTransferable;
 };
 
@@ -95,9 +106,9 @@ export type AtomicWorker = <Current extends keyof MainMessages>(
 ) => WorkerContext<Current, MainMessages, WorkerMessages>;
 
 export type ElementRelatedState = {
-	parents: Map<HTMLElement, HTMLElement>;
-	sibilings: Map<HTMLElement, HTMLElement | null>;
-	elementResets: Map<HTMLElement, Map<string, string>>;
+	parents: Map<string, string>;
+	sibilings: Map<string, string | null>;
+	elementResets: Map<string, Map<string, string>>;
 };
 
 export type DimensionState = {
@@ -180,10 +191,12 @@ export type ElementReadouts = Omit<
 	offset: number;
 };
 
+export type EasingTable = Record<number, string>;
+
 export type WorkerState = {
 	dimensions: Map<string, ElementReadouts[]>;
 	parents: Map<string, string>;
-	easings: Map<string, Set<TimelineEntry>>;
+	easings: Map<string, EasingTable>;
 	ratios: Map<string, number>;
 	types: Set<string>;
 };

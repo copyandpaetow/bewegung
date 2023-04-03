@@ -64,6 +64,12 @@ export class BidirectionalMap<Key, Value> {
 	forEach(callbackFn: (value: Value, key: Key, map: Map<Key, Value>) => void) {
 		this.#keyMap.forEach(callbackFn);
 	}
+	updateValue(key: Key, newValue: Value) {
+		if (!this.#keyMap.has(key)) {
+			throw new Error("key is not defined");
+		}
+		this.#keyMap.set(key, newValue);
+	}
 }
 
 function* idGeneratorFunction() {
@@ -75,7 +81,7 @@ function* idGeneratorFunction() {
 
 const idGenerator = idGeneratorFunction();
 
-const uuid = (prefix: string = "bewegung"): string => {
+export const uuid = (prefix: string = "bewegung"): string => {
 	return `${prefix}-${idGenerator.next().value}`;
 };
 
