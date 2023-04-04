@@ -1,6 +1,6 @@
-import { calculateEasings } from "./calculations/easings";
-import { calculateImageKeyframes } from "./calculations/image-keyframes";
-import { AnimationTransferable, ElementReadouts, WorkerState } from "./types";
+import { getDefaultKeyframes } from "./calculations/default-keyframes";
+import { getImageKeyframes } from "./calculations/image-keyframes";
+import { ElementReadouts, ResultTransferable, WorkerState } from "./types";
 
 export const isEntryVisible = (entry: ElementReadouts) =>
 	entry.display !== "none" && entry.display !== "" && entry.height !== 0 && entry.width !== 0;
@@ -34,6 +34,40 @@ const filterCompletlyHiddenElements = (readouts: Map<string, ElementReadouts[]>)
 	});
 };
 
+//TODO: if elements are added or removed they also would need overrides for the time being
+const setOverridesForPartialElements = (state: WorkerState, elementsToBeRemoved: Set<string>) => {
+	const { readouts, timings } = state;
+	const amountOfReadouts = timings.length;
+
+	readouts.forEach((elementReadouts, elementID) => {
+		if (elementReadouts.length === amountOfReadouts) {
+			return;
+		}
+		if (elementReadouts.at(0)!.offset !== timings.at(0)) {
+			const firstAvailableTiming = timings.findIndex(
+				(timing) => timing === elementReadouts.at(0)?.offset
+			);
+			const additionalEntries = timings.slice(0, firstAvailableTiming).map((timing) => ({
+				...elementReadouts.at(0)!,
+				offset: timing,
+			}));
+			elementReadouts.unshift(...additionalEntries);
+		}
+
+		if (elementReadouts.at(-1)!.offset !== timings.at(-1)) {
+			const LastAvailableTiming = timings.findIndex(
+				(timing) => timing === elementReadouts.at(-1)?.offset
+			);
+			const additionalEntries = timings.slice(LastAvailableTiming + 1).map((timing) => ({
+				...elementReadouts.at(-1)!,
+				offset: timing,
+			}));
+			elementReadouts.push(...additionalEntries);
+			elementsToBeRemoved.add(elementID);
+		}
+	});
+};
+
 const refillValuesFrompartiallyHiddenElements = (readouts: Map<string, ElementReadouts[]>) => {
 	readouts.forEach((elementReadouts, elementID) => {
 		if (elementReadouts.every(isEntryVisible)) {
@@ -49,11 +83,9 @@ const doesElementChangeInScale = (readouts: ElementReadouts[]) =>
 	);
 
 const seperateReadouts = (state: WorkerState) => {
-	const { dimensions, ratios } = state;
-	const imageReadouts = new Map<string, ElementReadouts[]>();
-	const defaultReadouts = new Map<string, ElementReadouts[]>();
+	const { readouts, imageReadouts, defaultReadouts, ratios } = state;
 
-	dimensions.forEach((elementReadouts, elementID) => {
+	readouts.forEach((elementReadouts, elementID) => {
 		const isElementAnImage = ratios.has(elementID);
 		if (isElementAnImage && doesElementChangeInScale(elementReadouts)) {
 			imageReadouts.set(elementID, elementReadouts);
@@ -61,21 +93,25 @@ const seperateReadouts = (state: WorkerState) => {
 		}
 		defaultReadouts.set(elementID, elementReadouts);
 	});
-
-	return { imageReadouts, defaultReadouts };
 };
 
-export const createKeyframes = (state: WorkerState): AnimationTransferable => {
-	const keyframes = new Map<string, Keyframe>();
+export const createKeyframes = (state: WorkerState): ResultTransferable => {
+	const result: ResultTransferable = {
+		overrides: new Map<string, Partial<CSSStyleDeclaration>>(),
+		overrideResets: new Map<string, Partial<CSSStyleDeclaration>>(),
+		elementsToBeRemoved: new Set<string>(),
+		placeholders: new Map<string, string>(),
+		wrappers: new Map<string, string>(),
+		keyframes: new Map<string, Keyframe[]>(),
+	};
 
-	filterCompletlyHiddenElements(state.dimensions);
-	refillValuesFrompartiallyHiddenElements(state.dimensions);
+	filterCompletlyHiddenElements(state.readouts);
+	setOverridesForPartialElements(state, result.elementsToBeRemoved);
+	refillValuesFrompartiallyHiddenElements(state.readouts);
 
-	const { imageReadouts, defaultReadouts } = seperateReadouts(state);
-	const imageKeyframes = calculateImageKeyframes(imageReadouts, state);
+	seperateReadouts(state);
+	getImageKeyframes(state, result);
+	getDefaultKeyframes(state, result);
 
-	//seperate images and defaults
-	//calculate keyframes
-
-	return { animations: keyframes };
+	return result;
 };

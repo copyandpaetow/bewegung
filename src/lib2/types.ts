@@ -85,19 +85,24 @@ type StateTransferable = {
 	types: Set<string>;
 };
 
-export type AnimationTransferable = {
-	animations: Map<string, Keyframe>;
+export type ResultTransferable = {
+	overrides: Map<string, Partial<CSSStyleDeclaration>>;
+	overrideResets: Map<string, Partial<CSSStyleDeclaration>>;
+	placeholders: Map<string, string>;
+	wrappers: Map<string, string>;
+	keyframes: Map<string, Keyframe[]>;
+	elementsToBeRemoved: Set<string>;
 };
 
 export type MainMessages = {
 	domChanges: DomChangeTransferable;
-	animations: AnimationTransferable;
+	results: ResultTransferable;
 	state: StateTransferable;
 };
 
 export type WorkerMessages = {
 	sendDOMRects: DomChangeTransferable;
-	sendAnimations: AnimationTransferable;
+	sendResults: ResultTransferable;
 	sendState: StateTransferable;
 };
 
@@ -121,7 +126,8 @@ export type MainState = {
 	ratios: Map<string, number>;
 	types: Set<string>;
 	worker: AtomicWorker;
-	animations: Animation[];
+	animations: Map<string, Animation>;
+	onStart: VoidFunction[];
 };
 
 export type Payload = {
@@ -186,12 +192,42 @@ export type ElementReadouts = Omit<
 	offset: number;
 };
 
+export type DifferenceArray = [ElementReadouts, ElementReadouts];
+
+export interface DimensionalDifferences {
+	heightDifference: number;
+	widthDifference: number;
+	leftDifference: number;
+	topDifference: number;
+	offset: number;
+}
+
 export type EasingTable = Record<number, string>;
 
 export type WorkerState = {
-	dimensions: Map<string, ElementReadouts[]>;
+	readouts: Map<string, ElementReadouts[]>;
+	defaultReadouts: Map<string, ElementReadouts[]>;
+	imageReadouts: Map<string, ElementReadouts[]>;
 	parents: Map<string, string>;
 	easings: Map<string, EasingTable>;
 	ratios: Map<string, number>;
 	types: Set<string>;
+	timings: number[];
 };
+
+export type ImageState = {
+	easing: EasingTable;
+	readouts: ElementReadouts[];
+	parentReadouts: ElementReadouts[];
+	ratio: number;
+	maxHeight: number;
+	maxWidth: number;
+};
+
+export interface StyleTables {
+	borderRadiusTable: Record<number, string>;
+	opacityTable: Record<number, string>;
+	filterTable: Record<number, string>;
+	userTransformTable: Record<number, string>;
+	easingTable: Record<number, string>;
+}

@@ -67,7 +67,7 @@ const initCards = () => {
 
 		const sequence: BewegungsBlock[] = [
 			[() => changeWidth(100), { duration: 2000, at: 0, easing: "ease" }],
-			[() => changeWidth(10), { duration: 2000, at: 200 }],
+
 			[
 				() => {
 					const element = cards[0].cloneNode(true) as HTMLElement;
@@ -82,6 +82,7 @@ const initCards = () => {
 				},
 				{ duration: 2000, at: -200, easing: "cubic-bezier(.5,.25,.8,.6)" },
 			],
+			[() => changeWidth(10), { duration: 2000, at: 200 }],
 		];
 
 		return bewegung2(sequence, {
