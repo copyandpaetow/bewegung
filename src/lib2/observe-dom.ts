@@ -1,7 +1,7 @@
-import { saveOriginalStyle } from "./animation";
+import { addElementToStates } from "./animation";
 import { defaultChangeProperties } from "./constants";
 import { BidirectionalMap } from "./element-translations";
-import { Context, DimensionState, ElementReadouts, ElementRelatedState } from "./types";
+import { ElementReadouts, MainState } from "./types";
 
 const observe = (observer: MutationObserver) =>
 	observer.observe(document.body, {
@@ -38,70 +38,75 @@ const saveElementDimensions = (
 	return currentChange;
 };
 
-const resetStyle = (
-	entry: MutationRecord,
-	saveMap: Map<string, Map<string, string>>,
-	translations: BidirectionalMap<string, HTMLElement>
-) => {
+const resetStyle = (entry: MutationRecord, state: MainState) => {
+	const { elementTranslations, elementResets } = state;
 	const target = entry.target as HTMLElement;
-	const key = translations.get(target)!;
-	const savedAttributes = saveMap.get(key)?.get(entry.attributeName!);
+	const key = elementTranslations.get(target)!;
+	const savedAttributes = elementResets.get(key)?.get(entry.attributeName!);
 	if (entry.attributeName === "style") {
 		target.style.cssText = savedAttributes!;
 	}
 };
 
-//? this relies on all callbacks creating a mutation-event and therefor will always have the same index. Maybe this can be done safer
+//? this relies on all callbacks creating a mutation-event=> mutation event indices would correlate to the callback order. Maybe this can be done safer
 const handleElementAdditons = (
 	entry: MutationRecord[],
-	elementState: ElementRelatedState,
-	translations: BidirectionalMap<string, HTMLElement>
+	currentChange: [number, VoidFunction[]],
+	state: MainState
 ) => {
+	const { elementTranslations, options, worker, parents, easings, ratios, types } = state;
+	const [offset, callbacks] = currentChange;
 	entry.forEach((entry, index) => {
+		if (entry.addedNodes.length === 0) {
+			return;
+		}
+		const remainingOptions = new Set(
+			callbacks.slice(index).map((callbackID) => options.get(callbackID)!)
+		);
+
 		entry.addedNodes.forEach((element) => {
 			if (!(element instanceof HTMLElement)) {
 				return;
 			}
+
 			[element, ...element.querySelectorAll("*")]
 				.reduce((newElements, element, elementCount) => {
 					const key = `${index}-${element.tagName}-${elementCount}`;
-					if (translations.has(key)) {
-						translations.updateValue(key, element as HTMLElement);
+					if (elementTranslations.has(key)) {
+						elementTranslations.updateValue(key, element as HTMLElement);
 						return newElements;
 					}
-					translations.set(key, element as HTMLElement);
-					newElements.push({ key, element: element as HTMLElement });
+					elementTranslations.set(key, element as HTMLElement);
+					newElements.push(element as HTMLElement);
 					return newElements;
-				}, [] as { key: string; element: HTMLElement }[])
-				.forEach((entry) => {
-					const { key, element } = entry;
-					const parentKey = translations.get(element.parentElement!)!;
-					const siblingKey = element.nextElementSibling
-						? translations.get(element.nextElementSibling as HTMLElement)!
-						: null;
-					elementState.parents.set(key, parentKey);
-					elementState.sibilings.set(key, siblingKey);
-					elementState.elementResets.set(key, saveOriginalStyle(element));
-					//TODO: context need to be updated as well and the changes need to go to the worker
+				}, [] as HTMLElement[])
+				.forEach((element) => {
+					addElementToStates(remainingOptions, element, state);
 				});
 		});
 	});
+
+	if (offset === 1) {
+		//TODO: this sends the whole thing instead of some entries...
+		worker("state").reply("sendState", {
+			parents,
+			easings,
+			ratios,
+			types,
+		});
+	}
 };
 
-const resetElements = (
-	entry: MutationRecord,
-	elementState: ElementRelatedState,
-	translations: BidirectionalMap<string, HTMLElement>
-) => {
-	const { parents, sibilings } = elementState;
+const resetElements = (entry: MutationRecord, state: MainState) => {
+	const { parents, siblings, elementTranslations } = state;
 
 	entry.removedNodes.forEach((target) => {
 		if (!(target instanceof HTMLElement)) {
 			return;
 		}
-		const key = translations.get(target)!;
-		const parentElement = translations.get(parents.get(key)!)!;
-		const nextSibiling = translations.get(sibilings.get(key)!)!;
+		const key = elementTranslations.get(target)!;
+		const parentElement = elementTranslations.get(parents.get(key)!)!;
+		const nextSibiling = elementTranslations.get(siblings.get(key)!)!;
 
 		parentElement.insertBefore(target, nextSibiling);
 	});
@@ -114,55 +119,51 @@ const resetElements = (
 	});
 };
 
-export const setObserver = (
-	elementState: ElementRelatedState,
-	dimensionState: DimensionState,
-	context: Context
-) => {
-	const { reply, cleanup } = context.worker("domChanges");
-	let currentChange = dimensionState.changes.next();
-	let wasCallbackCalled = true;
+export const setObserver = (state: MainState) => {
+	const { worker, callbacks, elementTranslations } = state;
+	const { reply, cleanup } = worker("domChanges");
+	const changes = callbacks.entries();
+	let currentChange = changes.next();
 
 	const nextChange = () => {
-		currentChange = dimensionState.changes.next();
+		currentChange = changes.next();
 		return currentChange;
 	};
 
 	const callNextChange = (observer: MutationObserver) => {
 		requestAnimationFrame(() => {
-			wasCallbackCalled = false;
-			currentChange.value[1].forEach((callback: VoidFunction) => {
-				callback();
-			});
-			requestAnimationFrame(() => {
-				if (wasCallbackCalled) {
-					return;
-				}
+			const callbacks = currentChange.value[1];
+
+			if (callbacks.length === 0) {
 				observerCallback([], observer);
+				return;
+			}
+
+			callbacks.forEach((callback: VoidFunction) => {
+				callback();
 			});
 		});
 	};
 
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
-		wasCallbackCalled = true;
 		const offset = currentChange.value[0];
 
-		handleElementAdditons(entries, elementState, context.elementTranslations);
+		handleElementAdditons(entries, currentChange.value, state);
 
 		reply("sendDOMRects", {
-			changes: saveElementDimensions(context.elementTranslations, offset),
-			done: Boolean(nextChange().done),
+			changes: saveElementDimensions(elementTranslations, offset),
+			offset,
 		});
 
 		entries.forEach((entry) => {
 			switch (entry.type) {
 				case "attributes":
-					resetStyle(entry, elementState.elementResets, context.elementTranslations);
+					resetStyle(entry, state);
 					break;
 
 				case "childList":
-					resetElements(entry, elementState, context.elementTranslations);
+					resetElements(entry, state);
 					break;
 
 				case "characterData":
@@ -173,12 +174,10 @@ export const setObserver = (
 					break;
 			}
 		});
-
-		if (currentChange.done) {
+		if (Boolean(nextChange().done)) {
 			cleanup();
 			return;
 		}
-
 		observe(observer);
 		callNextChange(observer);
 	};

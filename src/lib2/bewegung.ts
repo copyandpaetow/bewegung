@@ -1,5 +1,5 @@
 import { getAnimationStateMachine } from "./animation";
-import { createContext } from "./normalize-props";
+import { createState } from "./normalize-props";
 import { AllPlayStates, BewegungsBlock, BewegungsConfig } from "./types";
 
 export type Bewegung = {
@@ -27,8 +27,8 @@ export const bewegung2 = (
 	props: BewegungsBlock[],
 	globalConfig?: Partial<BewegungsConfig>
 ): Bewegung => {
-	const context = createContext(props, globalConfig);
-	const machine = getAnimationStateMachine(context);
+	const state = createState(props, globalConfig);
+	const machine = getAnimationStateMachine(state);
 
 	return {
 		play() {
@@ -47,7 +47,7 @@ export const bewegung2 = (
 			machine.transition("finish");
 		},
 		get finished() {
-			return context.finishPromise;
+			return state.finishPromise;
 		},
 		get playState() {
 			return machine.state();

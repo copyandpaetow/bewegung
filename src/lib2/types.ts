@@ -75,7 +75,7 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 
 type DomChangeTransferable = {
 	changes: Map<string, ElementReadouts>;
-	done: boolean;
+	offset: number;
 };
 
 type StateTransferable = {
@@ -105,28 +105,23 @@ export type AtomicWorker = <Current extends keyof MainMessages>(
 	eventName: Current
 ) => WorkerContext<Current, MainMessages, WorkerMessages>;
 
-export type ElementRelatedState = {
-	parents: Map<string, string>;
-	sibilings: Map<string, string | null>;
-	elementResets: Map<string, Map<string, string>>;
-};
-
-export type DimensionState = {
-	changes: IterableIterator<[number, Set<VoidFunction>]>;
-	animations: Animation[];
-};
-
-export type Context = {
-	options: Map<string, NormalizedOptions>;
-	callbackTranslation: BidirectionalMap<string, VoidFunction>;
-	elementTranslations: BidirectionalMap<string, HTMLElement>;
-	totalRuntime: number;
-	callbacks: Map<number, Set<VoidFunction>>;
+export type MainState = {
 	timekeeper: Animation;
+	totalRuntime: number;
+	parents: Map<string, string>;
+	siblings: Map<string, string | null>;
 	finishPromise: Promise<void>;
-	resolve: (value: void | PromiseLike<void>) => void;
-	reject: (reason?: any) => void;
+	resolve(value: any): void;
+	reject(value: any): void;
+	callbacks: Map<number, VoidFunction[]>;
+	options: Map<VoidFunction, NormalizedOptions>;
+	elementTranslations: BidirectionalMap<string, HTMLElement>;
+	elementResets: Map<string, Map<string, string>>;
+	easings: Map<string, Set<TimelineEntry>>;
+	ratios: Map<string, number>;
+	types: Set<string>;
 	worker: AtomicWorker;
+	animations: Animation[];
 };
 
 export type Payload = {

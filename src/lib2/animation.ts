@@ -2,7 +2,7 @@ import { createAnimations } from "./create-animations";
 import { getOrAddKeyFromLookup } from "./element-translations";
 import { setObserver } from "./observe-dom";
 import { createMachine } from "./state-machine";
-import { Context, DimensionState, ElementRelatedState, TimelineEntry } from "./types";
+import { MainState, NormalizedOptions } from "./types";
 
 export const saveOriginalStyle = (element: HTMLElement) => {
 	const attributes = new Map<string, string>();
@@ -17,15 +17,6 @@ export const saveOriginalStyle = (element: HTMLElement) => {
 	return attributes;
 };
 
-const setDimensionRelatedState = (context: Context): DimensionState => {
-	const { callbacks, timekeeper } = context;
-
-	return {
-		changes: callbacks.entries(),
-		animations: [timekeeper],
-	};
-};
-
 const getDecendents = (element: HTMLElement) =>
 	Array.from(element.querySelectorAll("*")) as HTMLElement[];
 
@@ -38,58 +29,74 @@ const isTextNode = (element: HTMLElement) => {
 	return Array.from(element.childNodes).every((node) => Boolean(node.textContent?.trim()));
 };
 
-const setElementRelatedState = (context: Context): ElementRelatedState => {
-	const { options, elementTranslations, worker } = context;
+export const addElementToStates = (
+	options: Set<NormalizedOptions>,
+	element: HTMLElement,
+	state: MainState
+) => {
+	const { elementResets, siblings, easings, ratios, types, parents, elementTranslations } = state;
+	const key = getOrAddKeyFromLookup(element, elementTranslations);
+	const siblingKey = element.nextElementSibling
+		? getOrAddKeyFromLookup(element.nextElementSibling as HTMLElement, elementTranslations)
+		: null;
+	elementResets.set(key, saveOriginalStyle(element));
 
-	const parents = new Map<string, string>();
-	const sibilings = new Map<string, string | null>();
-	const elementResets = new Map<string, Map<string, string>>();
+	siblings.set(key, siblingKey);
+	parents.set(key, getOrAddKeyFromLookup(element.parentElement!, elementTranslations));
+	easings.set(
+		key,
+		new Set(
+			Array.from(options, (option) => {
+				const { start, end, easing } = option;
+				return {
+					start,
+					end,
+					easing,
+				};
+			})
+		)
+	);
+	if (element.tagName === "IMG") {
+		ratios.set(
+			key,
+			(element as HTMLImageElement).naturalWidth / (element as HTMLImageElement).naturalHeight
+		);
+	}
+	if (isTextNode(element)) {
+		types.add(key);
+	}
+};
 
-	const easings = new Map<string, Set<TimelineEntry>>();
-	const ratios = new Map<string, number>();
-	const types = new Set<string>();
+const setElementRelatedState = (state: MainState) => {
+	const {
+		options,
+		elementTranslations,
+		worker,
+		elementResets,
+		parents,
+		easings,
+		ratios,
+		types,
+		siblings,
+	} = state;
+	const elementRelations = new Map<HTMLElement, Set<NormalizedOptions>>();
 
-	const elementRelations = new Map<HTMLElement, Set<string>>();
-
-	options.forEach((option, id) => {
+	options.forEach((option) => {
 		const rootElement = elementTranslations.get(option.root)!;
 		getDecendents(rootElement).forEach((element) => {
-			elementRelations.set(element, (elementRelations.get(element) ?? new Set()).add(id));
+			elementRelations.set(element, (elementRelations.get(element) ?? new Set()).add(option));
 		});
 		elementResets.set(option.root, saveOriginalStyle(rootElement));
+		parents.set(option.root, option.root);
+		siblings.set(option.root, null);
+		easings.set(
+			option.root,
+			new Set([{ start: option.start, end: option.end, easing: option.easing }])
+		);
 	});
 
 	elementRelations.forEach((ids, element) => {
-		const key = getOrAddKeyFromLookup(element, elementTranslations);
-		const siblingKey = element.nextElementSibling
-			? getOrAddKeyFromLookup(element.nextElementSibling as HTMLElement, elementTranslations)
-			: null;
-		elementResets.set(key, saveOriginalStyle(element));
-
-		sibilings.set(key, siblingKey);
-		parents.set(key, getOrAddKeyFromLookup(element.parentElement!, elementTranslations));
-		easings.set(
-			key,
-			new Set(
-				Array.from(ids, (id) => {
-					const { start, end, easing } = options.get(id)!;
-					return {
-						start,
-						end,
-						easing,
-					};
-				})
-			)
-		);
-		if (element.tagName === "IMG") {
-			ratios.set(
-				key,
-				(element as HTMLImageElement).naturalWidth / (element as HTMLImageElement).naturalHeight
-			);
-		}
-		if (isTextNode(element)) {
-			types.add(key);
-		}
+		addElementToStates(ids, element, state);
 	});
 
 	worker("state").reply("sendState", {
@@ -99,27 +106,27 @@ const setElementRelatedState = (context: Context): ElementRelatedState => {
 		types,
 	});
 
-	return {
-		parents,
-		sibilings,
-		elementResets,
-	};
+	return true;
 };
 
-export const getAnimationStateMachine = (context: Context) => {
-	const { timekeeper, worker } = context;
+export const getAnimationStateMachine = (state: MainState) => {
+	const { timekeeper, worker } = state;
 
 	let nextPlayState = "play";
 	let time = Date.now();
 
-	let elementState: null | ElementRelatedState = null;
-	let dimensionState: null | DimensionState = null;
+	//TODO: this needs to be better
+	let elementsStillValid = false;
 	let observer: null | MutationObserver = null;
 
 	const resetState = () => {
-		elementState ??= setElementRelatedState(context);
-		dimensionState ??= setDimensionRelatedState(context);
-		observer = setObserver(elementState, dimensionState, context);
+		if (!elementsStillValid) {
+			elementsStillValid = true;
+			setElementRelatedState(state);
+			observer?.disconnect();
+			observer = null;
+		}
+		observer ??= setObserver(state);
 	};
 
 	const machine = createMachine({
@@ -153,7 +160,7 @@ export const getAnimationStateMachine = (context: Context) => {
 				console.log("play");
 				console.log(`calculation took ${Date.now() - time}ms`);
 
-				dimensionState?.animations.forEach((animation) => animation.play());
+				state.animations.forEach((animation) => animation.play());
 			},
 			scrollAnimations() {
 				console.log("scroll");
@@ -166,11 +173,11 @@ export const getAnimationStateMachine = (context: Context) => {
 			},
 			finishAnimations() {
 				console.log("finishAnimations");
-				context.resolve();
+				state.resolve(undefined);
 			},
 			cancelAnimations() {
 				console.log("cancelAnimations");
-				context.reject();
+				state.reject("user cancel");
 			},
 			cleanup() {
 				console.log("cleanup");
@@ -182,7 +189,7 @@ export const getAnimationStateMachine = (context: Context) => {
 		},
 		guards: {
 			isStateLoaded() {
-				return [elementState, dimensionState].every(Boolean);
+				return [elementsStillValid, observer].every(Boolean);
 			},
 			isAnimationWanted() {
 				return window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === false;
