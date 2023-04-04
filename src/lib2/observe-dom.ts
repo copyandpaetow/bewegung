@@ -1,7 +1,7 @@
 import { addElementToStates } from "./animation";
 import { defaultChangeProperties } from "./constants";
 import { BidirectionalMap } from "./element-translations";
-import { ElementReadouts, MainState } from "./types";
+import { ElementReadouts, MainState, ResultTransferable } from "./types";
 
 const observe = (observer: MutationObserver) =>
 	observer.observe(document.body, {
@@ -32,6 +32,9 @@ const saveElementDimensions = (
 	const currentChange = new Map<string, ElementReadouts>();
 
 	translations.forEach((domElement, elementString) => {
+		if (!domElement.isConnected) {
+			return;
+		}
 		currentChange.set(elementString, getElementStyles(domElement, offset));
 	});
 

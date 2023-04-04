@@ -134,9 +134,10 @@ export const getAnimationStateMachine = (state: MainState) => {
 		actions: {
 			loadState() {
 				resetState();
-				const { onError, onMessage, cleanup } = worker("animations");
-				onMessage((animationTransferable) => {
-					createAnimations(animationTransferable);
+				const { onError, onMessage, cleanup } = worker("results");
+				onMessage((ResultTransferable) => {
+					createAnimations(ResultTransferable, state);
+					state.onStart.forEach((cb) => cb());
 					//TODO: this can be done better
 					machine.transition(nextPlayState);
 					cleanup();
@@ -160,7 +161,10 @@ export const getAnimationStateMachine = (state: MainState) => {
 				console.log("play");
 				console.log(`calculation took ${Date.now() - time}ms`);
 
-				state.animations.forEach((animation) => animation.play());
+				state.animations.forEach((animation) => {
+					animation.play();
+					animation.pause();
+				});
 			},
 			scrollAnimations() {
 				console.log("scroll");

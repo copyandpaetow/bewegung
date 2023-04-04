@@ -114,6 +114,7 @@ export const createState = (
 		ratios: new Map<string, number>(),
 		types: new Set<string>(),
 		worker: useWorker<MainMessages, WorkerMessages>(workerManager.current()),
-		animations: [timekeeper],
+		animations: new Map([["timekeeper", timekeeper]]),
+		onStart: normalizedProps.map((entry) => entry[0]),
 	};
 };

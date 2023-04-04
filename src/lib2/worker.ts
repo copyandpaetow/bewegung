@@ -8,11 +8,14 @@ const worker = self as Worker;
 const workerAtom = useWorker<WorkerMessages, MainMessages>(worker);
 
 let state: WorkerState = {
-	dimensions: new Map<string, ElementReadouts[]>(),
+	readouts: new Map<string, ElementReadouts[]>(),
+	defaultReadouts: new Map<string, ElementReadouts[]>(),
+	imageReadouts: new Map<string, ElementReadouts[]>(),
 	parents: new Map<string, string>(),
 	easings: new Map<string, EasingTable>(),
 	ratios: new Map<string, number>(),
 	types: new Set<string>(),
+	timings: [],
 };
 
 workerAtom("sendState").onMessage((stateTransferable) => {
@@ -27,15 +30,18 @@ workerAtom("sendDOMRects").onMessage((domChanges) => {
 	const { changes, offset } = domChanges;
 
 	if (offset === 0) {
-		state.dimensions.clear();
+		state.readouts.clear();
+		state.imageReadouts.clear();
+		state.timings = [];
 	}
 
 	changes.forEach((readouts, elementID) => {
-		state.dimensions.set(elementID, (state.dimensions.get(elementID) ?? []).concat(readouts));
+		state.readouts.set(elementID, (state.readouts.get(elementID) ?? []).concat(readouts));
 	});
+	state.timings.push(offset);
 
 	if (offset === 1) {
 		console.log(state);
-		workerAtom("sendAnimations").reply("animations", createKeyframes(state));
+		workerAtom("sendResults").reply("results", createKeyframes(state));
 	}
 });
