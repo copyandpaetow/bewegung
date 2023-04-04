@@ -67,13 +67,13 @@ const initCards = () => {
 
 		const sequence: BewegungsBlock[] = [
 			[() => changeWidth(100), { duration: 2000, at: 0, easing: "ease" }],
-			[() => changeWidth(10), { duration: 2000, at: 200, easing: "ease-out" }],
+			[() => changeWidth(10), { duration: 2000, at: 200 }],
 			[
 				() => {
 					const element = cards[0].cloneNode(true) as HTMLElement;
 					cards[0].parentElement?.append(element);
 				},
-				{ duration: 2000 },
+				{ duration: 2000, easing: "ease-out" },
 			],
 			[
 				() => {

@@ -17,19 +17,24 @@ let state: WorkerState = {
 
 workerAtom("sendState").onMessage((stateTransferable) => {
 	state = {
+		...state,
 		...stateTransferable,
 		easings: calculateEasings(stateTransferable.easings),
-		dimensions: new Map<string, ElementReadouts[]>(),
 	};
 });
 
 workerAtom("sendDOMRects").onMessage((domChanges) => {
-	const { changes, done } = domChanges;
+	const { changes, offset } = domChanges;
+
+	if (offset === 0) {
+		state.dimensions.clear();
+	}
+
 	changes.forEach((readouts, elementID) => {
 		state.dimensions.set(elementID, (state.dimensions.get(elementID) ?? []).concat(readouts));
 	});
 
-	if (done) {
+	if (offset === 1) {
 		console.log(state);
 		workerAtom("sendAnimations").reply("animations", createKeyframes(state));
 	}
