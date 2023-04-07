@@ -34,7 +34,7 @@ const filterCompletlyHiddenElements = (readouts: Map<string, ElementReadouts[]>)
 	});
 };
 
-//TODO: if elements are added or removed they also would need overrides for the time being
+//TODO: height/width of -1 leads to scaling issues, maybe height and unsafeHeight is the way to go
 const setOverridesForPartialElements = (state: WorkerState, result: ResultTransferable) => {
 	const { readouts, timings } = state;
 	const { elementsToBeAdded, elementsToBeRemoved } = result;
@@ -93,7 +93,7 @@ const seperateReadouts = (state: WorkerState) => {
 
 	readouts.forEach((elementReadouts, elementID) => {
 		const isElementAnImage = ratios.has(elementID);
-		if (false && isElementAnImage && doesElementChangeInScale(elementReadouts)) {
+		if (isElementAnImage && doesElementChangeInScale(elementReadouts)) {
 			imageReadouts.set(elementID, elementReadouts);
 			return;
 		}

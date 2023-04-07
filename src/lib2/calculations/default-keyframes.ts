@@ -97,7 +97,12 @@ const setOverrides = (state: WorkerState, result: ResultTransferable) => {
 				width: readouts.at(-1)!.width + "px",
 				height: readouts.at(-1)!.height + "px",
 			});
-			if (parentKey && parentReadouts!.at(-1)!.position === "static") {
+			if (
+				parentReadouts!.at(-1)!.position === "static" &&
+				overrides.get(parentKey)?.position === undefined
+			) {
+				console.log({ parentKey });
+
 				overrides.set(parentKey, {
 					...(overrides.get(parentKey) ?? {}),
 					position: "relative",
@@ -109,6 +114,37 @@ const setOverrides = (state: WorkerState, result: ResultTransferable) => {
 			overrides.set(elementID, {
 				...(overrides.get(elementID) ?? {}),
 				borderRadius: "0px",
+			});
+		}
+	});
+};
+
+const addModifiedElementOverrides = (state: WorkerState, result: ResultTransferable) => {
+	const { defaultReadouts } = state;
+	const { overrides, elementsToBeAdded, elementsToBeRemoved } = result;
+
+	defaultReadouts.forEach((readouts, elementID) => {
+		if (!elementsToBeAdded.has(elementID) && !elementsToBeRemoved.has(elementID)) {
+			return;
+		}
+
+		const parentKey = getNextParent(elementID, state);
+		const parentReadouts = defaultReadouts.get(parentKey)!;
+		overrides.set(elementID, {
+			position: "absolute",
+			left: readouts.at(-1)!.left - parentReadouts.at(-1)!.left + "px",
+			top: readouts.at(-1)!.top - parentReadouts.at(-1)!.top + "px",
+			width: readouts.at(-1)!.width + "px",
+			height: readouts.at(-1)!.height + "px",
+		});
+
+		if (
+			parentReadouts!.at(-1)!.position === "static" &&
+			overrides.get(parentKey)?.position === undefined
+		) {
+			overrides.set(parentKey, {
+				position: "relative",
+				...(overrides.get(parentKey) ?? {}),
 			});
 		}
 	});
@@ -159,10 +195,11 @@ export const getDefaultKeyframes = (state: WorkerState, result: ResultTransferab
 		}
 		if (elementsToBeAdded.has(elementID)) {
 			elementsToBeAdded.set(elementID, keyframes);
+			return;
 		}
 
-		if (elementsToBeRemoved.has(elementID)) {
-			elementsToBeRemoved.set(elementID, keyframes);
-		}
+		elementsToBeRemoved.set(elementID, keyframes);
 	});
+
+	addModifiedElementOverrides(state, result);
 };

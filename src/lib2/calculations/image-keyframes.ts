@@ -147,11 +147,16 @@ export const getImageKeyframes = (state: WorkerState, result: ResultTransferable
 			width: readouts.at(-1)!.width + "px",
 		});
 
-		if (existingParentReadout.at(-1)?.position === "static") {
+		if (
+			existingParentReadout.at(-1)?.position === "static" &&
+			overrides.get(existingParent)?.position === undefined
+		) {
 			overrides.set(existingParent, {
+				...(overrides.get(existingParent) ?? {}),
 				position: "relative",
 			});
 			overrideResets.set(existingParent, {
+				...(overrideResets.get(existingParent) ?? {}),
 				position: "",
 			});
 		}

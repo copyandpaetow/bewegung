@@ -81,6 +81,7 @@ const initCards = () => {
 			[
 				() => {
 					const element = cards[0].cloneNode(true) as HTMLElement;
+					element.setAttribute("data-bewegungskey", "something");
 					cards[0].parentElement?.append(element);
 				},
 				{ duration: 2000, easing: "ease-out" },

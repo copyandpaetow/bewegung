@@ -115,6 +115,6 @@ export const createState = (
 		textElements: new Set<string>(),
 		worker: useWorker<MainMessages, WorkerMessages>(workerManager.current()),
 		animations: new Map([["timekeeper", timekeeper]]),
-		onStart: normalizedProps.map((entry) => entry[0]),
+		onStart: [],
 	};
 };
