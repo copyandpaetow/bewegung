@@ -20,7 +20,7 @@ export class BidirectionalMap<Key, Value> {
 				return;
 			}
 
-			throw new Error("can not re-assign keys");
+			throw new Error(`can not re-assign keys: ${key} ${value}`);
 		}
 
 		this.#keyMap.set(key, value);
@@ -63,12 +63,6 @@ export class BidirectionalMap<Key, Value> {
 
 	forEach(callbackFn: (value: Value, key: Key, map: Map<Key, Value>) => void) {
 		this.#keyMap.forEach(callbackFn);
-	}
-	updateValue(key: Key, newValue: Value) {
-		if (!this.#keyMap.has(key)) {
-			throw new Error("key is not defined");
-		}
-		this.#keyMap.set(key, newValue);
 	}
 }
 

@@ -136,9 +136,8 @@ export const getAnimationStateMachine = (state: MainState) => {
 			loadState() {
 				resetState();
 				const { onError, onMessage, cleanup } = worker("results");
-				onMessage((ResultTransferable) => {
-					createAnimations(ResultTransferable, state);
-					state.onStart.forEach((cb) => cb());
+				onMessage(async (ResultTransferable) => {
+					await createAnimations(ResultTransferable, state);
 					//TODO: this can be done better
 					machine.transition(nextPlayState);
 					cleanup();
@@ -164,7 +163,7 @@ export const getAnimationStateMachine = (state: MainState) => {
 
 				state.animations.forEach((animation) => {
 					animation.play();
-					animation.pause();
+					//animation.pause();
 				});
 			},
 			scrollAnimations() {

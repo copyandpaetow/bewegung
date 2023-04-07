@@ -1,7 +1,7 @@
 import { addElementToStates } from "./animation";
 import { defaultChangeProperties } from "./constants";
 import { BidirectionalMap } from "./element-translations";
-import { ElementReadouts, MainState, ResultTransferable } from "./types";
+import { ElementReadouts, MainState, NormalizedOptions, ResultTransferable } from "./types";
 
 const observe = (observer: MutationObserver) =>
 	observer.observe(document.body, {
@@ -52,53 +52,61 @@ const resetStyle = (entry: MutationRecord, state: MainState) => {
 	}
 };
 
-//? this relies on all callbacks creating a mutation-event=> mutation event indices would correlate to the callback order. Maybe this can be done safer
-const handleElementAdditons = (
-	entry: MutationRecord[],
-	currentChange: [number, VoidFunction[]],
-	state: MainState
+export const serializeElement = (element: HTMLElement, key: string) => {
+	const elementKey = element.hasAttribute("data-bewegungskey")
+		? `key-${element.getAttribute("data-bewegungskey")}`
+		: key;
+
+	return `${element.tagName}-${elementKey}`;
+};
+
+const isHTMLElement = (node: Node) => node instanceof HTMLElement;
+
+const getOptionsViaRoot = (
+	element: HTMLElement,
+	options: Map<VoidFunction, NormalizedOptions>,
+	translation: BidirectionalMap<string, HTMLElement>
 ) => {
-	const { elementTranslations, options, worker, parents, easings, ratios, textElements } = state;
-	const [offset, callbacks] = currentChange;
-	entry.forEach((entry, index) => {
-		if (entry.addedNodes.length === 0) {
+	const relatedOptions = new Set<NormalizedOptions>();
+
+	options.forEach((option) => {
+		const rootElement = translation.get(option.root)!;
+		if (!rootElement.contains(element)) {
 			return;
 		}
-		const remainingOptions = new Set(
-			callbacks.slice(index).map((callbackID) => options.get(callbackID)!)
-		);
-
-		entry.addedNodes.forEach((element) => {
-			if (!(element instanceof HTMLElement)) {
-				return;
-			}
-
-			[element, ...element.querySelectorAll("*")]
-				.reduce((newElements, element, elementCount) => {
-					const key = `${index}-${element.tagName}-${elementCount}`;
-					if (elementTranslations.has(key)) {
-						elementTranslations.updateValue(key, element as HTMLElement);
-						return newElements;
-					}
-					elementTranslations.set(key, element as HTMLElement);
-					newElements.push(element as HTMLElement);
-					return newElements;
-				}, [] as HTMLElement[])
-				.forEach((element) => {
-					addElementToStates(remainingOptions, element, state);
-				});
-		});
+		relatedOptions.add(option);
 	});
+	return relatedOptions;
+};
 
-	if (offset === 1) {
-		//TODO: this sends the whole thing instead of some entries...
-		worker("state").reply("sendState", {
-			parents,
-			easings,
-			ratios,
-			textElements,
+//? this relies on all callbacks creating a mutation-event=> mutation event indices would correlate to the callback order. Maybe this can be done safer
+export const handleElementAdditons = (entries: MutationRecord[], state: MainState) => {
+	const { elementTranslations, options } = state;
+
+	return entries
+		.flatMap((entry) => [...entry.addedNodes])
+		.filter(isHTMLElement)
+		.map((element, index) => {
+			const domElement = element as HTMLElement;
+			const relatedOptions = getOptionsViaRoot(domElement, options, elementTranslations);
+
+			[domElement, ...domElement.querySelectorAll("*")]
+				.reduce((accumulator, currentElement) => {
+					const key = serializeElement(currentElement as HTMLElement, `key-${index}`);
+					if (elementTranslations.delete(key)) {
+						elementTranslations.set(key, currentElement as HTMLElement);
+						return accumulator;
+					}
+
+					elementTranslations.set(key, currentElement as HTMLElement);
+					accumulator.push(currentElement as HTMLElement);
+					return accumulator;
+				}, [] as HTMLElement[])
+				.forEach((currentElement) => {
+					addElementToStates(relatedOptions, currentElement, state);
+				});
+			return domElement;
 		});
-	}
 };
 
 const resetElements = (entry: MutationRecord, state: MainState) => {
@@ -124,7 +132,7 @@ const resetElements = (entry: MutationRecord, state: MainState) => {
 };
 
 export const setObserver = (state: MainState) => {
-	const { worker, callbacks, elementTranslations } = state;
+	const { worker, callbacks, elementTranslations, parents, easings, ratios, textElements } = state;
 	const { reply, cleanup } = worker("domChanges");
 	const changes = callbacks.entries();
 	let currentChange = changes.next();
@@ -153,14 +161,21 @@ export const setObserver = (state: MainState) => {
 		observer.disconnect();
 		const offset = currentChange.value[0];
 
-		handleElementAdditons(entries, currentChange.value, state);
+		handleElementAdditons(entries, state);
+
+		if (offset === 1) {
+			worker("state").reply("sendState", {
+				parents,
+				easings,
+				ratios,
+				textElements,
+			});
+		}
 
 		reply("sendDOMRects", {
 			changes: saveElementDimensions(elementTranslations, offset),
 			offset,
 		});
-
-		console.log(entries);
 
 		entries.forEach((entry) => {
 			switch (entry.type) {

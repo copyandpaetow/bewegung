@@ -5,6 +5,7 @@ import {
 	emptyImageSrc,
 } from "./constants";
 import { BidirectionalMap } from "./element-translations";
+import { handleElementAdditons, serializeElement } from "./observe-dom";
 import { MainState, ResultTransferable } from "./types";
 
 /*
@@ -149,6 +150,9 @@ const setDefaultCallbacks = (resultTransferable: ResultTransferable, state: Main
 
 	animations.forEach((animation, key) => {
 		const domElement = elementTranslations.get(key)!;
+		if (!domElement || key === "timekeeper") {
+			return;
+		}
 
 		const overrideResetStyle = overrideResets.get(key);
 		const overrideStyle = overrides.get(key);
@@ -170,29 +174,26 @@ const setDefaultCallbacks = (resultTransferable: ResultTransferable, state: Main
 export const setOnPlayObserver = (
 	resultTransferable: ResultTransferable,
 	state: MainState,
-	temporaryElementMap: Map<string, HTMLElement>
+	temporaryElementMap: Map<string, HTMLElement>,
+	resolve: (value: void | PromiseLike<void>) => void
 ) => {
 	const { elementTranslations, siblings, parents, animations, totalRuntime } = state;
-	const { wrappers } = resultTransferable;
+	const { wrappers, elementsToBeAdded, overrides, overrideResets } = resultTransferable;
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
+		handleElementAdditons(entries, state).forEach((element) => {
+			const key = elementTranslations.get(element)!;
 
-		entries.forEach((entry, index) => {
-			entry.addedNodes.forEach((target) => {
-				if (!(target instanceof HTMLElement)) {
-					return;
-				}
-				[target, ...target.querySelectorAll("*")].forEach((element, elementCount) => {
-					const key = `${index}-${element.tagName}-${elementCount}`;
+			const keyframe = elementsToBeAdded.get(key)!;
+			const override = overrides.get(key)!;
+			const overrideReset = overrideResets.get(key)!;
+			const animation = new Animation(new KeyframeEffect(element, keyframe, totalRuntime));
 
-					if (elementTranslations.has(key)) {
-						elementTranslations.updateValue(key, element as HTMLElement);
-						return;
-					}
-					console.log({ unknownKey: key });
-					//elementTranslations.set(key, element as HTMLElement);
-				});
-			});
+			applyCSSStyles(element, override);
+
+			animation.onfinish = () => applyCSSStyles(element, overrideReset);
+
+			animations.set(key, animation);
 		});
 
 		entries
@@ -202,6 +203,9 @@ export const setOnPlayObserver = (
 					return;
 				}
 				const key = elementTranslations.get(target)!;
+				const override = overrides.get(key)!;
+
+				console.log({ target, key, hasAnimation: target.getAnimations(), override });
 
 				if (wrappers.has(key)) {
 					const wrapperElement = temporaryElementMap.get(wrappers.get(key)!)!;
@@ -212,22 +216,28 @@ export const setOnPlayObserver = (
 				const parentElement = elementTranslations.get(parents.get(key)!)!;
 				const nextSibiling = elementTranslations.get(siblings.get(key)!)!;
 
+				applyCSSStyles(target, override);
+
 				parentElement.insertBefore(target, nextSibiling);
 			});
+
+		state.onStart.forEach((cb) => cb());
+		console.log(resultTransferable, state);
+		resolve();
 	};
-
-	new MutationObserver(observerCallback).observe(document.body, { childList: true, subtree: true });
+	const observer = new MutationObserver(observerCallback);
+	observer.observe(document.body, { childList: true, subtree: true });
+	state.options.forEach((_, cb) => cb());
 };
 
-export const createAnimations = (resultTransferable: ResultTransferable, state: MainState) => {
-	console.log(resultTransferable);
+export const createAnimations = (resultTransferable: ResultTransferable, state: MainState) =>
+	new Promise<void>((resolve) => {
+		const temporaryElementMap = getTemporaryElements(resultTransferable, state.elementTranslations);
 
-	const temporaryElementMap = getTemporaryElements(resultTransferable, state.elementTranslations);
+		createAnimationsFromKeyframes(resultTransferable, state, temporaryElementMap);
+		setWrapperCallbacks(resultTransferable, state, temporaryElementMap);
+		setPlaceholderCallbacks(resultTransferable, state, temporaryElementMap);
+		setDefaultCallbacks(resultTransferable, state);
 
-	createAnimationsFromKeyframes(resultTransferable, state, temporaryElementMap);
-	setWrapperCallbacks(resultTransferable, state, temporaryElementMap);
-	setPlaceholderCallbacks(resultTransferable, state, temporaryElementMap);
-	setDefaultCallbacks(resultTransferable, state);
-
-	setOnPlayObserver(resultTransferable, state, temporaryElementMap);
-};
+		setOnPlayObserver(resultTransferable, state, temporaryElementMap, resolve);
+	});
