@@ -155,7 +155,6 @@ const setDefaultCallbacks = (resultTransferable: ResultTransferable, state: Main
 		const shouldElementBeRemoved = elementsToBeRemoved.has(key);
 
 		if (overrideStyle) {
-			console.log(key, overrideStyle);
 			onStart.push(() => applyCSSStyles(domElement, overrideStyle));
 		}
 
@@ -173,8 +172,8 @@ export const setOnPlayObserver = (
 	state: MainState,
 	temporaryElementMap: Map<string, HTMLElement>
 ) => {
-	const { elementTranslations, siblings, parents } = state;
-	const { elementsToBeRemoved, wrappers } = resultTransferable;
+	const { elementTranslations, siblings, parents, animations, totalRuntime } = state;
+	const { wrappers } = resultTransferable;
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
 
@@ -185,9 +184,13 @@ export const setOnPlayObserver = (
 				}
 				[target, ...target.querySelectorAll("*")].forEach((element, elementCount) => {
 					const key = `${index}-${element.tagName}-${elementCount}`;
+
 					if (elementTranslations.has(key)) {
 						elementTranslations.updateValue(key, element as HTMLElement);
+						return;
 					}
+					console.log({ unknownKey: key });
+					//elementTranslations.set(key, element as HTMLElement);
 				});
 			});
 		});
@@ -199,10 +202,7 @@ export const setOnPlayObserver = (
 					return;
 				}
 				const key = elementTranslations.get(target)!;
-				console.log({ key });
-				if (!elementsToBeRemoved.has(key)) {
-					return;
-				}
+
 				if (wrappers.has(key)) {
 					const wrapperElement = temporaryElementMap.get(wrappers.get(key)!)!;
 					wrapperElement.insertBefore(target, null);

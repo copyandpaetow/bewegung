@@ -14,7 +14,7 @@ let state: WorkerState = {
 	parents: new Map<string, string>(),
 	easings: new Map<string, EasingTable>(),
 	ratios: new Map<string, number>(),
-	types: new Set<string>(),
+	textElements: new Set<string>(),
 	timings: [],
 };
 

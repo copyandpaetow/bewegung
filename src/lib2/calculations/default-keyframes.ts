@@ -35,12 +35,12 @@ const filterDifferences = (
 };
 
 const calculateDifferences = (state: WorkerState) => {
-	const { defaultReadouts, parents, types } = state;
+	const { defaultReadouts, parents, textElements } = state;
 	const differenceMap = new Map<string, DimensionalDifferences[]>();
 
 	defaultReadouts.forEach((elementReadouts, elementID) => {
 		const parentReadouts = defaultReadouts.get(parents.get(elementID)!)!;
-		const isText = types.has(elementID);
+		const isText = textElements.has(elementID);
 
 		const differences = elementReadouts.map((currentReadout) => {
 			const child: DifferenceArray = [currentReadout, elementReadouts.at(-1)!];
@@ -144,12 +144,25 @@ export const calculateDefaultKeyframes = (
 };
 
 export const getDefaultKeyframes = (state: WorkerState, result: ResultTransferable) => {
+	const { elementsToBeAdded, elementsToBeRemoved } = result;
 	const differenceMap = filterDifferences(calculateDifferences(state), state);
 	const styleTableMap = calculateStyleTables(state);
 	setOverrides(state, result);
 
 	differenceMap.forEach((differences, elementID) => {
 		const styleTables = styleTableMap.get(elementID)!;
-		result.keyframes.set(elementID, calculateDefaultKeyframes(differences, styleTables));
+		const keyframes = calculateDefaultKeyframes(differences, styleTables);
+
+		if (!elementsToBeAdded.has(elementID) && !elementsToBeRemoved.has(elementID)) {
+			result.keyframes.set(elementID, keyframes);
+			return;
+		}
+		if (elementsToBeAdded.has(elementID)) {
+			elementsToBeAdded.set(elementID, keyframes);
+		}
+
+		if (elementsToBeRemoved.has(elementID)) {
+			elementsToBeRemoved.set(elementID, keyframes);
+		}
 	});
 };

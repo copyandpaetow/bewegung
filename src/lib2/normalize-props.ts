@@ -112,7 +112,7 @@ export const createState = (
 		elementResets: new Map<string, Map<string, string>>(),
 		easings: new Map<string, Set<TimelineEntry>>(),
 		ratios: new Map<string, number>(),
-		types: new Set<string>(),
+		textElements: new Set<string>(),
 		worker: useWorker<MainMessages, WorkerMessages>(workerManager.current()),
 		animations: new Map([["timekeeper", timekeeper]]),
 		onStart: normalizedProps.map((entry) => entry[0]),

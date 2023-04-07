@@ -82,7 +82,7 @@ type StateTransferable = {
 	parents: Map<string, string>;
 	easings: Map<string, Set<TimelineEntry>>;
 	ratios: Map<string, number>;
-	types: Set<string>;
+	textElements: Set<string>;
 };
 
 export type ResultTransferable = {
@@ -91,7 +91,8 @@ export type ResultTransferable = {
 	placeholders: Map<string, string>;
 	wrappers: Map<string, string>;
 	keyframes: Map<string, Keyframe[]>;
-	elementsToBeRemoved: Set<string>;
+	elementsToBeRemoved: Map<string, Keyframe[]>;
+	elementsToBeAdded: Map<string, Keyframe[]>;
 };
 
 export type MainMessages = {
@@ -124,7 +125,7 @@ export type MainState = {
 	elementResets: Map<string, Map<string, string>>;
 	easings: Map<string, Set<TimelineEntry>>;
 	ratios: Map<string, number>;
-	types: Set<string>;
+	textElements: Set<string>;
 	worker: AtomicWorker;
 	animations: Map<string, Animation>;
 	onStart: VoidFunction[];
@@ -211,7 +212,7 @@ export type WorkerState = {
 	parents: Map<string, string>;
 	easings: Map<string, EasingTable>;
 	ratios: Map<string, number>;
-	types: Set<string>;
+	textElements: Set<string>;
 	timings: number[];
 };
 
