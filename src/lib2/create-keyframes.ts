@@ -35,8 +35,9 @@ const filterCompletlyHiddenElements = (readouts: Map<string, ElementReadouts[]>)
 };
 
 //TODO: if elements are added or removed they also would need overrides for the time being
-const setOverridesForPartialElements = (state: WorkerState, elementsToBeRemoved: Set<string>) => {
+const setOverridesForPartialElements = (state: WorkerState, result: ResultTransferable) => {
 	const { readouts, timings } = state;
+	const { elementsToBeAdded, elementsToBeRemoved } = result;
 	const amountOfReadouts = timings.length;
 
 	readouts.forEach((elementReadouts, elementID) => {
@@ -50,8 +51,11 @@ const setOverridesForPartialElements = (state: WorkerState, elementsToBeRemoved:
 			const additionalEntries = timings.slice(0, firstAvailableTiming).map((timing) => ({
 				...elementReadouts.at(0)!,
 				offset: timing,
+				height: -1,
+				width: -1,
 			}));
 			elementReadouts.unshift(...additionalEntries);
+			elementsToBeAdded.set(elementID, []);
 		}
 
 		if (elementReadouts.at(-1)!.offset !== timings.at(-1)) {
@@ -61,9 +65,11 @@ const setOverridesForPartialElements = (state: WorkerState, elementsToBeRemoved:
 			const additionalEntries = timings.slice(LastAvailableTiming + 1).map((timing) => ({
 				...elementReadouts.at(-1)!,
 				offset: timing,
+				height: -1,
+				width: -1,
 			}));
 			elementReadouts.push(...additionalEntries);
-			elementsToBeRemoved.add(elementID);
+			elementsToBeRemoved.set(elementID, []);
 		}
 	});
 };
@@ -87,7 +93,7 @@ const seperateReadouts = (state: WorkerState) => {
 
 	readouts.forEach((elementReadouts, elementID) => {
 		const isElementAnImage = ratios.has(elementID);
-		if (isElementAnImage && doesElementChangeInScale(elementReadouts)) {
+		if (false && isElementAnImage && doesElementChangeInScale(elementReadouts)) {
 			imageReadouts.set(elementID, elementReadouts);
 			return;
 		}
@@ -99,19 +105,20 @@ export const createKeyframes = (state: WorkerState): ResultTransferable => {
 	const result: ResultTransferable = {
 		overrides: new Map<string, Partial<CSSStyleDeclaration>>(),
 		overrideResets: new Map<string, Partial<CSSStyleDeclaration>>(),
-		elementsToBeRemoved: new Set<string>(),
+		elementsToBeRemoved: new Map<string, Keyframe[]>(),
+		elementsToBeAdded: new Map<string, Keyframe[]>(),
 		placeholders: new Map<string, string>(),
 		wrappers: new Map<string, string>(),
 		keyframes: new Map<string, Keyframe[]>(),
 	};
 
 	filterCompletlyHiddenElements(state.readouts);
-	setOverridesForPartialElements(state, result.elementsToBeRemoved);
+	setOverridesForPartialElements(state, result);
 	refillValuesFrompartiallyHiddenElements(state.readouts);
 
 	seperateReadouts(state);
-	getImageKeyframes(state, result);
 	getDefaultKeyframes(state, result);
+	getImageKeyframes(state, result);
 
 	return result;
 };

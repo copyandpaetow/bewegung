@@ -57,6 +57,10 @@ const initCards = () => {
 			const element = cards[activeIndex] as HTMLElement;
 			element.style.width = `${newWidth}%`;
 		};
+		const addSomeAttribute = () => {
+			const element = cards[activeIndex] as HTMLElement;
+			element.setAttribute("data-test", "something");
+		};
 		const resetOthers = () => {
 			const otherElements = [...cards].splice(activeIndex, 1) as HTMLElement[];
 
@@ -66,7 +70,13 @@ const initCards = () => {
 		};
 
 		const sequence: BewegungsBlock[] = [
-			[() => changeWidth(100), { duration: 2000, at: 0, easing: "ease" }],
+			[
+				() => {
+					changeWidth(100);
+					addSomeAttribute();
+				},
+				{ duration: 2000, at: 0, easing: "ease" },
+			],
 
 			[
 				() => {
@@ -82,7 +92,7 @@ const initCards = () => {
 				},
 				{ duration: 2000, at: -200, easing: "cubic-bezier(.5,.25,.8,.6)" },
 			],
-			[() => changeWidth(10), { duration: 2000, at: 200 }],
+			[() => changeWidth(20), { duration: 2000, at: 200 }],
 		];
 
 		return bewegung2(sequence, {

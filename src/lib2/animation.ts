@@ -34,7 +34,8 @@ export const addElementToStates = (
 	element: HTMLElement,
 	state: MainState
 ) => {
-	const { elementResets, siblings, easings, ratios, types, parents, elementTranslations } = state;
+	const { elementResets, siblings, easings, ratios, textElements, parents, elementTranslations } =
+		state;
 	const key = getOrAddKeyFromLookup(element, elementTranslations);
 	const siblingKey = element.nextElementSibling
 		? getOrAddKeyFromLookup(element.nextElementSibling as HTMLElement, elementTranslations)
@@ -63,7 +64,7 @@ export const addElementToStates = (
 		);
 	}
 	if (isTextNode(element)) {
-		types.add(key);
+		textElements.add(key);
 	}
 };
 
@@ -76,7 +77,7 @@ const setElementRelatedState = (state: MainState) => {
 		parents,
 		easings,
 		ratios,
-		types,
+		textElements,
 		siblings,
 	} = state;
 	const elementRelations = new Map<HTMLElement, Set<NormalizedOptions>>();
@@ -103,7 +104,7 @@ const setElementRelatedState = (state: MainState) => {
 		parents,
 		easings,
 		ratios,
-		types,
+		textElements,
 	});
 
 	return true;

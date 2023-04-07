@@ -8,6 +8,7 @@ const observe = (observer: MutationObserver) =>
 		childList: true,
 		subtree: true,
 		attributes: true,
+		attributeOldValue: true,
 	});
 
 const getElementStyles = (element: HTMLElement, offset: number) => {
@@ -57,7 +58,7 @@ const handleElementAdditons = (
 	currentChange: [number, VoidFunction[]],
 	state: MainState
 ) => {
-	const { elementTranslations, options, worker, parents, easings, ratios, types } = state;
+	const { elementTranslations, options, worker, parents, easings, ratios, textElements } = state;
 	const [offset, callbacks] = currentChange;
 	entry.forEach((entry, index) => {
 		if (entry.addedNodes.length === 0) {
@@ -95,7 +96,7 @@ const handleElementAdditons = (
 			parents,
 			easings,
 			ratios,
-			types,
+			textElements,
 		});
 	}
 };
@@ -158,6 +159,8 @@ export const setObserver = (state: MainState) => {
 			changes: saveElementDimensions(elementTranslations, offset),
 			offset,
 		});
+
+		console.log(entries);
 
 		entries.forEach((entry) => {
 			switch (entry.type) {
