@@ -5,7 +5,7 @@ import {
 	emptyImageSrc,
 } from "./constants";
 import { BidirectionalMap } from "./element-translations";
-import { handleElementAdditons, serializeElement } from "./observe-dom";
+import { getNextElementSibling, registerElementAdditons } from "./observe-dom";
 import { MainState, ResultTransferable } from "./types";
 
 /*
@@ -180,12 +180,12 @@ export const setOnPlayObserver = (
 	temporaryElementMap: Map<string, HTMLElement>,
 	resolve: (value: void | PromiseLike<void>) => void
 ) => {
-	const { elementTranslations, siblings, parents, animations, totalRuntime } = state;
+	const { elementTranslations, animations, totalRuntime } = state;
 	const { wrappers, elementsToBeAdded, overrides, overrideResets, elementsToBeRemoved } =
 		resultTransferable;
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
-		handleElementAdditons(entries, state).forEach((element) => {
+		registerElementAdditons(entries, state).forEach((element) => {
 			const key = elementTranslations.get(element)!;
 
 			const keyframe = elementsToBeAdded.get(key)!;
@@ -201,34 +201,30 @@ export const setOnPlayObserver = (
 		});
 
 		entries
-			.flatMap((entry) => [...entry.removedNodes])
-			.forEach((target) => {
-				if (!(target instanceof HTMLElement)) {
-					return;
-				}
-				const key = elementTranslations.get(target)!;
-				const override = overrides.get(key)!;
+			.filter((entry) => entry.removedNodes.length > 0)
+			.forEach((entry) => {
+				entry.removedNodes.forEach((element) => {
+					if (!(element instanceof HTMLElement)) {
+						return;
+					}
+					const key = elementTranslations.get(element)!;
+					const override = overrides.get(key)!;
 
-				if (wrappers.has(key)) {
-					const wrapperElement = temporaryElementMap.get(wrappers.get(key)!)!;
-					wrapperElement.insertBefore(target, null);
-					return;
-				}
+					if (wrappers.has(key)) {
+						const wrapperElement = temporaryElementMap.get(wrappers.get(key)!)!;
+						wrapperElement.insertBefore(element, null);
+						return;
+					}
 
-				const parentElement = elementTranslations.get(parents.get(key)!)!;
-				const nextSibiling = elementTranslations.get(siblings.get(key)!)!;
+					const keyframe = elementsToBeRemoved.get(key)!;
+					const animation = new Animation(new KeyframeEffect(element, keyframe, totalRuntime));
+					applyCSSStyles(element, override);
 
-				const keyframe = elementsToBeRemoved.get(key)!;
-				const animation = new Animation(new KeyframeEffect(target, keyframe, totalRuntime));
+					entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 
-				console.log({ keyframe, target });
-
-				applyCSSStyles(target, override);
-
-				parentElement.insertBefore(target, nextSibiling);
-
-				animation.onfinish = () => target.remove();
-				animations.set(key, animation);
+					animation.onfinish = () => element.remove();
+					animations.set(key, animation);
+				});
 			});
 
 		state.onStart.forEach((cb) => cb());

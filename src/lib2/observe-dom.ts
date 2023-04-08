@@ -52,14 +52,19 @@ const saveElementDimensions = (
 	return currentChange;
 };
 
-const resetStyle = (entry: MutationRecord, state: MainState) => {
-	const { elementTranslations, elementResets } = state;
-	const target = entry.target as HTMLElement;
-	const key = elementTranslations.get(target)!;
-	const savedAttributes = elementResets.get(key)?.get(entry.attributeName!);
-	if (entry.attributeName === "style") {
-		target.style.cssText = savedAttributes!;
-	}
+const resetNodeStyle = (entries: MutationRecord[]) => {
+	entries.forEach((entry) => {
+		const element = entry.target as HTMLElement;
+		const attributeName = entry.attributeName as string;
+		const oldValue = entry.oldValue;
+
+		if (!oldValue) {
+			element.removeAttribute(attributeName);
+			return;
+		}
+
+		element.setAttribute(attributeName, oldValue);
+	});
 };
 
 export const serializeElement = (element: HTMLElement, key: string) => {
@@ -89,8 +94,7 @@ const getOptionsViaRoot = (
 	return relatedOptions;
 };
 
-//? this relies on all callbacks creating a mutation-event=> mutation event indices would correlate to the callback order. Maybe this can be done safer
-export const handleElementAdditons = (entries: MutationRecord[], state: MainState) => {
+export const registerElementAdditons = (entries: MutationRecord[], state: MainState) => {
 	const { elementTranslations, options } = state;
 
 	return entries
@@ -119,26 +123,59 @@ export const handleElementAdditons = (entries: MutationRecord[], state: MainStat
 		});
 };
 
-const resetElements = (entry: MutationRecord, state: MainState) => {
-	const { parents, siblings, elementTranslations } = state;
+export const getNextElementSibling = (node: Node | null): HTMLElement | null => {
+	if (node === null || node instanceof HTMLElement) {
+		return node;
+	}
+	//@ts-expect-error node has the nextElementSibling property
+	return getNextElementSibling(node.nextElementSibling);
+};
 
-	entry.removedNodes.forEach((target) => {
-		if (!(target instanceof HTMLElement)) {
+const separateEntries = (entries: MutationRecord[]) => {
+	const removeEntries: MutationRecord[] = [];
+	const addEntries: MutationRecord[] = [];
+	const attributeEntries: MutationRecord[] = [];
+	const characterDataEntries: MutationRecord[] = [];
+
+	entries.forEach((entry) => {
+		if (entry.type === "attributes") {
+			attributeEntries.push(entry);
 			return;
 		}
-		const key = elementTranslations.get(target)!;
-		const parentElement = elementTranslations.get(parents.get(key)!)!;
-		const nextSibiling = elementTranslations.get(siblings.get(key)!)!;
 
-		parentElement.insertBefore(target, nextSibiling);
-	});
-
-	entry.addedNodes.forEach((target) => {
-		if (!(target instanceof HTMLElement)) {
+		if (entry.type === "characterData") {
+			characterDataEntries.push(entry);
 			return;
 		}
-		target.remove();
+
+		if (entry.addedNodes.length > 0) {
+			addEntries.push(entry);
+			return;
+		}
+		removeEntries.push(entry);
 	});
+
+	return {
+		removeEntries,
+		addEntries,
+		attributeEntries,
+		characterDataEntries,
+	};
+};
+
+const readdRemovedNodes = (entries: MutationRecord[]) => {
+	entries.forEach((entry) => {
+		entry.removedNodes.forEach((element) => {
+			const parentElement = entry.target;
+			const nextSibiling = getNextElementSibling(entry.nextSibling);
+			parentElement.insertBefore(element, nextSibiling);
+		});
+	});
+};
+
+const removeAddedNodes = (entries: MutationRecord[]) => {
+	//@ts-expect-error
+	entries.forEach((entry) => entry.addedNodes.forEach((node) => node?.remove()));
 };
 
 export const setObserver = (state: MainState) => {
@@ -185,10 +222,12 @@ export const setObserver = (state: MainState) => {
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
 		const offset = currentChange.offset;
+		const { addEntries, removeEntries, attributeEntries } = separateEntries(entries);
 
-		handleElementAdditons(entries, state);
+		registerElementAdditons(addEntries, state);
 
 		if (offset === 1) {
+			console.log(entries);
 			worker("state").reply("sendState", {
 				parents,
 				easings,
@@ -197,31 +236,14 @@ export const setObserver = (state: MainState) => {
 			});
 		}
 
-		//TODO: besides the target element, we could get the parent element, see if that changed in dimension
-		// if yes, get the next parent, if no just get the siblings
 		reply("sendDOMRects", {
 			changes: saveElementDimensions(elementTranslations, offset),
 			offset,
 		});
 
-		entries.forEach((entry) => {
-			switch (entry.type) {
-				case "attributes":
-					resetStyle(entry, state);
-					break;
-
-				case "childList":
-					resetElements(entry, state);
-					break;
-
-				case "characterData":
-					//TODO: how to handle this?
-					break;
-
-				default:
-					break;
-			}
-		});
+		removeAddedNodes(addEntries);
+		readdRemovedNodes(removeEntries);
+		resetNodeStyle(attributeEntries);
 
 		if (Boolean(nextChange())) {
 			cleanup();

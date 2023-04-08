@@ -34,15 +34,11 @@ export const addElementToStates = (
 	element: HTMLElement,
 	state: MainState
 ) => {
-	const { elementResets, siblings, easings, ratios, textElements, parents, elementTranslations } =
-		state;
+	const { elementResets, easings, ratios, textElements, parents, elementTranslations } = state;
 	const key = getOrAddKeyFromLookup(element, elementTranslations);
-	const siblingKey = element.nextElementSibling
-		? getOrAddKeyFromLookup(element.nextElementSibling as HTMLElement, elementTranslations)
-		: null;
+
 	elementResets.set(key, saveOriginalStyle(element));
 
-	siblings.set(key, siblingKey);
 	parents.set(key, getOrAddKeyFromLookup(element.parentElement!, elementTranslations));
 	easings.set(
 		key,
@@ -78,7 +74,6 @@ const setElementRelatedState = (state: MainState) => {
 		easings,
 		ratios,
 		textElements,
-		siblings,
 	} = state;
 	const elementRelations = new Map<HTMLElement, Set<NormalizedOptions>>();
 
@@ -89,7 +84,6 @@ const setElementRelatedState = (state: MainState) => {
 		});
 		elementResets.set(option.root, saveOriginalStyle(rootElement));
 		parents.set(option.root, option.root);
-		siblings.set(option.root, null);
 		easings.set(
 			option.root,
 			new Set([{ start: option.start, end: option.end, easing: option.easing }])
@@ -163,6 +157,7 @@ export const getAnimationStateMachine = (state: MainState) => {
 
 				state.animations.forEach((animation) => {
 					animation.play();
+					//animation.pause();
 				});
 			},
 			scrollAnimations() {

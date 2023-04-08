@@ -115,7 +115,6 @@ export type MainState = {
 	timekeeper: Animation;
 	totalRuntime: number;
 	parents: Map<string, string>;
-	siblings: Map<string, string | null>;
 	finishPromise: Promise<void>;
 	resolve(value: any): void;
 	reject(value: any): void;

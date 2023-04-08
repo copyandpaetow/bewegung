@@ -25,6 +25,9 @@ TODO:
 
 * we can use the old value for the attributes and may not need to restore all elements
 
+- try to avoid if statements in loops, better filter before
+- there are a lot of similarities between the MOs, that could be unified
+
 */
 
 export const bewegung2 = (
