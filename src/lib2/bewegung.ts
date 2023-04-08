@@ -22,8 +22,11 @@ TODO:
 - added and removed elements need to get special treatment
 => we might need to readd the height and unsaveHeight
 => these two should get their own readout state as well as images
+=> currently they are treated as default if they dont change in scale, in that case we could delete the readout
 
-* we can use the old value for the attributes and may not need to restore all elements
+- there are some tasks we dont have to do upfront
+=> element resets
+=> setting up the timekeeper
 
 - try to avoid if statements in loops, better filter before
 - there are a lot of similarities between the MOs, that could be unified

@@ -78,24 +78,22 @@ const initCards = () => {
 				{ duration: 2000, at: 0, easing: "ease" },
 			],
 
-			// [
-			// 	() => {
-			// 		const element = cards[0].cloneNode(true) as HTMLElement;
-			// 		element.setAttribute("data-bewegungskey", "something");
-			// 		cards[0].parentElement?.append(element);
-			// 	},
-			// 	{ duration: 2000, easing: "ease-out" },
-			// ],
-			// [
-			// 	() => {
-			// 		const element = cards[activeIndex] as HTMLElement;
-			// 		element.remove();
-			// 	},
-			// 	{ duration: 2000, at: -200, easing: "cubic-bezier(.5,.25,.8,.6)" },
-			// ],
+			[
+				() => {
+					const element = cards[0].cloneNode(true) as HTMLElement;
+					element.setAttribute("data-bewegungskey", "something");
+					cards[0].parentElement?.append(element);
+				},
+				{ duration: 2000, easing: "ease-out" },
+			],
+			[
+				() => {
+					const element = cards[activeIndex] as HTMLElement;
+					element.remove();
+				},
+				{ duration: 2000, at: -200, easing: "cubic-bezier(.5,.25,.8,.6)" },
+			],
 			[() => changeWidth(20), { duration: 2000 }],
-			[() => changeWidth(40), { duration: 2000 }],
-			[() => changeWidth(60), { duration: 2000 }],
 		];
 
 		return bewegung2(sequence, {

@@ -81,7 +81,6 @@ type DomChangeTransferable = {
 type StateTransferable = {
 	parents: Map<string, string>;
 	easings: Map<string, Set<TimelineEntry>>;
-	ratios: Map<string, number>;
 	textElements: Set<string>;
 };
 
@@ -123,7 +122,6 @@ export type MainState = {
 	elementTranslations: BidirectionalMap<string, HTMLElement>;
 	elementResets: Map<string, Map<string, string>>;
 	easings: Map<string, Set<TimelineEntry>>;
-	ratios: Map<string, number>;
 	textElements: Set<string>;
 	worker: AtomicWorker;
 	animations: Map<string, Animation>;
@@ -189,6 +187,7 @@ export type ElementReadouts = Omit<Partial<CSSStyleDeclaration>, "offset"> & {
 	currentWidth: number;
 	currentHeight: number;
 	offset: number;
+	ratio: number;
 };
 
 export type DifferenceArray = [ElementReadouts, ElementReadouts];
@@ -209,7 +208,6 @@ export type WorkerState = {
 	imageReadouts: Map<string, ElementReadouts[]>;
 	parents: Map<string, string>;
 	easings: Map<string, EasingTable>;
-	ratios: Map<string, number>;
 	textElements: Set<string>;
 	timings: number[];
 };
@@ -218,7 +216,6 @@ export type ImageState = {
 	easing: EasingTable;
 	readouts: ElementReadouts[];
 	parentReadouts: ElementReadouts[];
-	ratio: number;
 	maxHeight: number;
 	maxWidth: number;
 };

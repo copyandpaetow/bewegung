@@ -34,10 +34,8 @@ export const addElementToStates = (
 	element: HTMLElement,
 	state: MainState
 ) => {
-	const { elementResets, easings, ratios, textElements, parents, elementTranslations } = state;
+	const { easings, textElements, parents, elementTranslations } = state;
 	const key = getOrAddKeyFromLookup(element, elementTranslations);
-
-	elementResets.set(key, saveOriginalStyle(element));
 
 	parents.set(key, getOrAddKeyFromLookup(element.parentElement!, elementTranslations));
 	easings.set(
@@ -53,25 +51,19 @@ export const addElementToStates = (
 			})
 		)
 	);
-	if (element.tagName === "IMG") {
-		ratios.set(
-			key,
-			(element as HTMLImageElement).naturalWidth / (element as HTMLImageElement).naturalHeight
-		);
-	}
+
 	if (isTextNode(element)) {
 		textElements.add(key);
 	}
 };
 
 export const sendState = (state: MainState) => {
-	const { worker, parents, easings, ratios, textElements } = state;
+	const { worker, parents, easings, textElements } = state;
 	const { reply, cleanup } = worker("state");
 
 	reply("sendState", {
 		parents,
 		easings,
-		ratios,
 		textElements,
 	});
 	cleanup();
@@ -96,6 +88,12 @@ const setElementRelatedState = (state: MainState) => {
 
 	elementRelations.forEach((ids, element) => {
 		addElementToStates(ids, element, state);
+	});
+
+	requestAnimationFrame(() => {
+		elementTranslations.forEach((domElement, key) => {
+			elementResets.set(key, saveOriginalStyle(domElement));
+		});
 	});
 
 	sendState(state);

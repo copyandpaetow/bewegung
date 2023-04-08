@@ -1,7 +1,7 @@
 import { addElementToStates, sendState } from "./animation";
 import { defaultChangeProperties } from "./constants";
 import { BidirectionalMap } from "./element-translations";
-import { ElementReadouts, MainState, NormalizedOptions, ResultTransferable } from "./types";
+import { ElementReadouts, MainState, NormalizedOptions } from "./types";
 
 const observe = (observer: MutationObserver) =>
 	observer.observe(document.body, {
@@ -14,6 +14,8 @@ const observe = (observer: MutationObserver) =>
 const getElementStyles = (element: HTMLElement, offset: number) => {
 	const { top, left, width, height } = element.getBoundingClientRect();
 	const computedElementStyle = window.getComputedStyle(element);
+	//@ts-expect-error
+	const ratio = (element?.naturalWidth ?? 1) / (element?.naturalHeight ?? -1);
 
 	const relevantStyles: ElementReadouts = {
 		currentTop: top,
@@ -23,6 +25,7 @@ const getElementStyles = (element: HTMLElement, offset: number) => {
 		currentWidth: width,
 		currentHeight: height,
 		offset,
+		ratio,
 	};
 
 	const computedStyles = Object.entries(defaultChangeProperties).reduce(
@@ -67,12 +70,10 @@ const resetNodeStyle = (entries: MutationRecord[]) => {
 	});
 };
 
-export const serializeElement = (element: HTMLElement, key: string) => {
-	const elementKey = element.hasAttribute("data-bewegungskey")
-		? `key-${element.getAttribute("data-bewegungskey")}`
-		: key;
+export const serializeElement = (element: HTMLElement, key: number) => {
+	const elementKey = element.getAttribute("data-bewegungskey") ?? key;
 
-	return `${element.tagName}-${elementKey}`;
+	return `${element.tagName}-key-${elementKey}`;
 };
 
 const isHTMLElement = (node: Node) => node instanceof HTMLElement;
@@ -107,7 +108,7 @@ export const registerElementAdditons = (entries: MutationRecord[], state: MainSt
 
 			[domElement, ...domElement.querySelectorAll("*")]
 				.reduce((accumulator, currentElement) => {
-					const key = serializeElement(currentElement as HTMLElement, `key-${index}`);
+					const key = serializeElement(currentElement as HTMLElement, index);
 					if (elementTranslations.delete(key)) {
 						elementTranslations.set(key, currentElement as HTMLElement);
 						return accumulator;
@@ -120,6 +121,7 @@ export const registerElementAdditons = (entries: MutationRecord[], state: MainSt
 				.forEach((currentElement) => {
 					addElementToStates(relatedOptions, currentElement, state);
 				});
+			sendState(state);
 			return domElement;
 		});
 };
@@ -190,7 +192,6 @@ export const setObserver = (state: MainState) => {
 		const { value, done } = changes.next();
 
 		if (Boolean(done)) {
-			sendState(state);
 			observer.disconnect();
 			cleanup();
 			return;

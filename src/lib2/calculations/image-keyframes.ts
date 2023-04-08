@@ -1,11 +1,5 @@
 import { defaultImageStyles } from "../constants";
-import {
-	DifferenceArray,
-	ElementReadouts,
-	ImageState,
-	ResultTransferable,
-	WorkerState,
-} from "../types";
+import { DifferenceArray, ImageState, ResultTransferable, WorkerState } from "../types";
 import { calculateBorderRadius } from "./border-radius";
 import { getScales, getTranslates, save } from "./calculate-dimension-differences";
 import { checkForBorderRadius, getNextParent } from "./default-keyframes";
@@ -28,11 +22,12 @@ export const getWrapperStyle = (imageState: ImageState): Partial<CSSStyleDeclara
 };
 
 export const calculateImageKeyframes = (imageState: ImageState) => {
-	const { maxWidth, maxHeight, easing, ratio, readouts } = imageState;
+	const { maxWidth, maxHeight, easing, readouts } = imageState;
 
 	const keyframes: Keyframe[] = [];
 
 	readouts.forEach((readout) => {
+		const ratio = readout.ratio;
 		let scaleWidth: number = readout.unsaveWidth / maxWidth;
 		let scaleHeight: number = readout.unsaveHeight / maxHeight;
 
@@ -125,7 +120,7 @@ const getImageReset = () =>
 	Object.fromEntries(Object.entries(defaultImageStyles).map(([key, value]) => [key, ""]));
 
 export const getImageKeyframes = (state: WorkerState, result: ResultTransferable) => {
-	const { readouts: allReadouts, imageReadouts, easings, parents, ratios, defaultReadouts } = state;
+	const { readouts: allReadouts, imageReadouts, easings, parents, defaultReadouts } = state;
 	const { overrides, keyframes, wrappers, placeholders, overrideResets } = result;
 
 	imageReadouts.forEach((readouts, elementID) => {
@@ -141,7 +136,6 @@ export const getImageKeyframes = (state: WorkerState, result: ResultTransferable
 			parentReadouts: allReadouts.get(parentID)!,
 			maxHeight: highestNumber(readouts.map((entry) => entry.currentHeight)),
 			maxWidth: highestNumber(readouts.map((entry) => entry.currentWidth)),
-			ratio: ratios.get(elementID)!,
 		};
 
 		overrides.set(placeholder, {

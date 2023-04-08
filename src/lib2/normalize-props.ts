@@ -110,7 +110,6 @@ export const createState = (
 		parents: new Map<string, string>(),
 		elementResets: new Map<string, Map<string, string>>(),
 		easings: new Map<string, Set<TimelineEntry>>(),
-		ratios: new Map<string, number>(),
 		textElements: new Set<string>(),
 		worker: useWorker<MainMessages, WorkerMessages>(workerManager.current()),
 		animations: new Map([["timekeeper", timekeeper]]),
