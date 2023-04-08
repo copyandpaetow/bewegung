@@ -41,7 +41,6 @@ workerAtom("sendDOMRects").onMessage((domChanges) => {
 	state.timings.push(offset);
 
 	if (offset === 1) {
-		console.log(state);
 		workerAtom("sendResults").reply("results", createKeyframes(state));
 	}
 });

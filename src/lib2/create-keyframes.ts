@@ -3,7 +3,7 @@ import { getImageKeyframes } from "./calculations/image-keyframes";
 import { ElementReadouts, ResultTransferable, WorkerState } from "./types";
 
 export const isEntryVisible = (entry: ElementReadouts) =>
-	entry.display !== "none" && entry.display !== "" && entry.height !== 0 && entry.width !== 0;
+	entry.display !== "none" && entry.unsaveWidth !== 0 && entry.unsaveHeight !== 0;
 
 const recalculateDisplayNoneValues = (readout: ElementReadouts[]): ElementReadouts[] =>
 	readout.map((entry, index, array) => {
@@ -20,6 +20,8 @@ const recalculateDisplayNoneValues = (readout: ElementReadouts[]): ElementReadou
 
 		return {
 			...nextEntry,
+			unsaveHeight: 0,
+			unsaveWidth: 0,
 			display: entry.display,
 			offset: entry.offset,
 		};
@@ -51,8 +53,8 @@ const setOverridesForPartialElements = (state: WorkerState, result: ResultTransf
 			const additionalEntries = timings.slice(0, firstAvailableTiming).map((timing) => ({
 				...elementReadouts.at(0)!,
 				offset: timing,
-				height: -1,
-				width: -1,
+				unsaveHeight: 0,
+				unsaveWidth: 0,
 			}));
 			elementReadouts.unshift(...additionalEntries);
 			elementsToBeAdded.set(elementID, []);
@@ -65,8 +67,8 @@ const setOverridesForPartialElements = (state: WorkerState, result: ResultTransf
 			const additionalEntries = timings.slice(LastAvailableTiming + 1).map((timing) => ({
 				...elementReadouts.at(-1)!,
 				offset: timing,
-				height: -1,
-				width: -1,
+				unsaveHeight: 0,
+				unsaveWidth: 0,
 			}));
 			elementReadouts.push(...additionalEntries);
 			elementsToBeRemoved.set(elementID, []);
@@ -85,7 +87,9 @@ const refillValuesFrompartiallyHiddenElements = (readouts: Map<string, ElementRe
 
 const doesElementChangeInScale = (readouts: ElementReadouts[]) =>
 	readouts.some(
-		(entry) => entry.width !== readouts.at(-1)!.width || entry.height !== readouts.at(-1)!.height
+		(entry) =>
+			entry.unsaveWidth !== readouts.at(-1)!.unsaveWidth ||
+			entry.unsaveHeight !== readouts.at(-1)!.unsaveHeight
 	);
 
 const seperateReadouts = (state: WorkerState) => {

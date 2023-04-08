@@ -15,7 +15,7 @@ const parseTransformOrigin = (entry: ElementReadouts | undefined) => {
 		if (value.includes("px")) {
 			return parseFloat(value);
 		}
-		const heightOrWidth = index ? entry.height : entry.width;
+		const heightOrWidth = index ? entry.currentHeight : entry.currentWidth;
 
 		return (parseFloat(value) / 100) * heightOrWidth;
 	});
@@ -30,10 +30,10 @@ export const getTranslates = (
 	const [current, reference] = child;
 	const [parentCurrent, parentReference] = parent;
 
-	const parentCurrentLeft = parentCurrent?.left ?? 0;
-	const parentCurrentTop = parentCurrent?.top ?? 0;
-	const parentReferenceLeft = parentReference?.left ?? 0;
-	const parentReferenceTop = parentReference?.top ?? 0;
+	const parentCurrentLeft = parentCurrent?.currentLeft ?? 0;
+	const parentCurrentTop = parentCurrent?.currentTop ?? 0;
+	const parentReferenceLeft = parentReference?.currentLeft ?? 0;
+	const parentReferenceTop = parentReference?.currentTop ?? 0;
 
 	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(reference);
 	const [originParentReferenceLeft, originParentReferenceTop] =
@@ -43,14 +43,14 @@ export const getTranslates = (
 	const [originParentCurrentLeft, originParentCurrentTop] = parseTransformOrigin(parentCurrent);
 
 	const currentLeftDifference =
-		current.left + originCurrentLeft - (parentCurrentLeft + originParentCurrentLeft);
+		current.currentLeft + originCurrentLeft - (parentCurrentLeft + originParentCurrentLeft);
 	const referenceLeftDifference =
-		reference.left + originReferenceLeft - (parentReferenceLeft + originParentReferenceLeft);
+		reference.currentLeft + originReferenceLeft - (parentReferenceLeft + originParentReferenceLeft);
 
 	const currentTopDifference =
-		current.top + originCurrentTop - (parentCurrentTop + originParentCurrentTop);
+		current.currentTop + originCurrentTop - (parentCurrentTop + originParentCurrentTop);
 	const referenceTopDifference =
-		reference.top + originReferenceTop - (parentReferenceTop + originParentReferenceTop);
+		reference.currentTop + originReferenceTop - (parentReferenceTop + originParentReferenceTop);
 
 	return {
 		currentLeftDifference,
@@ -69,15 +69,15 @@ export const getScales = (
 	const [parentCurrent, parentReference] = parent;
 	const isParentEmpty = parentCurrent === undefined && parentReference === undefined;
 
-	const parentCurrentWidth = parentCurrent?.width ?? 1;
-	const parentCurrentHeight = parentCurrent?.height ?? 1;
-	const parentReferenceWidth = parentReference?.width ?? 1;
-	const parentReferenceHeight = parentReference?.height ?? 1;
+	const parentCurrentWidth = parentCurrent?.currentWidth ?? 1;
+	const parentCurrentHeight = parentCurrent?.currentHeight ?? 1;
+	const parentReferenceWidth = parentReference?.currentWidth ?? 1;
+	const parentReferenceHeight = parentReference?.currentHeight ?? 1;
 
 	const parentWidthDifference = parentCurrentWidth / parentReferenceWidth;
 	const parentHeightDifference = parentCurrentHeight / parentReferenceHeight;
-	const childWidthDifference = current.width / reference.width;
-	const childHeightDifference = current.height / reference.height;
+	const childWidthDifference = current.unsaveWidth / reference.currentWidth;
+	const childHeightDifference = current.unsaveHeight / reference.currentHeight;
 
 	const scaleOverride = isTextNode && (childHeightDifference !== 0 || childWidthDifference !== 0);
 

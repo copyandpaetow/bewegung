@@ -40,6 +40,7 @@ const calculateDifferences = (state: WorkerState) => {
 
 	defaultReadouts.forEach((elementReadouts, elementID) => {
 		const parentReadouts = defaultReadouts.get(parents.get(elementID)!)!;
+		const isRoot = parents.get(elementID)! === elementID;
 		const isText = textElements.has(elementID);
 
 		const differences = elementReadouts.map((currentReadout) => {
@@ -47,12 +48,11 @@ const calculateDifferences = (state: WorkerState) => {
 			const correspondingParentEntry = parentReadouts?.find(
 				(entry) => entry.offset === currentReadout.offset
 			)!;
+			const parentReadout: DifferenceArray | [undefined, undefined] = isRoot
+				? [undefined, undefined]
+				: [correspondingParentEntry, parentReadouts.at(-1)!];
 
-			return calculateDimensionDifferences(
-				child,
-				[correspondingParentEntry, parentReadouts.at(-1)!],
-				isText
-			);
+			return calculateDimensionDifferences(child, parentReadout, isText);
 		});
 
 		differenceMap.set(elementID, differences);
@@ -85,15 +85,15 @@ const setOverrides = (state: WorkerState, result: ResultTransferable) => {
 
 	defaultReadouts.forEach((readouts, elementID) => {
 		const parentKey = getNextParent(elementID, state);
-		const parentReadouts = parentKey ? defaultReadouts.get(parentKey) : undefined;
+		const parentReadouts = defaultReadouts.get(parentKey)!;
 
 		if (checkForDisplayNone(readouts.at(-1)!)) {
 			overrides.set(elementID, {
 				...(overrides.get(elementID) ?? {}),
 				display: "",
 				position: "absolute",
-				left: readouts.at(-1)!.left - (parentReadouts?.at(-1)!.left ?? 0) + "px",
-				top: readouts.at(-1)!.top - (parentReadouts?.at(-1)!.top ?? 0) + "px",
+				left: readouts.at(-1)!.currentLeft - parentReadouts.at(-1)!.currentLeft + "px",
+				top: readouts.at(-1)!.currentTop - parentReadouts.at(-1)!.currentTop + "px",
 				width: readouts.at(-1)!.width + "px",
 				height: readouts.at(-1)!.height + "px",
 			});
@@ -101,8 +101,6 @@ const setOverrides = (state: WorkerState, result: ResultTransferable) => {
 				parentReadouts!.at(-1)!.position === "static" &&
 				overrides.get(parentKey)?.position === undefined
 			) {
-				console.log({ parentKey });
-
 				overrides.set(parentKey, {
 					...(overrides.get(parentKey) ?? {}),
 					position: "relative",
@@ -121,7 +119,7 @@ const setOverrides = (state: WorkerState, result: ResultTransferable) => {
 
 const addModifiedElementOverrides = (state: WorkerState, result: ResultTransferable) => {
 	const { defaultReadouts } = state;
-	const { overrides, elementsToBeAdded, elementsToBeRemoved } = result;
+	const { overrides, overrideResets, elementsToBeAdded, elementsToBeRemoved } = result;
 
 	defaultReadouts.forEach((readouts, elementID) => {
 		if (!elementsToBeAdded.has(elementID) && !elementsToBeRemoved.has(elementID)) {
@@ -131,11 +129,20 @@ const addModifiedElementOverrides = (state: WorkerState, result: ResultTransfera
 		const parentKey = getNextParent(elementID, state);
 		const parentReadouts = defaultReadouts.get(parentKey)!;
 		overrides.set(elementID, {
+			...(overrides.get(elementID) ?? {}),
 			position: "absolute",
-			left: readouts.at(-1)!.left - parentReadouts.at(-1)!.left + "px",
-			top: readouts.at(-1)!.top - parentReadouts.at(-1)!.top + "px",
+			left: readouts.at(-1)!.currentLeft - parentReadouts.at(-1)!.currentLeft + "px",
+			top: readouts.at(-1)!.currentTop - parentReadouts.at(-1)!.currentTop + "px",
 			width: readouts.at(-1)!.width + "px",
 			height: readouts.at(-1)!.height + "px",
+		});
+		overrideResets.set(elementID, {
+			...(overrideResets.get(elementID) ?? {}),
+			position: "",
+			left: "",
+			top: "",
+			width: "",
+			height: "",
 		});
 
 		if (
@@ -143,8 +150,13 @@ const addModifiedElementOverrides = (state: WorkerState, result: ResultTransfera
 			overrides.get(parentKey)?.position === undefined
 		) {
 			overrides.set(parentKey, {
-				position: "relative",
 				...(overrides.get(parentKey) ?? {}),
+				position: "relative",
+			});
+
+			overrideResets.set(parentKey, {
+				...(overrideResets.get(parentKey) ?? {}),
+				position: "",
 			});
 		}
 	});

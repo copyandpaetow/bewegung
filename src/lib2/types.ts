@@ -182,14 +182,13 @@ export type StateMachineDefinition = {
 	guards?: Record<string, () => boolean>;
 };
 
-export type ElementReadouts = Omit<
-	Partial<CSSStyleDeclaration>,
-	"offset" | "top" | "left" | "width" | "height"
-> & {
-	top: number;
-	left: number;
-	width: number;
-	height: number;
+export type ElementReadouts = Omit<Partial<CSSStyleDeclaration>, "offset"> & {
+	currentTop: number;
+	currentLeft: number;
+	unsaveWidth: number;
+	unsaveHeight: number;
+	currentWidth: number;
+	currentHeight: number;
 	offset: number;
 };
 
