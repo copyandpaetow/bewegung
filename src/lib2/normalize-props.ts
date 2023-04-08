@@ -108,7 +108,6 @@ export const createState = (
 		timekeeper,
 		totalRuntime,
 		parents: new Map<string, string>(),
-		siblings: new Map<string, string | null>(),
 		elementResets: new Map<string, Map<string, string>>(),
 		easings: new Map<string, Set<TimelineEntry>>(),
 		ratios: new Map<string, number>(),
