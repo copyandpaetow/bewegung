@@ -64,17 +64,21 @@ export const addElementToStates = (
 	}
 };
 
-const setElementRelatedState = (state: MainState) => {
-	const {
-		options,
-		elementTranslations,
-		worker,
-		elementResets,
+export const sendState = (state: MainState) => {
+	const { worker, parents, easings, ratios, textElements } = state;
+	const { reply, cleanup } = worker("state");
+
+	reply("sendState", {
 		parents,
 		easings,
 		ratios,
 		textElements,
-	} = state;
+	});
+	cleanup();
+};
+
+const setElementRelatedState = (state: MainState) => {
+	const { options, elementTranslations, elementResets, parents, easings } = state;
 	const elementRelations = new Map<HTMLElement, Set<NormalizedOptions>>();
 
 	options.forEach((option) => {
@@ -94,12 +98,7 @@ const setElementRelatedState = (state: MainState) => {
 		addElementToStates(ids, element, state);
 	});
 
-	worker("state").reply("sendState", {
-		parents,
-		easings,
-		ratios,
-		textElements,
-	});
+	sendState(state);
 
 	return true;
 };
@@ -114,7 +113,7 @@ export const getAnimationStateMachine = (state: MainState) => {
 	let elementsStillValid = false;
 	let observer: null | MutationObserver = null;
 
-	const resetState = () => {
+	const resetState = async () => {
 		if (!elementsStillValid) {
 			elementsStillValid = true;
 			setElementRelatedState(state);
@@ -157,7 +156,7 @@ export const getAnimationStateMachine = (state: MainState) => {
 
 				state.animations.forEach((animation) => {
 					animation.play();
-					//animation.pause();
+					animation.pause();
 				});
 			},
 			scrollAnimations() {
