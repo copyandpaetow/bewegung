@@ -17,8 +17,8 @@ export const getWrapperStyle = (imageState: ImageState): Partial<CSSStyleDeclara
 	const { parentReadouts, readouts, maxHeight, maxWidth } = imageState;
 	return {
 		position: "absolute",
-		top: `${readouts.at(-1)!.top - parentReadouts.at(-1)!.top}px`,
-		left: `${readouts.at(-1)!.left - parentReadouts.at(-1)!.left}px`,
+		top: `${readouts.at(-1)!.currentTop - parentReadouts.at(-1)!.currentTop}px`,
+		left: `${readouts.at(-1)!.currentLeft - parentReadouts.at(-1)!.currentLeft}px`,
 		height: `${maxHeight}px`,
 		width: `${maxWidth}px`,
 		pointerEvents: "none",
@@ -33,8 +33,8 @@ export const calculateImageKeyframes = (imageState: ImageState) => {
 	const keyframes: Keyframe[] = [];
 
 	readouts.forEach((readout) => {
-		let scaleWidth: number = readout.width / maxWidth;
-		let scaleHeight: number = readout.height / maxHeight;
+		let scaleWidth: number = readout.unsaveWidth / maxWidth;
+		let scaleHeight: number = readout.unsaveHeight / maxHeight;
 
 		let translateX: number = 0;
 		let translateY: number = 0;
@@ -42,7 +42,7 @@ export const calculateImageKeyframes = (imageState: ImageState) => {
 		if (readout.objectFit === "cover") {
 			const alternateScaleWidth = (ratio * maxHeight) / maxWidth;
 			const alternateScaleHeight = maxWidth / ratio / maxHeight;
-			const currentRatio = readout.width / readout.height;
+			const currentRatio = readout.unsaveWidth / readout.unsaveHeight;
 
 			if (currentRatio < ratio) {
 				scaleWidth = alternateScaleWidth * scaleHeight;
@@ -50,17 +50,16 @@ export const calculateImageKeyframes = (imageState: ImageState) => {
 				scaleHeight = alternateScaleHeight * scaleWidth;
 			}
 		}
-
 		if (readout.objectPosition !== "50% 50%") {
 			const [xAchis, yAchis] = readout.objectPosition!.split(" ").map((value, index) => {
 				if (value.includes("%")) {
 					return (parseFloat(value) - 100) / 100;
 				}
-				return parseFloat(value) / (index === 0 ? readout.width : readout.height);
+				return parseFloat(value) / (index === 0 ? readout.currentWidth : readout.currentHeight);
 			});
 
-			translateX = save((maxWidth * scaleWidth - readout.width) / 2, 0) * xAchis * -1;
-			translateY = save((maxHeight * scaleHeight - readout.height) / 2, 0) * yAchis * -1;
+			translateX = save((maxWidth * scaleWidth - readout.currentWidth) / 2, 0) * xAchis * -1;
+			translateY = save((maxHeight * scaleHeight - readout.currentHeight) / 2, 0) * yAchis * -1;
 		}
 
 		keyframes.push({
@@ -94,11 +93,11 @@ export const getWrapperKeyframes = (imageState: ImageState): Keyframe[] => {
 
 		const { parentHeightDifference, parentWidthDifference } = getScales(child, parent, false);
 
-		const horizontalInset = (maxWidth - readout.width) / 2;
-		const verticalInset = (maxHeight - readout.height) / 2;
+		const horizontalInset = (maxWidth - readout.currentWidth) / 2;
+		const verticalInset = (maxHeight - readout.currentHeight) / 2;
 
-		const referenceHorizontalInset = (maxWidth - readouts.at(-1)!.width) / 2;
-		const referenceVerticalInset = (maxHeight - readouts.at(-1)!.height) / 2;
+		const referenceHorizontalInset = (maxWidth - readouts.at(-1)!.currentWidth) / 2;
+		const referenceVerticalInset = (maxHeight - readouts.at(-1)!.currentHeight) / 2;
 
 		const translateX =
 			(currentLeftDifference - referenceLeftDifference) / parentWidthDifference -
@@ -122,6 +121,9 @@ export const getWrapperKeyframes = (imageState: ImageState): Keyframe[] => {
 	});
 };
 
+const getImageReset = () =>
+	Object.fromEntries(Object.entries(defaultImageStyles).map(([key, value]) => [key, ""]));
+
 export const getImageKeyframes = (state: WorkerState, result: ResultTransferable) => {
 	const { readouts: allReadouts, imageReadouts, easings, parents, ratios, defaultReadouts } = state;
 	const { overrides, keyframes, wrappers, placeholders, overrideResets } = result;
@@ -137,14 +139,14 @@ export const getImageKeyframes = (state: WorkerState, result: ResultTransferable
 			easing: easings.get(elementID)!,
 			readouts,
 			parentReadouts: allReadouts.get(parentID)!,
-			maxHeight: highestNumber(readouts.map((entry) => entry.height)),
-			maxWidth: highestNumber(readouts.map((entry) => entry.width)),
+			maxHeight: highestNumber(readouts.map((entry) => entry.currentHeight)),
+			maxWidth: highestNumber(readouts.map((entry) => entry.currentWidth)),
 			ratio: ratios.get(elementID)!,
 		};
 
 		overrides.set(placeholder, {
-			height: readouts.at(-1)!.height + "px",
-			width: readouts.at(-1)!.width + "px",
+			height: readouts.at(-1)!.unsaveHeight + "px",
+			width: readouts.at(-1)!.unsaveWidth + "px",
 		});
 
 		if (
@@ -170,6 +172,11 @@ export const getImageKeyframes = (state: WorkerState, result: ResultTransferable
 		overrides.set(elementID, {
 			...(overrides.get(elementID) ?? {}),
 			...defaultImageStyles,
+		});
+
+		overrideResets.set(elementID, {
+			...(overrides.get(elementID) ?? {}),
+			...getImageReset(),
 		});
 
 		if (readouts.some(checkForBorderRadius)) {

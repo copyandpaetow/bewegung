@@ -21,7 +21,7 @@ TODO:
 
 - added and removed elements need to get special treatment
 => we might need to readd the height and unsaveHeight
-=> these two should get their own readout state like the images have
+=> these two should get their own readout state as well as images
 
 * we can use the old value for the attributes and may not need to restore all elements
 

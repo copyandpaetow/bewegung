@@ -15,15 +15,25 @@ const getElementStyles = (element: HTMLElement, offset: number) => {
 	const { top, left, width, height } = element.getBoundingClientRect();
 	const computedElementStyle = window.getComputedStyle(element);
 
+	const relevantStyles: ElementReadouts = {
+		currentTop: top,
+		currentLeft: left,
+		unsaveWidth: width,
+		unsaveHeight: height,
+		currentWidth: width,
+		currentHeight: height,
+		offset,
+	};
+
 	const computedStyles = Object.entries(defaultChangeProperties).reduce(
 		(accumulator, [key, property]) => {
 			accumulator[key] = computedElementStyle.getPropertyValue(property);
 			return accumulator;
 		},
-		{} as ElementReadouts
+		relevantStyles
 	);
 
-	return { ...computedStyles, top, left, width, height, offset };
+	return computedStyles;
 };
 
 const saveElementDimensions = (
@@ -135,16 +145,31 @@ export const setObserver = (state: MainState) => {
 	const { worker, callbacks, elementTranslations, parents, easings, ratios, textElements } = state;
 	const { reply, cleanup } = worker("domChanges");
 	const changes = callbacks.entries();
-	let currentChange = changes.next();
+	const currentChange: {
+		offset: number;
+		callbacks: VoidFunction[];
+	} = {
+		offset: -1,
+		callbacks: [],
+	};
 
 	const nextChange = () => {
-		currentChange = changes.next();
-		return currentChange;
+		const { value, done } = changes.next();
+		if (Boolean(done)) {
+			return true;
+		}
+
+		const [currentOffset, currentCallbacks] = value;
+
+		currentChange.offset = currentOffset;
+		currentChange.callbacks = currentCallbacks;
+
+		return false;
 	};
 
 	const callNextChange = (observer: MutationObserver) => {
 		requestAnimationFrame(() => {
-			const callbacks = currentChange.value[1];
+			const callbacks = currentChange.callbacks;
 
 			if (callbacks.length === 0) {
 				observerCallback([], observer);
@@ -159,7 +184,7 @@ export const setObserver = (state: MainState) => {
 
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
-		const offset = currentChange.value[0];
+		const offset = currentChange.offset;
 
 		handleElementAdditons(entries, state);
 
@@ -172,6 +197,8 @@ export const setObserver = (state: MainState) => {
 			});
 		}
 
+		//TODO: besides the target element, we could get the parent element, see if that changed in dimension
+		// if yes, get the next parent, if no just get the siblings
 		reply("sendDOMRects", {
 			changes: saveElementDimensions(elementTranslations, offset),
 			offset,
@@ -195,7 +222,8 @@ export const setObserver = (state: MainState) => {
 					break;
 			}
 		});
-		if (Boolean(nextChange().done)) {
+
+		if (Boolean(nextChange())) {
 			cleanup();
 			return;
 		}
@@ -204,7 +232,9 @@ export const setObserver = (state: MainState) => {
 	};
 
 	const observer = new MutationObserver(observerCallback);
+
 	observe(observer);
+	nextChange();
 	callNextChange(observer);
 
 	return observer;

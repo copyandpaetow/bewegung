@@ -36,7 +36,7 @@ export const calculateBorderRadius = (
 	}
 
 	return normalizeBorderRadius(radius, {
-		width: externalWidth ?? styleEntry.width,
-		height: externalHeight ?? styleEntry.height,
+		width: externalWidth ?? styleEntry.currentWidth,
+		height: externalHeight ?? styleEntry.currentHeight,
 	});
 };

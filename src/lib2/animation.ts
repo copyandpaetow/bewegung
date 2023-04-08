@@ -163,7 +163,6 @@ export const getAnimationStateMachine = (state: MainState) => {
 
 				state.animations.forEach((animation) => {
 					animation.play();
-					//animation.pause();
 				});
 			},
 			scrollAnimations() {

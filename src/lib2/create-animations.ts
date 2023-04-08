@@ -150,7 +150,7 @@ const setDefaultCallbacks = (resultTransferable: ResultTransferable, state: Main
 
 	animations.forEach((animation, key) => {
 		const domElement = elementTranslations.get(key)!;
-		if (!domElement || key === "timekeeper") {
+		if (key === "timekeeper") {
 			return;
 		}
 
@@ -164,8 +164,11 @@ const setDefaultCallbacks = (resultTransferable: ResultTransferable, state: Main
 
 		if (overrideResetStyle || shouldElementBeRemoved) {
 			animation.onfinish = () => {
+				if (shouldElementBeRemoved) {
+					domElement.remove();
+					return;
+				}
 				overrideResetStyle && applyCSSStyles(domElement, overrideResetStyle);
-				shouldElementBeRemoved && domElement.remove();
 			};
 		}
 	});
@@ -178,7 +181,8 @@ export const setOnPlayObserver = (
 	resolve: (value: void | PromiseLike<void>) => void
 ) => {
 	const { elementTranslations, siblings, parents, animations, totalRuntime } = state;
-	const { wrappers, elementsToBeAdded, overrides, overrideResets } = resultTransferable;
+	const { wrappers, elementsToBeAdded, overrides, overrideResets, elementsToBeRemoved } =
+		resultTransferable;
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
 		handleElementAdditons(entries, state).forEach((element) => {
@@ -205,8 +209,6 @@ export const setOnPlayObserver = (
 				const key = elementTranslations.get(target)!;
 				const override = overrides.get(key)!;
 
-				console.log({ target, key, hasAnimation: target.getAnimations(), override });
-
 				if (wrappers.has(key)) {
 					const wrapperElement = temporaryElementMap.get(wrappers.get(key)!)!;
 					wrapperElement.insertBefore(target, null);
@@ -216,9 +218,17 @@ export const setOnPlayObserver = (
 				const parentElement = elementTranslations.get(parents.get(key)!)!;
 				const nextSibiling = elementTranslations.get(siblings.get(key)!)!;
 
+				const keyframe = elementsToBeRemoved.get(key)!;
+				const animation = new Animation(new KeyframeEffect(target, keyframe, totalRuntime));
+
+				console.log({ keyframe, target });
+
 				applyCSSStyles(target, override);
 
 				parentElement.insertBefore(target, nextSibiling);
+
+				animation.onfinish = () => target.remove();
+				animations.set(key, animation);
 			});
 
 		state.onStart.forEach((cb) => cb());
@@ -226,7 +236,7 @@ export const setOnPlayObserver = (
 		resolve();
 	};
 	const observer = new MutationObserver(observerCallback);
-	observer.observe(document.body, { childList: true, subtree: true });
+	observer.observe(document.body, { childList: true, subtree: true, attributes: true });
 	state.options.forEach((_, cb) => cb());
 };
 
