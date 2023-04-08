@@ -93,15 +93,19 @@ const doesElementChangeInScale = (readouts: ElementReadouts[]) =>
 	);
 
 const seperateReadouts = (state: WorkerState) => {
-	const { readouts, imageReadouts, defaultReadouts, ratios } = state;
+	const { readouts, imageReadouts, defaultReadouts } = state;
 
 	readouts.forEach((elementReadouts, elementID) => {
-		const isElementAnImage = ratios.has(elementID);
-		if (isElementAnImage && doesElementChangeInScale(elementReadouts)) {
-			imageReadouts.set(elementID, elementReadouts);
+		const isDefaultImage = elementReadouts.at(-1)!.ratio === -1;
+
+		if (isDefaultImage) {
+			defaultReadouts.set(elementID, elementReadouts);
 			return;
 		}
-		defaultReadouts.set(elementID, elementReadouts);
+
+		if (doesElementChangeInScale(elementReadouts)) {
+			imageReadouts.set(elementID, elementReadouts);
+		}
 	});
 };
 

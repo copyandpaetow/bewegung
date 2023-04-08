@@ -13,7 +13,6 @@ let state: WorkerState = {
 	imageReadouts: new Map<string, ElementReadouts[]>(),
 	parents: new Map<string, string>(),
 	easings: new Map<string, EasingTable>(),
-	ratios: new Map<string, number>(),
 	textElements: new Set<string>(),
 	timings: [],
 };
