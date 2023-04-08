@@ -1,4 +1,4 @@
-import { addElementToStates } from "./animation";
+import { addElementToStates, sendState } from "./animation";
 import { defaultChangeProperties } from "./constants";
 import { BidirectionalMap } from "./element-translations";
 import { ElementReadouts, MainState, NormalizedOptions, ResultTransferable } from "./types";
@@ -53,12 +53,12 @@ const saveElementDimensions = (
 };
 
 const resetNodeStyle = (entries: MutationRecord[]) => {
-	entries.forEach((entry) => {
+	entries.reverse().forEach((entry) => {
 		const element = entry.target as HTMLElement;
 		const attributeName = entry.attributeName as string;
-		const oldValue = entry.oldValue;
+		const oldValue = entry.oldValue ?? "";
 
-		if (!oldValue) {
+		if (!oldValue && attributeName !== "style") {
 			element.removeAttribute(attributeName);
 			return;
 		}
@@ -101,6 +101,7 @@ export const registerElementAdditons = (entries: MutationRecord[], state: MainSt
 		.flatMap((entry) => [...entry.addedNodes])
 		.filter(isHTMLElement)
 		.map((element, index) => {
+			console.log({ element });
 			const domElement = element as HTMLElement;
 			const relatedOptions = getOptionsViaRoot(domElement, options, elementTranslations);
 
@@ -131,7 +132,7 @@ export const getNextElementSibling = (node: Node | null): HTMLElement | null => 
 	return getNextElementSibling(node.nextElementSibling);
 };
 
-const separateEntries = (entries: MutationRecord[]) => {
+export const separateEntries = (entries: MutationRecord[]) => {
 	const removeEntries: MutationRecord[] = [];
 	const addEntries: MutationRecord[] = [];
 	const attributeEntries: MutationRecord[] = [];
@@ -179,41 +180,33 @@ const removeAddedNodes = (entries: MutationRecord[]) => {
 };
 
 export const setObserver = (state: MainState) => {
-	const { worker, callbacks, elementTranslations, parents, easings, ratios, textElements } = state;
+	const { worker, callbacks, elementTranslations } = state;
 	const { reply, cleanup } = worker("domChanges");
 	const changes = callbacks.entries();
-	const currentChange: {
-		offset: number;
-		callbacks: VoidFunction[];
-	} = {
-		offset: -1,
-		callbacks: [],
-	};
-
-	const nextChange = () => {
-		const { value, done } = changes.next();
-		if (Boolean(done)) {
-			return true;
-		}
-
-		const [currentOffset, currentCallbacks] = value;
-
-		currentChange.offset = currentOffset;
-		currentChange.callbacks = currentCallbacks;
-
-		return false;
-	};
+	let offset = -1;
+	let change: VoidFunction[] = [];
 
 	const callNextChange = (observer: MutationObserver) => {
-		requestAnimationFrame(() => {
-			const callbacks = currentChange.callbacks;
+		const { value, done } = changes.next();
 
-			if (callbacks.length === 0) {
+		if (Boolean(done)) {
+			sendState(state);
+			observer.disconnect();
+			cleanup();
+			return;
+		}
+
+		offset = value[0];
+		change = value[1];
+
+		requestAnimationFrame(() => {
+			if (change.length === 0) {
 				observerCallback([], observer);
 				return;
 			}
 
-			callbacks.forEach((callback: VoidFunction) => {
+			observe(observer);
+			change.forEach((callback: VoidFunction) => {
 				callback();
 			});
 		});
@@ -221,20 +214,9 @@ export const setObserver = (state: MainState) => {
 
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
-		const offset = currentChange.offset;
 		const { addEntries, removeEntries, attributeEntries } = separateEntries(entries);
 
 		registerElementAdditons(addEntries, state);
-
-		if (offset === 1) {
-			console.log(entries);
-			worker("state").reply("sendState", {
-				parents,
-				easings,
-				ratios,
-				textElements,
-			});
-		}
 
 		reply("sendDOMRects", {
 			changes: saveElementDimensions(elementTranslations, offset),
@@ -245,18 +227,12 @@ export const setObserver = (state: MainState) => {
 		readdRemovedNodes(removeEntries);
 		resetNodeStyle(attributeEntries);
 
-		if (Boolean(nextChange())) {
-			cleanup();
-			return;
-		}
-		observe(observer);
 		callNextChange(observer);
 	};
 
 	const observer = new MutationObserver(observerCallback);
 
 	observe(observer);
-	nextChange();
 	callNextChange(observer);
 
 	return observer;

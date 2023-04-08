@@ -5,7 +5,7 @@ import {
 	emptyImageSrc,
 } from "./constants";
 import { BidirectionalMap } from "./element-translations";
-import { getNextElementSibling, registerElementAdditons } from "./observe-dom";
+import { getNextElementSibling, registerElementAdditons, separateEntries } from "./observe-dom";
 import { MainState, ResultTransferable } from "./types";
 
 /*
@@ -183,9 +183,12 @@ export const setOnPlayObserver = (
 	const { elementTranslations, animations, totalRuntime } = state;
 	const { wrappers, elementsToBeAdded, overrides, overrideResets, elementsToBeRemoved } =
 		resultTransferable;
+
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
-		registerElementAdditons(entries, state).forEach((element) => {
+		const { addEntries, removeEntries } = separateEntries(entries);
+
+		registerElementAdditons(addEntries, state).forEach((element) => {
 			const key = elementTranslations.get(element)!;
 
 			const keyframe = elementsToBeAdded.get(key)!;
@@ -200,32 +203,30 @@ export const setOnPlayObserver = (
 			animations.set(key, animation);
 		});
 
-		entries
-			.filter((entry) => entry.removedNodes.length > 0)
-			.forEach((entry) => {
-				entry.removedNodes.forEach((element) => {
-					if (!(element instanceof HTMLElement)) {
-						return;
-					}
-					const key = elementTranslations.get(element)!;
-					const override = overrides.get(key)!;
+		removeEntries.forEach((entry) => {
+			entry.removedNodes.forEach((element) => {
+				if (!(element instanceof HTMLElement)) {
+					return;
+				}
+				const key = elementTranslations.get(element)!;
+				const override = overrides.get(key)!;
 
-					if (wrappers.has(key)) {
-						const wrapperElement = temporaryElementMap.get(wrappers.get(key)!)!;
-						wrapperElement.insertBefore(element, null);
-						return;
-					}
+				if (wrappers.has(key)) {
+					const wrapperElement = temporaryElementMap.get(wrappers.get(key)!)!;
+					wrapperElement.insertBefore(element, null);
+					return;
+				}
 
-					const keyframe = elementsToBeRemoved.get(key)!;
-					const animation = new Animation(new KeyframeEffect(element, keyframe, totalRuntime));
-					applyCSSStyles(element, override);
+				const keyframe = elementsToBeRemoved.get(key)!;
+				const animation = new Animation(new KeyframeEffect(element, keyframe, totalRuntime));
+				applyCSSStyles(element, override);
 
-					entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
+				entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 
-					animation.onfinish = () => element.remove();
-					animations.set(key, animation);
-				});
+				animation.onfinish = () => element.remove();
+				animations.set(key, animation);
 			});
+		});
 
 		state.onStart.forEach((cb) => cb());
 		console.log(resultTransferable, state);
@@ -234,6 +235,7 @@ export const setOnPlayObserver = (
 	const observer = new MutationObserver(observerCallback);
 	observer.observe(document.body, { childList: true, subtree: true, attributes: true });
 	state.options.forEach((_, cb) => cb());
+	resolve();
 };
 
 export const createAnimations = (resultTransferable: ResultTransferable, state: MainState) =>
