@@ -1,7 +1,14 @@
-import { addElementToStates, sendState } from "./animation";
 import { defaultChangeProperties } from "./constants";
+import { createAnimations } from "./create-animations";
 import { BidirectionalMap } from "./element-translations";
-import { ElementReadouts, MainState, NormalizedOptions } from "./types";
+import {
+	AnimationState,
+	ElementReadouts,
+	InternalProps,
+	MainState,
+	NormalizedOptions,
+	NormalizedProps,
+} from "./types";
 
 const observe = (observer: MutationObserver) =>
 	observer.observe(document.body, {
@@ -78,33 +85,15 @@ export const serializeElement = (element: HTMLElement, key: number) => {
 
 const isHTMLElement = (node: Node) => node instanceof HTMLElement;
 
-const getOptionsViaRoot = (
-	element: HTMLElement,
-	options: Map<VoidFunction, NormalizedOptions>,
-	translation: BidirectionalMap<string, HTMLElement>
-) => {
-	const relatedOptions = new Set<NormalizedOptions>();
-
-	options.forEach((option) => {
-		const rootElement = translation.get(option.root)!;
-		if (!rootElement.contains(element)) {
-			return;
-		}
-		relatedOptions.add(option);
-	});
-	return relatedOptions;
-};
-
 export const registerElementAdditons = (entries: MutationRecord[], state: MainState) => {
-	const { elementTranslations, options } = state;
+	const { elementTranslations, parents, worker } = state;
+	const parentUpdate = new Map<string, string>();
 
-	return entries
+	const newDomElements = entries
 		.flatMap((entry) => [...entry.addedNodes])
 		.filter(isHTMLElement)
 		.map((element, index) => {
-			console.log({ element });
 			const domElement = element as HTMLElement;
-			const relatedOptions = getOptionsViaRoot(domElement, options, elementTranslations);
 
 			[domElement, ...domElement.querySelectorAll("*")]
 				.reduce((accumulator, currentElement) => {
@@ -119,11 +108,18 @@ export const registerElementAdditons = (entries: MutationRecord[], state: MainSt
 					return accumulator;
 				}, [] as HTMLElement[])
 				.forEach((currentElement) => {
-					addElementToStates(relatedOptions, currentElement, state);
+					const key = elementTranslations.get(currentElement)!;
+					const parentKey = elementTranslations.get(currentElement.parentElement!)!;
+
+					parentUpdate.set(key, parentKey);
+					parents.set(key, parentKey);
 				});
-			sendState(state);
 			return domElement;
 		});
+
+	worker("updateState").reply("sendStateUpdate", parentUpdate);
+
+	return newDomElements;
 };
 
 export const getNextElementSibling = (node: Node | null): HTMLElement | null => {
@@ -181,60 +177,106 @@ const removeAddedNodes = (entries: MutationRecord[]) => {
 	entries.forEach((entry) => entry.addedNodes.forEach((node) => node?.remove()));
 };
 
-export const setObserver = (state: MainState) => {
-	const { worker, callbacks, elementTranslations } = state;
-	const { reply, cleanup } = worker("domChanges");
-	const changes = callbacks.entries();
-	let offset = -1;
-	let change: VoidFunction[] = [];
+export const observeDom = (state: MainState) =>
+	new Promise<void>((resolve) => {
+		const { worker, callbacks, elementTranslations } = state;
+		const { reply, cleanup } = worker("domChanges");
+		const changes = callbacks.entries();
+		let offset = -1;
+		let change: VoidFunction[] = [];
 
-	const callNextChange = (observer: MutationObserver) => {
-		const { value, done } = changes.next();
-
-		if (Boolean(done)) {
-			observer.disconnect();
-			cleanup();
-			return;
-		}
-
-		offset = value[0];
-		change = value[1];
-
-		requestAnimationFrame(() => {
-			if (change.length === 0) {
-				observerCallback([], observer);
+		const callNextChange = (observer: MutationObserver) => {
+			const { value, done } = changes.next();
+			if (Boolean(done)) {
+				observer.disconnect();
+				cleanup();
+				resolve();
 				return;
 			}
 
-			observe(observer);
-			change.forEach((callback: VoidFunction) => {
-				callback();
+			offset = value[0];
+			change = value[1];
+
+			requestAnimationFrame(() => {
+				if (change.length === 0) {
+					observerCallback([], observer);
+					return;
+				}
+
+				observe(observer);
+				change.forEach((callback: VoidFunction) => {
+					callback();
+				});
 			});
-		});
-	};
+		};
 
-	const observerCallback: MutationCallback = (entries, observer) => {
-		observer.disconnect();
-		const { addEntries, removeEntries, attributeEntries } = separateEntries(entries);
+		const observerCallback: MutationCallback = (entries, observer) => {
+			observer.disconnect();
+			const { addEntries, removeEntries, attributeEntries } = separateEntries(entries);
 
-		registerElementAdditons(addEntries, state);
+			registerElementAdditons(addEntries, state);
 
-		reply("sendDOMRects", {
-			changes: saveElementDimensions(elementTranslations, offset),
-			offset,
-		});
+			reply("sendDOMRects", {
+				changes: saveElementDimensions(elementTranslations, offset),
+				offset,
+			});
 
-		removeAddedNodes(addEntries);
-		readdRemovedNodes(removeEntries);
-		resetNodeStyle(attributeEntries);
+			removeAddedNodes(addEntries);
+			readdRemovedNodes(removeEntries);
+			resetNodeStyle(attributeEntries);
 
+			callNextChange(observer);
+		};
+
+		const observer = new MutationObserver(observerCallback);
+
+		observe(observer);
 		callNextChange(observer);
+
+		return observer;
+	});
+
+export const saveOriginalStyle = (element: HTMLElement) => {
+	const attributes = new Map<string, string>();
+
+	element.getAttributeNames().forEach((attribute) => {
+		attributes.set(attribute, element.getAttribute(attribute)!);
+	});
+	if (!attributes.has("style")) {
+		attributes.set("style", element.style.cssText);
+	}
+
+	return attributes;
+};
+
+export const createAnimationState = async (
+	state: MainState,
+	totalRuntime: number
+): Promise<AnimationState> => {
+	const { callbacks, elementTranslations, worker } = state;
+	await observeDom(state);
+	const animationState = {
+		onStart: [],
+		resultingChanges: callbacks.get(1)!,
+		animations: new Map(),
+		elementResets: new Map<string, Map<string, string>>(),
 	};
 
-	const observer = new MutationObserver(observerCallback);
+	requestAnimationFrame(() => {
+		elementTranslations.forEach((domElement, key) => {
+			animationState.elementResets.set(key, saveOriginalStyle(domElement));
+		});
+	});
 
-	observe(observer);
-	callNextChange(observer);
+	const { onError, onMessage, cleanup } = worker("results");
+	await onMessage(async (ResultTransferable) => {
+		cleanup();
+		await createAnimations(ResultTransferable, animationState, state, totalRuntime);
+	});
+	onError(() => {
+		cleanup();
+		throw new Error("something went wrong calculating the animation keyframes");
+	});
 
-	return observer;
+	return animationState;
 };

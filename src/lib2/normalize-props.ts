@@ -1,118 +1,78 @@
 import { defaultOptions } from "./constants";
-import { BidirectionalMap, getOrAddKeyFromLookup } from "./element-translations";
 import {
 	BewegungsBlock,
 	BewegungsConfig,
-	BewegungsOptions,
-	ElementOrSelector,
-	MainMessages,
-	MainState,
-	NormalizedOptions,
-	TimelineEntry,
-	WorkerMessages,
+	InternalProps,
+	NormalizedPropsWithCallbacks,
 } from "./types";
-import { getWorker, useWorker } from "./use-worker";
 
-export const normalizeProps = (
-	props: BewegungsBlock[],
-	globalConfig?: Partial<BewegungsConfig>
-): BewegungsOptions[] => {
-	return props.map((entry) => {
-		const callback = entry?.[0] ?? entry;
-		const options = entry?.[1] ?? {};
-
-		const combinedOptions = {
-			...defaultOptions,
-			...(globalConfig ?? {}),
-			...(options ?? {}),
-		};
-
-		return [callback, combinedOptions];
-	});
-};
-
-export const calculateTotalRuntime = (props: BewegungsOptions[]) =>
-	props.reduce((accumulatedTime, currentProp) => {
-		const { duration, at } = currentProp[1];
-
-		return accumulatedTime + duration + at;
-	}, 0);
-
-const workerManager = getWorker();
-
-const outsidePromise = () => {
+export const resolveable = () => {
 	const api = {
 		resolve(value: any) {},
 		reject(value: any) {},
 	};
-	const finishPromise = new Promise<void>((res, rej) => {
+	const promise = new Promise<void>((res, rej) => {
 		api.resolve = res;
 		api.reject = rej;
 	});
 
-	return { ...api, finishPromise };
+	return { ...api, promise };
 };
 
-const getElement = (element: ElementOrSelector) => {
-	if (typeof element !== "string") {
-		return element as HTMLElement;
-	}
-	return document.querySelector(element) as HTMLElement;
-};
-
-const computeCallbacks = (props: BewegungsOptions[], totalRuntime: number) => {
-	const callbacks = new Map<number, VoidFunction[]>();
-	const options = new Map<VoidFunction, NormalizedOptions>();
-	const elementTranslations = new BidirectionalMap<string, HTMLElement>();
+export const normalizeProps = (
+	props: BewegungsBlock[],
+	globalConfig?: Partial<BewegungsConfig>
+): InternalProps => {
+	let totalRuntime = 0;
 	let currentTime = 0;
 
-	const timings = new Set([currentTime]);
-	const propTimeline = props
+	const normalizedProps: NormalizedPropsWithCallbacks[] = props
 		.map((entry) => {
-			const [callback, option] = entry;
-			const { duration, at, root, ...remainingOptions } = option;
-			const rootKey = getOrAddKeyFromLookup(getElement(root), elementTranslations);
+			const callback = entry?.[0] ?? entry;
+			const options = entry?.[1] ?? {};
+
+			const combinedOptions = {
+				...defaultOptions,
+				...(globalConfig ?? {}),
+				...(options ?? {}),
+				callback,
+			};
+
+			totalRuntime = totalRuntime + combinedOptions.at + combinedOptions.duration;
+
+			return combinedOptions;
+		})
+		.map((entry) => {
+			const { duration, at, ...remainingOptions } = entry;
 
 			const start = (currentTime = currentTime + at) / totalRuntime;
 			const end = (currentTime = currentTime + duration) / totalRuntime;
-			timings.add(end);
-			options.set(callback, {
+
+			return {
 				...remainingOptions,
-				root: rootKey,
 				start,
 				end,
-			});
-			return { start, end, callback };
-		})
-		.sort((a, b) => a.start - b.start);
-
-	timings.forEach((time) => {
-		const entries = propTimeline.filter((entry) => entry.end <= time);
-
-		callbacks.set(time, [...new Set(entries.map((entry) => entry.callback))]);
-	});
-	return { callbacks, options, elementTranslations };
-};
-
-export const createState = (
-	props: BewegungsBlock[],
-	globalConfig?: Partial<BewegungsConfig>
-): MainState => {
-	const normalizedProps = normalizeProps(props, globalConfig);
-	const totalRuntime = calculateTotalRuntime(normalizedProps);
-	const timekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
+			};
+		});
 
 	return {
-		...outsidePromise(),
-		...computeCallbacks(normalizedProps, totalRuntime),
-		timekeeper,
+		normalizedProps,
 		totalRuntime,
-		parents: new Map<string, string>(),
-		elementResets: new Map<string, Map<string, string>>(),
-		easings: new Map<string, Set<TimelineEntry>>(),
-		textElements: new Set<string>(),
-		worker: useWorker<MainMessages, WorkerMessages>(workerManager.current()),
-		animations: new Map([["timekeeper", timekeeper]]),
-		onStart: [],
 	};
 };
+
+// const delayedWorkerTransferable = {
+// 	parents: new Map<string, string>(),
+// 	textElements: new Set<string>(),
+// };
+
+// const minimalWorkerTransferable = {
+// 	parents: new Map<string, string>(),
+// 	roots: new Map<string, NormalizedOptions>(),
+// };
+
+// const resultingAnimationState = {
+// 	timekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
+// 	animations: new Map([["timekeeper", timekeeper]]),
+// 	onStart: [],
+// }

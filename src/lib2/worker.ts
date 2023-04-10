@@ -1,5 +1,6 @@
-import { calculateEasings } from "./calculations/easings";
+import { calculateEasings, getTimingsFromRoot } from "./calculations/easings";
 import { createKeyframes } from "./create-keyframes";
+import { normalizeProps } from "./normalize-props";
 import { EasingTable, ElementReadouts, MainMessages, WorkerMessages, WorkerState } from "./types";
 import { useWorker } from "./use-worker";
 
@@ -15,14 +16,26 @@ let state: WorkerState = {
 	easings: new Map<string, EasingTable>(),
 	textElements: new Set<string>(),
 	timings: [],
+	options: [],
 };
 
 workerAtom("sendState").onMessage((stateTransferable) => {
 	state = {
 		...state,
 		...stateTransferable,
-		easings: calculateEasings(stateTransferable.easings),
+		easings: calculateEasings(getTimingsFromRoot(stateTransferable)),
 	};
+});
+
+workerAtom("sendStateUpdate").onMessage((parentUpdate) => {
+	parentUpdate.forEach((parent, current) => {
+		state.parents.set(current, parent);
+	});
+	calculateEasings(getTimingsFromRoot({ parents: state.parents, options: state.options })).forEach(
+		(easings, key) => {
+			state.easings.set(key, easings);
+		}
+	);
 });
 
 workerAtom("sendDOMRects").onMessage((domChanges) => {
@@ -38,7 +51,6 @@ workerAtom("sendDOMRects").onMessage((domChanges) => {
 		state.readouts.set(elementID, (state.readouts.get(elementID) ?? []).concat(readouts));
 	});
 	state.timings.push(offset);
-
 	if (offset === 1) {
 		workerAtom("sendResults").reply("results", createKeyframes(state));
 	}

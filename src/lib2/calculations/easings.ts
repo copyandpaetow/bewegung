@@ -1,4 +1,4 @@
-import { EasingTable, TempTimelineEntry, TimelineEntry } from "../types";
+import { EasingTable, StateTransferable, TempTimelineEntry, TimelineEntry } from "../types";
 
 export const toArray = <MaybeArrayType>(
 	maybeArray: MaybeArrayType | MaybeArrayType[]
@@ -119,5 +119,39 @@ export const calculateEasings = (easings: Map<string, Set<TimelineEntry>>) => {
 		newEasings.set(elementID, easingTable);
 	});
 
+	console.log(newEasings);
 	return newEasings;
+};
+
+const isElementRelatedToRoot = (current: string, parents: Map<string, string>, root: string) => {
+	const parentKey = parents.get(current)!;
+
+	if (parentKey === current) {
+		return false;
+	}
+
+	if (parentKey === root) {
+		return true;
+	}
+
+	return isElementRelatedToRoot(parentKey, parents, root);
+};
+
+export const getTimingsFromRoot = ({ options, parents }: StateTransferable) => {
+	const easings = new Map<string, Set<TimelineEntry>>();
+
+	options.forEach((option) => {
+		const { root, start, end, easing } = option;
+
+		parents.forEach((_, current) => {
+			if (!isElementRelatedToRoot(current, parents, root)) {
+				return;
+			}
+			easings.set(
+				current,
+				(easings.get(current) ?? new Set<TimelineEntry>()).add({ start, end, easing })
+			);
+		});
+	});
+	return easings;
 };
