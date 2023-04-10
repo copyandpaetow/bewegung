@@ -1,142 +1,45 @@
 import { createAnimations } from "./create-animations";
-import { getOrAddKeyFromLookup } from "./element-translations";
-import { setObserver } from "./observe-dom";
+import { createState } from "./create-state";
+import { createAnimationState } from "./observe-dom";
 import { createMachine } from "./state-machine";
-import { MainState, NormalizedOptions } from "./types";
+import { AnimationState, InternalProps, MainState } from "./types";
 
-export const saveOriginalStyle = (element: HTMLElement) => {
-	const attributes = new Map<string, string>();
+// const isTextNode = (element: HTMLElement) => {
+// 	if (!element.hasChildNodes()) {
+// 		return;
+// 	}
 
-	element.getAttributeNames().forEach((attribute) => {
-		attributes.set(attribute, element.getAttribute(attribute)!);
-	});
-	if (!attributes.has("style")) {
-		attributes.set("style", element.style.cssText);
-	}
+// 	//TODO: investigate if node.nodeType === 3 is faster
+// 	return Array.from(element.childNodes).every((node) => Boolean(node.textContent?.trim()));
+// };
 
-	return attributes;
-};
-
-const getDecendents = (element: HTMLElement) =>
-	Array.from(element.querySelectorAll("*")) as HTMLElement[];
-
-const isTextNode = (element: HTMLElement) => {
-	if (!element.hasChildNodes()) {
-		return;
-	}
-
-	//TODO: investigate if node.nodeType === 3 is faster
-	return Array.from(element.childNodes).every((node) => Boolean(node.textContent?.trim()));
-};
-
-export const addElementToStates = (
-	options: Set<NormalizedOptions>,
-	element: HTMLElement,
-	state: MainState
-) => {
-	const { easings, textElements, parents, elementTranslations } = state;
-	const key = getOrAddKeyFromLookup(element, elementTranslations);
-
-	parents.set(key, getOrAddKeyFromLookup(element.parentElement!, elementTranslations));
-	easings.set(
-		key,
-		new Set(
-			Array.from(options, (option) => {
-				const { start, end, easing } = option;
-				return {
-					start,
-					end,
-					easing,
-				};
-			})
-		)
-	);
-
-	if (isTextNode(element)) {
-		textElements.add(key);
-	}
-};
-
-export const sendState = (state: MainState) => {
-	const { worker, parents, easings, textElements } = state;
-	const { reply, cleanup } = worker("state");
-
-	reply("sendState", {
-		parents,
-		easings,
-		textElements,
-	});
-	cleanup();
-};
-
-const setElementRelatedState = (state: MainState) => {
-	const { options, elementTranslations, elementResets, parents, easings } = state;
-	const elementRelations = new Map<HTMLElement, Set<NormalizedOptions>>();
-
-	options.forEach((option) => {
-		const rootElement = elementTranslations.get(option.root)!;
-		getDecendents(rootElement).forEach((element) => {
-			elementRelations.set(element, (elementRelations.get(element) ?? new Set()).add(option));
-		});
-		elementResets.set(option.root, saveOriginalStyle(rootElement));
-		parents.set(option.root, option.root);
-		easings.set(
-			option.root,
-			new Set([{ start: option.start, end: option.end, easing: option.easing }])
-		);
-	});
-
-	elementRelations.forEach((ids, element) => {
-		addElementToStates(ids, element, state);
-	});
-
-	requestAnimationFrame(() => {
-		elementTranslations.forEach((domElement, key) => {
-			elementResets.set(key, saveOriginalStyle(domElement));
-		});
-	});
-
-	sendState(state);
-
-	return true;
-};
-
-export const getAnimationStateMachine = (state: MainState) => {
-	const { timekeeper, worker } = state;
-
+export const getAnimationStateMachine = (internalProps: InternalProps, timekeeper: Animation) => {
 	let nextPlayState = "play";
 	let time = Date.now();
 
-	//TODO: this needs to be better
-	let elementsStillValid = false;
-	let observer: null | MutationObserver = null;
+	let state: null | MainState = null;
+	let animationState: null | AnimationState = null;
 
 	const resetState = async () => {
-		if (!elementsStillValid) {
-			elementsStillValid = true;
-			setElementRelatedState(state);
-			observer?.disconnect();
-			observer = null;
+		if (!state) {
+			state = createState(internalProps);
+			state.worker("state").reply("sendState", { parents: state.parents, options: state.options });
+			animationState = null;
 		}
-		observer ??= setObserver(state);
+		animationState ??= await createAnimationState(state, internalProps.totalRuntime);
+		animationState.animations.set("timekeeper", timekeeper);
 	};
 
 	const machine = createMachine({
 		initialState: "idle",
 		actions: {
-			loadState() {
-				resetState();
-				const { onError, onMessage, cleanup } = worker("results");
-				onMessage(async (ResultTransferable) => {
-					await createAnimations(ResultTransferable, state);
-					//TODO: this can be done better
+			async loadState() {
+				try {
+					await resetState();
 					machine.transition(nextPlayState);
-					cleanup();
-				});
-				onError(() => {
+				} catch (error) {
 					machine.transition("cancel");
-					cleanup();
-				});
+				}
 			},
 			setFinishTransitionOnTimekeeper() {
 				timekeeper.onfinish = () => machine.transition("finish");
@@ -152,7 +55,7 @@ export const getAnimationStateMachine = (state: MainState) => {
 				console.log("play");
 				console.log(`calculation took ${Date.now() - time}ms`);
 
-				state.animations.forEach((animation) => {
+				animationState?.animations.forEach((animation) => {
 					animation.play();
 					animation.pause();
 				});
@@ -168,23 +71,24 @@ export const getAnimationStateMachine = (state: MainState) => {
 			},
 			finishAnimations() {
 				console.log("finishAnimations");
-				state.resolve(undefined);
 			},
 			cancelAnimations() {
 				console.log("cancelAnimations");
-				state.reject("user cancel");
 			},
 			cleanup() {
 				console.log("cleanup");
-				observer?.disconnect();
 			},
 			resetElements() {
+				animationState?.elementResets.forEach((reset, key) => {
+					const domElement = state?.elementTranslations.get(key)!;
+					//TODO: remove added and add removed, reset existing attributes
+				});
 				console.log("resetElements");
 			},
 		},
 		guards: {
 			isStateLoaded() {
-				return [elementsStillValid, observer].every(Boolean);
+				return [state, animationState].every(Boolean);
 			},
 			isAnimationWanted() {
 				return window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === false;

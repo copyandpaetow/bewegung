@@ -78,10 +78,9 @@ type DomChangeTransferable = {
 	offset: number;
 };
 
-type StateTransferable = {
+export type StateTransferable = {
 	parents: Map<string, string>;
-	easings: Map<string, Set<TimelineEntry>>;
-	textElements: Set<string>;
+	options: NormalizedProps[];
 };
 
 export type ResultTransferable = {
@@ -98,34 +97,51 @@ export type MainMessages = {
 	domChanges: DomChangeTransferable;
 	results: ResultTransferable;
 	state: StateTransferable;
+	updateState: Map<string, string>;
 };
 
 export type WorkerMessages = {
 	sendDOMRects: DomChangeTransferable;
 	sendResults: ResultTransferable;
 	sendState: StateTransferable;
+	sendStateUpdate: Map<string, string>;
 };
 
 export type AtomicWorker = <Current extends keyof MainMessages>(
 	eventName: Current
 ) => WorkerContext<Current, MainMessages, WorkerMessages>;
 
+// export type MainState = {
+// 	timekeeper: Animation;
+// 	totalRuntime: number;
+// 	parents: Map<string, string>;
+// 	finishPromise: Promise<void>;
+// 	resolve(value: any): void;
+// 	reject(value: any): void;
+// 	callbacks: Map<number, VoidFunction[]>;
+// 	options: Map<VoidFunction, NormalizedOptions>;
+// 	elementTranslations: BidirectionalMap<string, HTMLElement>;
+// 	elementResets: Map<string, Map<string, string>>;
+// 	easings: Map<string, Set<TimelineEntry>>;
+// 	textElements: Set<string>;
+// 	worker: AtomicWorker;
+// 	animations: Map<string, Animation>;
+// 	onStart: VoidFunction[];
+// };
+
 export type MainState = {
-	timekeeper: Animation;
-	totalRuntime: number;
 	parents: Map<string, string>;
-	finishPromise: Promise<void>;
-	resolve(value: any): void;
-	reject(value: any): void;
 	callbacks: Map<number, VoidFunction[]>;
-	options: Map<VoidFunction, NormalizedOptions>;
+	options: NormalizedProps[];
 	elementTranslations: BidirectionalMap<string, HTMLElement>;
-	elementResets: Map<string, Map<string, string>>;
-	easings: Map<string, Set<TimelineEntry>>;
-	textElements: Set<string>;
 	worker: AtomicWorker;
-	animations: Map<string, Animation>;
+};
+
+export type AnimationState = {
 	onStart: VoidFunction[];
+	resultingChanges: VoidFunction[];
+	animations: Map<string, Animation>;
+	elementResets: Map<string, Map<string, string>>;
 };
 
 export type Payload = {
@@ -210,6 +226,7 @@ export type WorkerState = {
 	easings: Map<string, EasingTable>;
 	textElements: Set<string>;
 	timings: number[];
+	options: NormalizedProps[];
 };
 
 export type ImageState = {
@@ -227,3 +244,29 @@ export interface StyleTables {
 	userTransformTable: Record<number, string>;
 	easingTable: Record<number, string>;
 }
+
+export type NormalizedProps = {
+	start: number;
+	end: number;
+	iterations: number;
+	root: string;
+	easing:
+		| "ease"
+		| "ease-in"
+		| "ease-out"
+		| "ease-in-out"
+		| "linear"
+		| `cubic-bezier(${number},${number},${number},${number})`;
+};
+
+export type NormalizedPropsWithCallbacks = NormalizedProps & { callback: VoidFunction };
+
+export type InternalProps = {
+	normalizedProps: NormalizedPropsWithCallbacks[];
+	totalRuntime: number;
+};
+
+export type ResultState = ResultTransferable & {
+	totalRuntime: number;
+	temporaryElementMap: Map<string, HTMLElement>;
+};
