@@ -138,8 +138,6 @@ export type MainState = {
 };
 
 export type AnimationState = {
-	onStart: VoidFunction[];
-	resultingChanges: VoidFunction[];
 	animations: Map<string, Animation>;
 	elementResets: Map<string, Map<string, string>>;
 };
@@ -269,4 +267,6 @@ export type InternalProps = {
 export type ResultState = ResultTransferable & {
 	totalRuntime: number;
 	temporaryElementMap: Map<string, HTMLElement>;
+	onStart: VoidFunction[];
+	resultingChanges: VoidFunction[];
 };

@@ -106,12 +106,12 @@ const computeTimeline = (entries: TimelineEntry[]) => {
 
 	return timeline;
 };
-export const calculateEasings = (easings: Map<string, Set<TimelineEntry>>) => {
+export const calculateEasings = (easings: Map<string, TimelineEntry[]>) => {
 	const newEasings = new Map<string, EasingTable>();
 
 	easings.forEach((timelines, elementID) => {
-		const easingTable: Record<number, string> = {};
-		computeTimeline(Array.from(timelines)).forEach((entry) => {
+		const easingTable: Record<number, string> = { 0: "ease" };
+		computeTimeline(timelines).forEach((entry) => {
 			const { end, easing } = entry;
 
 			easingTable[end] = easing;
@@ -119,26 +119,25 @@ export const calculateEasings = (easings: Map<string, Set<TimelineEntry>>) => {
 		newEasings.set(elementID, easingTable);
 	});
 
-	console.log(newEasings);
 	return newEasings;
 };
 
 const isElementRelatedToRoot = (current: string, parents: Map<string, string>, root: string) => {
 	const parentKey = parents.get(current)!;
 
-	if (parentKey === current) {
-		return false;
-	}
-
 	if (parentKey === root) {
 		return true;
+	}
+
+	if (parentKey === current) {
+		return false;
 	}
 
 	return isElementRelatedToRoot(parentKey, parents, root);
 };
 
 export const getTimingsFromRoot = ({ options, parents }: StateTransferable) => {
-	const easings = new Map<string, Set<TimelineEntry>>();
+	const easings = new Map<string, TimelineEntry[]>();
 
 	options.forEach((option) => {
 		const { root, start, end, easing } = option;
@@ -147,11 +146,9 @@ export const getTimingsFromRoot = ({ options, parents }: StateTransferable) => {
 			if (!isElementRelatedToRoot(current, parents, root)) {
 				return;
 			}
-			easings.set(
-				current,
-				(easings.get(current) ?? new Set<TimelineEntry>()).add({ start, end, easing })
-			);
+			easings.set(current, (easings.get(current) ?? []).concat({ start, end, easing }));
 		});
 	});
+
 	return easings;
 };

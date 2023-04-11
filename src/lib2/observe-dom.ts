@@ -117,7 +117,9 @@ export const registerElementAdditons = (entries: MutationRecord[], state: MainSt
 			return domElement;
 		});
 
-	worker("updateState").reply("sendStateUpdate", parentUpdate);
+	if (parentUpdate.size > 0) {
+		worker("updateState").reply("sendStateUpdate", parentUpdate);
+	}
 
 	return newDomElements;
 };
@@ -253,14 +255,12 @@ export const createAnimationState = async (
 	state: MainState,
 	totalRuntime: number
 ): Promise<AnimationState> => {
-	const { callbacks, elementTranslations, worker } = state;
+	const { elementTranslations, worker } = state;
 	await observeDom(state);
-	const animationState = {
-		onStart: [],
-		resultingChanges: callbacks.get(1)!,
+	const animationState = Object.freeze({
 		animations: new Map(),
 		elementResets: new Map<string, Map<string, string>>(),
-	};
+	});
 
 	requestAnimationFrame(() => {
 		elementTranslations.forEach((domElement, key) => {

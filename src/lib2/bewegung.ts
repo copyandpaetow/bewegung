@@ -24,14 +24,15 @@ TODO:
 => these two should get their own readout state as well as images
 => currently they are treated as default if they dont change in scale, in that case we could delete the readout
 
-? if we send the parentsMap and the options (with callback turned into an id or completely without them) we could recursively check
-? if an element is part of a given root and take the easing, maybe it would help to have this ready as Map<root, Options>
-=> even if this would take longer we have time in the worker
-
 - the worker might also need a state machine
 
 - try to avoid if statements in loops, better filter before
 - there are a lot of similarities between the MOs, that could be unified
+
+if there is an overlap within the sequence, it will create additional easings
+? should these be used in the keyframes? Should there be another readout for that timing?
+
+
 
 */
 
