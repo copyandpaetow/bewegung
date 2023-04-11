@@ -43,8 +43,6 @@ export const computeCallbacks = (props: NormalizedPropsWithCallbacks[]) => {
 		callbacks.set(currentTime, [...new Set(relevantEntries.map((entry) => entry.callback))]);
 	});
 
-	console.log(props, callbacks);
-
 	return callbacks;
 };
 
@@ -64,9 +62,7 @@ const getParentElements = (
 
 			parents.set(key, getOrAddKeyFromLookup(element.parentElement!, elementTranslations));
 		});
-		if (parents.has(option.root)) {
-			return;
-		}
+
 		parents.set(option.root, option.root);
 	});
 

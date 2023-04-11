@@ -94,8 +94,8 @@ const setWrapperCallbacks = (
 	animationState: AnimationState,
 	state: MainState
 ) => {
-	const { wrappers, temporaryElementMap } = resultstate;
-	const { animations, onStart } = animationState;
+	const { wrappers, temporaryElementMap, onStart } = resultstate;
+	const { animations } = animationState;
 	const { elementTranslations } = state;
 
 	wrappers.forEach((wrapperID, imageID) => {
@@ -120,8 +120,8 @@ const setPlaceholderCallbacks = (
 	animationState: AnimationState,
 	state: MainState
 ) => {
-	const { placeholders, temporaryElementMap, totalRuntime } = resultstate;
-	const { animations, onStart } = animationState;
+	const { placeholders, temporaryElementMap, totalRuntime, onStart } = resultstate;
+	const { animations } = animationState;
 	const { elementTranslations } = state;
 
 	placeholders.forEach((placeHolderID, imageID) => {
@@ -152,16 +152,12 @@ const setDefaultCallbacks = (
 	animationState: AnimationState,
 	state: MainState
 ) => {
-	const { overrideResets, overrides, elementsToBeRemoved } = resultstate;
-	const { animations, onStart } = animationState;
+	const { overrideResets, overrides, elementsToBeRemoved, onStart } = resultstate;
+	const { animations } = animationState;
 	const { elementTranslations } = state;
 
 	animations.forEach((animation, key) => {
 		const domElement = elementTranslations.get(key)!;
-		if (key === "timekeeper") {
-			return;
-		}
-
 		const overrideResetStyle = overrideResets.get(key);
 		const overrideStyle = overrides.get(key);
 		const shouldElementBeRemoved = elementsToBeRemoved.has(key);
@@ -196,8 +192,10 @@ export const setOnPlayObserver = (
 			elementsToBeAdded,
 			totalRuntime,
 			temporaryElementMap,
+			onStart,
+			resultingChanges,
 		} = resultstate;
-		const { animations, onStart, resultingChanges } = animationState;
+		const { animations } = animationState;
 		const { elementTranslations } = state;
 
 		const observerCallback: MutationCallback = (entries, observer) => {
@@ -249,7 +247,9 @@ export const setOnPlayObserver = (
 		};
 		const observer = new MutationObserver(observerCallback);
 		observer.observe(document.body, { childList: true, subtree: true, attributes: true });
-		resultingChanges.forEach((cb) => cb());
+		requestAnimationFrame(() => {
+			resultingChanges.forEach((cb) => cb());
+		});
 	});
 
 export const createAnimations = async (
@@ -262,6 +262,8 @@ export const createAnimations = async (
 		...resultTransferable,
 		temporaryElementMap: getTemporaryElements(resultTransferable, state.elementTranslations),
 		totalRuntime,
+		onStart: [],
+		resultingChanges: state.callbacks.get(1)!,
 	};
 
 	createAnimationsFromKeyframes(resultState, animationState, state);
