@@ -1,4 +1,4 @@
-import { BidirectionalMap, getOrAddKeyFromLookup } from "./element-translations";
+import { BidirectionalMap, getOrAddKeyFromLookup } from "./utils/element-translations";
 import {
 	ElementOrSelector,
 	NormalizedPropsWithCallbacks,
@@ -10,7 +10,7 @@ import {
 	AnimationState,
 } from "./types";
 
-import { getWorker, useWorker } from "./use-worker";
+import { getWorker, useWorker } from "./utils/use-worker";
 
 const workerManager = getWorker();
 
@@ -83,5 +83,6 @@ export const createState = (internalProps: InternalProps): MainState => {
 		elementTranslations,
 		parents: getParentElements(transferableOptions, elementTranslations),
 		worker: useWorker<MainMessages, WorkerMessages>(workerManager.current()),
+		totalRuntime: internalProps.totalRuntime,
 	});
 };

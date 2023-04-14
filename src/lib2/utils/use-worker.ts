@@ -1,14 +1,13 @@
 import {
-	AtomicWorker,
 	WorkerCallback,
 	WorkerCallbackTypes,
 	WorkerContext,
 	WorkerError,
 	WorkerMessageEvent,
-} from "./types";
+} from "../types";
 
 const spawnWorker = () =>
-	new Worker(new URL("./worker.ts", import.meta.url), {
+	new Worker(new URL("../worker.ts", import.meta.url), {
 		type: "module",
 	});
 

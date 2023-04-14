@@ -19,11 +19,6 @@ TODO:
 - "at" needs to be more refined
 - options need to be rechecked. Should more be included? 
 
-- added and removed elements need to get special treatment
-=> we might need to readd the height and unsaveHeight
-=> these two should get their own readout state as well as images
-=> currently they are treated as default if they dont change in scale, in that case we could delete the readout
-
 - the worker might also need a state machine
 
 - try to avoid if statements in loops, better filter before

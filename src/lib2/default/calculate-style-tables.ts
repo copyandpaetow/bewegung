@@ -1,7 +1,7 @@
-import { ElementReadouts, StyleTables, WorkerState } from "../types";
+import { DefaultReadouts, StyleTables, WorkerState } from "../types";
 import { calculateBorderRadius } from "./border-radius";
 
-export const getBorderRadius = (calculatedProperties: ElementReadouts[]) => {
+export const getBorderRadius = (calculatedProperties: DefaultReadouts[]) => {
 	const styleTable: Record<number, string> = {};
 
 	if (calculatedProperties.every((style) => style.borderRadius === "0px")) {
@@ -14,7 +14,7 @@ export const getBorderRadius = (calculatedProperties: ElementReadouts[]) => {
 	return styleTable;
 };
 
-export const getOpacity = (calculatedProperties: ElementReadouts[]) => {
+export const getOpacity = (calculatedProperties: DefaultReadouts[]) => {
 	const styleTable: Record<number, string> = {};
 	if (calculatedProperties.every((style) => style.opacity === "1")) {
 		return styleTable;
@@ -24,7 +24,7 @@ export const getOpacity = (calculatedProperties: ElementReadouts[]) => {
 	return styleTable;
 };
 
-export const getFilter = (calculatedProperties: ElementReadouts[]) => {
+export const getFilter = (calculatedProperties: DefaultReadouts[]) => {
 	const styleTable: Record<number, string> = {};
 
 	if (calculatedProperties.every((style) => style.filter === "none")) {
@@ -35,7 +35,7 @@ export const getFilter = (calculatedProperties: ElementReadouts[]) => {
 	return styleTable;
 };
 
-export const getUserTransforms = (calculatedProperties: ElementReadouts[]) => {
+export const getUserTransforms = (calculatedProperties: DefaultReadouts[]) => {
 	const styleTable: Record<number, string> = {};
 	if (calculatedProperties.every((style) => style.transform === "none")) {
 		return styleTable;
@@ -46,7 +46,7 @@ export const getUserTransforms = (calculatedProperties: ElementReadouts[]) => {
 };
 
 const calculateKeyframeTables = (
-	elementReadouts: ElementReadouts[],
+	elementReadouts: DefaultReadouts[],
 	easings: Record<number, string>
 ): StyleTables => ({
 	borderRadiusTable: getBorderRadius(elementReadouts),
@@ -57,9 +57,12 @@ const calculateKeyframeTables = (
 });
 
 export const calculateStyleTables = (state: WorkerState) => {
-	const { defaultReadouts, easings } = state;
+	const { defaultReadouts, textReadouts, easings } = state;
 	const styleTableMap = new Map<string, StyleTables>();
 	defaultReadouts.forEach((elementReadouts, elementID) => {
+		styleTableMap.set(elementID, calculateKeyframeTables(elementReadouts, easings.get(elementID)!));
+	});
+	textReadouts.forEach((elementReadouts, elementID) => {
 		styleTableMap.set(elementID, calculateKeyframeTables(elementReadouts, easings.get(elementID)!));
 	});
 

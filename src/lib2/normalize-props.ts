@@ -1,4 +1,4 @@
-import { defaultOptions } from "./constants";
+import { defaultOptions } from "./utils/constants";
 import {
 	BewegungsBlock,
 	BewegungsConfig,

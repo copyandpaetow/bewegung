@@ -1,66 +1,10 @@
-import { defaultChangeProperties } from "./constants";
-import { createAnimations } from "./create-animations";
-import { BidirectionalMap } from "./element-translations";
 import {
-	AnimationState,
-	ElementReadouts,
-	InternalProps,
-	MainState,
-	NormalizedOptions,
-	NormalizedProps,
-} from "./types";
-
-const observe = (observer: MutationObserver) =>
-	observer.observe(document.body, {
-		childList: true,
-		subtree: true,
-		attributes: true,
-		attributeOldValue: true,
-	});
-
-const getElementStyles = (element: HTMLElement, offset: number) => {
-	const { top, left, width, height } = element.getBoundingClientRect();
-	const computedElementStyle = window.getComputedStyle(element);
-	//@ts-expect-error
-	const ratio = (element?.naturalWidth ?? 1) / (element?.naturalHeight ?? -1);
-
-	const relevantStyles: ElementReadouts = {
-		currentTop: top,
-		currentLeft: left,
-		unsaveWidth: width,
-		unsaveHeight: height,
-		currentWidth: width,
-		currentHeight: height,
-		offset,
-		ratio,
-	};
-
-	const computedStyles = Object.entries(defaultChangeProperties).reduce(
-		(accumulator, [key, property]) => {
-			accumulator[key] = computedElementStyle.getPropertyValue(property);
-			return accumulator;
-		},
-		relevantStyles
-	);
-
-	return computedStyles;
-};
-
-const saveElementDimensions = (
-	translations: BidirectionalMap<string, HTMLElement>,
-	offset: number
-) => {
-	const currentChange = new Map<string, ElementReadouts>();
-
-	translations.forEach((domElement, elementString) => {
-		if (!domElement.isConnected) {
-			return;
-		}
-		currentChange.set(elementString, getElementStyles(domElement, offset));
-	});
-
-	return currentChange;
-};
+	saveDefaultReadout,
+	saveImageReadout,
+	seperateElementReadouts,
+} from "./read-element-styles";
+import { MainState } from "./types";
+import { isHTMLElement } from "./utils/predicates";
 
 const resetNodeStyle = (entries: MutationRecord[]) => {
 	entries.reverse().forEach((entry) => {
@@ -82,8 +26,6 @@ export const serializeElement = (element: HTMLElement, key: number) => {
 
 	return `${element.tagName}-key-${elementKey}`;
 };
-
-const isHTMLElement = (node: Node) => node instanceof HTMLElement;
 
 export const registerElementAdditons = (entries: MutationRecord[], state: MainState) => {
 	const { elementTranslations, parents, worker } = state;
@@ -125,8 +67,8 @@ export const registerElementAdditons = (entries: MutationRecord[], state: MainSt
 };
 
 export const getNextElementSibling = (node: Node | null): HTMLElement | null => {
-	if (node === null || node instanceof HTMLElement) {
-		return node;
+	if (node === null || isHTMLElement(node)) {
+		return node as HTMLElement | null;
 	}
 	//@ts-expect-error node has the nextElementSibling property
 	return getNextElementSibling(node.nextElementSibling);
@@ -164,20 +106,31 @@ export const separateEntries = (entries: MutationRecord[]) => {
 	};
 };
 
-const readdRemovedNodes = (entries: MutationRecord[]) => {
+export const readdRemovedNodes = (entries: MutationRecord[]) => {
+	const removedElements: HTMLElement[] = [];
 	entries.forEach((entry) => {
 		entry.removedNodes.forEach((element) => {
-			const parentElement = entry.target;
-			const nextSibiling = getNextElementSibling(entry.nextSibling);
-			parentElement.insertBefore(element, nextSibiling);
+			entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
+			if (isHTMLElement(element)) {
+				removedElements.push(element as HTMLElement);
+			}
 		});
 	});
+	return removedElements;
 };
 
 const removeAddedNodes = (entries: MutationRecord[]) => {
 	//@ts-expect-error
 	entries.forEach((entry) => entry.addedNodes.forEach((node) => node?.remove()));
 };
+
+const observe = (observer: MutationObserver) =>
+	observer.observe(document.body, {
+		childList: true,
+		subtree: true,
+		attributes: true,
+		attributeOldValue: true,
+	});
 
 export const observeDom = (state: MainState) =>
 	new Promise<void>((resolve) => {
@@ -215,11 +168,15 @@ export const observeDom = (state: MainState) =>
 		const observerCallback: MutationCallback = (entries, observer) => {
 			observer.disconnect();
 			const { addEntries, removeEntries, attributeEntries } = separateEntries(entries);
-
 			registerElementAdditons(addEntries, state);
 
+			const { textElements, defaultElements, imageElements } =
+				seperateElementReadouts(elementTranslations);
+
 			reply("sendDOMRects", {
-				changes: saveElementDimensions(elementTranslations, offset),
+				imageChanges: saveImageReadout(imageElements, offset),
+				textChanges: saveDefaultReadout(textElements, offset),
+				defaultChanges: saveDefaultReadout(defaultElements, offset),
 				offset,
 			});
 
@@ -234,49 +191,4 @@ export const observeDom = (state: MainState) =>
 
 		observe(observer);
 		callNextChange(observer);
-
-		return observer;
 	});
-
-export const saveOriginalStyle = (element: HTMLElement) => {
-	const attributes = new Map<string, string>();
-
-	element.getAttributeNames().forEach((attribute) => {
-		attributes.set(attribute, element.getAttribute(attribute)!);
-	});
-	if (!attributes.has("style")) {
-		attributes.set("style", element.style.cssText);
-	}
-
-	return attributes;
-};
-
-export const createAnimationState = async (
-	state: MainState,
-	totalRuntime: number
-): Promise<AnimationState> => {
-	const { elementTranslations, worker } = state;
-	await observeDom(state);
-	const animationState = Object.freeze({
-		animations: new Map(),
-		elementResets: new Map<string, Map<string, string>>(),
-	});
-
-	requestAnimationFrame(() => {
-		elementTranslations.forEach((domElement, key) => {
-			animationState.elementResets.set(key, saveOriginalStyle(domElement));
-		});
-	});
-
-	const { onError, onMessage, cleanup } = worker("results");
-	await onMessage(async (ResultTransferable) => {
-		cleanup();
-		await createAnimations(ResultTransferable, animationState, state, totalRuntime);
-	});
-	onError(() => {
-		cleanup();
-		throw new Error("something went wrong calculating the animation keyframes");
-	});
-
-	return animationState;
-};

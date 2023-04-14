@@ -1,4 +1,4 @@
-import { BidirectionalMap } from "./element-translations";
+import { BidirectionalMap } from "./utils/element-translations";
 
 export type ElementOrSelector = HTMLElement | Element | string;
 
@@ -73,8 +73,10 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 	onError(errorCallback: WorkerError): void;
 };
 
-type DomChangeTransferable = {
-	changes: Map<string, ElementReadouts>;
+export type DomChangeTransferable = {
+	imageChanges: Map<string, ImageReadouts>;
+	textChanges: Map<string, TextReadouts>;
+	defaultChanges: Map<string, DefaultReadouts>;
 	offset: number;
 };
 
@@ -83,26 +85,31 @@ export type StateTransferable = {
 	options: NormalizedProps[];
 };
 
-export type ResultTransferable = {
-	overrides: Map<string, Partial<CSSStyleDeclaration>>;
-	overrideResets: Map<string, Partial<CSSStyleDeclaration>>;
+export type ImageTransferable = DefaultTransferable & {
 	placeholders: Map<string, string>;
 	wrappers: Map<string, string>;
+};
+
+export type DefaultTransferable = {
+	overrides: Map<string, Partial<CSSStyleDeclaration>>;
 	keyframes: Map<string, Keyframe[]>;
-	elementsToBeRemoved: Map<string, Keyframe[]>;
-	elementsToBeAdded: Map<string, Keyframe[]>;
+	partialElements: Map<string, Keyframe[]>;
 };
 
 export type MainMessages = {
 	domChanges: DomChangeTransferable;
-	results: ResultTransferable;
+	imageResults: ImageTransferable;
+	defaultResults: DefaultTransferable;
+	textResults: DefaultTransferable;
 	state: StateTransferable;
 	updateState: Map<string, string>;
 };
 
 export type WorkerMessages = {
 	sendDOMRects: DomChangeTransferable;
-	sendResults: ResultTransferable;
+	sendImageResults: ImageTransferable;
+	sendDefaultResults: DefaultTransferable;
+	sendTextResults: DefaultTransferable;
 	sendState: StateTransferable;
 	sendStateUpdate: Map<string, string>;
 };
@@ -111,30 +118,13 @@ export type AtomicWorker = <Current extends keyof MainMessages>(
 	eventName: Current
 ) => WorkerContext<Current, MainMessages, WorkerMessages>;
 
-// export type MainState = {
-// 	timekeeper: Animation;
-// 	totalRuntime: number;
-// 	parents: Map<string, string>;
-// 	finishPromise: Promise<void>;
-// 	resolve(value: any): void;
-// 	reject(value: any): void;
-// 	callbacks: Map<number, VoidFunction[]>;
-// 	options: Map<VoidFunction, NormalizedOptions>;
-// 	elementTranslations: BidirectionalMap<string, HTMLElement>;
-// 	elementResets: Map<string, Map<string, string>>;
-// 	easings: Map<string, Set<TimelineEntry>>;
-// 	textElements: Set<string>;
-// 	worker: AtomicWorker;
-// 	animations: Map<string, Animation>;
-// 	onStart: VoidFunction[];
-// };
-
 export type MainState = {
 	parents: Map<string, string>;
 	callbacks: Map<number, VoidFunction[]>;
 	options: NormalizedProps[];
 	elementTranslations: BidirectionalMap<string, HTMLElement>;
 	worker: AtomicWorker;
+	totalRuntime: number;
 };
 
 export type AnimationState = {
@@ -193,7 +183,7 @@ export type StateMachineDefinition = {
 	guards?: Record<string, () => boolean>;
 };
 
-export type ElementReadouts = Omit<Partial<CSSStyleDeclaration>, "offset"> & {
+export type DefaultReadouts = Omit<Partial<CSSStyleDeclaration>, "offset"> & {
 	currentTop: number;
 	currentLeft: number;
 	unsaveWidth: number;
@@ -201,10 +191,22 @@ export type ElementReadouts = Omit<Partial<CSSStyleDeclaration>, "offset"> & {
 	currentWidth: number;
 	currentHeight: number;
 	offset: number;
+};
+
+export type ImageReadouts = DefaultReadouts & {
 	ratio: number;
 };
 
-export type DifferenceArray = [ElementReadouts, ElementReadouts];
+export type TextReadouts = DefaultReadouts & {};
+
+export type AllReadoutTypes = DefaultReadouts | ImageReadouts | TextReadouts;
+
+export type AllReadouts =
+	| Map<string, DefaultReadouts[]>
+	| Map<string, ImageReadouts[]>
+	| Map<string, TextReadouts[]>;
+
+export type DifferenceArray = [DefaultReadouts | TextReadouts, DefaultReadouts];
 
 export interface DimensionalDifferences {
 	heightDifference: number;
@@ -217,20 +219,19 @@ export interface DimensionalDifferences {
 export type EasingTable = Record<number, string>;
 
 export type WorkerState = {
-	readouts: Map<string, ElementReadouts[]>;
-	defaultReadouts: Map<string, ElementReadouts[]>;
-	imageReadouts: Map<string, ElementReadouts[]>;
+	textReadouts: Map<string, TextReadouts[]>;
+	defaultReadouts: Map<string, DefaultReadouts[]>;
+	imageReadouts: Map<string, ImageReadouts[]>;
 	parents: Map<string, string>;
 	easings: Map<string, EasingTable>;
-	textElements: Set<string>;
 	timings: number[];
 	options: NormalizedProps[];
 };
 
 export type ImageState = {
 	easing: EasingTable;
-	readouts: ElementReadouts[];
-	parentReadouts: ElementReadouts[];
+	readouts: ImageReadouts[];
+	parentReadouts: DefaultReadouts[];
 	maxHeight: number;
 	maxWidth: number;
 };
@@ -264,9 +265,14 @@ export type InternalProps = {
 	totalRuntime: number;
 };
 
-export type ResultState = ResultTransferable & {
-	totalRuntime: number;
-	temporaryElementMap: Map<string, HTMLElement>;
+export type DefaultResult = {
+	overrides: Map<string, Partial<CSSStyleDeclaration>>;
+	partialElements: Map<string, Keyframe[]>;
+	animations: Map<string, Animation>;
 	onStart: VoidFunction[];
-	resultingChanges: VoidFunction[];
+};
+
+export type ImageResult = DefaultResult & {
+	placeholders: Map<string, string>;
+	wrappers: Map<string, string>;
 };
