@@ -1,4 +1,4 @@
-import { BewegungsConfig } from "./types";
+import { BewegungsConfig } from "../types";
 
 export const defaultOptions: BewegungsConfig = {
 	duration: 400,
@@ -12,12 +12,16 @@ export const defaultChangeProperties = {
 	borderRadius: "border-radius",
 	display: "display",
 	filter: "filter",
-	objectFit: "object-fit",
-	objectPosition: "object-position",
 	opacity: "opacity",
 	position: "position",
 	transform: "transform",
 	transformOrigin: "transform-origin",
+};
+
+export const defaultImageChangeProperties = {
+	...defaultChangeProperties,
+	objectFit: "object-fit",
+	objectPosition: "object-position",
 };
 
 export const emptyImageSrc =

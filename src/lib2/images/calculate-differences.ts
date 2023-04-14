@@ -1,24 +1,22 @@
-import { defaultImageStyles } from "../constants";
-import { DifferenceArray, ImageState, ResultTransferable, WorkerState } from "../types";
-import { calculateBorderRadius } from "./border-radius";
-import { getScales, getTranslates, save } from "./calculate-dimension-differences";
-import { checkForBorderRadius, getNextParent } from "./default-keyframes";
+import { calculateBorderRadius } from "../default/border-radius";
+import { getScales, getTranslates } from "../default/calculate-differences";
+import { getAbsoluteStyle } from "../default/overrides";
+import { DifferenceArray, ImageState } from "../types";
+import { save } from "../utils/helper";
 
 export const highestNumber = (numbers: number[]) =>
 	numbers.reduce((largest, current) => Math.max(largest, current));
 
 export const getWrapperStyle = (imageState: ImageState): Partial<CSSStyleDeclaration> => {
 	const { parentReadouts, readouts, maxHeight, maxWidth } = imageState;
-	return {
-		position: "absolute",
-		top: `${readouts.at(-1)!.currentTop - parentReadouts.at(-1)!.currentTop}px`,
-		left: `${readouts.at(-1)!.currentLeft - parentReadouts.at(-1)!.currentLeft}px`,
+
+	return getAbsoluteStyle(readouts, parentReadouts, {
 		height: `${maxHeight}px`,
 		width: `${maxWidth}px`,
 		pointerEvents: "none",
 		overflow: "hidden",
 		gridArea: "1/1/2/2", //if the parent element is a grid element, it will be absolutly positioned from its dedicated area and not from the edge of the element
-	};
+	});
 };
 
 export const calculateImageKeyframes = (imageState: ImageState) => {
@@ -86,7 +84,7 @@ export const getWrapperKeyframes = (imageState: ImageState): Keyframe[] => {
 			referenceTopDifference,
 		} = getTranslates(child, parent);
 
-		const { parentHeightDifference, parentWidthDifference } = getScales(child, parent, false);
+		const { parentHeightDifference, parentWidthDifference } = getScales(child, parent);
 
 		const horizontalInset = (maxWidth - readout.currentWidth) / 2;
 		const verticalInset = (maxHeight - readout.currentHeight) / 2;
@@ -113,75 +111,5 @@ export const getWrapperKeyframes = (imageState: ImageState): Keyframe[] => {
 			})`,
 			easing: easing[readout.offset] ?? "ease",
 		};
-	});
-};
-
-const getImageReset = () =>
-	Object.fromEntries(Object.entries(defaultImageStyles).map(([key, value]) => [key, ""]));
-
-export const getImageKeyframes = (state: WorkerState, result: ResultTransferable) => {
-	const { readouts: allReadouts, imageReadouts, easings, parents, defaultReadouts } = state;
-	const { overrides, keyframes, wrappers, placeholders, overrideResets } = result;
-
-	imageReadouts.forEach((readouts, elementID) => {
-		const placeholder = `${elementID}-placeholder`;
-		const wrapper = `${elementID}-wrapper`;
-		const parentID = parents.get(elementID)!;
-		const existingParent = getNextParent(parentID, state);
-		const existingParentReadout = defaultReadouts.get(existingParent)!;
-
-		const imageState: ImageState = {
-			easing: easings.get(elementID)!,
-			readouts,
-			parentReadouts: allReadouts.get(parentID)!,
-			maxHeight: highestNumber(readouts.map((entry) => entry.currentHeight)),
-			maxWidth: highestNumber(readouts.map((entry) => entry.currentWidth)),
-		};
-
-		overrides.set(placeholder, {
-			height: readouts.at(-1)!.unsaveHeight + "px",
-			width: readouts.at(-1)!.unsaveWidth + "px",
-		});
-
-		if (
-			existingParentReadout.at(-1)?.position === "static" &&
-			overrides.get(existingParent)?.position === undefined
-		) {
-			overrides.set(existingParent, {
-				...(overrides.get(existingParent) ?? {}),
-				position: "relative",
-			});
-			overrideResets.set(existingParent, {
-				...(overrideResets.get(existingParent) ?? {}),
-				position: "",
-			});
-		}
-
-		overrides.set(wrapper, getWrapperStyle(imageState));
-		keyframes.set(wrapper, getWrapperKeyframes(imageState));
-		keyframes.set(elementID, calculateImageKeyframes(imageState));
-		wrappers.set(elementID, wrapper);
-		placeholders.set(elementID, placeholder);
-
-		overrides.set(elementID, {
-			...(overrides.get(elementID) ?? {}),
-			...defaultImageStyles,
-		});
-
-		overrideResets.set(elementID, {
-			...(overrides.get(elementID) ?? {}),
-			...getImageReset(),
-		});
-
-		if (readouts.some(checkForBorderRadius)) {
-			overrides.set(elementID, {
-				...(overrides.get(elementID) ?? {}),
-				borderRadius: "0px",
-			});
-			overrideResets.set(elementID, {
-				...(overrideResets.get(elementID) ?? {}),
-				borderRadius: readouts.at(-1)?.borderRadius,
-			});
-		}
 	});
 };

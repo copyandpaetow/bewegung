@@ -89,18 +89,7 @@ export const getOrAddKeyFromLookup = (
 	const key = uuid(element.tagName);
 	lookup.set(key, element);
 
-	return key;
-};
-
-export const getOrAddCallbackFromLookup = (
-	element: VoidFunction,
-	lookup: BidirectionalMap<string, VoidFunction>
-) => {
-	if (lookup.has(element)) {
-		return lookup.get(element)!;
-	}
-	const key = uuid("fn");
-	lookup.set(key, element);
+	element.setAttribute("data-key", key);
 
 	return key;
 };

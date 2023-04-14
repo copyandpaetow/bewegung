@@ -1,4 +1,4 @@
-import { ElementReadouts } from "../types";
+import { AllReadoutTypes } from "../types";
 
 const normalizeBorderRadius = (radii: string, dimensions: { height: number; width: number }) => {
 	const radius = radii.split(" ");
@@ -23,8 +23,8 @@ const normalizeBorderRadius = (radii: string, dimensions: { height: number; widt
 	return `${widthEntries.join(" ")} / ${heightEntries.join(" ")}`;
 };
 
-export const calculateBorderRadius = (
-	styleEntry: ElementReadouts,
+export const calculateBorderRadius = <Value extends AllReadoutTypes>(
+	styleEntry: Value,
 	externalWidth?: number,
 	externalHeight?: number
 ): string => {

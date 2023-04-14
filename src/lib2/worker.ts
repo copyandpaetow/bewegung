@@ -1,20 +1,28 @@
-import { calculateEasings, getTimingsFromRoot } from "./calculations/easings";
-import { createKeyframes } from "./create-keyframes";
-import { normalizeProps } from "./normalize-props";
-import { EasingTable, ElementReadouts, MainMessages, WorkerMessages, WorkerState } from "./types";
-import { useWorker } from "./use-worker";
+import { calculateEasings, getTimingsFromRoot } from "./default/easings";
+import { getDefaultKeyframes } from "./default/keyframes";
+import { createImageKeyframes } from "./images/keyframes";
+import { getTextKeyframes } from "./texts/keyframes";
+import {
+	DefaultReadouts,
+	EasingTable,
+	ImageReadouts,
+	MainMessages,
+	TextReadouts,
+	WorkerMessages,
+	WorkerState,
+} from "./types";
+import { useWorker } from "./utils/use-worker";
 
 //@ts-expect-error typescript doesnt
 const worker = self as Worker;
 const workerAtom = useWorker<WorkerMessages, MainMessages>(worker);
 
 let state: WorkerState = {
-	readouts: new Map<string, ElementReadouts[]>(),
-	defaultReadouts: new Map<string, ElementReadouts[]>(),
-	imageReadouts: new Map<string, ElementReadouts[]>(),
+	textReadouts: new Map<string, TextReadouts[]>(),
+	defaultReadouts: new Map<string, DefaultReadouts[]>(),
+	imageReadouts: new Map<string, ImageReadouts[]>(),
 	parents: new Map<string, string>(),
 	easings: new Map<string, EasingTable>(),
-	textElements: new Set<string>(),
 	timings: [],
 	options: [],
 };
@@ -39,19 +47,31 @@ workerAtom("sendStateUpdate").onMessage((parentUpdate) => {
 });
 
 workerAtom("sendDOMRects").onMessage((domChanges) => {
-	const { changes, offset } = domChanges;
+	const { textChanges, imageChanges, defaultChanges, offset } = domChanges;
+	const { textReadouts, defaultReadouts, imageReadouts, timings } = state;
 
 	if (offset === 0) {
-		state.readouts.clear();
-		state.imageReadouts.clear();
-		state.timings = [];
+		textReadouts.clear();
+		defaultReadouts.clear();
+		imageReadouts.clear();
+		timings.length = 0;
 	}
 
-	changes.forEach((readouts, elementID) => {
-		state.readouts.set(elementID, (state.readouts.get(elementID) ?? []).concat(readouts));
+	defaultChanges.forEach((readouts, elementID) => {
+		defaultReadouts.set(elementID, (defaultReadouts.get(elementID) ?? []).concat(readouts));
 	});
+
+	textChanges.forEach((readouts, elementID) => {
+		textReadouts.set(elementID, (textReadouts.get(elementID) ?? []).concat(readouts));
+	});
+	imageChanges.forEach((readouts, elementID) => {
+		imageReadouts.set(elementID, (imageReadouts.get(elementID) ?? []).concat(readouts));
+	});
+
 	state.timings.push(offset);
 	if (offset === 1) {
-		workerAtom("sendResults").reply("results", createKeyframes(state));
+		workerAtom("sendDefaultResults").reply("defaultResults", getDefaultKeyframes(state));
+		workerAtom("sendImageResults").reply("imageResults", createImageKeyframes(state));
+		workerAtom("sendTextResults").reply("textResults", getTextKeyframes(state));
 	}
 });

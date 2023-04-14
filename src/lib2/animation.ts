@@ -1,17 +1,7 @@
-import { createAnimations } from "./create-animations";
+import { createAnimationState } from "./create-animation-state";
 import { createState } from "./create-state";
-import { createAnimationState } from "./observe-dom";
-import { createMachine } from "./state-machine";
 import { AnimationState, InternalProps, MainState } from "./types";
-
-// const isTextNode = (element: HTMLElement) => {
-// 	if (!element.hasChildNodes()) {
-// 		return;
-// 	}
-
-// 	//TODO: investigate if node.nodeType === 3 is faster
-// 	return Array.from(element.childNodes).every((node) => Boolean(node.textContent?.trim()));
-// };
+import { createMachine } from "./utils/state-machine";
 
 export const getAnimationStateMachine = (internalProps: InternalProps, timekeeper: Animation) => {
 	let nextPlayState = "play";
@@ -26,7 +16,7 @@ export const getAnimationStateMachine = (internalProps: InternalProps, timekeepe
 			state.worker("state").reply("sendState", { parents: state.parents, options: state.options });
 			animationState = null;
 		}
-		animationState ??= await createAnimationState(state, internalProps.totalRuntime);
+		animationState ??= await createAnimationState(state);
 		animationState.animations.set("timekeeper", timekeeper);
 	};
 
@@ -57,7 +47,9 @@ export const getAnimationStateMachine = (internalProps: InternalProps, timekeepe
 
 				animationState?.animations.forEach((animation) => {
 					animation.play();
-					animation.pause();
+					setTimeout(() => {
+						animation.pause();
+					}, 200);
 				});
 			},
 			scrollAnimations() {
