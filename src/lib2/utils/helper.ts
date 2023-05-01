@@ -26,3 +26,16 @@ export const emptyStyleReset = (
 		})
 	);
 };
+
+export const resolveable = () => {
+	const api = {
+		resolve(value: any) {},
+		reject(value: any) {},
+	};
+	const promise = new Promise<void>((res, rej) => {
+		api.resolve = res;
+		api.reject = rej;
+	});
+
+	return { ...api, promise };
+};

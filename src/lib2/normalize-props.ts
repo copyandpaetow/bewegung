@@ -2,27 +2,83 @@ import { defaultOptions } from "./utils/constants";
 import {
 	BewegungsBlock,
 	BewegungsConfig,
-	InternalProps,
+	ElementOrSelector,
+	InternalState,
+	NormalizedProps,
 	NormalizedPropsWithCallbacks,
 } from "./types";
+import { uuid } from "./utils/element-translations";
 
-export const resolveable = () => {
-	const api = {
-		resolve(value: any) {},
-		reject(value: any) {},
-	};
-	const promise = new Promise<void>((res, rej) => {
-		api.resolve = res;
-		api.reject = rej;
+const computeCallbacks = (props: NormalizedPropsWithCallbacks[]) => {
+	const callbacks = new Map<number, VoidFunction[]>();
+	const timings = new Set([0, ...props.map((entry) => entry.end)]);
+
+	timings.forEach((currentTime) => {
+		const relevantEntries = props.filter((entry) => entry.end <= currentTime);
+
+		callbacks.set(currentTime, [...new Set(relevantEntries.map((entry) => entry.callback))]);
 	});
 
-	return { ...api, promise };
+	return callbacks;
+};
+
+const getElement = (element: ElementOrSelector) => {
+	if (typeof element !== "string") {
+		return element as HTMLElement;
+	}
+	return document.querySelector(element) as HTMLElement;
+};
+
+const makeTransferableOptions = (props: NormalizedPropsWithCallbacks[]) => {
+	const options = new Map<string, NormalizedProps>();
+
+	props.forEach((entry) => {
+		const { callback, root, ...remainingOptions } = entry;
+		const key = uuid("root");
+
+		const existingRoot = root.getAttribute("bewegungs-root");
+		const newRootKey = existingRoot ? existingRoot + " " + key : key;
+
+		root.setAttribute("bewegungs-root", newRootKey);
+
+		options.set(key, remainingOptions);
+	});
+
+	return options;
+};
+
+const getTreeStartingPoints = (props: NormalizedPropsWithCallbacks[]) => {
+	const allRoots = props
+		.map((entry) => entry.root)
+		.sort((a, b) => {
+			if (a.contains(b)) {
+				return -1;
+			}
+			if (b.contains(a)) {
+				return 1;
+			}
+			return 0;
+		});
+	const roots = new Map<string, HTMLElement>();
+
+	allRoots.forEach((currentRoot) => {
+		const isCurrentRootPartOfExistingRoot = Array.from(roots.values()).some((root) =>
+			root.contains(currentRoot)
+		);
+		if (isCurrentRootPartOfExistingRoot) {
+			return;
+		}
+		const key = currentRoot.getAttribute("bewegungs-root")!;
+		roots.set(key, currentRoot);
+	});
+
+	return roots;
 };
 
 export const normalizeProps = (
 	props: BewegungsBlock[],
 	globalConfig?: Partial<BewegungsConfig>
-): InternalProps => {
+): InternalState => {
 	let totalRuntime = 0;
 	let currentTime = 0;
 
@@ -35,12 +91,12 @@ export const normalizeProps = (
 				...defaultOptions,
 				...(globalConfig ?? {}),
 				...(options ?? {}),
-				callback,
 			};
 
 			totalRuntime = totalRuntime + combinedOptions.at + combinedOptions.duration;
+			const root = getElement(combinedOptions.root);
 
-			return combinedOptions;
+			return { ...combinedOptions, callback, root };
 		})
 		.map((entry) => {
 			const { duration, at, ...remainingOptions } = entry;
@@ -56,23 +112,9 @@ export const normalizeProps = (
 		});
 
 	return {
-		normalizedProps,
+		callbacks: computeCallbacks(normalizedProps),
+		options: makeTransferableOptions(normalizedProps),
+		roots: getTreeStartingPoints(normalizedProps),
 		totalRuntime,
 	};
 };
-
-// const delayedWorkerTransferable = {
-// 	parents: new Map<string, string>(),
-// 	textElements: new Set<string>(),
-// };
-
-// const minimalWorkerTransferable = {
-// 	parents: new Map<string, string>(),
-// 	roots: new Map<string, NormalizedOptions>(),
-// };
-
-// const resultingAnimationState = {
-// 	timekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
-// 	animations: new Map([["timekeeper", timekeeper]]),
-// 	onStart: [],
-// }

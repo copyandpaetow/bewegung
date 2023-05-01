@@ -1,13 +1,16 @@
-import { calculateEasings, getTimingsFromRoot } from "./default/easings";
-import { getDefaultKeyframes } from "./default/keyframes";
-import { createImageKeyframes } from "./images/keyframes";
-import { getTextKeyframes } from "./texts/keyframes";
 import {
-	DefaultReadouts,
-	EasingTable,
-	ImageReadouts,
+	alignTreeChildren,
+	calculateIntermediateTree,
+	generateAnimationTree,
+	updateTreeStructure,
+} from "./calculate-animation-tree";
+import { getEmptyReadouts } from "./get-keyframes";
+import {
+	DomTree,
+	IntermediateDomTree,
 	MainMessages,
-	TextReadouts,
+	NormalizedProps,
+	ResultingDomTree,
 	WorkerMessages,
 	WorkerState,
 } from "./types";
@@ -17,61 +20,40 @@ import { useWorker } from "./utils/use-worker";
 const worker = self as Worker;
 const workerAtom = useWorker<WorkerMessages, MainMessages>(worker);
 
-let state: WorkerState = {
-	textReadouts: new Map<string, TextReadouts[]>(),
-	defaultReadouts: new Map<string, DefaultReadouts[]>(),
-	imageReadouts: new Map<string, ImageReadouts[]>(),
-	parents: new Map<string, string>(),
-	easings: new Map<string, EasingTable>(),
-	timings: [],
-	options: [],
+const state: WorkerState = {
+	options: new Map<string, NormalizedProps>(),
+	intermediateTree: new Map<string, IntermediateDomTree>(),
 };
 
 workerAtom("sendState").onMessage((stateTransferable) => {
-	state = {
-		...state,
-		...stateTransferable,
-		easings: calculateEasings(getTimingsFromRoot(stateTransferable)),
-	};
-});
-
-workerAtom("sendStateUpdate").onMessage((parentUpdate) => {
-	parentUpdate.forEach((parent, current) => {
-		state.parents.set(current, parent);
-	});
-	calculateEasings(getTimingsFromRoot({ parents: state.parents, options: state.options })).forEach(
-		(easings, key) => {
-			state.easings.set(key, easings);
-		}
-	);
+	state.options = stateTransferable;
 });
 
 workerAtom("sendDOMRects").onMessage((domChanges) => {
-	const { textChanges, imageChanges, defaultChanges, offset } = domChanges;
-	const { textReadouts, defaultReadouts, imageReadouts, timings } = state;
+	const { domTrees, offset } = domChanges;
 
-	if (offset === 0) {
-		textReadouts.clear();
-		defaultReadouts.clear();
-		imageReadouts.clear();
-		timings.length = 0;
-	}
+	domTrees.forEach((tree, key) => {
+		const currentTree = updateTreeStructure(tree, offset);
 
-	defaultChanges.forEach((readouts, elementID) => {
-		defaultReadouts.set(elementID, (defaultReadouts.get(elementID) ?? []).concat(readouts));
+		if (!state.intermediateTree.has(key)) {
+			state.intermediateTree.set(key, currentTree);
+			return;
+		}
+		const previousTree = state.intermediateTree.get(key)!;
+
+		alignTreeChildren([previousTree], [currentTree]);
+
+		state.intermediateTree.set(key, calculateIntermediateTree(previousTree, currentTree));
 	});
 
-	textChanges.forEach((readouts, elementID) => {
-		textReadouts.set(elementID, (textReadouts.get(elementID) ?? []).concat(readouts));
-	});
-	imageChanges.forEach((readouts, elementID) => {
-		imageReadouts.set(elementID, (imageReadouts.get(elementID) ?? []).concat(readouts));
-	});
-
-	state.timings.push(offset);
 	if (offset === 1) {
-		workerAtom("sendDefaultResults").reply("defaultResults", getDefaultKeyframes(state));
-		workerAtom("sendImageResults").reply("imageResults", createImageKeyframes(state));
-		workerAtom("sendTextResults").reply("textResults", getTextKeyframes(state));
+		const animationTrees = new Map<string, ResultingDomTree>();
+		state.intermediateTree.forEach((domTree, key) => {
+			animationTrees.set(
+				key,
+				generateAnimationTree(domTree, getEmptyReadouts(domTree.style), [], state.options)
+			);
+		});
+		workerAtom("sendAnimationTrees").reply("animationTrees", animationTrees);
 	}
 });

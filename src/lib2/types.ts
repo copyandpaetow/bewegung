@@ -74,16 +74,12 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 };
 
 export type DomChangeTransferable = {
-	imageChanges: Map<string, ImageReadouts>;
-	textChanges: Map<string, TextReadouts>;
-	defaultChanges: Map<string, DefaultReadouts>;
+	domTrees: Map<string, DomTree>;
 	offset: number;
+	currentTime: number;
 };
 
-export type StateTransferable = {
-	parents: Map<string, string>;
-	options: NormalizedProps[];
-};
+export type StateTransferable = Map<string, NormalizedProps>;
 
 export type ImageTransferable = DefaultTransferable & {
 	placeholders: Map<string, string>;
@@ -103,6 +99,50 @@ export type MainMessages = {
 	textResults: DefaultTransferable;
 	state: StateTransferable;
 	updateState: Map<string, string>;
+	animationTrees: Map<string, ResultingDomTree>;
+};
+
+export type TreeStyle = {
+	currentTop: number;
+	currentLeft: number;
+	unsaveWidth: number;
+	unsaveHeight: number;
+	ratio: number;
+	position: string;
+	transform: string;
+	transformOrigin: string;
+	objectFit: string;
+	objectPosition: string;
+	display: string;
+	borderRadius: string;
+	text: number;
+};
+
+export type DomTree = {
+	style: TreeStyle;
+	key: string;
+	root: string;
+	children: DomTree[];
+};
+
+export type TreeStyleWithOffset = TreeStyle & {
+	offset: number;
+	currentHeight: number;
+	currentWidth: number;
+};
+
+export type IntermediateDomTree = {
+	style: TreeStyleWithOffset[];
+	key: string;
+	root: string;
+	children: IntermediateDomTree[];
+};
+
+export type ResultingDomTree = {
+	key: string;
+	keyframes: Keyframe[];
+	overrides: {};
+	children: ResultingDomTree[];
 };
 
 export type WorkerMessages = {
@@ -112,20 +152,12 @@ export type WorkerMessages = {
 	sendTextResults: DefaultTransferable;
 	sendState: StateTransferable;
 	sendStateUpdate: Map<string, string>;
+	sendAnimationTrees: Map<string, ResultingDomTree>;
 };
 
 export type AtomicWorker = <Current extends keyof MainMessages>(
 	eventName: Current
 ) => WorkerContext<Current, MainMessages, WorkerMessages>;
-
-export type MainState = {
-	parents: Map<string, string>;
-	callbacks: Map<number, VoidFunction[]>;
-	options: NormalizedProps[];
-	elementTranslations: BidirectionalMap<string, HTMLElement>;
-	worker: AtomicWorker;
-	totalRuntime: number;
-};
 
 export type AnimationState = {
 	animations: Map<string, Animation>;
@@ -219,13 +251,8 @@ export interface DimensionalDifferences {
 export type EasingTable = Record<number, string>;
 
 export type WorkerState = {
-	textReadouts: Map<string, TextReadouts[]>;
-	defaultReadouts: Map<string, DefaultReadouts[]>;
-	imageReadouts: Map<string, ImageReadouts[]>;
-	parents: Map<string, string>;
-	easings: Map<string, EasingTable>;
-	timings: number[];
-	options: NormalizedProps[];
+	intermediateTree: Map<string, IntermediateDomTree>;
+	options: Map<string, NormalizedProps>;
 };
 
 export type ImageState = {
@@ -248,7 +275,6 @@ export type NormalizedProps = {
 	start: number;
 	end: number;
 	iterations: number;
-	root: string;
 	easing:
 		| "ease"
 		| "ease-in"
@@ -258,10 +284,15 @@ export type NormalizedProps = {
 		| `cubic-bezier(${number},${number},${number},${number})`;
 };
 
-export type NormalizedPropsWithCallbacks = NormalizedProps & { callback: VoidFunction };
+export type NormalizedPropsWithCallbacks = NormalizedProps & {
+	callback: VoidFunction;
+	root: HTMLElement;
+};
 
-export type InternalProps = {
-	normalizedProps: NormalizedPropsWithCallbacks[];
+export type InternalState = {
+	callbacks: Map<number, VoidFunction[]>;
+	options: Map<string, NormalizedProps>;
+	roots: Map<string, HTMLElement>;
 	totalRuntime: number;
 };
 
@@ -275,4 +306,9 @@ export type DefaultResult = {
 export type ImageResult = DefaultResult & {
 	placeholders: Map<string, string>;
 	wrappers: Map<string, string>;
+};
+
+export type ClientAnimationTree = {
+	animation: Animation;
+	children: ClientAnimationTree[];
 };

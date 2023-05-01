@@ -1,23 +1,36 @@
 import { createAnimationState } from "./create-animation-state";
-import { createState } from "./create-state";
-import { AnimationState, InternalProps, MainState } from "./types";
+import { AnimationState, AtomicWorker, ClientAnimationTree, InternalState } from "./types";
 import { createMachine } from "./utils/state-machine";
 
-export const getAnimationStateMachine = (internalProps: InternalProps, timekeeper: Animation) => {
+/*
+for later:
+=> a treewalker could speed things up as well 
+=> how to handle the edgecase when a root element is getting deleted?
+
+- a helper to play/Pause all the animations
+- elementResets
+- calculations for text and images
+- overrides improvements
+- new elements for images
+
+*/
+
+export const getAnimationStateMachine = (
+	state: InternalState,
+	timekeeper: Animation,
+	worker: AtomicWorker
+) => {
 	let nextPlayState = "play";
 	let time = Date.now();
 
-	let state: null | MainState = null;
-	let animationState: null | AnimationState = null;
+	let animationState: null | Map<string, ClientAnimationTree> = null;
 
 	const resetState = async () => {
-		if (!state) {
-			state = createState(internalProps);
-			state.worker("state").reply("sendState", { parents: state.parents, options: state.options });
-			animationState = null;
+		if (!animationState) {
+			worker("state").reply("sendState", state.options);
 		}
-		animationState ??= await createAnimationState(state);
-		animationState.animations.set("timekeeper", timekeeper);
+		animationState = await createAnimationState(state, worker);
+		animationState.set("timekeeper", { animation: timekeeper, children: [] });
 	};
 
 	const machine = createMachine({
@@ -45,11 +58,12 @@ export const getAnimationStateMachine = (internalProps: InternalProps, timekeepe
 				console.log("play");
 				console.log(`calculation took ${Date.now() - time}ms`);
 
-				animationState?.animations.forEach((animation) => {
-					animation.play();
-					setTimeout(() => {
-						animation.pause();
-					}, 200);
+				animationState?.forEach((animation) => {
+					const play = (tree: ClientAnimationTree) => {
+						tree.animation.play();
+						tree.children.forEach(play);
+					};
+					play(animation);
 				});
 			},
 			scrollAnimations() {
@@ -71,16 +85,12 @@ export const getAnimationStateMachine = (internalProps: InternalProps, timekeepe
 				console.log("cleanup");
 			},
 			resetElements() {
-				animationState?.elementResets.forEach((reset, key) => {
-					const domElement = state?.elementTranslations.get(key)!;
-					//TODO: remove added and add removed, reset existing attributes
-				});
 				console.log("resetElements");
 			},
 		},
 		guards: {
 			isStateLoaded() {
-				return [state, animationState].every(Boolean);
+				return Boolean(animationState);
 			},
 			isAnimationWanted() {
 				return window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === false;

@@ -125,7 +125,6 @@ export const createImageAnimations = (
 	imageTransferable: ImageTransferable,
 	state: MainState
 ): ImageResult => {
-	console.log(imageTransferable);
 	const { keyframes, wrappers, overrides, placeholders, partialElements } = imageTransferable;
 	const { elementTranslations } = state;
 
