@@ -1,4 +1,4 @@
-import { EasingTable, StateTransferable, TempTimelineEntry, TimelineEntry } from "../types";
+import { NormalizedProps, TempTimelineEntry, TimelineEntry } from "../types";
 
 export const toArray = <MaybeArrayType>(
 	maybeArray: MaybeArrayType | MaybeArrayType[]
@@ -106,49 +106,14 @@ const computeTimeline = (entries: TimelineEntry[]) => {
 
 	return timeline;
 };
-export const calculateEasings = (easings: Map<string, TimelineEntry[]>) => {
-	const newEasings = new Map<string, EasingTable>();
 
-	easings.forEach((timelines, elementID) => {
-		const easingTable: Record<number, string> = { 0: "ease" };
-		computeTimeline(timelines).forEach((entry) => {
-			const { end, easing } = entry;
+export const calculateEasings = (easings: NormalizedProps[]) => {
+	const easingTable: Record<number, string> = { 0: "ease" };
+	computeTimeline(easings).forEach((entry) => {
+		const { end, easing } = entry;
 
-			easingTable[end] = easing;
-		});
-		newEasings.set(elementID, easingTable);
+		easingTable[end] = easing;
 	});
 
-	return newEasings;
-};
-
-const isElementRelatedToRoot = (current: string, parents: Map<string, string>, root: string) => {
-	const parentKey = parents.get(current)!;
-
-	if (parentKey === root) {
-		return true;
-	}
-
-	if (parentKey === current) {
-		return false;
-	}
-
-	return isElementRelatedToRoot(parentKey, parents, root);
-};
-
-export const getTimingsFromRoot = ({ options, parents }: StateTransferable) => {
-	const easings = new Map<string, TimelineEntry[]>();
-
-	options.forEach((option) => {
-		const { root, start, end, easing } = option;
-
-		parents.forEach((_, current) => {
-			if (!isElementRelatedToRoot(current, parents, root)) {
-				return;
-			}
-			easings.set(current, (easings.get(current) ?? []).concat({ start, end, easing }));
-		});
-	});
-
-	return easings;
+	return easingTable;
 };

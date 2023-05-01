@@ -1,9 +1,5 @@
-import {
-	saveDefaultReadout,
-	saveImageReadout,
-	seperateElementReadouts,
-} from "./read-element-styles";
-import { MainState } from "./types";
+import { createSerializableElement } from "./read-element-styles";
+import { AtomicWorker, DomTree, InternalState } from "./types";
 import { isHTMLElement } from "./utils/predicates";
 
 const resetNodeStyle = (entries: MutationRecord[]) => {
@@ -25,45 +21,6 @@ export const serializeElement = (element: HTMLElement, key: number) => {
 	const elementKey = element.getAttribute("data-bewegungskey") ?? key;
 
 	return `${element.tagName}-key-${elementKey}`;
-};
-
-export const registerElementAdditons = (entries: MutationRecord[], state: MainState) => {
-	const { elementTranslations, parents, worker } = state;
-	const parentUpdate = new Map<string, string>();
-
-	const newDomElements = entries
-		.flatMap((entry) => [...entry.addedNodes])
-		.filter(isHTMLElement)
-		.map((element, index) => {
-			const domElement = element as HTMLElement;
-
-			[domElement, ...domElement.querySelectorAll("*")]
-				.reduce((accumulator, currentElement) => {
-					const key = serializeElement(currentElement as HTMLElement, index);
-					if (elementTranslations.delete(key)) {
-						elementTranslations.set(key, currentElement as HTMLElement);
-						return accumulator;
-					}
-
-					elementTranslations.set(key, currentElement as HTMLElement);
-					accumulator.push(currentElement as HTMLElement);
-					return accumulator;
-				}, [] as HTMLElement[])
-				.forEach((currentElement) => {
-					const key = elementTranslations.get(currentElement)!;
-					const parentKey = elementTranslations.get(currentElement.parentElement!)!;
-
-					parentUpdate.set(key, parentKey);
-					parents.set(key, parentKey);
-				});
-			return domElement;
-		});
-
-	if (parentUpdate.size > 0) {
-		worker("updateState").reply("sendStateUpdate", parentUpdate);
-	}
-
-	return newDomElements;
 };
 
 export const getNextElementSibling = (node: Node | null): HTMLElement | null => {
@@ -132,9 +89,9 @@ const observe = (observer: MutationObserver) =>
 		attributeOldValue: true,
 	});
 
-export const observeDom = (state: MainState) =>
+export const observeDom = (state: InternalState, worker: AtomicWorker) =>
 	new Promise<void>((resolve) => {
-		const { worker, callbacks, elementTranslations } = state;
+		const { callbacks, roots } = state;
 		const { reply, cleanup } = worker("domChanges");
 		const changes = callbacks.entries();
 		let offset = -1;
@@ -168,15 +125,15 @@ export const observeDom = (state: MainState) =>
 		const observerCallback: MutationCallback = (entries, observer) => {
 			observer.disconnect();
 			const { addEntries, removeEntries, attributeEntries } = separateEntries(entries);
-			registerElementAdditons(addEntries, state);
+			const domTrees = new Map<string, DomTree>();
 
-			const { textElements, defaultElements, imageElements } =
-				seperateElementReadouts(elementTranslations);
+			roots.forEach((rootElement, key) => {
+				domTrees.set(key, createSerializableElement(rootElement, 0));
+			});
 
 			reply("sendDOMRects", {
-				imageChanges: saveImageReadout(imageElements, offset),
-				textChanges: saveDefaultReadout(textElements, offset),
-				defaultChanges: saveDefaultReadout(defaultElements, offset),
+				domTrees,
+				currentTime: Date.now(),
 				offset,
 			});
 
