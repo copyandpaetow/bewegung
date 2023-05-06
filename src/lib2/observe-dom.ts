@@ -1,3 +1,4 @@
+import { addKeyToNewlyAddedElement } from "./normalize-props";
 import { createSerializableElement } from "./read-element-styles";
 import { AtomicWorker, DomTree, InternalState } from "./types";
 import { isHTMLElement } from "./utils/predicates";
@@ -69,6 +70,7 @@ export const readdRemovedNodes = (entries: MutationRecord[]) => {
 		entry.removedNodes.forEach((element) => {
 			entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 			if (isHTMLElement(element)) {
+				(element as HTMLElement).setAttribute("bewegung-removeable", "");
 				removedElements.push(element as HTMLElement);
 			}
 		});
@@ -79,6 +81,14 @@ export const readdRemovedNodes = (entries: MutationRecord[]) => {
 const removeAddedNodes = (entries: MutationRecord[]) => {
 	//@ts-expect-error
 	entries.forEach((entry) => entry.addedNodes.forEach((node) => node?.remove()));
+};
+
+const addKeyToCustomElements = (entries: MutationRecord[]) => {
+	entries
+		.flatMap((entry) => [...entry.removedNodes])
+		.filter(isHTMLElement)
+		//@ts-expect-error
+		.forEach(addKeyToNewlyAddedElement);
 };
 
 const observe = (observer: MutationObserver) =>
@@ -93,6 +103,7 @@ export const observeDom = (state: InternalState, worker: AtomicWorker) =>
 	new Promise<void>((resolve) => {
 		const { callbacks, roots } = state;
 		const { reply, cleanup } = worker("domChanges");
+		const keyMap = new WeakMap<HTMLElement, string>();
 		const changes = callbacks.entries();
 		let offset = -1;
 		let change: VoidFunction[] = [];
@@ -127,8 +138,10 @@ export const observeDom = (state: InternalState, worker: AtomicWorker) =>
 			const { addEntries, removeEntries, attributeEntries } = separateEntries(entries);
 			const domTrees = new Map<string, DomTree>();
 
+			addKeyToCustomElements(addEntries);
+
 			roots.forEach((rootElement, key) => {
-				domTrees.set(key, createSerializableElement(rootElement, 0));
+				domTrees.set(key, createSerializableElement(rootElement, 0, keyMap));
 			});
 
 			reply("sendDOMRects", {

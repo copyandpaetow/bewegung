@@ -26,11 +26,6 @@ TODO:
 - "at" needs to be more refined
 - options need to be rechecked. Should more be included? 
 
-- the worker might also need a state machine
-
-- try to avoid if statements in loops, better filter before
-- there are a lot of similarities between the MOs, that could be unified
-
 if there is an overlap within the sequence, it will create additional easings
 ? should these be used in the keyframes? Should there be another readout for that timing?
 

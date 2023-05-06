@@ -29,6 +29,16 @@ const getElement = (element: ElementOrSelector) => {
 	return document.querySelector(element) as HTMLElement;
 };
 
+export const addKeyToNewlyAddedElement = (element: HTMLElement, index: number) => {
+	if (element.hasAttribute("bewegungs-key")) {
+		return;
+	}
+	element.setAttribute(
+		"bewegungs-key",
+		`key-added-element-${(element as HTMLElement).tagName}-${index}`
+	);
+};
+
 const makeTransferableOptions = (props: NormalizedPropsWithCallbacks[]) => {
 	const options = new Map<string, NormalizedProps>();
 

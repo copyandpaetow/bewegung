@@ -1,6 +1,10 @@
 import { DomTree } from "./types";
 
-export function createSerializableElement(element: HTMLElement, index: number): DomTree {
+export function createSerializableElement(
+	element: HTMLElement,
+	index: number,
+	keyMap: WeakMap<HTMLElement, string>
+): DomTree {
 	const { top, left, width, height } = element.getBoundingClientRect();
 	const { display, borderRadius, position, transform, transformOrigin, objectFit, objectPosition } =
 		window.getComputedStyle(element);
@@ -20,6 +24,10 @@ export function createSerializableElement(element: HTMLElement, index: number): 
 	//@ts-expect-error
 	const ratio = (element.naturalWidth ?? 1) / (element.naturalHeight ?? -1);
 
+	if (!keyMap.has(element)) {
+		keyMap.set(element, element.getAttribute("bewegung-key") ?? `key-${element.tagName}-${index}`);
+	}
+
 	return {
 		style: {
 			currentTop: top,
@@ -36,8 +44,8 @@ export function createSerializableElement(element: HTMLElement, index: number): 
 			ratio,
 			text,
 		},
-		key: element.getAttribute("bewegung-key") ?? `key-${element.tagName}-${index}`,
+		key: keyMap.get(element)!,
 		root: element.getAttribute("bewegungs-root") ?? "",
-		children: children.map(createSerializableElement),
+		children: children.map((element, index) => createSerializableElement(element, index, keyMap)),
 	};
 }
