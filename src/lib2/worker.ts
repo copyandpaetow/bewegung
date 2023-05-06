@@ -1,12 +1,10 @@
 import {
-	alignTreeChildren,
 	calculateIntermediateTree,
 	generateAnimationTree,
 	updateTreeStructure,
 } from "./calculate-animation-tree";
 import { getEmptyReadouts } from "./get-keyframes";
 import {
-	DomTree,
 	IntermediateDomTree,
 	MainMessages,
 	NormalizedProps,
@@ -41,18 +39,19 @@ workerAtom("sendDOMRects").onMessage((domChanges) => {
 		}
 		const previousTree = state.intermediateTree.get(key)!;
 
-		alignTreeChildren([previousTree], [currentTree]);
-
 		state.intermediateTree.set(key, calculateIntermediateTree(previousTree, currentTree));
 	});
 
 	if (offset === 1) {
 		const animationTrees = new Map<string, ResultingDomTree>();
 		state.intermediateTree.forEach((domTree, key) => {
-			animationTrees.set(
-				key,
-				generateAnimationTree(domTree, getEmptyReadouts(domTree.style), [], state.options)
-			);
+			const emptyParent = {
+				style: getEmptyReadouts(domTree.style),
+				overrides: {},
+				root: [],
+				hiddenAtSomePoint: false,
+			};
+			animationTrees.set(key, generateAnimationTree(domTree, emptyParent, state.options));
 		});
 		workerAtom("sendAnimationTrees").reply("animationTrees", animationTrees);
 	}

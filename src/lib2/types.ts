@@ -1,5 +1,3 @@
-import { BidirectionalMap } from "./utils/element-translations";
-
 export type ElementOrSelector = HTMLElement | Element | string;
 
 export type BewegungsConfig = {
@@ -16,23 +14,7 @@ export type BewegungsConfig = {
 	at?: number;
 };
 
-export type Options = Required<BewegungsConfig>;
-
-export type NormalizedOptions = Omit<Options, "at" | "duration" | "root"> & {
-	start: number;
-	end: number;
-	root: string;
-};
-
 export type BewegungsBlock = [VoidFunction, BewegungsConfig] | VoidFunction;
-
-type OptinalConfigBlock = [BewegungsConfig?];
-
-export type Bewegung = [...BewegungsBlock[], ...OptinalConfigBlock];
-
-export type BewegungsOptions = [VoidFunction, Options];
-
-export type Timeline = TimelineEntry[] | TempTimelineEntry[];
 
 export type TimelineEntry = {
 	start: number;
@@ -141,7 +123,7 @@ export type IntermediateDomTree = {
 export type ResultingDomTree = {
 	key: string;
 	keyframes: Keyframe[];
-	overrides: {};
+	overrides: Overrides;
 	children: ResultingDomTree[];
 };
 
@@ -309,6 +291,17 @@ export type ImageResult = DefaultResult & {
 };
 
 export type ClientAnimationTree = {
-	animation: Animation;
+	animation: Animation | null;
 	children: ClientAnimationTree[];
+};
+
+export type Overrides = {
+	styles?: Partial<CSSStyleDeclaration>;
+};
+
+export type ParentTree = {
+	style: TreeStyleWithOffset[];
+	root: string[];
+	overrides: Overrides;
+	hiddenAtSomePoint: boolean;
 };

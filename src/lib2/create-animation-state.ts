@@ -1,9 +1,9 @@
 import { observeDom, readdRemovedNodes, separateEntries } from "./observe-dom";
 import {
-	AnimationState,
 	AtomicWorker,
 	ClientAnimationTree,
 	InternalState,
+	Overrides,
 	ResultingDomTree,
 } from "./types";
 import { applyCSSStyles } from "./utils/helper";
@@ -21,8 +21,40 @@ export const saveOriginalStyle = (element: HTMLElement) => {
 	return attributes;
 };
 
-const overrideElementStyles = (element: HTMLElement, override: Partial<CSSStyleDeclaration>) => {
-	applyCSSStyles(element, override);
+const overrideElementStyles = (element: HTMLElement, override: Overrides) => {
+	const callbacks: VoidFunction[] = [];
+
+	if (override.styles) {
+		const style = element.style.cssText;
+		applyCSSStyles(element, override.styles);
+		callbacks.push(() => (element.style.cssText = style));
+	}
+
+	if (element.hasAttribute("bewegung-removeable")) {
+		callbacks.length = 0;
+		callbacks.push(() => element.remove());
+	}
+
+	if (callbacks.length === 0) {
+		return null;
+	}
+
+	return () => callbacks.forEach((cb) => cb());
+};
+
+const getAnimation = (tree: ResultingDomTree, element: HTMLElement, totalRuntime: number) => {
+	if (tree.keyframes.length === 0 && !tree.overrides.styles) {
+		return null;
+	}
+
+	const animation = new Animation(new KeyframeEffect(element, tree.keyframes, totalRuntime));
+	const resetOverrides = overrideElementStyles(element, tree.overrides);
+
+	if (resetOverrides) {
+		animation.onfinish = resetOverrides;
+	}
+
+	return animation;
 };
 
 const createAnimationTree = (
@@ -31,15 +63,8 @@ const createAnimationTree = (
 	totalRuntime: number
 ): ClientAnimationTree => {
 	const elementChildren = Array.from(element.children) as HTMLElement[];
-	const animation = new Animation(new KeyframeEffect(element, tree.keyframes, totalRuntime));
-
-	overrideElementStyles(element, tree.overrides);
-
-	//it would make sense for images to return a new tree entry from the override
-	//either we allow the element to add something to the parents children, or we would need to iterate the children before
-
 	return {
-		animation,
+		animation: getAnimation(tree, element, totalRuntime),
 		children: tree.children.map((child, index) =>
 			createAnimationTree(child, elementChildren[index], totalRuntime)
 		),

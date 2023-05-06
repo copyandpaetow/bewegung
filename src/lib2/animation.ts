@@ -1,17 +1,22 @@
 import { createAnimationState } from "./create-animation-state";
-import { AnimationState, AtomicWorker, ClientAnimationTree, InternalState } from "./types";
+import { AtomicWorker, ClientAnimationTree, InternalState } from "./types";
 import { createMachine } from "./utils/state-machine";
 
 /*
 for later:
-=> a treewalker could speed things up as well 
 => how to handle the edgecase when a root element is getting deleted?
 
 - a helper to play/Pause all the animations
 - elementResets
 - calculations for text and images
-- overrides improvements
 - new elements for images
+- we could add the start+end+easing to the tree instead of the root id. With that we wouldnt need to send the options
+- how to handle the unanimatable properties?
+
+- the updateTreeStructure step could be skipped. Not much value is added there
+
+- it feels like we handle the detection if an element gets added/deleted/visually hidden all over the place
+=> it would be nice to have this as key in the generateAnimationTree
 
 */
 
@@ -60,7 +65,7 @@ export const getAnimationStateMachine = (
 
 				animationState?.forEach((animation) => {
 					const play = (tree: ClientAnimationTree) => {
-						tree.animation.play();
+						tree.animation?.play();
 						tree.children.forEach(play);
 					};
 					play(animation);

@@ -1,6 +1,4 @@
-import { CustomKeyframeEffect } from "../../lib/types";
-import { testThis } from "./test";
-import { bewegung2, Bewegung } from "../../lib2/bewegung";
+import { Bewegung, bewegung2 } from "../../lib2/bewegung";
 import { BewegungsBlock } from "../../lib2/types";
 
 const initCards = () => {
@@ -70,13 +68,13 @@ const initCards = () => {
 		};
 
 		const sequence: BewegungsBlock[] = [
-			[
-				() => {
-					changeWidth(100);
-					addSomeAttribute();
-				},
-				{ duration: 2000, at: 0, easing: "ease" },
-			],
+			// [
+			// 	() => {
+			// 		changeWidth(100);
+			// 		addSomeAttribute();
+			// 	},
+			// 	{ duration: 2000, at: 0, easing: "ease" },
+			// ],
 
 			// [
 			// 	() => {
@@ -86,14 +84,15 @@ const initCards = () => {
 			// 	},
 			// 	{ duration: 2000, easing: "ease-out" },
 			// ],
-			// [
-			// 	() => {
-			// 		const element = cards[activeIndex] as HTMLElement;
-			// 		element.remove();
-			// 	},
-			// 	{ duration: 2000, at: -200, easing: "cubic-bezier(.5,.25,.8,.6)" },
-			// ],
-			[() => changeWidth(20), { duration: 2000 }],
+			[
+				() => {
+					const element = cards[activeIndex] as HTMLElement;
+					console.log(element);
+					element.remove();
+				},
+				{ duration: 2000, at: -200, easing: "cubic-bezier(.5,.25,.8,.6)" },
+			],
+			// [() => changeWidth(20), { duration: 2000 }],
 		];
 
 		return bewegung2(sequence, {

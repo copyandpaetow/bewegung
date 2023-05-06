@@ -1,7 +1,7 @@
 import { calculateBorderRadius } from "./default/border-radius";
 import { calculateDimensionDifferences } from "./default/calculate-differences";
 import { calculateEasings } from "./default/easings";
-import { DimensionalDifferences, NormalizedProps, TreeStyleWithOffset } from "./types";
+import { DimensionalDifferences, NormalizedProps, ParentTree, TreeStyleWithOffset } from "./types";
 
 export const getEmptyReadouts = (readouts: TreeStyleWithOffset[]) => {
 	return readouts.map((readouts) => ({
@@ -33,6 +33,7 @@ export const normalizeStyles = (
 	parentReadouts: TreeStyleWithOffset[]
 ): TreeStyleWithOffset[] => {
 	const updatedReadouts: TreeStyleWithOffset[] = [];
+
 	parentReadouts
 		.map((parentReadout) => parentReadout.offset)
 		.forEach((offset) => {
@@ -52,23 +53,15 @@ export const normalizeStyles = (
 				return;
 			}
 
-			if (correspondingReadout) {
-				updatedReadouts.push({
-					...nextVisibleReadout,
-					display: correspondingReadout.display,
-					unsaveHeight: 0,
-					unsaveWidth: 0,
-					offset,
-				});
-				return;
-			}
-
 			updatedReadouts.push({
 				...nextVisibleReadout,
+				display: correspondingReadout ? correspondingReadout.display : nextVisibleReadout.display,
 				unsaveHeight: 0,
 				unsaveWidth: 0,
 				offset,
 			});
+
+			return;
 		});
 
 	return updatedReadouts;
@@ -97,14 +90,26 @@ export const isElementUnchanged = ({
 }: DimensionalDifferences) =>
 	leftDifference === 0 && topDifference === 0 && widthDifference === 1 && heightDifference === 1;
 
+const isHiddenBecauseOfParent = ({
+	leftDifference,
+	topDifference,
+	widthDifference,
+	heightDifference,
+}: DimensionalDifferences) => {
+	const samePosition = leftDifference === 0 && topDifference === 0;
+	const hiddenOrDefaultWidth = widthDifference === 1 || widthDifference === 0;
+	const hiddenOrDefaultHeight = heightDifference === 1 || heightDifference === 0;
+
+	return samePosition && hiddenOrDefaultWidth && hiddenOrDefaultHeight;
+};
+
 export const getKeyframes = (
 	readouts: TreeStyleWithOffset[],
-	parentReadouts: TreeStyleWithOffset[],
+	parent: ParentTree,
 	rootOptions: NormalizedProps[]
-): {
-	keyframes: Keyframe[];
-	overrides: {};
-} => {
+): Keyframe[] => {
+	const { style: parentReadouts, hiddenAtSomePoint } = parent;
+
 	const differences = readouts.map((currentReadout) => {
 		const child: DifferenceArray = [currentReadout, readouts.at(-1)!];
 		const correspondingParentEntry = parentReadouts?.find(
@@ -114,25 +119,26 @@ export const getKeyframes = (
 
 		return calculateDimensionDifferences(child, parentReadout);
 	});
-	if (differences.every(isElementUnchanged)) {
-		return { keyframes: [], overrides: {} };
+	if (
+		differences.every(isElementUnchanged) ||
+		(hiddenAtSomePoint && differences.every(isHiddenBecauseOfParent))
+	) {
+		return [];
 	}
 
 	const borderRadius = getBorderRadius(readouts);
 	const easing = calculateEasings(rootOptions);
 
-	return {
-		overrides: {},
-		keyframes: differences.map(
-			({ leftDifference, topDifference, widthDifference, heightDifference, offset }) => {
-				return {
-					transform: `translate(${leftDifference}px, ${topDifference}px) scale(${widthDifference}, ${heightDifference})`,
-					easing: easing[offset],
-					...(borderRadius[offset] && {
-						clipPath: borderRadius[offset] ? `inset(0px round ${borderRadius[offset]})` : "",
-					}),
-				};
-			}
-		),
-	};
+	return differences.map(
+		({ leftDifference, topDifference, widthDifference, heightDifference, offset }) => {
+			return {
+				offset,
+				transform: `translate(${leftDifference}px, ${topDifference}px) scale(${widthDifference}, ${heightDifference})`,
+				easing: easing[offset],
+				...(borderRadius[offset] && {
+					clipPath: borderRadius[offset] ? `inset(0px round ${borderRadius[offset]})` : "",
+				}),
+			};
+		}
+	);
 };

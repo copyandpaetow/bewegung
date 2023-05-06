@@ -3,10 +3,13 @@ import {
 	DomTree,
 	IntermediateDomTree,
 	NormalizedProps,
+	Overrides,
+	ParentTree,
 	ResultingDomTree,
 	TreeStyleWithOffset,
 } from "./types";
 
+//TODO: this is uneccessary work and should be removed
 export const updateTreeStructure = (tree: DomTree, offset: number): IntermediateDomTree => {
 	const intermediateTree: IntermediateDomTree = {
 		root: tree.root,
@@ -35,89 +38,116 @@ we could check
 
 */
 
-export const alignTreeChildren = (
-	accumulator: IntermediateDomTree[],
-	current: IntermediateDomTree[]
-) => {
+export const combineKeys = (accumulator: IntermediateDomTree[], current: IntermediateDomTree[]) => {
+	const accumulatorKeys = accumulator.map((entry) => entry.key);
 	let lastMatchingIndex = -1;
 
-	current.forEach((currentChild, currentIndex) => {
-		//if the current key is available in the accumulator, we update the styling and remember the index
-		const hasAMatch = accumulator.some((accumulatorChild, accumulatorIndex) => {
-			if (currentChild.key !== accumulatorChild.key) {
-				return false;
-			}
-
-			accumulatorChild.style.push(currentChild.style[0]);
-			lastMatchingIndex = accumulatorIndex;
-			return true;
-		});
-
-		if (hasAMatch) {
+	current.forEach((entry, index) => {
+		const keyIndex = accumulatorKeys.findIndex((key) => key === entry.key);
+		if (keyIndex !== -1) {
+			lastMatchingIndex = keyIndex;
 			return;
 		}
 
-		//if the key is unknown and there is no last matching index,the element was added in the beginning
 		if (lastMatchingIndex === -1) {
-			accumulator.splice(currentIndex, 0, currentChild);
+			accumulatorKeys.splice(index, 0, entry.key);
 			return;
 		}
 
-		//if the key is unknown and there is a last matching index,the element was added later
-		//by updating the lastMatchingIndex we do 2 things
-		// 1) add the element after the match
-		// 2) make sure we add a second added element after the first one
-		lastMatchingIndex += 1;
-		accumulator.splice(lastMatchingIndex, 0, currentChild);
+		accumulatorKeys.splice(lastMatchingIndex, 0, entry.key);
+		lastMatchingIndex++;
 	});
+
+	return accumulatorKeys;
 };
 
 export const calculateIntermediateTree = (
 	accumulator: IntermediateDomTree,
 	current: IntermediateDomTree
 ): IntermediateDomTree => {
-	//compare both childrenArrays and align
+	const children = current.children ?? [];
+	const style = current.style ?? [];
+	const allKeys = combineKeys(accumulator.children, children);
 
-	const accumulatorChildren = accumulator.children;
-	const currentChildren = current.children;
+	const accumulatorChildren = allKeys.map(
+		(key) =>
+			accumulator.children.find((entry) => entry.key === key) ??
+			children.find((entry) => entry.key === key)!
+	);
 
-	alignTreeChildren(accumulatorChildren, currentChildren);
+	const currentChildren = allKeys.map(
+		(key) => (children.find((entry) => entry.key === key) ?? []) as IntermediateDomTree
+	);
 
-	const accumulatorTree: IntermediateDomTree = {
+	return {
 		root: accumulator.root,
-		style: accumulator.style,
+		style: accumulator.style.concat(style),
 		key: accumulator.key,
-		children: accumulator.children.map((child, index) =>
+		children: accumulatorChildren.map((child, index) =>
 			calculateIntermediateTree(child, currentChildren[index])
 		),
 	};
-
-	return accumulatorTree;
 };
 
 //the root calculation needs a special treatment
 //images and text need also different functions
 
+const hasEntrySize = (entry: TreeStyleWithOffset) =>
+	entry.unsaveWidth !== 0 && entry.unsaveHeight !== 0;
+
+const addMutatedElementOverrides = (
+	readouts: TreeStyleWithOffset[],
+	parentEntry: ParentTree
+): Overrides => {
+	const { style: parentReadouts, overrides: parentOverrides } = parentEntry;
+	const overrides: Overrides = {};
+
+	if (readouts.every(hasEntrySize) || parentEntry.hiddenAtSomePoint) {
+		return overrides;
+	}
+
+	//TODO: other styles like border radius
+
+	overrides.styles = {
+		position: "absolute",
+		left: readouts.at(-1)!.currentLeft - (parentReadouts?.at(-1)!.currentLeft ?? 0) + "px",
+		top: readouts.at(-1)!.currentTop - (parentReadouts?.at(-1)!.currentTop ?? 0) + "px",
+		width: readouts.at(-1)!.currentWidth + "px",
+		height: readouts.at(-1)!.currentHeight + "px",
+	};
+
+	if (parentReadouts.at(-1)!.position === "static" && !parentOverrides.styles?.position) {
+		parentOverrides.styles ??= {};
+		parentOverrides.styles.position = "relative";
+	}
+	return overrides;
+};
+
 export const generateAnimationTree = (
 	tree: IntermediateDomTree,
-	parentDimensions: TreeStyleWithOffset[],
-	parentRoot: string[],
+	parent: ParentTree,
 	options: Map<string, NormalizedProps>
 ) => {
-	const combinedRoots = parentRoot.concat(...tree.root.split(" ")).filter(Boolean);
+	const combinedRoots = parent.root.concat(...tree.root.split(" ")).filter(Boolean);
 	const rootOptions = combinedRoots.map((root) => options.get(root)!);
-	const normalizedStyles = normalizeStyles(tree.style, parentDimensions);
+	const normalizedStyles = normalizeStyles(tree.style, parent.style);
+	const overrides = addMutatedElementOverrides(normalizedStyles, parent);
 
-	const { keyframes, overrides } = getKeyframes(normalizedStyles, parentDimensions, rootOptions);
+	const keyframes = getKeyframes(normalizedStyles, parent, rootOptions);
+
+	const hiddenAtSomePoint = parent.hiddenAtSomePoint || !normalizedStyles.every(hasEntrySize);
 
 	const intermediateTree: ResultingDomTree = {
 		overrides,
 		keyframes,
 		key: tree.key,
 		children: tree.children.map((child) =>
-			generateAnimationTree(child, normalizedStyles, combinedRoots, options)
+			generateAnimationTree(
+				child,
+				{ style: normalizedStyles, overrides: overrides, root: combinedRoots, hiddenAtSomePoint },
+				options
+			)
 		),
 	};
-
 	return intermediateTree;
 };
