@@ -1,5 +1,6 @@
 import { defaultOptions } from "./utils/constants";
 import {
+	Attributes,
 	BewegungsBlock,
 	BewegungsConfig,
 	ElementOrSelector,
@@ -30,11 +31,11 @@ const getElement = (element: ElementOrSelector) => {
 };
 
 export const addKeyToNewlyAddedElement = (element: HTMLElement, index: number) => {
-	if (element.hasAttribute("bewegungs-key")) {
+	if (element.hasAttribute(Attributes.key)) {
 		return;
 	}
 	element.setAttribute(
-		"bewegungs-key",
+		Attributes.key,
 		`key-added-element-${(element as HTMLElement).tagName}-${index}`
 	);
 };
@@ -46,10 +47,10 @@ const makeTransferableOptions = (props: NormalizedPropsWithCallbacks[]) => {
 		const { callback, root, ...remainingOptions } = entry;
 		const key = uuid("root");
 
-		const existingRoot = root.getAttribute("bewegungs-root");
+		const existingRoot = root.getAttribute(Attributes.root);
 		const newRootKey = existingRoot ? existingRoot + " " + key : key;
 
-		root.setAttribute("bewegungs-root", newRootKey);
+		root.setAttribute(Attributes.root, newRootKey);
 
 		options.set(key, remainingOptions);
 	});
@@ -78,7 +79,7 @@ const getTreeStartingPoints = (props: NormalizedPropsWithCallbacks[]) => {
 		if (isCurrentRootPartOfExistingRoot) {
 			return;
 		}
-		const key = currentRoot.getAttribute("bewegungs-root")!;
+		const key = currentRoot.getAttribute(Attributes.root)!;
 		roots.set(key, currentRoot);
 	});
 

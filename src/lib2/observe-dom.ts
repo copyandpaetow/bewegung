@@ -1,6 +1,6 @@
 import { addKeyToNewlyAddedElement } from "./normalize-props";
 import { createSerializableElement } from "./read-element-styles";
-import { AtomicWorker, DomTree, InternalState } from "./types";
+import { AtomicWorker, Attributes, DomTree, InternalState } from "./types";
 import { isHTMLElement } from "./utils/predicates";
 
 const resetNodeStyle = (entries: MutationRecord[]) => {
@@ -16,12 +16,6 @@ const resetNodeStyle = (entries: MutationRecord[]) => {
 
 		element.setAttribute(attributeName, oldValue);
 	});
-};
-
-export const serializeElement = (element: HTMLElement, key: number) => {
-	const elementKey = element.getAttribute("data-bewegungskey") ?? key;
-
-	return `${element.tagName}-key-${elementKey}`;
 };
 
 export const getNextElementSibling = (node: Node | null): HTMLElement | null => {
@@ -70,7 +64,7 @@ export const readdRemovedNodes = (entries: MutationRecord[]) => {
 		entry.removedNodes.forEach((element) => {
 			entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 			if (isHTMLElement(element)) {
-				(element as HTMLElement).setAttribute("bewegung-removeable", "");
+				(element as HTMLElement).setAttribute(Attributes.removeable, "");
 				removedElements.push(element as HTMLElement);
 			}
 		});
@@ -83,9 +77,10 @@ const removeAddedNodes = (entries: MutationRecord[]) => {
 	entries.forEach((entry) => entry.addedNodes.forEach((node) => node?.remove()));
 };
 
-const addKeyToCustomElements = (entries: MutationRecord[]) => {
+export const addKeyToCustomElements = (entries: MutationRecord[]) => {
+	console.log(entries);
 	entries
-		.flatMap((entry) => [...entry.removedNodes])
+		.flatMap((entry) => [...entry.addedNodes])
 		.filter(isHTMLElement)
 		//@ts-expect-error
 		.forEach(addKeyToNewlyAddedElement);

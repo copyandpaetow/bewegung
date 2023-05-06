@@ -1,4 +1,4 @@
-import { DomTree } from "./types";
+import { Attributes, DomTree } from "./types";
 
 export function createSerializableElement(
 	element: HTMLElement,
@@ -25,7 +25,7 @@ export function createSerializableElement(
 	const ratio = (element.naturalWidth ?? 1) / (element.naturalHeight ?? -1);
 
 	if (!keyMap.has(element)) {
-		keyMap.set(element, element.getAttribute("bewegung-key") ?? `key-${element.tagName}-${index}`);
+		keyMap.set(element, element.getAttribute(Attributes.key) ?? `key-${element.tagName}-${index}`);
 	}
 
 	return {
@@ -45,7 +45,7 @@ export function createSerializableElement(
 			text,
 		},
 		key: keyMap.get(element)!,
-		root: element.getAttribute("bewegungs-root") ?? "",
+		root: element.getAttribute(Attributes.root) ?? "",
 		children: children.map((element, index) => createSerializableElement(element, index, keyMap)),
 	};
 }
