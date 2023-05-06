@@ -1,5 +1,6 @@
-import { getKeyframes, normalizeStyles } from "./get-keyframes";
+import { getKeyframes, isEntryVisible, normalizeStyles } from "./get-keyframes";
 import {
+	AnimationType,
 	DomTree,
 	IntermediateDomTree,
 	NormalizedProps,
@@ -44,6 +45,7 @@ export const combineKeys = (accumulator: IntermediateDomTree[], current: Interme
 
 	current.forEach((entry, index) => {
 		const keyIndex = accumulatorKeys.findIndex((key) => key === entry.key);
+
 		if (keyIndex !== -1) {
 			lastMatchingIndex = keyIndex;
 			return;
@@ -54,8 +56,8 @@ export const combineKeys = (accumulator: IntermediateDomTree[], current: Interme
 			return;
 		}
 
-		accumulatorKeys.splice(lastMatchingIndex, 0, entry.key);
 		lastMatchingIndex++;
+		accumulatorKeys.splice(lastMatchingIndex, 0, entry.key);
 	});
 
 	return accumulatorKeys;
@@ -78,6 +80,10 @@ export const calculateIntermediateTree = (
 	const currentChildren = allKeys.map(
 		(key) => (children.find((entry) => entry.key === key) ?? []) as IntermediateDomTree
 	);
+
+	if (accumulator.key.includes("UL-3")) {
+		console.log({ accumulatorChildren, currentChildren, allKeys });
+	}
 
 	return {
 		root: accumulator.root,
@@ -102,11 +108,11 @@ const addMutatedElementOverrides = (
 	const { style: parentReadouts, overrides: parentOverrides } = parentEntry;
 	const overrides: Overrides = {};
 
-	if (readouts.every(hasEntrySize) || parentEntry.hiddenAtSomePoint) {
+	//TODO: other styles like border radius
+
+	if (parentEntry.type !== "removal") {
 		return overrides;
 	}
-
-	//TODO: other styles like border radius
 
 	overrides.styles = {
 		position: "absolute",
@@ -123,31 +129,47 @@ const addMutatedElementOverrides = (
 	return overrides;
 };
 
+const getAnimationType = (readouts: TreeStyleWithOffset[]): AnimationType => {
+	if (readouts.every(isEntryVisible)) {
+		return "default";
+	}
+	if (isEntryVisible(readouts.at(-1)!)) {
+		return "addition";
+	}
+
+	return "removal";
+};
+
 export const generateAnimationTree = (
 	tree: IntermediateDomTree,
 	parent: ParentTree,
 	options: Map<string, NormalizedProps>
 ) => {
 	const combinedRoots = parent.root.concat(...tree.root.split(" ")).filter(Boolean);
+	const animationType = getAnimationType(tree.style);
 	const rootOptions = combinedRoots.map((root) => options.get(root)!);
 	const normalizedStyles = normalizeStyles(tree.style, parent.style);
 	const overrides = addMutatedElementOverrides(normalizedStyles, parent);
 
 	const keyframes = getKeyframes(normalizedStyles, parent, rootOptions);
 
-	const hiddenAtSomePoint = parent.hiddenAtSomePoint || !normalizedStyles.every(hasEntrySize);
+	const parentEntry = {
+		style: normalizedStyles,
+		overrides,
+		root: combinedRoots,
+		type: parent.type === "removal" ? parent.type : animationType,
+	};
 
 	const intermediateTree: ResultingDomTree = {
 		overrides,
 		keyframes,
 		key: tree.key,
-		children: tree.children.map((child) =>
-			generateAnimationTree(
-				child,
-				{ style: normalizedStyles, overrides: overrides, root: combinedRoots, hiddenAtSomePoint },
-				options
-			)
-		),
+		children: tree.children.map((child) => generateAnimationTree(child, parentEntry, options)),
 	};
+
+	if (tree.key.includes("UL-3")) {
+		console.log(intermediateTree);
+	}
+
 	return intermediateTree;
 };

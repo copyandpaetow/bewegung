@@ -292,6 +292,7 @@ export type ImageResult = DefaultResult & {
 
 export type ClientAnimationTree = {
 	animation: Animation | null;
+	key: string;
 	children: ClientAnimationTree[];
 };
 
@@ -303,5 +304,13 @@ export type ParentTree = {
 	style: TreeStyleWithOffset[];
 	root: string[];
 	overrides: Overrides;
-	hiddenAtSomePoint: boolean;
+	type: AnimationType;
 };
+
+export const enum Attributes {
+	root = "bewegungs-root",
+	key = "bewegungs-key",
+	removeable = "bewegungs-removeable",
+}
+
+export type AnimationType = "default" | "addition" | "removal";

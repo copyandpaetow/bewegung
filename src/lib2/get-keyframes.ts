@@ -108,7 +108,7 @@ export const getKeyframes = (
 	parent: ParentTree,
 	rootOptions: NormalizedProps[]
 ): Keyframe[] => {
-	const { style: parentReadouts, hiddenAtSomePoint } = parent;
+	const { style: parentReadouts, type } = parent;
 
 	const differences = readouts.map((currentReadout) => {
 		const child: DifferenceArray = [currentReadout, readouts.at(-1)!];
@@ -121,7 +121,7 @@ export const getKeyframes = (
 	});
 	if (
 		differences.every(isElementUnchanged) ||
-		(hiddenAtSomePoint && differences.every(isHiddenBecauseOfParent))
+		(type === "removal" && differences.every(isHiddenBecauseOfParent))
 	) {
 		return [];
 	}

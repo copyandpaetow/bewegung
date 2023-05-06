@@ -15,9 +15,6 @@ for later:
 
 - the updateTreeStructure step could be skipped. Not much value is added there
 
-- it feels like we handle the detection if an element gets added/deleted/visually hidden all over the place
-=> it would be nice to have this as key in the generateAnimationTree
-
 */
 
 export const getAnimationStateMachine = (
@@ -35,7 +32,7 @@ export const getAnimationStateMachine = (
 			worker("state").reply("sendState", state.options);
 		}
 		animationState = await createAnimationState(state, worker);
-		animationState.set("timekeeper", { animation: timekeeper, children: [] });
+		animationState.set("timekeeper", { animation: timekeeper, children: [], key: "timekeeper" });
 	};
 
 	const machine = createMachine({

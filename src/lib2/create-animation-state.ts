@@ -1,4 +1,9 @@
-import { observeDom, readdRemovedNodes, separateEntries } from "./observe-dom";
+import {
+	addKeyToCustomElements,
+	observeDom,
+	readdRemovedNodes,
+	separateEntries,
+} from "./observe-dom";
 import {
 	AtomicWorker,
 	ClientAnimationTree,
@@ -35,7 +40,8 @@ const overrideElementStyles = (element: HTMLElement, override: Overrides) => {
 		callbacks.push(() => element.remove());
 	}
 
-	if (callbacks.length === 0) {
+	//TODO: remove
+	if (true || callbacks.length === 0) {
 		return null;
 	}
 
@@ -63,7 +69,13 @@ const createAnimationTree = (
 	totalRuntime: number
 ): ClientAnimationTree => {
 	const elementChildren = Array.from(element.children) as HTMLElement[];
+
+	if (tree.key.includes("UL-3")) {
+		console.log(elementChildren, tree.children);
+	}
+
 	return {
+		key: tree.key,
 		animation: getAnimation(tree, element, totalRuntime),
 		children: tree.children.map((child, index) =>
 			createAnimationTree(child, elementChildren[index], totalRuntime)
@@ -81,14 +93,16 @@ export const setOnPlayObserver = (
 
 		const observerCallback: MutationCallback = (entries, observer) => {
 			observer.disconnect();
-			const { removeEntries } = separateEntries(entries);
+			const { removeEntries, addEntries } = separateEntries(entries);
 			readdRemovedNodes(removeEntries);
+			addKeyToCustomElements(addEntries);
 
 			result.forEach((animationTree, key) => {
 				const rootElement = state.roots.get(key)!;
 
 				animationTrees.set(key, createAnimationTree(animationTree, rootElement, totalRuntime));
 			});
+			console.log(animationTrees);
 
 			resolve(animationTrees);
 		};
