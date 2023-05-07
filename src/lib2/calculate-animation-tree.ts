@@ -3,17 +3,30 @@ import {
 	AnimationType,
 	DomTree,
 	IntermediateDomTree,
-	NormalizedProps,
 	Overrides,
 	ParentTree,
 	ResultingDomTree,
+	TimelineEntry,
 	TreeStyleWithOffset,
 } from "./types";
+
+const revertEasings = (easing: string): TimelineEntry[] => {
+	if (!easing) {
+		return [];
+	}
+
+	return easing.split("---").map((easings) => {
+		const [startString, endString, easing] = easings.split("-");
+
+		return { start: parseFloat(startString), end: parseFloat(endString), easing };
+	});
+};
 
 //TODO: this is uneccessary work and should be removed
 export const updateTreeStructure = (tree: DomTree, offset: number): IntermediateDomTree => {
 	const intermediateTree: IntermediateDomTree = {
 		root: tree.root,
+		easings: revertEasings(tree.easings),
 		style: [
 			{
 				...tree.style,
@@ -87,6 +100,7 @@ export const calculateIntermediateTree = (
 
 	return {
 		root: accumulator.root,
+		easings: accumulator.easings,
 		style: accumulator.style.concat(style),
 		key: accumulator.key,
 		children: accumulatorChildren.map((child, index) =>
@@ -94,12 +108,6 @@ export const calculateIntermediateTree = (
 		),
 	};
 };
-
-//the root calculation needs a special treatment
-//images and text need also different functions
-
-const hasEntrySize = (entry: TreeStyleWithOffset) =>
-	entry.unsaveWidth !== 0 && entry.unsaveHeight !== 0;
 
 const addMutatedElementOverrides = (
 	readouts: TreeStyleWithOffset[],
@@ -140,31 +148,28 @@ const getAnimationType = (readouts: TreeStyleWithOffset[]): AnimationType => {
 	return "removal";
 };
 
-export const generateAnimationTree = (
-	tree: IntermediateDomTree,
-	parent: ParentTree,
-	options: Map<string, NormalizedProps>
-) => {
+export const generateAnimationTree = (tree: IntermediateDomTree, parent: ParentTree) => {
 	const combinedRoots = parent.root.concat(...tree.root.split(" ")).filter(Boolean);
 	const animationType = getAnimationType(tree.style);
-	const rootOptions = combinedRoots.map((root) => options.get(root)!);
 	const normalizedStyles = normalizeStyles(tree.style, parent.style);
 	const overrides = addMutatedElementOverrides(normalizedStyles, parent);
+	const easings = parent.easings.concat(tree.easings);
 
-	const keyframes = getKeyframes(normalizedStyles, parent, rootOptions);
+	const keyframes = getKeyframes(normalizedStyles, parent, easings);
 
 	const parentEntry = {
 		style: normalizedStyles,
 		overrides,
 		root: combinedRoots,
 		type: parent.type === "removal" ? parent.type : animationType,
+		easings,
 	};
 
 	const intermediateTree: ResultingDomTree = {
 		overrides,
 		keyframes,
 		key: tree.key,
-		children: tree.children.map((child) => generateAnimationTree(child, parentEntry, options)),
+		children: tree.children.map((child) => generateAnimationTree(child, parentEntry)),
 	};
 
 	if (tree.key.includes("UL-3")) {

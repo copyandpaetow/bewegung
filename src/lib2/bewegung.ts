@@ -1,13 +1,6 @@
 import { getAnimationStateMachine } from "./animation";
 import { normalizeProps } from "./normalize-props";
-import {
-	AllPlayStates,
-	BewegungsBlock,
-	BewegungsConfig,
-	MainMessages,
-	WorkerMessages,
-} from "./types";
-import { getWorker, useWorker } from "./utils/use-worker";
+import { AllPlayStates, BewegungsConfig, BewegungsEntry } from "./types";
 
 export type Bewegung = {
 	play(): void;
@@ -34,16 +27,11 @@ if there is an overlap within the sequence, it will create additional easings
 ? for all animated properties like clipPath or transform: what happens if the element already has some?
 
 */
-const workerManager = getWorker();
 
-export const bewegung2 = (
-	props: BewegungsBlock[],
-	globalConfig?: Partial<BewegungsConfig>
-): Bewegung => {
-	const normalizedProps = normalizeProps(props, globalConfig);
-	const timekeeper = new Animation(new KeyframeEffect(null, null, normalizedProps.totalRuntime));
-	const worker = useWorker<MainMessages, WorkerMessages>(workerManager.current());
-	const machine = getAnimationStateMachine(normalizedProps, timekeeper, worker);
+export const bewegung2 = (props: BewegungsEntry[], config?: BewegungsConfig): Bewegung => {
+	const { callbacks, totalRuntime } = normalizeProps(props, config);
+	const timekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
+	const machine = getAnimationStateMachine(callbacks, totalRuntime, timekeeper);
 
 	return {
 		play() {

@@ -1,6 +1,7 @@
 export type ElementOrSelector = HTMLElement | Element | string;
 
-export type BewegungsConfig = {
+export type BewegungsCallback = VoidFunction;
+export type BewegungsOption = {
 	duration: number;
 	iterations?: number;
 	root?: ElementOrSelector;
@@ -14,7 +15,11 @@ export type BewegungsConfig = {
 	at?: number;
 };
 
-export type BewegungsBlock = [VoidFunction, BewegungsConfig] | VoidFunction;
+export type BewegungsEntry = [BewegungsCallback, BewegungsOption] | BewegungsCallback;
+
+export type BewegungsConfig = {
+	defaultOptions: Partial<BewegungsOption>;
+};
 
 export type TimelineEntry = {
 	start: number;
@@ -104,6 +109,7 @@ export type DomTree = {
 	style: TreeStyle;
 	key: string;
 	root: string;
+	easings: string;
 	children: DomTree[];
 };
 
@@ -117,6 +123,7 @@ export type IntermediateDomTree = {
 	style: TreeStyleWithOffset[];
 	key: string;
 	root: string;
+	easings: TimelineEntry[];
 	children: IntermediateDomTree[];
 };
 
@@ -234,7 +241,6 @@ export type EasingTable = Record<number, string>;
 
 export type WorkerState = {
 	intermediateTree: Map<string, IntermediateDomTree>;
-	options: Map<string, NormalizedProps>;
 };
 
 export type ImageState = {
@@ -271,13 +277,6 @@ export type NormalizedPropsWithCallbacks = NormalizedProps & {
 	root: HTMLElement;
 };
 
-export type InternalState = {
-	callbacks: Map<number, VoidFunction[]>;
-	options: Map<string, NormalizedProps>;
-	roots: Map<string, HTMLElement>;
-	totalRuntime: number;
-};
-
 export type DefaultResult = {
 	overrides: Map<string, Partial<CSSStyleDeclaration>>;
 	partialElements: Map<string, Keyframe[]>;
@@ -305,12 +304,14 @@ export type ParentTree = {
 	root: string[];
 	overrides: Overrides;
 	type: AnimationType;
+	easings: TimelineEntry[];
 };
 
 export const enum Attributes {
 	root = "bewegungs-root",
 	key = "bewegungs-key",
 	removeable = "bewegungs-removeable",
+	rootEasing = "bewegungs-root-easing",
 }
 
 export type AnimationType = "default" | "addition" | "removal";
