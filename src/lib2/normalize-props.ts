@@ -1,16 +1,14 @@
-import { defaultOptions } from "./utils/constants";
 import {
 	Attributes,
-	BewegungsBlock,
 	BewegungsConfig,
+	BewegungsEntry,
+	BewegungsOption,
 	ElementOrSelector,
-	InternalState,
-	NormalizedProps,
-	NormalizedPropsWithCallbacks,
 } from "./types";
+import { defaultOptions } from "./utils/constants";
 import { uuid } from "./utils/element-translations";
 
-const computeCallbacks = (props: NormalizedPropsWithCallbacks[]) => {
+const computeCallbacks = (props: PropsWithRelativeTiming[]) => {
 	const callbacks = new Map<number, VoidFunction[]>();
 	const timings = new Set([0, ...props.map((entry) => entry.end)]);
 
@@ -40,92 +38,107 @@ export const addKeyToNewlyAddedElement = (element: HTMLElement, index: number) =
 	);
 };
 
-const makeTransferableOptions = (props: NormalizedPropsWithCallbacks[]) => {
-	const options = new Map<string, NormalizedProps>();
+type NormalizedProps = Required<BewegungsOption> & { callback: VoidFunction };
+const normalizeOptions = (props: BewegungsEntry[], config?: BewegungsConfig): NormalizedProps[] =>
+	props.map((entry) => {
+		const callback = entry?.[0] ?? entry;
+		const options = entry?.[1] ?? {};
 
-	props.forEach((entry) => {
-		const { callback, root, ...remainingOptions } = entry;
-		const key = uuid("root");
+		const combinedOptions: Required<BewegungsOption> = {
+			...defaultOptions,
+			...(config?.defaultOptions ?? {}),
+			...(options ?? {}),
+		};
 
-		const existingRoot = root.getAttribute(Attributes.root);
-		const newRootKey = existingRoot ? existingRoot + " " + key : key;
-
-		root.setAttribute(Attributes.root, newRootKey);
-
-		options.set(key, remainingOptions);
+		return { ...combinedOptions, callback };
 	});
 
-	return options;
+const getTotalRuntime = (props: NormalizedProps[]) =>
+	props.reduce((accumulator, current) => {
+		return accumulator + current.at + current.duration;
+	}, 0);
+
+type PropsWithRelativeTiming = {
+	start: number;
+	end: number;
+	iterations: number;
+	root: ElementOrSelector;
+	easing:
+		| "ease"
+		| "ease-in"
+		| "ease-out"
+		| "ease-in-out"
+		| "linear"
+		| `cubic-bezier(${number},${number},${number},${number})`;
+	callback: VoidFunction;
 };
-
-const getTreeStartingPoints = (props: NormalizedPropsWithCallbacks[]) => {
-	const allRoots = props
-		.map((entry) => entry.root)
-		.sort((a, b) => {
-			if (a.contains(b)) {
-				return -1;
-			}
-			if (b.contains(a)) {
-				return 1;
-			}
-			return 0;
-		});
-	const roots = new Map<string, HTMLElement>();
-
-	allRoots.forEach((currentRoot) => {
-		const isCurrentRootPartOfExistingRoot = Array.from(roots.values()).some((root) =>
-			root.contains(currentRoot)
-		);
-		if (isCurrentRootPartOfExistingRoot) {
-			return;
-		}
-		const key = currentRoot.getAttribute(Attributes.root)!;
-		roots.set(key, currentRoot);
-	});
-
-	return roots;
-};
-
-export const normalizeProps = (
-	props: BewegungsBlock[],
-	globalConfig?: Partial<BewegungsConfig>
-): InternalState => {
-	let totalRuntime = 0;
+const getRelativeTimings = (
+	props: NormalizedProps[],
+	totalRuntime: number
+): PropsWithRelativeTiming[] => {
 	let currentTime = 0;
 
-	const normalizedProps: NormalizedPropsWithCallbacks[] = props
-		.map((entry) => {
-			const callback = entry?.[0] ?? entry;
-			const options = entry?.[1] ?? {};
+	return props.map((entry) => {
+		const { duration, at, ...remainingOptions } = entry;
 
-			const combinedOptions = {
-				...defaultOptions,
-				...(globalConfig ?? {}),
-				...(options ?? {}),
-			};
+		const start = (currentTime = currentTime + at) / totalRuntime;
+		const end = (currentTime = currentTime + duration) / totalRuntime;
 
-			totalRuntime = totalRuntime + combinedOptions.at + combinedOptions.duration;
-			const root = getElement(combinedOptions.root);
+		return {
+			...remainingOptions,
+			start,
+			end,
+		};
+	});
+};
 
-			return { ...combinedOptions, callback, root };
-		})
-		.map((entry) => {
-			const { duration, at, ...remainingOptions } = entry;
+const isChildOfAnotherRoot = (element: HTMLElement) => {
+	if (element.hasAttribute(Attributes.rootEasing)) {
+		return true;
+	}
+	if (element.tagName === "BODY") {
+		return false;
+	}
+	isChildOfAnotherRoot(element.parentElement!);
+};
 
-			const start = (currentTime = currentTime + at) / totalRuntime;
-			const end = (currentTime = currentTime + duration) / totalRuntime;
+const labelRootElements = (propsWithRelativeTiming: PropsWithRelativeTiming[]) => {
+	const rootElements = propsWithRelativeTiming.map((entry) => {
+		const rootElement = getElement(entry.root);
 
-			return {
-				...remainingOptions,
-				start,
-				end,
-			};
-		});
+		const key = `${entry.start}-${entry.end}-${entry.easing}`;
+
+		const existingString = rootElement.getAttribute(Attributes.rootEasing);
+		const easingString = existingString ? existingString + "---" + key : key;
+
+		rootElement.setAttribute(Attributes.rootEasing, easingString);
+		return rootElement;
+	});
+
+	rootElements.forEach((root) => {
+		if (!root.hasAttribute(Attributes.rootEasing) && isChildOfAnotherRoot(root)) {
+			return;
+		}
+		const key = uuid(`root`);
+
+		const existingRoot = root.getAttribute(Attributes.root);
+		const newRootKey = existingRoot ? existingRoot + "---" + key : key;
+
+		root.setAttribute(Attributes.root, newRootKey);
+	});
+};
+
+export const normalizeProps = (props: BewegungsEntry[], config?: BewegungsConfig) => {
+	const normalizedProps = normalizeOptions(props, config);
+	const totalRuntime = getTotalRuntime(normalizedProps);
+
+	const withStartAndEndTimes = getRelativeTimings(normalizedProps, totalRuntime);
+	const callbacks = computeCallbacks(withStartAndEndTimes);
+
+	labelRootElements(withStartAndEndTimes);
 
 	return {
-		callbacks: computeCallbacks(normalizedProps),
-		options: makeTransferableOptions(normalizedProps),
-		roots: getTreeStartingPoints(normalizedProps),
+		callbacks,
 		totalRuntime,
 	};
 };

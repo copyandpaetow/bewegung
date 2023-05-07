@@ -1,6 +1,6 @@
 import { addKeyToNewlyAddedElement } from "./normalize-props";
 import { createSerializableElement } from "./read-element-styles";
-import { AtomicWorker, Attributes, DomTree, InternalState } from "./types";
+import { AtomicWorker, Attributes, DomTree } from "./types";
 import { isHTMLElement } from "./utils/predicates";
 
 const resetNodeStyle = (entries: MutationRecord[]) => {
@@ -94,9 +94,8 @@ const observe = (observer: MutationObserver) =>
 		attributeOldValue: true,
 	});
 
-export const observeDom = (state: InternalState, worker: AtomicWorker) =>
+export const observeDom = (callbacks: Map<number, VoidFunction[]>, worker: AtomicWorker) =>
 	new Promise<void>((resolve) => {
-		const { callbacks, roots } = state;
 		const { reply, cleanup } = worker("domChanges");
 		const keyMap = new WeakMap<HTMLElement, string>();
 		const changes = callbacks.entries();
@@ -135,8 +134,10 @@ export const observeDom = (state: InternalState, worker: AtomicWorker) =>
 
 			addKeyToCustomElements(addEntries);
 
-			roots.forEach((rootElement, key) => {
-				domTrees.set(key, createSerializableElement(rootElement, 0, keyMap));
+			document.querySelectorAll(`[${Attributes.root}]`).forEach((rootElement) => {
+				const key = rootElement.getAttribute(Attributes.root)!;
+				keyMap.set(rootElement as HTMLElement, key);
+				domTrees.set(key, createSerializableElement(rootElement as HTMLElement, 0, keyMap));
 			});
 
 			reply("sendDOMRects", {

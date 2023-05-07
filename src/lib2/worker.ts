@@ -5,9 +5,10 @@ import {
 } from "./calculate-animation-tree";
 import { getEmptyReadouts } from "./get-keyframes";
 import {
+	AnimationType,
 	IntermediateDomTree,
 	MainMessages,
-	NormalizedProps,
+	ParentTree,
 	ResultingDomTree,
 	WorkerMessages,
 	WorkerState,
@@ -19,13 +20,8 @@ const worker = self as Worker;
 const workerAtom = useWorker<WorkerMessages, MainMessages>(worker);
 
 const state: WorkerState = {
-	options: new Map<string, NormalizedProps>(),
 	intermediateTree: new Map<string, IntermediateDomTree>(),
 };
-
-workerAtom("sendState").onMessage((stateTransferable) => {
-	state.options = stateTransferable;
-});
 
 workerAtom("sendDOMRects").onMessage((domChanges) => {
 	const { domTrees, offset } = domChanges;
@@ -45,13 +41,14 @@ workerAtom("sendDOMRects").onMessage((domChanges) => {
 	if (offset === 1) {
 		const animationTrees = new Map<string, ResultingDomTree>();
 		state.intermediateTree.forEach((domTree, key) => {
-			const emptyParent = {
+			const emptyParent: ParentTree = {
 				style: getEmptyReadouts(domTree.style),
 				overrides: {},
 				root: [],
-				hiddenAtSomePoint: false,
+				type: "default" as AnimationType,
+				easings: domTree.easings,
 			};
-			animationTrees.set(key, generateAnimationTree(domTree, emptyParent, state.options));
+			animationTrees.set(key, generateAnimationTree(domTree, emptyParent));
 		});
 		workerAtom("sendAnimationTrees").reply("animationTrees", animationTrees);
 	}

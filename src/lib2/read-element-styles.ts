@@ -46,6 +46,7 @@ export function createSerializableElement(
 		},
 		key: keyMap.get(element)!,
 		root: element.getAttribute(Attributes.root) ?? "",
+		easings: element.getAttribute(Attributes.rootEasing) ?? "",
 		children: children.map((element, index) => createSerializableElement(element, index, keyMap)),
 	};
 }

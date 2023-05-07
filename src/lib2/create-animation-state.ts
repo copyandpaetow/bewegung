@@ -6,8 +6,8 @@ import {
 } from "./observe-dom";
 import {
 	AtomicWorker,
+	Attributes,
 	ClientAnimationTree,
-	InternalState,
 	Overrides,
 	ResultingDomTree,
 } from "./types";
@@ -40,8 +40,7 @@ const overrideElementStyles = (element: HTMLElement, override: Overrides) => {
 		callbacks.push(() => element.remove());
 	}
 
-	//TODO: remove
-	if (true || callbacks.length === 0) {
+	if (callbacks.length === 0) {
 		return null;
 	}
 
@@ -85,10 +84,10 @@ const createAnimationTree = (
 
 export const setOnPlayObserver = (
 	result: Map<string, ResultingDomTree>,
-	state: InternalState
+	callbacks: Map<number, VoidFunction[]>,
+	totalRuntime: number
 ): Promise<Map<string, ClientAnimationTree>> =>
 	new Promise<Map<string, ClientAnimationTree>>((resolve) => {
-		const { callbacks, totalRuntime } = state;
 		const animationTrees = new Map<string, ClientAnimationTree>();
 
 		const observerCallback: MutationCallback = (entries, observer) => {
@@ -98,7 +97,7 @@ export const setOnPlayObserver = (
 			addKeyToCustomElements(addEntries);
 
 			result.forEach((animationTree, key) => {
-				const rootElement = state.roots.get(key)!;
+				const rootElement = document.querySelector(`[${Attributes.root}=${key}]`) as HTMLElement;
 
 				animationTrees.set(key, createAnimationTree(animationTree, rootElement, totalRuntime));
 			});
@@ -114,16 +113,17 @@ export const setOnPlayObserver = (
 	});
 
 export const createAnimationState = async (
-	state: InternalState,
+	callbacks: Map<number, VoidFunction[]>,
+	totalRuntime: number,
 	worker: AtomicWorker
 ): Promise<Map<string, ClientAnimationTree>> => {
 	const elementResets = new Map<string, Map<string, string>>();
-	await observeDom(state, worker);
+	await observeDom(callbacks, worker);
 
 	const result = (await worker("animationTrees").onMessage(
 		(animationTrees) => animationTrees
 	)) as Map<string, ResultingDomTree>;
-	const animations = await setOnPlayObserver(result, state);
+	const animations = await setOnPlayObserver(result, callbacks, totalRuntime);
 
 	return animations;
 };

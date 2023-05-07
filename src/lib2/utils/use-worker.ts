@@ -12,8 +12,17 @@ const spawnWorker = () =>
 	});
 
 export const getWorker = () => {
-	const allWorker = [spawnWorker()];
+	const allWorker: Worker[] = [];
 
+	requestAnimationFrame(() => {
+		allWorker.push(spawnWorker());
+	});
+
+	/*
+		todo:
+		- this could need some more work
+		- we should add another function to add the next worker (if the current is done)
+	*/
 	return {
 		current() {
 			const current = allWorker.pop()!;
@@ -77,9 +86,3 @@ export const useWorker =
 
 		return context;
 	};
-
-// export const task = async (useWorker: AtomicWorker) => {
-// 	await useWorker("task")
-// 		.reply("receiveTask")
-// 		.onMessage(() => {});
-// };

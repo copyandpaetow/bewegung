@@ -1,7 +1,7 @@
 import { calculateBorderRadius } from "./default/border-radius";
 import { calculateDimensionDifferences } from "./default/calculate-differences";
 import { calculateEasings } from "./default/easings";
-import { DimensionalDifferences, NormalizedProps, ParentTree, TreeStyleWithOffset } from "./types";
+import { DimensionalDifferences, ParentTree, TimelineEntry, TreeStyleWithOffset } from "./types";
 
 export const getEmptyReadouts = (readouts: TreeStyleWithOffset[]) => {
 	return readouts.map((readouts) => ({
@@ -106,7 +106,7 @@ const isHiddenBecauseOfParent = ({
 export const getKeyframes = (
 	readouts: TreeStyleWithOffset[],
 	parent: ParentTree,
-	rootOptions: NormalizedProps[]
+	easings: TimelineEntry[]
 ): Keyframe[] => {
 	const { style: parentReadouts, type } = parent;
 
@@ -127,7 +127,7 @@ export const getKeyframes = (
 	}
 
 	const borderRadius = getBorderRadius(readouts);
-	const easing = calculateEasings(rootOptions);
+	const easing = calculateEasings(easings);
 
 	return differences.map(
 		({ leftDifference, topDifference, widthDifference, heightDifference, offset }) => {

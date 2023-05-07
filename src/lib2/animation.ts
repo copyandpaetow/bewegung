@@ -1,6 +1,7 @@
 import { createAnimationState } from "./create-animation-state";
-import { AtomicWorker, ClientAnimationTree, InternalState } from "./types";
+import { ClientAnimationTree, MainMessages, WorkerMessages } from "./types";
 import { createMachine } from "./utils/state-machine";
+import { getWorker, useWorker } from "./utils/use-worker";
 
 /*
 for later:
@@ -14,24 +15,25 @@ for later:
 - how to handle the unanimatable properties?
 
 - the updateTreeStructure step could be skipped. Not much value is added there
-
+- every data attribute we add, needs to be deleted as well
 */
 
+const workerManager = getWorker();
+
 export const getAnimationStateMachine = (
-	state: InternalState,
-	timekeeper: Animation,
-	worker: AtomicWorker
+	callbacks: Map<number, VoidFunction[]>,
+	totalRuntime: number,
+	timekeeper: Animation
 ) => {
+	const worker = useWorker<MainMessages, WorkerMessages>(workerManager.current());
+
 	let nextPlayState = "play";
 	let time = Date.now();
 
 	let animationState: null | Map<string, ClientAnimationTree> = null;
 
 	const resetState = async () => {
-		if (!animationState) {
-			worker("state").reply("sendState", state.options);
-		}
-		animationState = await createAnimationState(state, worker);
+		animationState = await createAnimationState(callbacks, totalRuntime, worker);
 		animationState.set("timekeeper", { animation: timekeeper, children: [], key: "timekeeper" });
 	};
 
