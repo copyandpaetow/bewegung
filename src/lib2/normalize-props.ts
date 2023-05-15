@@ -6,7 +6,7 @@ import {
 	ElementOrSelector,
 } from "./types";
 import { defaultOptions } from "./utils/constants";
-import { uuid } from "./utils/element-translations";
+import { uuid } from "./utils/helper";
 
 const computeCallbacks = (props: PropsWithRelativeTiming[]) => {
 	const callbacks = new Map<number, VoidFunction[]>();
@@ -29,13 +29,7 @@ const getElement = (element: ElementOrSelector) => {
 };
 
 export const addKeyToNewlyAddedElement = (element: HTMLElement, index: number) => {
-	if (element.hasAttribute(Attributes.key)) {
-		return;
-	}
-	element.setAttribute(
-		Attributes.key,
-		`key-added-element-${(element as HTMLElement).tagName}-${index}`
-	);
+	element.setAttribute(Attributes.key, `key-added-${(element as HTMLElement).tagName}-${index}`);
 };
 
 type NormalizedProps = Required<BewegungsOption> & { callback: VoidFunction };
@@ -135,7 +129,7 @@ export const normalizeProps = (props: BewegungsEntry[], config?: BewegungsConfig
 	const withStartAndEndTimes = getRelativeTimings(normalizedProps, totalRuntime);
 	const callbacks = computeCallbacks(withStartAndEndTimes);
 
-	labelRootElements(withStartAndEndTimes);
+	requestAnimationFrame(() => labelRootElements(withStartAndEndTimes));
 
 	return {
 		callbacks,

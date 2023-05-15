@@ -1,6 +1,6 @@
-import { BewegungsConfig } from "../types";
+import { BewegungsOption } from "../types";
 
-export const defaultOptions: BewegungsConfig = {
+export const defaultOptions: BewegungsOption = {
 	duration: 400,
 	easing: "ease",
 	iterations: 1,

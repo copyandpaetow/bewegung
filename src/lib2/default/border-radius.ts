@@ -1,4 +1,4 @@
-import { AllReadoutTypes } from "../types";
+import { TreeStyleWithOffset } from "../types";
 
 const normalizeBorderRadius = (radii: string, dimensions: { height: number; width: number }) => {
 	const radius = radii.split(" ");
@@ -23,8 +23,8 @@ const normalizeBorderRadius = (radii: string, dimensions: { height: number; widt
 	return `${widthEntries.join(" ")} / ${heightEntries.join(" ")}`;
 };
 
-export const calculateBorderRadius = <Value extends AllReadoutTypes>(
-	styleEntry: Value,
+export const calculateBorderRadius = (
+	styleEntry: TreeStyleWithOffset,
 	externalWidth?: number,
 	externalHeight?: number
 ): string => {

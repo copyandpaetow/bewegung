@@ -15,16 +15,14 @@ export type Bewegung = {
 /*
 TODO:
 
-- iterations need to be included in the calculations
 - "at" needs to be more refined
+=>  iterations need to be included in the calculations
 - options need to be rechecked. Should more be included? 
+- counter scaling with combining easings is still an issue
 
 if there is an overlap within the sequence, it will create additional easings
 ? should these be used in the keyframes? Should there be another readout for that timing?
 
-? if a root element is removed, should it be removed from the props as well? => it could get readded
-
-? for all animated properties like clipPath or transform: what happens if the element already has some?
 
 */
 

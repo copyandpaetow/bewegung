@@ -39,3 +39,18 @@ export const resolveable = () => {
 
 	return { ...api, promise };
 };
+
+function* idGeneratorFunction() {
+	let index = 0;
+	while (true) {
+		yield (index += 1);
+	}
+}
+
+const idGenerator = idGeneratorFunction();
+
+export const uuid = (prefix: string = "bewegung"): string => {
+	return `${prefix}-${idGenerator.next().value}`;
+};
+
+export const nextRaf = () => new Promise((resolve) => requestAnimationFrame(resolve));

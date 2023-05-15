@@ -97,7 +97,6 @@ const observe = (observer: MutationObserver) =>
 export const observeDom = (callbacks: Map<number, VoidFunction[]>, worker: AtomicWorker) =>
 	new Promise<void>((resolve) => {
 		const { reply, cleanup } = worker("domChanges");
-		const keyMap = new WeakMap<HTMLElement, string>();
 		const changes = callbacks.entries();
 		let offset = -1;
 		let change: VoidFunction[] = [];
@@ -136,8 +135,7 @@ export const observeDom = (callbacks: Map<number, VoidFunction[]>, worker: Atomi
 
 			document.querySelectorAll(`[${Attributes.root}]`).forEach((rootElement) => {
 				const key = rootElement.getAttribute(Attributes.root)!;
-				keyMap.set(rootElement as HTMLElement, key);
-				domTrees.set(key, createSerializableElement(rootElement as HTMLElement, 0, keyMap));
+				domTrees.set(key, createSerializableElement(rootElement as HTMLElement, 0));
 			});
 
 			reply("sendDOMRects", {

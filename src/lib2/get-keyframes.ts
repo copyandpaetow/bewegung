@@ -1,7 +1,13 @@
 import { calculateBorderRadius } from "./default/border-radius";
 import { calculateDimensionDifferences } from "./default/calculate-differences";
 import { calculateEasings } from "./default/easings";
-import { DimensionalDifferences, ParentTree, TimelineEntry, TreeStyleWithOffset } from "./types";
+import {
+	DifferenceArray,
+	DimensionalDifferences,
+	ParentTree,
+	TimelineEntry,
+	TreeStyleWithOffset,
+} from "./types";
 
 export const getEmptyReadouts = (readouts: TreeStyleWithOffset[]) => {
 	return readouts.map((readouts) => ({
@@ -66,8 +72,6 @@ export const normalizeStyles = (
 
 	return updatedReadouts;
 };
-
-export type DifferenceArray = [TreeStyleWithOffset, TreeStyleWithOffset];
 
 export const getBorderRadius = (calculatedProperties: TreeStyleWithOffset[]) => {
 	const styleTable: Record<number, string> = {};

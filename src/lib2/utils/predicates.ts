@@ -1,9 +1,9 @@
-import { AllReadoutTypes } from "../types";
+import { TreeStyleWithOffset } from "../types";
 
-export const isEntryVisible = (entry: AllReadoutTypes) =>
+export const isEntryVisible = (entry: TreeStyleWithOffset) =>
 	entry.display !== "none" && entry.unsaveWidth !== 0 && entry.unsaveHeight !== 0;
 
-export const doesElementChangeInScale = (readouts: AllReadoutTypes[]) =>
+export const doesElementChangeInScale = (readouts: TreeStyleWithOffset[]) =>
 	readouts.some(
 		(entry) =>
 			entry.unsaveWidth !== readouts.at(-1)!.unsaveWidth ||
@@ -12,7 +12,5 @@ export const doesElementChangeInScale = (readouts: AllReadoutTypes[]) =>
 
 export const isHTMLElement = (element: Node) => element.nodeType === Node.ELEMENT_NODE;
 
-export const checkForDisplayNone = <Value extends AllReadoutTypes>(entry: Value) =>
-	entry.display === "none";
-export const checkForBorderRadius = <Value extends AllReadoutTypes>(entry: Value) =>
-	entry.borderRadius !== "0px";
+export const checkForDisplayNone = (entry: TreeStyleWithOffset) => entry.display === "none";
+export const checkForBorderRadius = (entry: TreeStyleWithOffset) => entry.borderRadius !== "0px";
