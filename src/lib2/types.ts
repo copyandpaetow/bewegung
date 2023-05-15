@@ -214,20 +214,7 @@ export type DefaultReadouts = Omit<Partial<CSSStyleDeclaration>, "offset"> & {
 	offset: number;
 };
 
-export type ImageReadouts = DefaultReadouts & {
-	ratio: number;
-};
-
-export type TextReadouts = DefaultReadouts & {};
-
-export type AllReadoutTypes = DefaultReadouts | ImageReadouts | TextReadouts;
-
-export type AllReadouts =
-	| Map<string, DefaultReadouts[]>
-	| Map<string, ImageReadouts[]>
-	| Map<string, TextReadouts[]>;
-
-export type DifferenceArray = [DefaultReadouts | TextReadouts, DefaultReadouts];
+export type DifferenceArray = [TreeStyleWithOffset, TreeStyleWithOffset];
 
 export interface DimensionalDifferences {
 	heightDifference: number;
@@ -241,14 +228,6 @@ export type EasingTable = Record<number, string>;
 
 export type WorkerState = {
 	intermediateTree: Map<string, IntermediateDomTree>;
-};
-
-export type ImageState = {
-	easing: EasingTable;
-	readouts: ImageReadouts[];
-	parentReadouts: DefaultReadouts[];
-	maxHeight: number;
-	maxWidth: number;
 };
 
 export interface StyleTables {
@@ -308,10 +287,10 @@ export type ParentTree = {
 };
 
 export const enum Attributes {
-	root = "bewegungs-root",
-	key = "bewegungs-key",
-	removeable = "bewegungs-removeable",
-	rootEasing = "bewegungs-root-easing",
+	root = "data-bewegungs-root",
+	key = "data-bewegungs-key",
+	removeable = "data-bewegungs-removeable",
+	rootEasing = "data-bewegungs-root-easing",
 }
 
 export type AnimationType = "default" | "addition" | "removal";

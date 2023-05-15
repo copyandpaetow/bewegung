@@ -1,7 +1,7 @@
-import { DefaultReadouts, DifferenceArray, DimensionalDifferences, TextReadouts } from "../types";
+import { DifferenceArray, DimensionalDifferences, TreeStyleWithOffset } from "../types";
 import { save } from "../utils/helper";
 
-export const parseTransformOrigin = (entry: DefaultReadouts | TextReadouts) => {
+export const parseTransformOrigin = (entry: TreeStyleWithOffset) => {
 	if (!entry) {
 		return [0, 0];
 	}
@@ -65,11 +65,15 @@ export const getScales = (child: DifferenceArray, parent: DifferenceArray) => {
 	const heightDifference = childHeightDifference / parentHeightDifference;
 	const widthDifference = childWidthDifference / parentWidthDifference;
 
+	const textCorrection =
+		(parentCurrent.currentWidth - parentReference.currentWidth) / 2 / parentWidthDifference;
+
 	return {
 		parentWidthDifference,
 		parentHeightDifference,
 		heightDifference,
 		widthDifference,
+		textCorrection,
 	};
 };
 
@@ -78,6 +82,7 @@ export const calculateDimensionDifferences = (
 	parent: DifferenceArray
 ): DimensionalDifferences => {
 	const [currentEntry] = child;
+	const isTextElement = currentEntry.text > 0;
 
 	const {
 		currentLeftDifference,
@@ -86,8 +91,28 @@ export const calculateDimensionDifferences = (
 		referenceTopDifference,
 	} = getTranslates(child, parent);
 
-	const { parentWidthDifference, parentHeightDifference, heightDifference, widthDifference } =
-		getScales(child, parent);
+	const {
+		parentWidthDifference,
+		parentHeightDifference,
+		heightDifference,
+		widthDifference,
+		textCorrection,
+	} = getScales(child, parent);
+
+	//TODO: this can be dryed / improved
+	if (isTextElement) {
+		const leftDifference =
+			currentLeftDifference / parentWidthDifference - referenceLeftDifference - textCorrection;
+		const topDifference = currentTopDifference / parentHeightDifference - referenceTopDifference;
+
+		return {
+			heightDifference: save(1 / parentHeightDifference, 1),
+			widthDifference: save(1 / parentWidthDifference, 1),
+			leftDifference: save(leftDifference, 0),
+			topDifference: save(topDifference, 0),
+			offset: currentEntry.offset,
+		};
+	}
 
 	const leftDifference = currentLeftDifference / parentWidthDifference - referenceLeftDifference;
 	const topDifference = currentTopDifference / parentHeightDifference - referenceTopDifference;

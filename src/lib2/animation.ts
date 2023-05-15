@@ -1,5 +1,6 @@
 import { createAnimationState } from "./create-animation-state";
 import { ClientAnimationTree, MainMessages, WorkerMessages } from "./types";
+import { nextRaf } from "./utils/helper";
 import { createMachine } from "./utils/state-machine";
 import { getWorker, useWorker } from "./utils/use-worker";
 
@@ -11,8 +12,8 @@ for later:
 - elementResets
 - calculations for text and images
 - new elements for images
-- we could add the start+end+easing to the tree instead of the root id. With that we wouldnt need to send the options
 - how to handle the unanimatable properties?
+- how to handle user properties for properties we use (transform & clipPath)
 
 - the updateTreeStructure step could be skipped. Not much value is added there
 - every data attribute we add, needs to be deleted as well
@@ -33,6 +34,7 @@ export const getAnimationStateMachine = (
 	let animationState: null | Map<string, ClientAnimationTree> = null;
 
 	const resetState = async () => {
+		await nextRaf();
 		animationState = await createAnimationState(callbacks, totalRuntime, worker);
 		animationState.set("timekeeper", { animation: timekeeper, children: [], key: "timekeeper" });
 	};
