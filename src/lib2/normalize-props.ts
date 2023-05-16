@@ -30,6 +30,13 @@ const getElement = (element: ElementOrSelector) => {
 
 export const addKeyToNewlyAddedElement = (element: HTMLElement, index: number) => {
 	element.setAttribute(Attributes.key, `key-added-${(element as HTMLElement).tagName}-${index}`);
+
+	element.querySelectorAll("*").forEach((element, innerIndex) => {
+		element.setAttribute(
+			Attributes.key,
+			`key-added-${(element as HTMLElement).tagName}-${index}-child-${innerIndex}`
+		);
+	});
 };
 
 type NormalizedProps = Required<BewegungsOption> & { callback: VoidFunction };

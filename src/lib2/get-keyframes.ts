@@ -2,10 +2,16 @@ import { calculateBorderRadius } from "./default/border-radius";
 import { calculateDimensionDifferences } from "./default/calculate-differences";
 import { calculateEasings } from "./default/easings";
 import {
-	DifferenceArray,
+	calculateImageKeyframes,
+	getWrapperKeyframes,
+	getWrapperStyle,
+	highestNumber,
+} from "./images/calculate-differences";
+import {
+	AnimationType,
 	DimensionalDifferences,
+	ImageDetails,
 	ParentTree,
-	TimelineEntry,
 	TreeStyleWithOffset,
 } from "./types";
 
@@ -107,31 +113,46 @@ const isHiddenBecauseOfParent = ({
 	return samePosition && hiddenOrDefaultWidth && hiddenOrDefaultHeight;
 };
 
-export const getKeyframes = (
+const getDifferences = (readouts: TreeStyleWithOffset[], parentReadouts: TreeStyleWithOffset[]) =>
+	readouts.map((currentReadout) =>
+		calculateDimensionDifferences({
+			current: currentReadout,
+			reference: readouts.at(-1)!,
+			parent: parentReadouts?.find((entry) => entry.offset === currentReadout.offset)!,
+			parentReference: parentReadouts.at(-1)!,
+		})
+	);
+
+const animationNotNeeded = (
 	readouts: TreeStyleWithOffset[],
-	parent: ParentTree,
-	easings: TimelineEntry[]
-): Keyframe[] => {
-	const { style: parentReadouts, type } = parent;
+	differences: DimensionalDifferences[],
+	type: AnimationType
+) => {
+	const isImage = readouts.at(-1)!.ratio !== -1;
 
-	const differences = readouts.map((currentReadout) => {
-		const child: DifferenceArray = [currentReadout, readouts.at(-1)!];
-		const correspondingParentEntry = parentReadouts?.find(
-			(entry) => entry.offset === currentReadout.offset
-		)!;
-		const parentReadout: DifferenceArray = [correspondingParentEntry, parentReadouts.at(-1)!];
-
-		return calculateDimensionDifferences(child, parentReadout);
-	});
 	if (
-		differences.every(isElementUnchanged) ||
-		(type === "removal" && differences.every(isHiddenBecauseOfParent))
+		isImage &&
+		readouts.some(
+			(entry) =>
+				entry.unsaveWidth !== readouts.at(-1)!.unsaveWidth ||
+				entry.unsaveHeight !== readouts.at(-1)!.unsaveHeight
+		)
 	) {
-		return [];
+		return false;
 	}
 
+	return (
+		differences.every(isElementUnchanged) ||
+		(type === "removal" && differences.every(isHiddenBecauseOfParent))
+	);
+};
+
+const getDefaultKeyframes = (
+	differences: DimensionalDifferences[],
+	readouts: TreeStyleWithOffset[],
+	easing: Record<number, string>
+) => {
 	const borderRadius = getBorderRadius(readouts);
-	const easing = calculateEasings(easings);
 
 	return differences.map(
 		({ leftDifference, topDifference, widthDifference, heightDifference, offset }) => {
@@ -145,4 +166,47 @@ export const getKeyframes = (
 			};
 		}
 	);
+};
+
+export const getKeyframes = (current: ParentTree, parent: ParentTree): Keyframe[] => {
+	const { style: readouts, easings, overrides } = current;
+	const { style: parentReadouts, type } = parent;
+
+	const differences = getDifferences(readouts, parentReadouts);
+
+	if (animationNotNeeded(readouts, differences, type)) {
+		return [];
+	}
+
+	const easing = calculateEasings(easings);
+	const isImage = readouts.at(-1)!.ratio !== -1;
+
+	if (isImage) {
+		const imageData: ImageDetails = {
+			easing,
+			maxHeight: highestNumber(readouts.map((style) => style.currentHeight)),
+			maxWidth: highestNumber(readouts.map((style) => style.currentWidth)),
+		};
+
+		const imageKeyframes = calculateImageKeyframes(readouts, easing);
+
+		if (imageKeyframes.length === 0) {
+			return [];
+		}
+
+		overrides.wrapper = {
+			keyframes: getWrapperKeyframes(readouts, parentReadouts, imageData),
+			style: getWrapperStyle(current, parent, imageData),
+		};
+		overrides.placeholder = {
+			style: {
+				height: readouts.at(-1)!.unsaveHeight + "px",
+				width: readouts.at(-1)!.unsaveWidth + "px",
+			},
+		};
+
+		return imageKeyframes;
+	}
+
+	return getDefaultKeyframes(differences, readouts, easing);
 };
