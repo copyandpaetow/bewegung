@@ -4,7 +4,7 @@ import { AtomicWorker, Attributes, DomTree } from "./types";
 import { isHTMLElement } from "./utils/predicates";
 
 const resetNodeStyle = (entries: MutationRecord[]) => {
-	entries.reverse().forEach((entry) => {
+	[...entries].reverse().forEach((entry) => {
 		const element = entry.target as HTMLElement;
 		const attributeName = entry.attributeName as string;
 		const oldValue = entry.oldValue ?? "";
@@ -59,17 +59,11 @@ export const separateEntries = (entries: MutationRecord[]) => {
 };
 
 export const readdRemovedNodes = (entries: MutationRecord[]) => {
-	const removedElements: HTMLElement[] = [];
 	entries.forEach((entry) => {
 		entry.removedNodes.forEach((element) => {
 			entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
-			if (isHTMLElement(element)) {
-				(element as HTMLElement).setAttribute(Attributes.removeable, "");
-				removedElements.push(element as HTMLElement);
-			}
 		});
 	});
-	return removedElements;
 };
 
 const removeAddedNodes = (entries: MutationRecord[]) => {

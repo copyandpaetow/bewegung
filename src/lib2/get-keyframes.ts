@@ -30,8 +30,8 @@ export const getEmptyReadouts = (readouts: TreeStyleWithOffset[]) => {
 		objectPosition: "50% 50%",
 		display: "block",
 		borderRadius: "0px",
-		ratio: -1,
-		text: 0,
+		ratio: "",
+		text: "",
 		offset: readouts.offset,
 	}));
 };
@@ -61,6 +61,7 @@ export const normalizeStyles = (
 				readouts.slice(nextIndex).find(isEntryVisible) || updatedReadouts.at(-1);
 
 			if (!nextVisibleReadout) {
+				//TODO: if we return nothing here, the code will throw in certain places
 				//If there is no visible next element and not a previous one, the element is always hidden and can be deleted
 				return;
 			}
@@ -128,6 +129,9 @@ const animationNotNeeded = (
 	differences: DimensionalDifferences[],
 	type: AnimationType
 ) => {
+	if (readouts.length === 0 || differences.length === 0) {
+		return true;
+	}
 	const isImage = Boolean(readouts.at(-1)!.ratio);
 
 	if (

@@ -30,13 +30,11 @@ const getElement = (element: ElementOrSelector) => {
 };
 
 export const addKeyToNewlyAddedElement = (element: HTMLElement, index: number) => {
-	element.setAttribute(Attributes.key, `key-added-${(element as HTMLElement).tagName}-${index}`);
+	const key = `key-added-${(element as HTMLElement).tagName}-${index}`;
+	element.dataset.bewegungsKey = key;
 
-	element.querySelectorAll("*").forEach((element, innerIndex) => {
-		element.setAttribute(
-			Attributes.key,
-			`key-added-${(element as HTMLElement).tagName}-${index}-child-${innerIndex}`
-		);
+	Array.from(element.querySelectorAll("*")).forEach((_, innerIndex) => {
+		element.dataset.bewegungsKey = `${key}-${innerIndex}`;
 	});
 };
 
@@ -119,6 +117,13 @@ const addMediaRatioAttribute = (element: HTMLElement) => {
 		(element as HTMLImageElement).naturalWidth / (element as HTMLImageElement).naturalHeight
 	}`;
 };
+
+const addSkipAttribute = (element: HTMLElement) => {
+	if (element.getAnimations().some((animation) => animation.playState === "running")) {
+		element.dataset.bewegungsSkip = "";
+	}
+};
+
 const labelElements = (element: HTMLElement) => {
 	if (element.dataset.bewegungsKey) {
 		return;
@@ -126,6 +131,8 @@ const labelElements = (element: HTMLElement) => {
 	element.dataset.bewegungsKey = uuid(element.tagName);
 	addTextAttribute(element);
 	addMediaRatioAttribute(element);
+	addSkipAttribute(element);
+
 	getChildElements(element).forEach(labelElements);
 };
 
