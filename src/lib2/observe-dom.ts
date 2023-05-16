@@ -1,4 +1,3 @@
-import { addKeyToNewlyAddedElement } from "./normalize-props";
 import { createSerializableElement } from "./read-element-styles";
 import { AtomicWorker, Attributes, DomTree } from "./types";
 import { isHTMLElement } from "./utils/predicates";
@@ -8,6 +7,7 @@ const resetNodeStyle = (entries: MutationRecord[]) => {
 		const element = entry.target as HTMLElement;
 		const attributeName = entry.attributeName as string;
 		const oldValue = entry.oldValue ?? "";
+		element.dataset.bewegungsReset = "";
 
 		if (!oldValue && attributeName !== "style") {
 			element.removeAttribute(attributeName);
@@ -15,6 +15,16 @@ const resetNodeStyle = (entries: MutationRecord[]) => {
 		}
 
 		element.setAttribute(attributeName, oldValue);
+	});
+};
+
+const addKeyToNewlyAddedElement = (element: HTMLElement, index: number) => {
+	const key = `key-added-${(element as HTMLElement).tagName}-${index}`;
+	element.dataset.bewegungsKey = key;
+	element.dataset.bewegungsRemoveable = "";
+
+	Array.from(element.querySelectorAll("*")).forEach((_, innerIndex) => {
+		element.dataset.bewegungsKey = `${key}-${innerIndex}`;
 	});
 };
 
@@ -62,6 +72,9 @@ export const readdRemovedNodes = (entries: MutationRecord[]) => {
 	entries.forEach((entry) => {
 		entry.removedNodes.forEach((element) => {
 			entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
+			if (isHTMLElement(element)) {
+				(element as HTMLElement).dataset.bewegungsReset = "";
+			}
 		});
 	});
 };

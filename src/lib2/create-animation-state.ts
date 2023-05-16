@@ -5,6 +5,7 @@ import {
 	separateEntries,
 } from "./observe-dom";
 import {
+	AnimationState,
 	AtomicWorker,
 	Attributes,
 	ClientAnimationTree,
@@ -160,14 +161,19 @@ export const createAnimationState = async (
 	callbacks: Map<number, VoidFunction[]>,
 	totalRuntime: number,
 	worker: AtomicWorker
-): Promise<Map<string, ClientAnimationTree>> => {
-	const elementResets = new Map<string, Map<string, string>>();
+): Promise<AnimationState> => {
+	const elementResets = new Map<HTMLElement, Map<string, string>>();
 	await observeDom(callbacks, worker);
+	requestAnimationFrame(() => {
+		Array.from(document.querySelectorAll("[data-bewegungs-reset]")).forEach((element) => {
+			elementResets.set(element as HTMLElement, saveOriginalStyle(element as HTMLElement));
+		});
+	});
 
 	const result = (await worker("animationTrees").onMessage(
 		(animationTrees) => animationTrees
 	)) as Map<string, ResultingDomTree>;
 	const animations = await setOnPlayObserver(result, callbacks, totalRuntime);
 
-	return animations;
+	return { animations, elementResets };
 };
