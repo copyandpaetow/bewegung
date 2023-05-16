@@ -5,27 +5,15 @@ import { createMachine } from "./utils/state-machine";
 import { getWorker, useWorker } from "./utils/use-worker";
 
 /*
-for later:
-=> how to handle the edgecase when a root element is getting deleted?
-
-- a helper to play/Pause all the animations
 - elementResets
-- calculations for images
-- new elements for images
-- how to handle the unanimatable properties?
-- how to handle user properties for properties we use (transform & clipPath)
 
 - the updateTreeStructure step could be skipped. Not much value is added there
 - every data attribute we add, needs to be deleted as well
-
-- there needs to be a generic way to just counter-scale elements, not just text elements
-
-
-=> before we start with the dom manipulation, we could go over the dom tree and add data-attributes
-- skip for not recording a certain element
-- tag for text or media element
-
 */
+const walkAnimationTree = (tree: ClientAnimationTree, method: "play" | "pause") => {
+	tree.animation?.[method]();
+	tree.children.forEach((child) => walkAnimationTree(child, method));
+};
 
 const workerManager = getWorker();
 
@@ -58,10 +46,6 @@ export const getAnimationStateMachine = (
 					machine.transition("cancel");
 				}
 			},
-			setFinishTransitionOnTimekeeper() {
-				timekeeper.onfinish = () => machine.transition("finish");
-			},
-
 			setNextStateAfterLoadingToPlay() {
 				nextPlayState = "play";
 			},
@@ -73,11 +57,7 @@ export const getAnimationStateMachine = (
 				console.log(`calculation took ${Date.now() - time}ms`);
 
 				animationState?.forEach((animation) => {
-					const play = (tree: ClientAnimationTree) => {
-						tree.animation?.play();
-						tree.children.forEach(play);
-					};
-					play(animation);
+					walkAnimationTree(animation, "play");
 				});
 			},
 			scrollAnimations() {
@@ -125,7 +105,6 @@ export const getAnimationStateMachine = (
 						target: "finished",
 					},
 				},
-				exit: "setFinishTransitionOnTimekeeper",
 			},
 			loading: {
 				entry: "loadState",

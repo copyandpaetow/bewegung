@@ -152,7 +152,6 @@ export const generateAnimationTree = (tree: IntermediateDomTree, parent: ParentT
 		type: getAnimationType(tree.style, parent.type),
 		easings: parent.easings.concat(tree.easings),
 	};
-
 	const keyframes = getKeyframes(current, parent);
 
 	const intermediateTree: ResultingDomTree = {

@@ -20,9 +20,13 @@ TODO:
 - options need to be rechecked. Should more be included? 
 - counter scaling with combining easings is still an issue
 
+- how to handle the unanimatable properties?
+- how to handle user properties for properties we use (transform & clipPath)
+
 if there is an overlap within the sequence, it will create additional easings
 ? should these be used in the keyframes? Should there be another readout for that timing?
 
+? if a root element is deleted, we would need to recalculate the callbacks?
 
 */
 
@@ -30,6 +34,9 @@ export const bewegung2 = (props: BewegungsEntry[], config?: BewegungsConfig): Be
 	const { callbacks, totalRuntime } = normalizeProps(props, config);
 	const timekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
 	const machine = getAnimationStateMachine(callbacks, totalRuntime, timekeeper);
+
+	timekeeper.onfinish = () => machine.transition("finish");
+	timekeeper.oncancel = () => machine.transition("cancel");
 
 	return {
 		play() {
