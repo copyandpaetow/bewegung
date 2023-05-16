@@ -22,6 +22,7 @@ export const getWrapperStyle = (
 	}
 
 	return {
+		position: "absolute",
 		left: readouts.at(-1)!.currentLeft - (parentReadouts?.at(-1)!.currentLeft ?? 0) + "px",
 		top: readouts.at(-1)!.currentTop - (parentReadouts?.at(-1)!.currentTop ?? 0) + "px",
 		height: `${maxHeight}px`,
