@@ -20,7 +20,6 @@ const revertEasings = (easing: string): TimelineEntry[] => {
 //TODO: this is uneccessary work and should be removed
 export const updateTreeStructure = (tree: DomTree, offset: number): IntermediateDomTree => {
 	const intermediateTree: IntermediateDomTree = {
-		root: tree.root,
 		easings: revertEasings(tree.easings),
 		style: [
 			{
@@ -90,7 +89,6 @@ export const calculateIntermediateTree = (
 	);
 
 	return {
-		root: accumulator.root,
 		easings: accumulator.easings,
 		style: accumulator.style.concat(style),
 		key: accumulator.key,

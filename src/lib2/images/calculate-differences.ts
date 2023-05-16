@@ -41,7 +41,7 @@ export const calculateImageKeyframes = (
 	const maxWidth = highestNumber(readouts.map((style) => style.currentWidth));
 
 	const differences = readouts.map((readout) => {
-		const ratio = readout.ratio;
+		const ratio = parseFloat(readout.ratio);
 		let scaleWidth: number = readout.unsaveWidth / maxWidth;
 		let scaleHeight: number = readout.unsaveHeight / maxHeight;
 
