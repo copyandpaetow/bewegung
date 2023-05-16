@@ -29,15 +29,6 @@ const getElement = (element: ElementOrSelector) => {
 	return document.querySelector(element) as HTMLElement;
 };
 
-export const addKeyToNewlyAddedElement = (element: HTMLElement, index: number) => {
-	const key = `key-added-${(element as HTMLElement).tagName}-${index}`;
-	element.dataset.bewegungsKey = key;
-
-	Array.from(element.querySelectorAll("*")).forEach((_, innerIndex) => {
-		element.dataset.bewegungsKey = `${key}-${innerIndex}`;
-	});
-};
-
 type NormalizedProps = Required<BewegungsOption> & { callback: VoidFunction };
 const normalizeOptions = (props: BewegungsEntry[], config?: BewegungsConfig): NormalizedProps[] =>
 	props.map((entry) => {

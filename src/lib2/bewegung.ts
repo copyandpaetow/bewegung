@@ -26,7 +26,6 @@ TODO:
 if there is an overlap within the sequence, it will create additional easings
 ? should these be used in the keyframes? Should there be another readout for that timing?
 
-? if a root element is deleted, we would need to recalculate the callbacks?
 
 */
 

@@ -1,14 +1,11 @@
 import { createAnimationState } from "./create-animation-state";
-import { ClientAnimationTree, MainMessages, WorkerMessages } from "./types";
+import { AnimationState, ClientAnimationTree, MainMessages, WorkerMessages } from "./types";
 import { nextRaf } from "./utils/helper";
 import { createMachine } from "./utils/state-machine";
 import { getWorker, useWorker } from "./utils/use-worker";
 
 /*
-- elementResets
-
 - the updateTreeStructure step could be skipped. Not much value is added there
-- every data attribute we add, needs to be deleted as well
 */
 const walkAnimationTree = (tree: ClientAnimationTree, method: "play" | "pause") => {
 	tree.animation?.[method]();
@@ -27,12 +24,16 @@ export const getAnimationStateMachine = (
 	let nextPlayState = "play";
 	let time = Date.now();
 
-	let animationState: null | Map<string, ClientAnimationTree> = null;
+	let animationState: null | AnimationState = null;
 
 	const resetState = async () => {
 		await nextRaf();
 		animationState = await createAnimationState(callbacks, totalRuntime, worker);
-		animationState.set("timekeeper", { animation: timekeeper, children: [], key: "timekeeper" });
+		animationState?.animations.set("timekeeper", {
+			animation: timekeeper,
+			children: [],
+			key: "timekeeper",
+		});
 	};
 
 	const machine = createMachine({
@@ -56,7 +57,7 @@ export const getAnimationStateMachine = (
 				console.log("play");
 				console.log(`calculation took ${Date.now() - time}ms`);
 
-				animationState?.forEach((animation) => {
+				animationState?.animations.forEach((animation) => {
 					walkAnimationTree(animation, "play");
 				});
 			},
@@ -76,10 +77,28 @@ export const getAnimationStateMachine = (
 				console.log("cancelAnimations");
 			},
 			cleanup() {
-				console.log("cleanup");
+				(Array.from(document.querySelectorAll(`[data-bewegungs-key]`)) as HTMLElement[]).forEach(
+					(element) => {
+						Object.keys(element.dataset).forEach((attributeName) => {
+							if (attributeName.includes("bewegung")) {
+								delete element.dataset[attributeName];
+							}
+						});
+					}
+				);
 			},
 			resetElements() {
-				console.log("resetElements");
+				animationState?.elementResets.forEach((attributes, element) => {
+					if (element.dataset.bewegungsRemoveable) {
+						animationState?.elementResets.delete(element);
+						element.remove();
+						return;
+					}
+
+					attributes.forEach((value, key) => {
+						element.setAttribute(key, value);
+					});
+				});
 			},
 		},
 		guards: {

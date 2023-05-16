@@ -147,8 +147,8 @@ export type AtomicWorker = <Current extends keyof MainMessages>(
 ) => WorkerContext<Current, MainMessages, WorkerMessages>;
 
 export type AnimationState = {
-	animations: Map<string, Animation>;
-	elementResets: Map<string, Map<string, string>>;
+	animations: Map<string, ClientAnimationTree>;
+	elementResets: Map<HTMLElement, Map<string, string>>;
 };
 
 export type Payload = {
