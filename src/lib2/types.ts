@@ -94,7 +94,7 @@ export type TreeStyle = {
 	currentLeft: number;
 	unsaveWidth: number;
 	unsaveHeight: number;
-	ratio: number;
+	ratio: string;
 	position: string;
 	transform: string;
 	transformOrigin: string;
@@ -102,13 +102,12 @@ export type TreeStyle = {
 	objectPosition: string;
 	display: string;
 	borderRadius: string;
-	text: number;
+	text: string;
 };
 
 export type DomTree = {
 	style: TreeStyle;
 	key: string;
-	root: string;
 	easings: string;
 	children: DomTree[];
 };
@@ -122,7 +121,6 @@ export type TreeStyleWithOffset = TreeStyle & {
 export type IntermediateDomTree = {
 	style: TreeStyleWithOffset[];
 	key: string;
-	root: string;
 	easings: TimelineEntry[];
 	children: IntermediateDomTree[];
 };

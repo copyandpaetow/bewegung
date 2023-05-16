@@ -96,11 +96,36 @@ const getRelativeTimings = (
 
 const getChildElements = (element: HTMLElement) => Array.from(element.children) as HTMLElement[];
 
+const addTextAttribute = (element: HTMLElement) => {
+	let text = 0;
+	Array.from(element.childNodes).forEach((node) => {
+		if (node.nodeType === 3 && node.textContent!.trim().length) {
+			text += 1;
+		}
+	});
+	if (text === 0) {
+		return;
+	}
+
+	element.dataset.bewegungsText = `${text}`;
+};
+
+const addMediaRatioAttribute = (element: HTMLElement) => {
+	//@ts-expect-error
+	if (!element.naturalWidth || !element.naturalHeight) {
+		return;
+	}
+	element.dataset.bewegungsRatio = `${
+		(element as HTMLImageElement).naturalWidth / (element as HTMLImageElement).naturalHeight
+	}`;
+};
 const labelElements = (element: HTMLElement) => {
 	if (element.dataset.bewegungsKey) {
 		return;
 	}
 	element.dataset.bewegungsKey = uuid(element.tagName);
+	addTextAttribute(element);
+	addMediaRatioAttribute(element);
 	getChildElements(element).forEach(labelElements);
 };
 

@@ -128,7 +128,7 @@ const animationNotNeeded = (
 	differences: DimensionalDifferences[],
 	type: AnimationType
 ) => {
-	const isImage = readouts.at(-1)!.ratio !== -1;
+	const isImage = Boolean(readouts.at(-1)!.ratio);
 
 	if (
 		isImage &&
@@ -179,7 +179,7 @@ export const getKeyframes = (current: ParentTree, parent: ParentTree): Keyframe[
 	}
 
 	const easing = calculateEasings(easings);
-	const isImage = readouts.at(-1)!.ratio !== -1;
+	const isImage = Boolean(readouts.at(-1)!.ratio);
 
 	if (isImage) {
 		const imageData: ImageDetails = {
