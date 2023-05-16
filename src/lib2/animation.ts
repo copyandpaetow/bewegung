@@ -20,6 +20,11 @@ for later:
 
 - there needs to be a generic way to just counter-scale elements, not just text elements
 
+
+=> before we start with the dom manipulation, we could go over the dom tree and add data-attributes
+- skip for not recording a certain element
+- tag for text or media element
+
 */
 
 const workerManager = getWorker();

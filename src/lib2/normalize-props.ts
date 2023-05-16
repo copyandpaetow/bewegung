@@ -4,6 +4,7 @@ import {
 	BewegungsEntry,
 	BewegungsOption,
 	ElementOrSelector,
+	TimelineEntry,
 } from "./types";
 import { defaultOptions } from "./utils/constants";
 import { uuid } from "./utils/helper";
@@ -93,39 +94,32 @@ const getRelativeTimings = (
 	});
 };
 
-const isChildOfAnotherRoot = (element: HTMLElement) => {
-	if (element.hasAttribute(Attributes.rootEasing)) {
-		return true;
+const getChildElements = (element: HTMLElement) => Array.from(element.children) as HTMLElement[];
+
+const labelElements = (element: HTMLElement) => {
+	if (element.dataset.bewegungsKey) {
+		return;
 	}
-	if (element.tagName === "BODY") {
-		return false;
-	}
-	isChildOfAnotherRoot(element.parentElement!);
+	element.dataset.bewegungsKey = uuid(element.tagName);
+	getChildElements(element).forEach(labelElements);
 };
 
 const labelRootElements = (propsWithRelativeTiming: PropsWithRelativeTiming[]) => {
-	const rootElements = propsWithRelativeTiming.map((entry) => {
-		const rootElement = getElement(entry.root);
+	const rootMap = new Map<HTMLElement, TimelineEntry[]>();
 
-		const key = `${entry.start}-${entry.end}-${entry.easing}`;
+	propsWithRelativeTiming.forEach((entry) => {
+		const { start, end, easing, root } = entry;
+		const rootElement = getElement(root);
 
-		const existingString = rootElement.getAttribute(Attributes.rootEasing);
-		const easingString = existingString ? existingString + "---" + key : key;
-
-		rootElement.setAttribute(Attributes.rootEasing, easingString);
-		return rootElement;
+		rootMap.set(rootElement, (rootMap.get(rootElement) ?? []).concat([{ start, end, easing }]));
 	});
 
-	rootElements.forEach((root) => {
-		if (!root.hasAttribute(Attributes.rootEasing) && isChildOfAnotherRoot(root)) {
-			return;
-		}
+	rootMap.forEach((timelineEntry, domElement) => {
 		const key = uuid(`root`);
+		domElement.dataset.bewegungsKey = key;
+		domElement.dataset.bewegungsEasing = JSON.stringify(timelineEntry);
 
-		const existingRoot = root.getAttribute(Attributes.root);
-		const newRootKey = existingRoot ? existingRoot + "---" + key : key;
-
-		root.setAttribute(Attributes.root, newRootKey);
+		getChildElements(domElement).forEach(labelElements);
 	});
 };
 

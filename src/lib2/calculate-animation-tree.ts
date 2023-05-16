@@ -14,12 +14,7 @@ const revertEasings = (easing: string): TimelineEntry[] => {
 	if (!easing) {
 		return [];
 	}
-
-	return easing.split("---").map((easings) => {
-		const [startString, endString, easing] = easings.split("-");
-
-		return { start: parseFloat(startString), end: parseFloat(endString), easing };
-	});
+	return JSON.parse(easing);
 };
 
 //TODO: this is uneccessary work and should be removed
@@ -151,13 +146,11 @@ const getAnimationType = (
 };
 
 export const generateAnimationTree = (tree: IntermediateDomTree, parent: ParentTree) => {
-	const combinedRoots = parent.root.concat(...tree.root.split(" ")).filter(Boolean);
 	const normalizedStyles = normalizeStyles(tree.style, parent.style);
 
 	const current: ParentTree = {
 		style: normalizedStyles,
 		overrides: addMutatedElementOverrides(normalizedStyles, parent),
-		root: combinedRoots,
 		type: getAnimationType(tree.style, parent.type),
 		easings: parent.easings.concat(tree.easings),
 	};

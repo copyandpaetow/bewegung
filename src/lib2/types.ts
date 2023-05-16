@@ -292,17 +292,15 @@ export type Overrides = {
 
 export type ParentTree = {
 	style: TreeStyleWithOffset[];
-	root: string[];
 	overrides: Overrides;
 	type: AnimationType;
 	easings: TimelineEntry[];
 };
 
 export const enum Attributes {
-	root = "data-bewegungs-root",
 	key = "data-bewegungs-key",
 	removeable = "data-bewegungs-removeable",
-	rootEasing = "data-bewegungs-root-easing",
+	rootEasing = "data-bewegungs-easing",
 }
 
 export type AnimationType = "default" | "addition" | "removal";

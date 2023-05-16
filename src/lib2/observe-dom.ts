@@ -132,8 +132,8 @@ export const observeDom = (callbacks: Map<number, VoidFunction[]>, worker: Atomi
 
 			addKeyToCustomElements(addEntries);
 
-			document.querySelectorAll(`[${Attributes.root}]`).forEach((rootElement) => {
-				const key = rootElement.getAttribute(Attributes.root)!;
+			document.querySelectorAll(`[${Attributes.rootEasing}]`).forEach((rootElement) => {
+				const key = (rootElement as HTMLElement).dataset.bewegungsKey!;
 				domTrees.set(key, createSerializableElement(rootElement as HTMLElement));
 			});
 

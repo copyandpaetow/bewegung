@@ -95,7 +95,7 @@ const getOverrideAnimations = (
 
 	wrapperAnimation.onfinish = () => {
 		//this needs to happen after the mainElement was swapped out again
-		queueMicrotask(() => wrapperElement.remove());
+		wrapperElement.remove();
 	};
 
 	parentElement.appendChild(wrapperElement).appendChild(element);
@@ -104,8 +104,8 @@ const getOverrideAnimations = (
 		: parentElement.appendChild(placeholderElement);
 
 	return [
-		{ key: `${tree.key}-wrapper`, animation: wrapperAnimation, children: [] },
 		{ key: `${tree.key}-placeholder`, animation: placeholderAnimation, children: [] },
+		{ key: `${tree.key}-wrapper`, animation: wrapperAnimation, children: [] },
 	];
 };
 
@@ -143,7 +143,7 @@ export const setOnPlayObserver = (
 			addKeyToCustomElements(addEntries);
 
 			result.forEach((animationTree, key) => {
-				const rootElement = document.querySelector(`[${Attributes.root}=${key}]`) as HTMLElement;
+				const rootElement = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
 
 				animationTrees.set(key, createAnimationTree(animationTree, rootElement, totalRuntime));
 			});
