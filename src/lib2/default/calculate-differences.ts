@@ -79,7 +79,7 @@ export const calculateDimensionDifferences = (
 	dimensions: ChildParentDimensions
 ): DimensionalDifferences => {
 	const { current } = dimensions;
-	const isTextElement = current.text > 0;
+	const isTextElement = parseFloat(current.text) > 0;
 
 	const {
 		currentLeftDifference,

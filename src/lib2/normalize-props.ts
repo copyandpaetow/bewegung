@@ -87,10 +87,11 @@ const getChildElements = (element: HTMLElement) => Array.from(element.children) 
 
 const addTextAttribute = (element: HTMLElement) => {
 	let text = 0;
-	Array.from(element.childNodes).forEach((node) => {
-		if (node.nodeType === 3 && node.textContent!.trim().length) {
-			text += 1;
+	element.childNodes.forEach((node) => {
+		if (node.nodeType !== 3) {
+			return;
 		}
+		text += node.textContent!.trim().length;
 	});
 	if (text === 0) {
 		return;
