@@ -44,7 +44,6 @@ workerAtom("sendDOMRects").onMessage((domChanges) => {
 			const emptyParent: ParentTree = {
 				style: getEmptyReadouts(domTree.style),
 				overrides: {},
-				root: [],
 				type: "default" as AnimationType,
 				easings: domTree.easings,
 			};
