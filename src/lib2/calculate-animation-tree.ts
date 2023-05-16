@@ -94,10 +94,6 @@ export const calculateIntermediateTree = (
 		(key) => (children.find((entry) => entry.key === key) ?? []) as IntermediateDomTree
 	);
 
-	if (accumulator.key.includes("UL-3")) {
-		console.log({ accumulatorChildren, currentChildren, allKeys });
-	}
-
 	return {
 		root: accumulator.root,
 		easings: accumulator.easings,
@@ -137,7 +133,13 @@ const addMutatedElementOverrides = (
 	return overrides;
 };
 
-const getAnimationType = (readouts: TreeStyleWithOffset[]): AnimationType => {
+const getAnimationType = (
+	readouts: TreeStyleWithOffset[],
+	parentType: AnimationType
+): AnimationType => {
+	if (parentType === "removal") {
+		return "removal";
+	}
 	if (readouts.every(isEntryVisible)) {
 		return "default";
 	}
@@ -150,31 +152,24 @@ const getAnimationType = (readouts: TreeStyleWithOffset[]): AnimationType => {
 
 export const generateAnimationTree = (tree: IntermediateDomTree, parent: ParentTree) => {
 	const combinedRoots = parent.root.concat(...tree.root.split(" ")).filter(Boolean);
-	const animationType = getAnimationType(tree.style);
 	const normalizedStyles = normalizeStyles(tree.style, parent.style);
-	const overrides = addMutatedElementOverrides(normalizedStyles, parent);
-	const easings = parent.easings.concat(tree.easings);
 
-	const keyframes = getKeyframes(normalizedStyles, parent, easings);
-
-	const parentEntry = {
+	const current: ParentTree = {
 		style: normalizedStyles,
-		overrides,
+		overrides: addMutatedElementOverrides(normalizedStyles, parent),
 		root: combinedRoots,
-		type: parent.type === "removal" ? parent.type : animationType,
-		easings,
+		type: getAnimationType(tree.style, parent.type),
+		easings: parent.easings.concat(tree.easings),
 	};
+
+	const keyframes = getKeyframes(current, parent);
 
 	const intermediateTree: ResultingDomTree = {
-		overrides,
+		overrides: current.overrides,
 		keyframes,
 		key: tree.key,
-		children: tree.children.map((child) => generateAnimationTree(child, parentEntry)),
+		children: tree.children.map((child) => generateAnimationTree(child, current)),
 	};
-
-	if (tree.key.includes("UL-3")) {
-		console.log(intermediateTree);
-	}
 
 	return intermediateTree;
 };

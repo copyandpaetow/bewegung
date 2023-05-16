@@ -1,4 +1,4 @@
-import { DifferenceArray, DimensionalDifferences, TreeStyleWithOffset } from "../types";
+import { ChildParentDimensions, DimensionalDifferences, TreeStyleWithOffset } from "../types";
 import { save } from "../utils/helper";
 
 export const parseTransformOrigin = (entry: TreeStyleWithOffset) => {
@@ -20,26 +20,25 @@ export const parseTransformOrigin = (entry: TreeStyleWithOffset) => {
 	return calculated;
 };
 
-export const getTranslates = (child: DifferenceArray, parent: DifferenceArray) => {
-	const [current, reference] = child;
-	const [parentCurrent, parentReference] = parent;
+export const getTranslates = (dimensions: ChildParentDimensions) => {
+	const { current, parent, parentReference, reference } = dimensions;
 
 	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(reference);
 	const [originParentReferenceLeft, originParentReferenceTop] =
 		parseTransformOrigin(parentReference);
 
 	const [originCurrentLeft, originCurrentTop] = parseTransformOrigin(current);
-	const [originParentCurrentLeft, originParentCurrentTop] = parseTransformOrigin(parentCurrent);
+	const [originParentCurrentLeft, originParentCurrentTop] = parseTransformOrigin(parent);
 
 	const currentLeftDifference =
-		current.currentLeft + originCurrentLeft - (parentCurrent.currentLeft + originParentCurrentLeft);
+		current.currentLeft + originCurrentLeft - (parent.currentLeft + originParentCurrentLeft);
 	const referenceLeftDifference =
 		reference.currentLeft +
 		originReferenceLeft -
 		(parentReference.currentLeft + originParentReferenceLeft);
 
 	const currentTopDifference =
-		current.currentTop + originCurrentTop - (parentCurrent.currentTop + originParentCurrentTop);
+		current.currentTop + originCurrentTop - (parent.currentTop + originParentCurrentTop);
 	const referenceTopDifference =
 		reference.currentTop +
 		originReferenceTop -
@@ -53,12 +52,11 @@ export const getTranslates = (child: DifferenceArray, parent: DifferenceArray) =
 	};
 };
 
-export const getScales = (child: DifferenceArray, parent: DifferenceArray) => {
-	const [current, reference] = child;
-	const [parentCurrent, parentReference] = parent;
+export const getScales = (dimensions: ChildParentDimensions) => {
+	const { current, parent, parentReference, reference } = dimensions;
 
-	const parentWidthDifference = parentCurrent.currentWidth / parentReference.currentWidth;
-	const parentHeightDifference = parentCurrent.currentHeight / parentReference.currentHeight;
+	const parentWidthDifference = parent.currentWidth / parentReference.currentWidth;
+	const parentHeightDifference = parent.currentHeight / parentReference.currentHeight;
 	const childWidthDifference = current.unsaveWidth / reference.currentWidth;
 	const childHeightDifference = current.unsaveHeight / reference.currentHeight;
 
@@ -66,7 +64,7 @@ export const getScales = (child: DifferenceArray, parent: DifferenceArray) => {
 	const widthDifference = childWidthDifference / parentWidthDifference;
 
 	const textCorrection =
-		(parentCurrent.currentWidth - parentReference.currentWidth) / 2 / parentWidthDifference;
+		(parent.currentWidth - parentReference.currentWidth) / 2 / parentWidthDifference;
 
 	return {
 		parentWidthDifference,
@@ -78,18 +76,17 @@ export const getScales = (child: DifferenceArray, parent: DifferenceArray) => {
 };
 
 export const calculateDimensionDifferences = (
-	child: DifferenceArray,
-	parent: DifferenceArray
+	dimensions: ChildParentDimensions
 ): DimensionalDifferences => {
-	const [currentEntry] = child;
-	const isTextElement = currentEntry.text > 0;
+	const { current } = dimensions;
+	const isTextElement = current.text > 0;
 
 	const {
 		currentLeftDifference,
 		referenceLeftDifference,
 		currentTopDifference,
 		referenceTopDifference,
-	} = getTranslates(child, parent);
+	} = getTranslates(dimensions);
 
 	const {
 		parentWidthDifference,
@@ -97,7 +94,7 @@ export const calculateDimensionDifferences = (
 		heightDifference,
 		widthDifference,
 		textCorrection,
-	} = getScales(child, parent);
+	} = getScales(dimensions);
 
 	//TODO: this can be dryed / improved
 	if (isTextElement) {
@@ -110,7 +107,7 @@ export const calculateDimensionDifferences = (
 			widthDifference: save(1 / parentWidthDifference, 1),
 			leftDifference: save(leftDifference, 0),
 			topDifference: save(topDifference, 0),
-			offset: currentEntry.offset,
+			offset: current.offset,
 		};
 	}
 
@@ -122,12 +119,16 @@ export const calculateDimensionDifferences = (
 		widthDifference: save(widthDifference, 1),
 		leftDifference: save(leftDifference, 0),
 		topDifference: save(topDifference, 0),
-		offset: currentEntry.offset,
+		offset: current.offset,
 	};
 };
 
-export const calculateRootDifferences = (child: DifferenceArray) => {
-	const [current, reference] = child;
+//TODO: This needs to be reapplied to the root
+//? maybe it would be nice to have some type system for animations, like text, root, image etc
+export const calculateRootDifferences = (
+	current: TreeStyleWithOffset,
+	reference: TreeStyleWithOffset
+) => {
 	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(reference);
 	const [originCurrentLeft, originCurrentTop] = parseTransformOrigin(current);
 

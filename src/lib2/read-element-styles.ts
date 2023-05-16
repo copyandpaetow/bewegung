@@ -1,14 +1,15 @@
 import { Attributes, DomTree } from "./types";
+import { uuid } from "./utils/helper";
 
 const getRatio = (element: HTMLElement) => {
 	//@ts-expect-error
 	return (element.naturalWidth ?? 1) / (element.naturalHeight ?? -1);
 };
 
-const getKey = (element: HTMLElement, index: number) => {
+const getKey = (element: HTMLElement) => {
 	element.hasAttribute;
 	if (!element.hasAttribute(Attributes.key)) {
-		element.setAttribute(Attributes.key, `key-${element.tagName}-${index}`);
+		element.setAttribute(Attributes.key, uuid(element.tagName));
 	}
 	return element.getAttribute(Attributes.key)!;
 };
@@ -16,7 +17,7 @@ const getKey = (element: HTMLElement, index: number) => {
 const isTextElement = (element: HTMLElement) => {
 	let text = 0;
 	element.childNodes.forEach((node) => {
-		if (node.nodeType !== 3 && node.textContent!.trim().length) {
+		if (node.nodeType === 3 && node.textContent!.trim().length) {
 			text += 1;
 		}
 	});
@@ -24,7 +25,7 @@ const isTextElement = (element: HTMLElement) => {
 };
 
 //TODO: maybe we can store the text content directly
-export function createSerializableElement(element: HTMLElement, index: number): DomTree {
+export function createSerializableElement(element: HTMLElement): DomTree {
 	const root = element.getAttribute(Attributes.root) ?? "";
 	const easings = element.getAttribute(Attributes.rootEasing) ?? "";
 	const { top, left, width, height } = element.getBoundingClientRect();
@@ -47,11 +48,11 @@ export function createSerializableElement(element: HTMLElement, index: number): 
 			ratio: getRatio(element),
 			text: isTextElement(element),
 		},
-		key: getKey(element, index),
+		key: getKey(element),
 		root,
 		easings,
-		children: Array.from(element.children).map((element, index) =>
-			createSerializableElement(element as HTMLElement, index)
+		children: Array.from(element.children).map((element) =>
+			createSerializableElement(element as HTMLElement)
 		),
 	};
 }

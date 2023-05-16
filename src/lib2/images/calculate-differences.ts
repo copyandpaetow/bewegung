@@ -1,30 +1,45 @@
 import { calculateBorderRadius } from "../default/border-radius";
 import { getScales, getTranslates } from "../default/calculate-differences";
-import { getAbsoluteStyle } from "../default/overrides";
-import { DifferenceArray, ImageState } from "../types";
+import { isElementUnchanged } from "../get-keyframes";
+import { ImageDetails, ParentTree, TreeStyleWithOffset } from "../types";
 import { save } from "../utils/helper";
 
 export const highestNumber = (numbers: number[]) =>
 	numbers.reduce((largest, current) => Math.max(largest, current));
 
-export const getWrapperStyle = (imageState: ImageState): Partial<CSSStyleDeclaration> => {
-	const { parentReadouts, readouts, maxHeight, maxWidth } = imageState;
+export const getWrapperStyle = (
+	current: ParentTree,
+	parent: ParentTree,
+	imageData: ImageDetails
+): Partial<CSSStyleDeclaration> => {
+	const readouts = current.style;
+	const { overrides, style: parentReadouts } = parent;
+	const { maxHeight, maxWidth } = imageData;
 
-	return getAbsoluteStyle(readouts, parentReadouts, {
+	if (parentReadouts.at(-1)!.position === "static" && !overrides.styles?.position) {
+		overrides.styles ??= {};
+		overrides.styles.position = "relative";
+	}
+
+	return {
+		left: readouts.at(-1)!.currentLeft - (parentReadouts?.at(-1)!.currentLeft ?? 0) + "px",
+		top: readouts.at(-1)!.currentTop - (parentReadouts?.at(-1)!.currentTop ?? 0) + "px",
 		height: `${maxHeight}px`,
 		width: `${maxWidth}px`,
 		pointerEvents: "none",
 		overflow: "hidden",
 		gridArea: "1/1/2/2", //if the parent element is a grid element, it will be absolutly positioned from its dedicated area and not from the edge of the element
-	});
+	};
 };
 
-export const calculateImageKeyframes = (imageState: ImageState) => {
-	const { maxWidth, maxHeight, easing, readouts } = imageState;
+export const calculateImageKeyframes = (
+	readouts: TreeStyleWithOffset[],
+	easing: Record<number, string>
+): Keyframe[] => {
+	const maxHeight = highestNumber(readouts.map((style) => style.currentHeight));
+	const maxWidth = highestNumber(readouts.map((style) => style.currentWidth));
 
-	const keyframes: Keyframe[] = [];
-
-	readouts.forEach((readout) => {
+	const differences = readouts.map((readout) => {
 		const ratio = readout.ratio;
 		let scaleWidth: number = readout.unsaveWidth / maxWidth;
 		let scaleHeight: number = readout.unsaveHeight / maxHeight;
@@ -55,36 +70,51 @@ export const calculateImageKeyframes = (imageState: ImageState) => {
 			translateY = save((maxHeight * scaleHeight - readout.currentHeight) / 2, 0) * yAchis * -1;
 		}
 
-		keyframes.push({
+		return {
+			heightDifference: save(scaleHeight, 1),
+			widthDifference: save(scaleWidth, 1),
+			leftDifference: save(translateX, 0),
+			topDifference: save(translateY, 0),
 			offset: readout.offset,
-			transform: `translate(${translateX}px, ${translateY}px) scale(${save(scaleWidth, 1)}, ${save(
-				scaleHeight,
-				1
-			)})`,
-			easing: easing[readout.offset] ?? "ease",
-		});
+		};
 	});
 
-	return keyframes;
+	if (differences.every(isElementUnchanged)) {
+		return [];
+	}
+
+	return differences.map(
+		({ heightDifference, widthDifference, topDifference, leftDifference, offset }) => ({
+			offset,
+			transform: `translate(${leftDifference}px, ${topDifference}px) scale(${widthDifference}, ${heightDifference})`,
+			easing: easing[offset] ?? "ease",
+		})
+	);
 };
 
-export const getWrapperKeyframes = (imageState: ImageState): Keyframe[] => {
-	const { maxWidth, maxHeight, easing, readouts, parentReadouts } = imageState;
+export const getWrapperKeyframes = (
+	readouts: TreeStyleWithOffset[],
+	parentReadouts: TreeStyleWithOffset[],
+	imageData: ImageDetails
+): Keyframe[] => {
+	const { easing, maxHeight, maxWidth } = imageData;
+
 	return readouts.map((readout) => {
-		const correspondingParentEntry = parentReadouts.find(
-			(entry) => entry.offset === readout.offset
-		)!;
-		const child: DifferenceArray = [readout, readouts.at(-1)!];
-		const parent: DifferenceArray = [correspondingParentEntry, parentReadouts.at(-1)!];
+		const dimensions = {
+			current: readout,
+			reference: readouts.at(-1)!,
+			parent: parentReadouts.find((entry) => entry.offset === readout.offset)!,
+			parentReference: parentReadouts.at(-1)!,
+		};
 
 		const {
 			currentLeftDifference,
 			referenceLeftDifference,
 			currentTopDifference,
 			referenceTopDifference,
-		} = getTranslates(child, parent);
+		} = getTranslates(dimensions);
 
-		const { parentHeightDifference, parentWidthDifference } = getScales(child, parent);
+		const { parentHeightDifference, parentWidthDifference } = getScales(dimensions);
 
 		const horizontalInset = (maxWidth - readout.currentWidth) / 2;
 		const verticalInset = (maxHeight - readout.currentHeight) / 2;

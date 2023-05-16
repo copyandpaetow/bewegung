@@ -78,7 +78,6 @@ const removeAddedNodes = (entries: MutationRecord[]) => {
 };
 
 export const addKeyToCustomElements = (entries: MutationRecord[]) => {
-	console.log(entries);
 	entries
 		.flatMap((entry) => [...entry.addedNodes])
 		.filter(isHTMLElement)
@@ -135,7 +134,7 @@ export const observeDom = (callbacks: Map<number, VoidFunction[]>, worker: Atomi
 
 			document.querySelectorAll(`[${Attributes.root}]`).forEach((rootElement) => {
 				const key = rootElement.getAttribute(Attributes.root)!;
-				domTrees.set(key, createSerializableElement(rootElement as HTMLElement, 0));
+				domTrees.set(key, createSerializableElement(rootElement as HTMLElement));
 			});
 
 			reply("sendDOMRects", {

@@ -214,7 +214,12 @@ export type DefaultReadouts = Omit<Partial<CSSStyleDeclaration>, "offset"> & {
 	offset: number;
 };
 
-export type DifferenceArray = [TreeStyleWithOffset, TreeStyleWithOffset];
+export type ChildParentDimensions = {
+	current: TreeStyleWithOffset;
+	reference: TreeStyleWithOffset;
+	parent: TreeStyleWithOffset;
+	parentReference: TreeStyleWithOffset;
+};
 
 export interface DimensionalDifferences {
 	heightDifference: number;
@@ -276,6 +281,13 @@ export type ClientAnimationTree = {
 
 export type Overrides = {
 	styles?: Partial<CSSStyleDeclaration>;
+	wrapper?: {
+		keyframes: Keyframe[];
+		style: Partial<CSSStyleDeclaration>;
+	};
+	placeholder?: {
+		style: Partial<CSSStyleDeclaration>;
+	};
 };
 
 export type ParentTree = {
@@ -294,3 +306,9 @@ export const enum Attributes {
 }
 
 export type AnimationType = "default" | "addition" | "removal";
+
+export type ImageDetails = {
+	maxWidth: number;
+	maxHeight: number;
+	easing: Record<number, string>;
+};
