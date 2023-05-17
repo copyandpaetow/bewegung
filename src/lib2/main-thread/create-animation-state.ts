@@ -63,6 +63,26 @@ const getAnimation = (tree: ResultingDomTree, element: HTMLElement, totalRuntime
 	return animation;
 };
 
+const createPlaceholder = (element: HTMLElement, style: Partial<CSSStyleDeclaration>) => {
+	const placeholderElement = document.createElement("img");
+	placeholderElement.src = emptyImageSrc;
+
+	element.getAttributeNames().forEach((attribute) => {
+		placeholderElement.setAttribute(attribute, element.getAttribute(attribute)!);
+	});
+
+	applyCSSStyles(placeholderElement, style);
+
+	return placeholderElement;
+};
+
+const createWrapperElement = (element: HTMLElement, style: Partial<CSSStyleDeclaration>) => {
+	const wrapperElement = document.createElement("div");
+	applyCSSStyles(wrapperElement, style);
+
+	return wrapperElement;
+};
+
 const getOverrideAnimations = (
 	tree: ResultingDomTree,
 	element: HTMLElement,
@@ -75,26 +95,20 @@ const getOverrideAnimations = (
 	const parentElement = element.parentElement!;
 	const nextSibling = element.nextElementSibling;
 
-	const placeholderElement = document.createElement("img");
-	placeholderElement.src = emptyImageSrc;
-	placeholderElement.className = element.className;
+	const placeholderElement = createPlaceholder(element, placeholder.style);
+	const wrapperElement = createWrapperElement(element, wrapper.style);
 
-	applyCSSStyles(placeholderElement, placeholder.style);
 	const placeholderAnimation = new Animation(
 		new KeyframeEffect(placeholderElement, [], totalRuntime)
+	);
+	const wrapperAnimation = new Animation(
+		new KeyframeEffect(wrapperElement, wrapper.keyframes, totalRuntime)
 	);
 
 	placeholderAnimation.onfinish = () => {
 		parentElement.replaceChild(element, placeholderElement);
 	};
-	const wrapperElement = document.createElement("div");
-	applyCSSStyles(wrapperElement, wrapper.style);
-	const wrapperAnimation = new Animation(
-		new KeyframeEffect(wrapperElement, wrapper.keyframes, totalRuntime)
-	);
-
 	wrapperAnimation.onfinish = () => {
-		//this needs to happen after the mainElement was swapped out again
 		wrapperElement.remove();
 	};
 
