@@ -30,8 +30,7 @@ const getBoundingClientRect = (element: HTMLElement) => {
 	return shouldSkip ? emptyBoundClientRect : element.getBoundingClientRect();
 };
 
-//TODO: maybe we can store the text content directly
-export function createSerializableElement(element: HTMLElement): DomTree {
+export function createSerializableElement(element: HTMLElement, offset: number): DomTree {
 	const easings = element.dataset.bewegungsEasing ?? "";
 	const key = element.dataset.bewegungsKey!;
 	const ratio = element.dataset.bewegungsRatio ?? "";
@@ -42,23 +41,28 @@ export function createSerializableElement(element: HTMLElement): DomTree {
 		getComputedStyle(element);
 
 	return {
-		style: {
-			currentTop: top,
-			currentLeft: left,
-			unsaveWidth: width,
-			unsaveHeight: height,
-			position,
-			transform,
-			transformOrigin,
-			objectFit,
-			objectPosition,
-			display,
-			borderRadius,
-			ratio,
-			text,
-		},
+		style: [
+			{
+				currentTop: top,
+				currentLeft: left,
+				currentWidth: width,
+				currentHeight: height,
+				unsaveWidth: width,
+				unsaveHeight: height,
+				position,
+				transform,
+				transformOrigin,
+				objectFit,
+				objectPosition,
+				display,
+				borderRadius,
+				ratio,
+				text,
+				offset,
+			},
+		],
 		key,
 		easings,
-		children: getChilden(element).map((element) => createSerializableElement(element)),
+		children: getChilden(element).map((element) => createSerializableElement(element, offset)),
 	};
 }

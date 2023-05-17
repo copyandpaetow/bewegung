@@ -1,7 +1,7 @@
 import { calculateBorderRadius } from "./border-radius";
 import { getScales, getTranslates } from "./calculate-differences";
 import { isElementUnchanged } from "./get-keyframes";
-import { EasingTable, ImageDetails, ParentTree, TreeStyleWithOffset } from "../types";
+import { EasingTable, ImageDetails, ParentTree, TreeStyle } from "../types";
 import { save } from "../utils/helper";
 
 export const highestNumber = (numbers: number[]) =>
@@ -33,10 +33,7 @@ export const getWrapperStyle = (
 	};
 };
 
-export const calculateImageKeyframes = (
-	readouts: TreeStyleWithOffset[],
-	easing: EasingTable
-): Keyframe[] => {
+export const calculateImageKeyframes = (readouts: TreeStyle[], easing: EasingTable): Keyframe[] => {
 	const maxHeight = highestNumber(readouts.map((style) => style.currentHeight));
 	const maxWidth = highestNumber(readouts.map((style) => style.currentWidth));
 
@@ -94,8 +91,8 @@ export const calculateImageKeyframes = (
 };
 
 export const getWrapperKeyframes = (
-	readouts: TreeStyleWithOffset[],
-	parentReadouts: TreeStyleWithOffset[],
+	readouts: TreeStyle[],
+	parentReadouts: TreeStyle[],
 	imageData: ImageDetails
 ): Keyframe[] => {
 	const { easing, maxHeight, maxWidth } = imageData;

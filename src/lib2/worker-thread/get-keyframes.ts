@@ -1,24 +1,23 @@
+import {
+	AnimationFlag,
+	DimensionalDifferences,
+	EasingTable,
+	ImageDetails,
+	ParentTree,
+	TreeStyle,
+} from "../types";
+import { defaultImageStyles } from "../utils/constants";
 import { calculateBorderRadius } from "./border-radius";
-import { calculateDimensionDifferences } from "./calculate-differences";
-import { calculateEasings } from "./easings";
+import { calculateDimensionDifferences, calculateRootDifferences } from "./calculate-differences";
 import {
 	calculateImageKeyframes,
 	getWrapperKeyframes,
 	getWrapperStyle,
 	highestNumber,
 } from "./calculate-image-differences";
-import {
-	AnimationType,
-	DimensionalDifferences,
-	EasingTable,
-	ImageDetails,
-	Overrides,
-	ParentTree,
-	TreeStyleWithOffset,
-} from "../types";
-import { defaultImageStyles } from "../utils/constants";
+import { calculateEasings } from "./easings";
 
-export const getEmptyReadouts = (readouts: TreeStyleWithOffset[]) => {
+export const getEmptyReadouts = (readouts: TreeStyle[]) => {
 	return readouts.map((readouts) => ({
 		currentTop: 0,
 		currentLeft: 0,
@@ -39,15 +38,14 @@ export const getEmptyReadouts = (readouts: TreeStyleWithOffset[]) => {
 	}));
 };
 
-export const isEntryVisible = (entry: TreeStyleWithOffset) =>
+export const isEntryVisible = (entry: TreeStyle) =>
 	entry.display !== "none" && entry.unsaveWidth !== 0 && entry.unsaveHeight !== 0;
 
-//? we would need to know all offsets here? Are the roots save for that?
 export const normalizeStyles = (
-	readouts: TreeStyleWithOffset[],
-	parentReadouts: TreeStyleWithOffset[]
-): TreeStyleWithOffset[] => {
-	const updatedReadouts: TreeStyleWithOffset[] = [];
+	readouts: TreeStyle[],
+	parentReadouts: TreeStyle[]
+): TreeStyle[] => {
+	const updatedReadouts: TreeStyle[] = [];
 
 	parentReadouts
 		.map((parentReadout) => parentReadout.offset)
@@ -64,7 +62,6 @@ export const normalizeStyles = (
 				readouts.slice(nextIndex).find(isEntryVisible) || updatedReadouts.at(-1);
 
 			if (!nextVisibleReadout) {
-				//TODO: if we return nothing here, the code will throw in certain places
 				//If there is no visible next element and not a previous one, the element is always hidden and can be deleted
 				return;
 			}
@@ -83,7 +80,7 @@ export const normalizeStyles = (
 	return updatedReadouts;
 };
 
-export const getBorderRadius = (calculatedProperties: TreeStyleWithOffset[]) => {
+export const getBorderRadius = (calculatedProperties: TreeStyle[]) => {
 	const styleTable: Record<number, string> = {};
 
 	if (calculatedProperties.every((style) => style.borderRadius === "0px")) {
@@ -117,7 +114,7 @@ const isHiddenBecauseOfParent = ({
 	return samePosition && hiddenOrDefaultWidth && hiddenOrDefaultHeight;
 };
 
-const getDifferences = (readouts: TreeStyleWithOffset[], parentReadouts: TreeStyleWithOffset[]) =>
+const getDifferences = (readouts: TreeStyle[], parentReadouts: TreeStyle[]) =>
 	readouts.map((currentReadout) =>
 		calculateDimensionDifferences({
 			current: currentReadout,
@@ -127,10 +124,18 @@ const getDifferences = (readouts: TreeStyleWithOffset[], parentReadouts: TreeSty
 		})
 	);
 
+const getRootDifferences = (readouts: TreeStyle[]) =>
+	readouts.map((currentReadout) =>
+		calculateRootDifferences({
+			current: currentReadout,
+			reference: readouts.at(-1)!,
+		})
+	);
+
 const animationNotNeeded = (
-	readouts: TreeStyleWithOffset[],
+	readouts: TreeStyle[],
 	differences: DimensionalDifferences[],
-	type: AnimationType
+	flag: AnimationFlag
 ) => {
 	if (readouts.length === 0 || differences.length === 0) {
 		return true;
@@ -150,13 +155,13 @@ const animationNotNeeded = (
 
 	return (
 		differences.every(isElementUnchanged) ||
-		(type === "removal" && differences.every(isHiddenBecauseOfParent))
+		(flag === "removal" && differences.every(isHiddenBecauseOfParent))
 	);
 };
 
 const getDefaultKeyframes = (
 	differences: DimensionalDifferences[],
-	readouts: TreeStyleWithOffset[],
+	readouts: TreeStyle[],
 	easing: EasingTable
 ) => {
 	const borderRadius = getBorderRadius(readouts);
@@ -211,11 +216,13 @@ const getImageKeyframes = (current: ParentTree, parent: ParentTree, easing: Easi
 
 export const getKeyframes = (current: ParentTree, parent: ParentTree): Keyframe[] => {
 	const { style: readouts, easings } = current;
-	const { style: parentReadouts, type } = parent;
+	const { style: parentReadouts, flag, isRoot } = parent;
 
-	const differences = getDifferences(readouts, parentReadouts);
+	const differences = isRoot
+		? getRootDifferences(readouts)
+		: getDifferences(readouts, parentReadouts);
 
-	if (animationNotNeeded(readouts, differences, type)) {
+	if (animationNotNeeded(readouts, differences, flag)) {
 		return [];
 	}
 

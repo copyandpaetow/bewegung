@@ -1,7 +1,7 @@
-import { ChildParentDimensions, DimensionalDifferences, TreeStyleWithOffset } from "../types";
+import { ChildParentDimensions, DimensionalDifferences, TreeStyle } from "../types";
 import { save } from "../utils/helper";
 
-export const parseTransformOrigin = (entry: TreeStyleWithOffset) => {
+export const parseTransformOrigin = (entry: TreeStyle) => {
 	if (!entry) {
 		return [0, 0];
 	}
@@ -96,39 +96,41 @@ export const calculateDimensionDifferences = (
 		textCorrection,
 	} = getScales(dimensions);
 
-	//TODO: this can be dryed / improved
-	if (isTextElement) {
-		const leftDifference =
-			currentLeftDifference / parentWidthDifference - referenceLeftDifference - textCorrection;
-		const topDifference = currentTopDifference / parentHeightDifference - referenceTopDifference;
-
-		return {
-			heightDifference: save(1 / parentHeightDifference, 1),
-			widthDifference: save(1 / parentWidthDifference, 1),
-			leftDifference: save(leftDifference, 0),
-			topDifference: save(topDifference, 0),
-			offset: current.offset,
-		};
-	}
-
 	const leftDifference = currentLeftDifference / parentWidthDifference - referenceLeftDifference;
 	const topDifference = currentTopDifference / parentHeightDifference - referenceTopDifference;
 
-	return {
+	const differences = {
 		heightDifference: save(heightDifference, 1),
 		widthDifference: save(widthDifference, 1),
 		leftDifference: save(leftDifference, 0),
 		topDifference: save(topDifference, 0),
 		offset: current.offset,
 	};
+
+	if (isTextElement) {
+		const correctedLeftDifference =
+			currentLeftDifference / parentWidthDifference - referenceLeftDifference - textCorrection;
+
+		return {
+			...differences,
+			heightDifference: save(1 / parentHeightDifference, 1),
+			widthDifference: save(1 / parentWidthDifference, 1),
+			leftDifference: save(correctedLeftDifference, 0),
+		};
+	}
+
+	return differences;
 };
 
 //TODO: This needs to be reapplied to the root
 //? maybe it would be nice to have some type system for animations, like text, root, image etc
-export const calculateRootDifferences = (
-	current: TreeStyleWithOffset,
-	reference: TreeStyleWithOffset
-) => {
+export const calculateRootDifferences = ({
+	current,
+	reference,
+}: {
+	current: TreeStyle;
+	reference: TreeStyle;
+}) => {
 	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(reference);
 	const [originCurrentLeft, originCurrentTop] = parseTransformOrigin(current);
 
