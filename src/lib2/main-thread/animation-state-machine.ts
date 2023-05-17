@@ -8,13 +8,10 @@ import { Attributes } from "../utils/constants";
 /*
 - the updateTreeStructure step could be skipped. Not much value is added there
 => offset and the unsaveHeight/Width can be added in the client
-
 - maybe we can find a better storage for the text count and image ratio, like {type: "media", payload: "0.5"} | {type: "text", payload: "25"}
+
 - current namings are confusing
 - calculateDimensionDifferences could be dried
-- the placeholder element needs better duplication of attributes. Currently its only the classes
-
-- reactivity
 */
 
 const walkAnimationTree = (

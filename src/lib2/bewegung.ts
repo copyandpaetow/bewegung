@@ -26,7 +26,7 @@ TODO:
 if there is an overlap within the sequence, it will create additional easings
 ? should these be used in the keyframes? Should there be another readout for that timing?
 
-
+- reactivity
 */
 
 export const bewegung2 = (props: BewegungsEntry[], config?: BewegungsConfig): Bewegung => {
