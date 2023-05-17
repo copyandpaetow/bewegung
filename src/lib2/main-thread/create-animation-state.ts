@@ -13,7 +13,7 @@ import {
 	ResultingDomTree,
 } from "../types";
 import { emptyImageSrc } from "../utils/constants";
-import { applyCSSStyles } from "../utils/helper";
+import { applyCSSStyles, getChilden, querySelectorAll } from "../utils/helper";
 
 export const saveOriginalStyle = (element: HTMLElement) => {
 	const attributes = new Map<string, string>();
@@ -37,7 +37,7 @@ const overrideElementStyles = (element: HTMLElement, override: Overrides) => {
 		callbacks.push(() => (element.style.cssText = style));
 	}
 
-	if (element.hasAttribute("bewegung-removeable")) {
+	if (element.dataset.bewegungsRemoveable) {
 		callbacks.length = 0;
 		callbacks.push(() => element.remove());
 	}
@@ -115,7 +115,7 @@ const createAnimationTree = (
 	element: HTMLElement,
 	totalRuntime: number
 ): ClientAnimationTree => {
-	const elementChildren = Array.from(element.children) as HTMLElement[];
+	const elementChildren = getChilden(element);
 	const overrideAnimations = getOverrideAnimations(tree, element, totalRuntime);
 
 	const animationTree = {
@@ -165,8 +165,8 @@ export const createAnimationState = async (
 	const elementResets = new Map<HTMLElement, Map<string, string>>();
 	await observeDom(callbacks, worker);
 	requestAnimationFrame(() => {
-		Array.from(document.querySelectorAll("[data-bewegungs-reset]")).forEach((element) => {
-			elementResets.set(element as HTMLElement, saveOriginalStyle(element as HTMLElement));
+		querySelectorAll(`[${Attributes.reset}]`).forEach((element) => {
+			elementResets.set(element, saveOriginalStyle(element));
 		});
 	});
 

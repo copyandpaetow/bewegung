@@ -1,4 +1,5 @@
 import { DomTree } from "../types";
+import { getChilden } from "../utils/helper";
 
 const emptyBoundClientRect = {
 	top: 0,
@@ -49,8 +50,6 @@ export function createSerializableElement(element: HTMLElement): DomTree {
 		},
 		key,
 		easings,
-		children: Array.from(element.children).map((element) =>
-			createSerializableElement(element as HTMLElement)
-		),
+		children: getChilden(element).map((element) => createSerializableElement(element)),
 	};
 }
