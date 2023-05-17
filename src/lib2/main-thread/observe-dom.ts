@@ -1,7 +1,8 @@
 import { createSerializableElement } from "./read-element-styles";
-import { AtomicWorker, Attributes, DomTree } from "../types";
+import { AtomicWorker, DomTree } from "../types";
 import { isHTMLElement } from "../utils/predicates";
 import { querySelectorAll } from "../utils/helper";
+import { Attributes } from "../utils/constants";
 
 const resetNodeStyle = (entries: MutationRecord[]) => {
 	[...entries].reverse().forEach((entry) => {

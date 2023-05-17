@@ -1,4 +1,4 @@
-import { TempTimelineEntry, TimelineEntry } from "../types";
+import { EasingTable, TempTimelineEntry, TimelineEntry } from "../types";
 
 export const toArray = <MaybeArrayType>(
 	maybeArray: MaybeArrayType | MaybeArrayType[]
@@ -108,7 +108,7 @@ const computeTimeline = (entries: TimelineEntry[]) => {
 };
 
 export const calculateEasings = (easings: TimelineEntry[]) => {
-	const easingTable: Record<number, string> = { 0: "ease" };
+	const easingTable: EasingTable = { 0: "ease" };
 	computeTimeline(easings).forEach((entry) => {
 		const { end, easing } = entry;
 

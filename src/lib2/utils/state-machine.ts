@@ -1,4 +1,46 @@
-import { StateMachineDefinition, TransitionEntry } from "../types";
+import { AllPlayStates } from "../types";
+
+type Payload = {
+	nextPlayState?: "scroll" | "play";
+	progress?: number;
+	done?: boolean;
+};
+
+type PayloadFunction = (payload: Payload) => void;
+
+type Events = {
+	play: TransitionEntry;
+	pause: TransitionEntry;
+	finish: TransitionEntry;
+	scroll: TransitionEntry;
+	cancel: TransitionEntry;
+};
+
+type Guard = {
+	condition: string | string[];
+	action?: string | string[];
+	altTarget: AllPlayStates;
+};
+
+type TransitionEntry = {
+	target: AllPlayStates;
+	action?: string | string[];
+};
+
+type Definition = {
+	on: Partial<Events>;
+	exit?: string | string[];
+	entry?: string | string[];
+	action?: string | string[];
+	guard?: Guard | Guard[];
+};
+
+type StateMachineDefinition = {
+	initialState: AllPlayStates;
+	states: Record<AllPlayStates, Definition>;
+	actions?: Record<string, PayloadFunction>;
+	guards?: Record<string, () => boolean>;
+};
 
 const toArray = <Value>(maybeArray: Value | Value[]): Value[] =>
 	Array.isArray(maybeArray) ? maybeArray : [maybeArray];

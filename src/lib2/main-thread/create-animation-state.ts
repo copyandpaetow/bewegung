@@ -7,12 +7,11 @@ import {
 import {
 	AnimationState,
 	AtomicWorker,
-	Attributes,
 	ClientAnimationTree,
 	Overrides,
 	ResultingDomTree,
 } from "../types";
-import { emptyImageSrc } from "../utils/constants";
+import { Attributes, emptyImageSrc } from "../utils/constants";
 import { applyCSSStyles, getChilden, querySelectorAll } from "../utils/helper";
 
 export const saveOriginalStyle = (element: HTMLElement) => {

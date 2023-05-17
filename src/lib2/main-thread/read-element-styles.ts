@@ -18,19 +18,28 @@ const emptyComputedStle = {
 	objectPosition: "50% 50%",
 };
 
+const getComputedStyle = (element: HTMLElement) => {
+	const shouldSkip = element.dataset.bewegungsSkip !== undefined;
+
+	return shouldSkip ? emptyComputedStle : window.getComputedStyle(element);
+};
+
+const getBoundingClientRect = (element: HTMLElement) => {
+	const shouldSkip = element.dataset.bewegungsSkip !== undefined;
+
+	return shouldSkip ? emptyBoundClientRect : element.getBoundingClientRect();
+};
+
 //TODO: maybe we can store the text content directly
 export function createSerializableElement(element: HTMLElement): DomTree {
 	const easings = element.dataset.bewegungsEasing ?? "";
 	const key = element.dataset.bewegungsKey!;
 	const ratio = element.dataset.bewegungsRatio ?? "";
 	const text = element.dataset.bewegungsText ?? "";
-	const shouldSkip = element.dataset.bewegungsSkip !== undefined;
 
-	const { top, left, width, height } = shouldSkip
-		? emptyBoundClientRect
-		: element.getBoundingClientRect();
+	const { top, left, width, height } = getBoundingClientRect(element);
 	const { display, borderRadius, position, transform, transformOrigin, objectFit, objectPosition } =
-		shouldSkip ? emptyComputedStle : window.getComputedStyle(element);
+		getComputedStyle(element);
 
 	return {
 		style: {
