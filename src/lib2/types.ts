@@ -51,6 +51,8 @@ export type NormalizedProps = {
 export type TreeStyle = {
 	currentTop: number;
 	currentLeft: number;
+	currentHeight: number;
+	currentWidth: number;
 	unsaveWidth: number;
 	unsaveHeight: number;
 	ratio: string;
@@ -62,26 +64,14 @@ export type TreeStyle = {
 	display: string;
 	borderRadius: string;
 	text: string;
+	offset: number;
 };
 
 export type DomTree = {
-	style: TreeStyle;
+	style: TreeStyle[];
 	key: string;
 	easings: string;
 	children: DomTree[];
-};
-
-export type TreeStyleWithOffset = TreeStyle & {
-	offset: number;
-	currentHeight: number;
-	currentWidth: number;
-};
-
-export type IntermediateDomTree = {
-	style: TreeStyleWithOffset[];
-	key: string;
-	easings: TimelineEntry[];
-	children: IntermediateDomTree[];
 };
 
 export type ResultingDomTree = {
@@ -126,10 +116,10 @@ export type AllPlayStates =
 	| "canceled";
 
 export type ChildParentDimensions = {
-	current: TreeStyleWithOffset;
-	reference: TreeStyleWithOffset;
-	parent: TreeStyleWithOffset;
-	parentReference: TreeStyleWithOffset;
+	current: TreeStyle;
+	reference: TreeStyle;
+	parent: TreeStyle;
+	parentReference: TreeStyle;
 };
 
 export interface DimensionalDifferences {
@@ -143,7 +133,7 @@ export interface DimensionalDifferences {
 export type EasingTable = Record<number, string>;
 
 export type WorkerState = {
-	intermediateTree: Map<string, IntermediateDomTree>;
+	intermediateTree: Map<string, DomTree>;
 };
 
 export type ClientAnimationTree = {
@@ -164,13 +154,14 @@ export type Overrides = {
 };
 
 export type ParentTree = {
-	style: TreeStyleWithOffset[];
+	style: TreeStyle[];
 	overrides: Overrides;
-	type: AnimationType;
+	flag: AnimationFlag;
 	easings: TimelineEntry[];
+	isRoot: boolean;
 };
 
-export type AnimationType = "default" | "addition" | "removal";
+export type AnimationFlag = "default" | "addition" | "removal";
 
 export type ImageDetails = {
 	maxWidth: number;

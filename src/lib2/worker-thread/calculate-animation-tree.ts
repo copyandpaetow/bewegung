@@ -1,39 +1,19 @@
 import { getKeyframes, isEntryVisible, normalizeStyles } from "./get-keyframes";
 import {
-	AnimationType,
+	AnimationFlag,
 	DomTree,
-	IntermediateDomTree,
 	Overrides,
 	ParentTree,
 	ResultingDomTree,
 	TimelineEntry,
-	TreeStyleWithOffset,
+	TreeStyle,
 } from "../types";
 
-const revertEasings = (easing: string): TimelineEntry[] => {
+export const revertEasings = (easing: string): TimelineEntry[] => {
 	if (!easing) {
 		return [];
 	}
 	return JSON.parse(easing);
-};
-
-//TODO: this is uneccessary work and should be removed
-export const updateTreeStructure = (tree: DomTree, offset: number): IntermediateDomTree => {
-	const intermediateTree: IntermediateDomTree = {
-		easings: revertEasings(tree.easings),
-		style: [
-			{
-				...tree.style,
-				offset,
-				currentHeight: tree.style.unsaveHeight,
-				currentWidth: tree.style.unsaveWidth,
-			},
-		],
-		key: tree.key,
-		children: tree.children.map((child) => updateTreeStructure(child, offset)),
-	};
-
-	return intermediateTree;
 };
 
 /*
@@ -46,7 +26,7 @@ we could check
 
 */
 
-export const combineKeys = (accumulator: IntermediateDomTree[], current: IntermediateDomTree[]) => {
+export const combineKeys = (accumulator: DomTree[], current: DomTree[]) => {
 	const accumulatorKeys = accumulator.map((entry) => entry.key);
 	let lastMatchingIndex = -1;
 
@@ -70,10 +50,7 @@ export const combineKeys = (accumulator: IntermediateDomTree[], current: Interme
 	return accumulatorKeys;
 };
 
-export const calculateIntermediateTree = (
-	accumulator: IntermediateDomTree,
-	current: IntermediateDomTree
-): IntermediateDomTree => {
+export const calculateIntermediateTree = (accumulator: DomTree, current: DomTree): DomTree => {
 	const children = current.children ?? [];
 	const style = current.style ?? [];
 	const allKeys = combineKeys(accumulator.children, children);
@@ -85,7 +62,7 @@ export const calculateIntermediateTree = (
 	);
 
 	const currentChildren = allKeys.map(
-		(key) => (children.find((entry) => entry.key === key) ?? []) as IntermediateDomTree
+		(key) => (children.find((entry) => entry.key === key) ?? []) as DomTree
 	);
 
 	return {
@@ -98,16 +75,13 @@ export const calculateIntermediateTree = (
 	};
 };
 
-const addMutatedElementOverrides = (
-	readouts: TreeStyleWithOffset[],
-	parentEntry: ParentTree
-): Overrides => {
+const addMutatedElementOverrides = (readouts: TreeStyle[], parentEntry: ParentTree): Overrides => {
 	const { style: parentReadouts, overrides: parentOverrides } = parentEntry;
 	const overrides: Overrides = {};
 
 	//TODO: other styles like border radius
 
-	if (parentEntry.type !== "removal") {
+	if (parentEntry.flag !== "removal") {
 		return overrides;
 	}
 
@@ -126,10 +100,7 @@ const addMutatedElementOverrides = (
 	return overrides;
 };
 
-const getAnimationType = (
-	readouts: TreeStyleWithOffset[],
-	parentType: AnimationType
-): AnimationType => {
+const getAnimationFlag = (readouts: TreeStyle[], parentType: AnimationFlag): AnimationFlag => {
 	if (parentType === "removal") {
 		return "removal";
 	}
@@ -143,14 +114,15 @@ const getAnimationType = (
 	return "removal";
 };
 
-export const generateAnimationTree = (tree: IntermediateDomTree, parent: ParentTree) => {
+export const generateAnimationTree = (tree: DomTree, parent: ParentTree) => {
 	const normalizedStyles = normalizeStyles(tree.style, parent.style);
 
 	const current: ParentTree = {
 		style: normalizedStyles,
 		overrides: addMutatedElementOverrides(normalizedStyles, parent),
-		type: getAnimationType(tree.style, parent.type),
-		easings: parent.easings.concat(tree.easings),
+		flag: getAnimationFlag(tree.style, parent.flag),
+		easings: parent.easings.concat(revertEasings(tree.easings)),
+		isRoot: false,
 	};
 	const keyframes = getKeyframes(current, parent);
 

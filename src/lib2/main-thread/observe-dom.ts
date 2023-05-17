@@ -143,7 +143,7 @@ export const observeDom = (callbacks: Map<number, VoidFunction[]>, worker: Atomi
 
 			querySelectorAll(`[${Attributes.rootEasing}]`).forEach((rootElement) => {
 				const key = rootElement.dataset.bewegungsKey!;
-				domTrees.set(key, createSerializableElement(rootElement));
+				domTrees.set(key, createSerializableElement(rootElement, offset));
 			});
 
 			reply("sendDOMRects", {
