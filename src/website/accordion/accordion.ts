@@ -1,4 +1,4 @@
-import { Bewegung } from "../../lib/bewegung";
+import { bewegung2 } from "../../lib2/bewegung";
 
 const toggleAccordions = () => {
 	const accordionHeaders = [
@@ -7,15 +7,23 @@ const toggleAccordions = () => {
 
 	accordionHeaders.forEach((accordionHeader) => {
 		//@ts-expect-error ts doesnt not that property
-		let [target] = accordionHeader.ariaControlsElements;
+		let [target] = accordionHeader.ariaControlsElements as HTMLElement;
 
 		accordionHeader.addEventListener("click", () => {
 			let expanded = accordionHeader.getAttribute("aria-expanded") === "true" || false;
 
-			const animation = new Bewegung(
-				[accordionHeader, { attribute: `aria-expanded=${!expanded}` }, 500],
-				[target, { attribute: `hidden` }, 500]
-			);
+			const animation = bewegung2([
+				[
+					() => {
+						target.classList.toggle("hidden");
+						accordionHeader.setAttribute("aria-expanded", `${!expanded}`);
+					},
+					{
+						duration: 500,
+						root: "main",
+					},
+				],
+			]);
 
 			animation.play();
 		});

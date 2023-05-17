@@ -24,7 +24,11 @@ TODO:
 - how to handle user properties for properties we use (transform & clipPath)
 
 if there is an overlap within the sequence, it will create additional easings
-? should these be used in the keyframes? Should there be another readout for that timing?
+
+- the animationTree-creation takes too long. Maybe we need to split it into creating the animation and an onStart callbackarray
+=> we call the callbacks when we start walking the dom
+
+- borderRadis needs to be re-enabled
 
 - reactivity
 */
