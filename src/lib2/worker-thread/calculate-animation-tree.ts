@@ -8,7 +8,7 @@ import {
 	ResultingDomTree,
 	TimelineEntry,
 	TreeStyleWithOffset,
-} from "./types";
+} from "../types";
 
 const revertEasings = (easing: string): TimelineEntry[] => {
 	if (!easing) {

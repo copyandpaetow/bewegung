@@ -12,8 +12,8 @@ import {
 	ResultingDomTree,
 	WorkerMessages,
 	WorkerState,
-} from "./types";
-import { useWorker } from "./utils/use-worker";
+} from "../types";
+import { useWorker } from "../utils/use-worker";
 
 //@ts-expect-error typescript doesnt
 const worker = self as Worker;

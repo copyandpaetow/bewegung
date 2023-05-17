@@ -1,6 +1,6 @@
-import { calculateBorderRadius } from "../default/border-radius";
-import { getScales, getTranslates } from "../default/calculate-differences";
-import { isElementUnchanged } from "../get-keyframes";
+import { calculateBorderRadius } from "./border-radius";
+import { getScales, getTranslates } from "./calculate-differences";
+import { isElementUnchanged } from "./get-keyframes";
 import { ImageDetails, ParentTree, TreeStyleWithOffset } from "../types";
 import { save } from "../utils/helper";
 

@@ -1,19 +1,19 @@
-import { calculateBorderRadius } from "./default/border-radius";
-import { calculateDimensionDifferences } from "./default/calculate-differences";
-import { calculateEasings } from "./default/easings";
+import { calculateBorderRadius } from "./border-radius";
+import { calculateDimensionDifferences } from "./calculate-differences";
+import { calculateEasings } from "./easings";
 import {
 	calculateImageKeyframes,
 	getWrapperKeyframes,
 	getWrapperStyle,
 	highestNumber,
-} from "./images/calculate-differences";
+} from "./calculate-image-differences";
 import {
 	AnimationType,
 	DimensionalDifferences,
 	ImageDetails,
 	ParentTree,
 	TreeStyleWithOffset,
-} from "./types";
+} from "../types";
 
 export const getEmptyReadouts = (readouts: TreeStyleWithOffset[]) => {
 	return readouts.map((readouts) => ({

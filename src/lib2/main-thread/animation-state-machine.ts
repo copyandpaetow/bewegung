@@ -1,8 +1,8 @@
 import { createAnimationState } from "./create-animation-state";
-import { AnimationState, ClientAnimationTree, MainMessages, WorkerMessages } from "./types";
-import { nextRaf } from "./utils/helper";
-import { createMachine } from "./utils/state-machine";
-import { getWorker, useWorker } from "./utils/use-worker";
+import { AnimationState, ClientAnimationTree, MainMessages, WorkerMessages } from "../types";
+import { nextRaf } from "../utils/helper";
+import { createMachine } from "../utils/state-machine";
+import { getWorker, useWorker } from "../utils/use-worker";
 
 /*
 - the updateTreeStructure step could be skipped. Not much value is added there
@@ -17,7 +17,6 @@ import { getWorker, useWorker } from "./utils/use-worker";
 - recheck types and constants
 
 - maybe we can find a better storage for the text count and image ratio, like {type: "media", payload: "0.5"} | {type: "text", payload: "25"}
-- current folder structure is confusing. I liked the ui-thread / worker-thread better
 - current namings are confusing
 - calculateDimensionDifferences could be dried
 - the placeholder element needs better duplication of attributes. Currently its only the classes
@@ -25,9 +24,12 @@ import { getWorker, useWorker } from "./utils/use-worker";
 - reactivity
 */
 
-const walkAnimationTree = (tree: ClientAnimationTree, method: "play" | "pause") => {
-	tree.animation?.[method]();
-	tree.children.forEach((child) => walkAnimationTree(child, method));
+const walkAnimationTree = (
+	tree: ClientAnimationTree,
+	callback: (animation: Animation | null) => void
+) => {
+	callback(tree.animation);
+	tree.children.forEach((child) => walkAnimationTree(child, callback));
 };
 
 const workerManager = getWorker();
@@ -76,7 +78,7 @@ export const getAnimationStateMachine = (
 				console.log(`calculation took ${Date.now() - time}ms`);
 
 				animationState?.animations.forEach((animation) => {
-					walkAnimationTree(animation, "play");
+					walkAnimationTree(animation, (anim) => anim?.play());
 				});
 			},
 			scrollAnimations() {
