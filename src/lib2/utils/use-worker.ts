@@ -1,10 +1,29 @@
-import {
-	WorkerCallback,
-	WorkerCallbackTypes,
-	WorkerContext,
-	WorkerError,
-	WorkerMessageEvent,
-} from "../types";
+type WorkerCallback<Current extends keyof Self, Self, Target> = (
+	replyMethodArguments: Self[Current],
+	context: WorkerContext<Current, Self, Target>
+) => any;
+
+type WorkerError = (event: ErrorEvent) => void;
+
+type WorkerCallbackTypes<Current extends keyof Self, Self, Target> = {
+	onMessage: WorkerCallback<Current, Self, Target>;
+	onError: WorkerError;
+};
+
+type WorkerMessageEvent<Current extends keyof Self, Self> = {
+	replyMethodArguments: Self[Current];
+	replyMethod: Current;
+};
+
+export type WorkerContext<Current extends keyof Self, Self, Target> = {
+	reply(
+		replyMethod: keyof Target,
+		replyMethodArguments?: Target[keyof Target]
+	): WorkerContext<Current, Self, Target>;
+	cleanup(): void;
+	onMessage(callback: WorkerCallback<Current, Self, Target>): Promise<unknown>;
+	onError(errorCallback: WorkerError): void;
+};
 
 const spawnWorker = () =>
 	new Worker(new URL("../worker-thread/worker.ts", import.meta.url), {

@@ -10,10 +10,13 @@ import {
 import {
 	AnimationType,
 	DimensionalDifferences,
+	EasingTable,
 	ImageDetails,
+	Overrides,
 	ParentTree,
 	TreeStyleWithOffset,
 } from "../types";
+import { defaultImageStyles } from "../utils/constants";
 
 export const getEmptyReadouts = (readouts: TreeStyleWithOffset[]) => {
 	return readouts.map((readouts) => ({
@@ -154,7 +157,7 @@ const animationNotNeeded = (
 const getDefaultKeyframes = (
 	differences: DimensionalDifferences[],
 	readouts: TreeStyleWithOffset[],
-	easing: Record<number, string>
+	easing: EasingTable
 ) => {
 	const borderRadius = getBorderRadius(readouts);
 
@@ -172,8 +175,42 @@ const getDefaultKeyframes = (
 	);
 };
 
+const getImageKeyframes = (current: ParentTree, parent: ParentTree, easing: EasingTable) => {
+	const { style: readouts, overrides } = current;
+	const { style: parentReadouts } = parent;
+
+	const imageData: ImageDetails = {
+		easing,
+		maxHeight: highestNumber(readouts.map((style) => style.currentHeight)),
+		maxWidth: highestNumber(readouts.map((style) => style.currentWidth)),
+	};
+
+	const imageKeyframes = calculateImageKeyframes(readouts, easing);
+
+	if (imageKeyframes.length === 0) {
+		return [];
+	}
+	overrides.styles = {
+		...overrides.styles,
+		...defaultImageStyles,
+	};
+
+	overrides.wrapper = {
+		keyframes: getWrapperKeyframes(readouts, parentReadouts, imageData),
+		style: getWrapperStyle(current, parent, imageData),
+	};
+	overrides.placeholder = {
+		style: {
+			height: readouts.at(-1)!.unsaveHeight + "px",
+			width: readouts.at(-1)!.unsaveWidth + "px",
+		},
+	};
+
+	return imageKeyframes;
+};
+
 export const getKeyframes = (current: ParentTree, parent: ParentTree): Keyframe[] => {
-	const { style: readouts, easings, overrides } = current;
+	const { style: readouts, easings } = current;
 	const { style: parentReadouts, type } = parent;
 
 	const differences = getDifferences(readouts, parentReadouts);
@@ -186,30 +223,7 @@ export const getKeyframes = (current: ParentTree, parent: ParentTree): Keyframe[
 	const isImage = Boolean(readouts.at(-1)!.ratio);
 
 	if (isImage) {
-		const imageData: ImageDetails = {
-			easing,
-			maxHeight: highestNumber(readouts.map((style) => style.currentHeight)),
-			maxWidth: highestNumber(readouts.map((style) => style.currentWidth)),
-		};
-
-		const imageKeyframes = calculateImageKeyframes(readouts, easing);
-
-		if (imageKeyframes.length === 0) {
-			return [];
-		}
-
-		overrides.wrapper = {
-			keyframes: getWrapperKeyframes(readouts, parentReadouts, imageData),
-			style: getWrapperStyle(current, parent, imageData),
-		};
-		overrides.placeholder = {
-			style: {
-				height: readouts.at(-1)!.unsaveHeight + "px",
-				width: readouts.at(-1)!.unsaveWidth + "px",
-			},
-		};
-
-		return imageKeyframes;
+		return getImageKeyframes(current, parent, easing);
 	}
 
 	return getDefaultKeyframes(differences, readouts, easing);

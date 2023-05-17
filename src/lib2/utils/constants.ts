@@ -8,28 +8,14 @@ export const defaultOptions: BewegungsOption = {
 	at: 0,
 };
 
-export const defaultChangeProperties = {
-	borderRadius: "border-radius",
-	display: "display",
-	filter: "filter",
-	opacity: "opacity",
-	position: "position",
-	transform: "transform",
-	transformOrigin: "transform-origin",
-};
-
-export const defaultImageChangeProperties = {
-	...defaultChangeProperties,
-	objectFit: "object-fit",
-	objectPosition: "object-position",
-};
-
 export const emptyImageSrc =
 	"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
 
-export const BEWEGUNG_DATA_ATTRIBUTE = "data-bewegung";
-export const BEWEGUNG_PLACEHOLDER = "placeholder";
-export const BEWEGUNG_WRAPPER = "wrapper";
+export const enum Attributes {
+	key = "data-bewegungs-key",
+	reset = "data-bewegungs-reset",
+	rootEasing = "data-bewegungs-easing",
+}
 
 export const defaultImageStyles: Partial<CSSStyleDeclaration> = {
 	aspectRatio: "initial",

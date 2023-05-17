@@ -1,3 +1,5 @@
+import { WorkerContext } from "./utils/use-worker";
+
 export type ElementOrSelector = HTMLElement | Element | string;
 
 export type BewegungsCallback = VoidFunction;
@@ -33,60 +35,17 @@ export type TempTimelineEntry = {
 	easing: Set<string>;
 };
 
-export type WorkerCallback<Current extends keyof Self, Self, Target> = (
-	replyMethodArguments: Self[Current],
-	context: WorkerContext<Current, Self, Target>
-) => any;
-
-export type WorkerError = (event: ErrorEvent) => void;
-
-export type WorkerCallbackTypes<Current extends keyof Self, Self, Target> = {
-	onMessage: WorkerCallback<Current, Self, Target>;
-	onError: WorkerError;
-};
-
-export type WorkerMessageEvent<Current extends keyof Self, Self> = {
-	replyMethodArguments: Self[Current];
-	replyMethod: Current;
-};
-
-export type WorkerContext<Current extends keyof Self, Self, Target> = {
-	reply(
-		replyMethod: keyof Target,
-		replyMethodArguments?: Target[keyof Target]
-	): WorkerContext<Current, Self, Target>;
-	cleanup(): void;
-	onMessage(callback: WorkerCallback<Current, Self, Target>): Promise<unknown>;
-	onError(errorCallback: WorkerError): void;
-};
-
-export type DomChangeTransferable = {
-	domTrees: Map<string, DomTree>;
-	offset: number;
-	currentTime: number;
-};
-
-export type StateTransferable = Map<string, NormalizedProps>;
-
-export type ImageTransferable = DefaultTransferable & {
-	placeholders: Map<string, string>;
-	wrappers: Map<string, string>;
-};
-
-export type DefaultTransferable = {
-	overrides: Map<string, Partial<CSSStyleDeclaration>>;
-	keyframes: Map<string, Keyframe[]>;
-	partialElements: Map<string, Keyframe[]>;
-};
-
-export type MainMessages = {
-	domChanges: DomChangeTransferable;
-	imageResults: ImageTransferable;
-	defaultResults: DefaultTransferable;
-	textResults: DefaultTransferable;
-	state: StateTransferable;
-	updateState: Map<string, string>;
-	animationTrees: Map<string, ResultingDomTree>;
+export type NormalizedProps = {
+	start: number;
+	end: number;
+	iterations: number;
+	easing:
+		| "ease"
+		| "ease-in"
+		| "ease-out"
+		| "ease-in-out"
+		| "linear"
+		| `cubic-bezier(${number},${number},${number},${number})`;
 };
 
 export type TreeStyle = {
@@ -132,14 +91,20 @@ export type ResultingDomTree = {
 	children: ResultingDomTree[];
 };
 
+export type DomChangeTransferable = {
+	domTrees: Map<string, DomTree>;
+	offset: number;
+	currentTime: number;
+};
+
 export type WorkerMessages = {
 	sendDOMRects: DomChangeTransferable;
-	sendImageResults: ImageTransferable;
-	sendDefaultResults: DefaultTransferable;
-	sendTextResults: DefaultTransferable;
-	sendState: StateTransferable;
-	sendStateUpdate: Map<string, string>;
 	sendAnimationTrees: Map<string, ResultingDomTree>;
+};
+
+export type MainMessages = {
+	domChanges: DomChangeTransferable;
+	animationTrees: Map<string, ResultingDomTree>;
 };
 
 export type AtomicWorker = <Current extends keyof MainMessages>(
@@ -151,22 +116,6 @@ export type AnimationState = {
 	elementResets: Map<HTMLElement, Map<string, string>>;
 };
 
-export type Payload = {
-	nextPlayState?: "scroll" | "play";
-	progress?: number;
-	done?: boolean;
-};
-
-export type PayloadFunction = (payload: Payload) => void;
-
-type Events = {
-	play: TransitionEntry;
-	pause: TransitionEntry;
-	finish: TransitionEntry;
-	scroll: TransitionEntry;
-	cancel: TransitionEntry;
-};
-
 export type AllPlayStates =
 	| "finished"
 	| "idle"
@@ -175,42 +124,6 @@ export type AllPlayStates =
 	| "scrolling"
 	| "loading"
 	| "canceled";
-
-type Guard = {
-	condition: string | string[];
-	action?: string | string[];
-	altTarget: AllPlayStates;
-};
-
-export type TransitionEntry = {
-	target: AllPlayStates;
-	action?: string | string[];
-};
-
-export type Definition = {
-	on: Partial<Events>;
-	exit?: string | string[];
-	entry?: string | string[];
-	action?: string | string[];
-	guard?: Guard | Guard[];
-};
-
-export type StateMachineDefinition = {
-	initialState: AllPlayStates;
-	states: Record<AllPlayStates, Definition>;
-	actions?: Record<string, PayloadFunction>;
-	guards?: Record<string, () => boolean>;
-};
-
-export type DefaultReadouts = Omit<Partial<CSSStyleDeclaration>, "offset"> & {
-	currentTop: number;
-	currentLeft: number;
-	unsaveWidth: number;
-	unsaveHeight: number;
-	currentWidth: number;
-	currentHeight: number;
-	offset: number;
-};
 
 export type ChildParentDimensions = {
 	current: TreeStyleWithOffset;
@@ -231,44 +144,6 @@ export type EasingTable = Record<number, string>;
 
 export type WorkerState = {
 	intermediateTree: Map<string, IntermediateDomTree>;
-};
-
-export interface StyleTables {
-	borderRadiusTable: Record<number, string>;
-	opacityTable: Record<number, string>;
-	filterTable: Record<number, string>;
-	userTransformTable: Record<number, string>;
-	easingTable: Record<number, string>;
-}
-
-export type NormalizedProps = {
-	start: number;
-	end: number;
-	iterations: number;
-	easing:
-		| "ease"
-		| "ease-in"
-		| "ease-out"
-		| "ease-in-out"
-		| "linear"
-		| `cubic-bezier(${number},${number},${number},${number})`;
-};
-
-export type NormalizedPropsWithCallbacks = NormalizedProps & {
-	callback: VoidFunction;
-	root: HTMLElement;
-};
-
-export type DefaultResult = {
-	overrides: Map<string, Partial<CSSStyleDeclaration>>;
-	partialElements: Map<string, Keyframe[]>;
-	animations: Map<string, Animation>;
-	onStart: VoidFunction[];
-};
-
-export type ImageResult = DefaultResult & {
-	placeholders: Map<string, string>;
-	wrappers: Map<string, string>;
 };
 
 export type ClientAnimationTree = {
@@ -295,16 +170,10 @@ export type ParentTree = {
 	easings: TimelineEntry[];
 };
 
-export const enum Attributes {
-	key = "data-bewegungs-key",
-	reset = "data-bewegungs-reset",
-	rootEasing = "data-bewegungs-easing",
-}
-
 export type AnimationType = "default" | "addition" | "removal";
 
 export type ImageDetails = {
 	maxWidth: number;
 	maxHeight: number;
-	easing: Record<number, string>;
+	easing: EasingTable;
 };

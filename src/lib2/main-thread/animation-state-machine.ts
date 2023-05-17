@@ -1,25 +1,13 @@
 import { createAnimationState } from "./create-animation-state";
-import {
-	AnimationState,
-	Attributes,
-	ClientAnimationTree,
-	MainMessages,
-	WorkerMessages,
-} from "../types";
+import { AnimationState, ClientAnimationTree, MainMessages, WorkerMessages } from "../types";
 import { nextRaf, querySelectorAll } from "../utils/helper";
 import { createMachine } from "../utils/state-machine";
 import { getWorker, useWorker } from "../utils/use-worker";
+import { Attributes } from "../utils/constants";
 
 /*
 - the updateTreeStructure step could be skipped. Not much value is added there
 => offset and the unsaveHeight/Width can be added in the client
-
-- unify the handling of common functionality
-=> attribute/Dataset and the enum to it
-=> position absolute handling
-=> empty entries
-
-- recheck types and constants
 
 - maybe we can find a better storage for the text count and image ratio, like {type: "media", payload: "0.5"} | {type: "text", payload: "25"}
 - current namings are confusing
