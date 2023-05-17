@@ -114,8 +114,18 @@ const getAnimationFlag = (readouts: TreeStyle[], parentType: AnimationFlag): Ani
 	return "removal";
 };
 
+//TODO: this needs to be normalized => we are checking at several places to not continue
 export const generateAnimationTree = (tree: DomTree, parent: ParentTree) => {
 	const normalizedStyles = normalizeStyles(tree.style, parent.style);
+
+	if (!normalizedStyles.length) {
+		return {
+			overrides: {},
+			keyframes: [],
+			key: tree.key,
+			children: [],
+		};
+	}
 
 	const current: ParentTree = {
 		style: normalizedStyles,

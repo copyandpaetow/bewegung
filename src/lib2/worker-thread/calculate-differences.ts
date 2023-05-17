@@ -122,8 +122,6 @@ export const calculateDimensionDifferences = (
 	return differences;
 };
 
-//TODO: This needs to be reapplied to the root
-//? maybe it would be nice to have some type system for animations, like text, root, image etc
 export const calculateRootDifferences = ({
 	current,
 	reference,

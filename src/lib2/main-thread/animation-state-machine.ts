@@ -5,11 +5,10 @@ import { createMachine } from "../utils/state-machine";
 import { getWorker, useWorker } from "../utils/use-worker";
 import { Attributes } from "../utils/constants";
 
-const walkAnimationTree = (
-	tree: ClientAnimationTree,
-	callback: (animation: Animation | null) => void
-) => {
-	callback(tree.animation);
+const walkAnimationTree = (tree: ClientAnimationTree, callback: (animation: Animation) => void) => {
+	if (tree.animation) {
+		callback(tree.animation);
+	}
 	tree.children.forEach((child) => walkAnimationTree(child, callback));
 };
 
@@ -42,6 +41,7 @@ export const getAnimationStateMachine = (
 		actions: {
 			async loadState() {
 				try {
+					await nextRaf();
 					await resetState();
 					machine.transition(nextPlayState);
 				} catch (error) {
@@ -59,7 +59,9 @@ export const getAnimationStateMachine = (
 				console.log(`calculation took ${Date.now() - time}ms`);
 
 				animationState?.animations.forEach((animation) => {
-					walkAnimationTree(animation, (anim) => anim?.play());
+					walkAnimationTree(animation, (anim) => {
+						anim.play();
+					});
 				});
 			},
 			scrollAnimations() {
