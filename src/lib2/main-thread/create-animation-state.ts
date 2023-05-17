@@ -11,9 +11,9 @@ import {
 	ClientAnimationTree,
 	Overrides,
 	ResultingDomTree,
-} from "./types";
-import { emptyImageSrc } from "./utils/constants";
-import { applyCSSStyles } from "./utils/helper";
+} from "../types";
+import { emptyImageSrc } from "../utils/constants";
+import { applyCSSStyles } from "../utils/helper";
 
 export const saveOriginalStyle = (element: HTMLElement) => {
 	const attributes = new Map<string, string>();

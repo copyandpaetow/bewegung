@@ -1,13 +1,12 @@
 import {
-	Attributes,
 	BewegungsConfig,
 	BewegungsEntry,
 	BewegungsOption,
 	ElementOrSelector,
 	TimelineEntry,
-} from "./types";
-import { defaultOptions } from "./utils/constants";
-import { uuid } from "./utils/helper";
+} from "../types";
+import { defaultOptions } from "../utils/constants";
+import { uuid } from "../utils/helper";
 
 const computeCallbacks = (props: PropsWithRelativeTiming[]) => {
 	const callbacks = new Map<number, VoidFunction[]>();

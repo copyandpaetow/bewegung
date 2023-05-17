@@ -1,5 +1,5 @@
-import { getAnimationStateMachine } from "./animation";
-import { normalizeProps } from "./normalize-props";
+import { getAnimationStateMachine } from "./main-thread/animation-state-machine";
+import { normalizeProps } from "./main-thread/normalize-props";
 import { AllPlayStates, BewegungsConfig, BewegungsEntry } from "./types";
 
 export type Bewegung = {

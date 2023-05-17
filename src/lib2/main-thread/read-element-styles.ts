@@ -1,4 +1,4 @@
-import { DomTree } from "./types";
+import { DomTree } from "../types";
 
 const emptyBoundClientRect = {
 	top: 0,
