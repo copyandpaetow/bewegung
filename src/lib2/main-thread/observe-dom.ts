@@ -1,6 +1,7 @@
 import { createSerializableElement } from "./read-element-styles";
 import { AtomicWorker, Attributes, DomTree } from "../types";
 import { isHTMLElement } from "../utils/predicates";
+import { querySelectorAll } from "../utils/helper";
 
 const resetNodeStyle = (entries: MutationRecord[]) => {
 	[...entries].reverse().forEach((entry) => {
@@ -23,8 +24,8 @@ const addKeyToNewlyAddedElement = (element: HTMLElement, index: number) => {
 	element.dataset.bewegungsKey = key;
 	element.dataset.bewegungsRemoveable = "";
 
-	Array.from(element.querySelectorAll("*")).forEach((_, innerIndex) => {
-		element.dataset.bewegungsKey = `${key}-${innerIndex}`;
+	querySelectorAll("*", element).forEach((child, innerIndex) => {
+		child.dataset.bewegungsKey = `${key}-${innerIndex}`;
 	});
 };
 
@@ -139,9 +140,9 @@ export const observeDom = (callbacks: Map<number, VoidFunction[]>, worker: Atomi
 
 			addKeyToCustomElements(addEntries);
 
-			document.querySelectorAll(`[${Attributes.rootEasing}]`).forEach((rootElement) => {
-				const key = (rootElement as HTMLElement).dataset.bewegungsKey!;
-				domTrees.set(key, createSerializableElement(rootElement as HTMLElement));
+			querySelectorAll(`[${Attributes.rootEasing}]`).forEach((rootElement) => {
+				const key = rootElement.dataset.bewegungsKey!;
+				domTrees.set(key, createSerializableElement(rootElement));
 			});
 
 			reply("sendDOMRects", {

@@ -6,7 +6,7 @@ import {
 	TimelineEntry,
 } from "../types";
 import { defaultOptions } from "../utils/constants";
-import { uuid } from "../utils/helper";
+import { getChilden, uuid } from "../utils/helper";
 
 const computeCallbacks = (props: PropsWithRelativeTiming[]) => {
 	const callbacks = new Map<number, VoidFunction[]>();
@@ -82,8 +82,6 @@ const getRelativeTimings = (
 	});
 };
 
-const getChildElements = (element: HTMLElement) => Array.from(element.children) as HTMLElement[];
-
 const addTextAttribute = (element: HTMLElement) => {
 	let text = 0;
 	element.childNodes.forEach((node) => {
@@ -124,7 +122,7 @@ const labelElements = (element: HTMLElement) => {
 	addMediaRatioAttribute(element);
 	addSkipAttribute(element);
 
-	getChildElements(element).forEach(labelElements);
+	getChilden(element).forEach(labelElements);
 };
 
 const labelRootElements = (propsWithRelativeTiming: PropsWithRelativeTiming[]) => {
@@ -142,7 +140,7 @@ const labelRootElements = (propsWithRelativeTiming: PropsWithRelativeTiming[]) =
 		domElement.dataset.bewegungsKey = key;
 		domElement.dataset.bewegungsEasing = JSON.stringify(timelineEntry);
 
-		getChildElements(domElement).forEach(labelElements);
+		getChilden(domElement).forEach(labelElements);
 	});
 };
 

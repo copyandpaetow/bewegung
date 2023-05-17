@@ -297,7 +297,7 @@ export type ParentTree = {
 
 export const enum Attributes {
 	key = "data-bewegungs-key",
-	removeable = "data-bewegungs-removeable",
+	reset = "data-bewegungs-reset",
 	rootEasing = "data-bewegungs-easing",
 }
 

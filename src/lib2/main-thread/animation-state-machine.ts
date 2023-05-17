@@ -1,6 +1,12 @@
 import { createAnimationState } from "./create-animation-state";
-import { AnimationState, ClientAnimationTree, MainMessages, WorkerMessages } from "../types";
-import { nextRaf } from "../utils/helper";
+import {
+	AnimationState,
+	Attributes,
+	ClientAnimationTree,
+	MainMessages,
+	WorkerMessages,
+} from "../types";
+import { nextRaf, querySelectorAll } from "../utils/helper";
 import { createMachine } from "../utils/state-machine";
 import { getWorker, useWorker } from "../utils/use-worker";
 
@@ -9,7 +15,6 @@ import { getWorker, useWorker } from "../utils/use-worker";
 => offset and the unsaveHeight/Width can be added in the client
 
 - unify the handling of common functionality
-=> querySelector and element.children
 => attribute/Dataset and the enum to it
 => position absolute handling
 => empty entries
@@ -97,15 +102,13 @@ export const getAnimationStateMachine = (
 				console.log("cancelAnimations");
 			},
 			cleanup() {
-				(Array.from(document.querySelectorAll(`[data-bewegungs-key]`)) as HTMLElement[]).forEach(
-					(element) => {
-						Object.keys(element.dataset).forEach((attributeName) => {
-							if (attributeName.includes("bewegung")) {
-								delete element.dataset[attributeName];
-							}
-						});
-					}
-				);
+				querySelectorAll(`[${Attributes.key}]`).forEach((element) => {
+					Object.keys(element.dataset).forEach((attributeName) => {
+						if (attributeName.includes("bewegung")) {
+							delete element.dataset[attributeName];
+						}
+					});
+				});
 			},
 			resetElements() {
 				animationState?.elementResets.forEach((attributes, element) => {

@@ -6,40 +6,6 @@ export const applyCSSStyles = (element: HTMLElement, style: Partial<CSSStyleDecl
 	Object.assign(element.style, style);
 };
 
-export const styleReset = (
-	element: HTMLElement,
-	style: Partial<CSSStyleDeclaration>
-): Partial<CSSStyleDeclaration> => {
-	return Object.fromEntries(
-		Object.keys(style).map((property) => {
-			return [property, element.style[property] ?? ""];
-		})
-	);
-};
-
-export const emptyStyleReset = (
-	style: Partial<CSSStyleDeclaration>
-): Partial<CSSStyleDeclaration> => {
-	return Object.fromEntries(
-		Object.keys(style).map((property) => {
-			return [property, ""];
-		})
-	);
-};
-
-export const resolveable = () => {
-	const api = {
-		resolve(value: any) {},
-		reject(value: any) {},
-	};
-	const promise = new Promise<void>((res, rej) => {
-		api.resolve = res;
-		api.reject = rej;
-	});
-
-	return { ...api, promise };
-};
-
 function* idGeneratorFunction() {
 	let index = 0;
 	while (true) {
@@ -54,3 +20,14 @@ export const uuid = (prefix: string = "bewegung"): string => {
 };
 
 export const nextRaf = () => new Promise((resolve) => requestAnimationFrame(resolve));
+
+export const querySelectorAll = (
+	selector: string,
+	element: HTMLElement = document.documentElement
+) => {
+	return Array.from(element.querySelectorAll(selector)) as HTMLElement[];
+};
+
+export const getChilden = (element: HTMLElement) => {
+	return Array.from(element.children) as HTMLElement[];
+};
