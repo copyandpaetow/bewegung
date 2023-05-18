@@ -33,24 +33,20 @@ const spawnWorker = () =>
 export const getWorker = () => {
 	const allWorker: Worker[] = [];
 
-	requestAnimationFrame(() => {
-		allWorker.push(spawnWorker());
-	});
-
-	/*
-		todo:
-		- this could need some more work
-		- we should add another function to add the next worker (if the current is done)
-	*/
-	return {
+	const api = {
 		current() {
-			const current = allWorker.pop()!;
-			setTimeout(() => {
+			return allWorker.pop() || spawnWorker();
+		},
+		addWorker() {
+			requestAnimationFrame(() => {
 				allWorker.push(spawnWorker());
-			}, 500);
-			return current;
+			});
 		},
 	};
+
+	api.addWorker();
+
+	return api;
 };
 
 export const useWorker =

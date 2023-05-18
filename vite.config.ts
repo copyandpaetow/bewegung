@@ -7,6 +7,9 @@ const outDir = resolve(__dirname, "dist");
 module.exports = defineConfig({
 	root,
 	base: "/bewegung/",
+	server: {
+		port: 8000,
+	},
 	build: {
 		outDir,
 		rollupOptions: {
