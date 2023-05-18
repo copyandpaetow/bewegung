@@ -2,52 +2,56 @@ import {
 	AnimationFlag,
 	DomTree,
 	MainMessages,
-	ParentTree,
-	ResultingDomTree,
+	TimelineEntry,
+	TreeStyle,
 	WorkerMessages,
 	WorkerState,
 } from "../types";
 import { useWorker } from "../utils/use-worker";
-import {
-	calculateIntermediateTree,
-	generateAnimationTree,
-	revertEasings,
-} from "./calculate-animation-tree";
-import { getEmptyReadouts } from "./get-keyframes";
+import { revertEasings, updateKeyframes } from "./calculate-animation-tree";
 
 //@ts-expect-error typescript doesnt
 const worker = self as Worker;
 const workerAtom = useWorker<WorkerMessages, MainMessages>(worker);
 
 const state: WorkerState = {
-	intermediateTree: new Map<string, DomTree>(),
+	readouts: new Map<string, TreeStyle[]>(),
+	easings: new Map<string, TimelineEntry[]>(),
+	keyframes: new Map<string, Keyframe[]>(),
+	overrides: new Map<string, Partial<CSSStyleDeclaration>>(),
+	flags: new Map<string, AnimationFlag>(),
+	isObserverRequired: false,
+};
+
+const updateReadouts = (tree: DomTree, state: WorkerState) => {
+	const key = tree.key;
+
+	state.readouts.set(key, (state.readouts.get(key) ?? []).concat(tree.style));
+	if (!state.easings.has(key)) {
+		state.easings.set(key, revertEasings(tree.easings));
+	}
+
+	tree.children.forEach((childTree) => updateReadouts(childTree, state));
 };
 
 workerAtom("sendDOMRects").onMessage((domChanges) => {
 	const { domTrees, offset } = domChanges;
 
-	domTrees.forEach((tree, key) => {
-		if (!state.intermediateTree.has(key)) {
-			state.intermediateTree.set(key, tree);
-			return;
-		}
-		const previousTree = state.intermediateTree.get(key)!;
-
-		state.intermediateTree.set(key, calculateIntermediateTree(previousTree, tree));
+	domTrees.forEach((tree) => {
+		updateReadouts(tree, state);
 	});
 
 	if (offset === 1) {
-		const animationTrees = new Map<string, ResultingDomTree>();
-		state.intermediateTree.forEach((domTree, key) => {
-			const emptyParent: ParentTree = {
-				style: getEmptyReadouts(domTree.style),
-				overrides: {},
-				flag: "default" as AnimationFlag,
-				easings: revertEasings(domTree.easings),
-				isRoot: true,
-			};
-			animationTrees.set(key, generateAnimationTree(domTree, emptyParent));
+		domTrees.forEach((tree) => {
+			updateKeyframes(tree, "", state);
 		});
-		workerAtom("sendAnimationTrees").reply("animationTrees", animationTrees);
+
+		workerAtom("sendAnimationTrees").reply("animationTrees", {
+			keyframes: state.keyframes,
+			overrides: state.overrides,
+			flags: state.flags,
+		});
+
+		//TODO: we might need to clean up the state after that
 	}
 });
