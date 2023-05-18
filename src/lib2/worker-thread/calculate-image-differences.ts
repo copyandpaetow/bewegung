@@ -7,32 +7,6 @@ import { save } from "../utils/helper";
 export const highestNumber = (numbers: number[]) =>
 	numbers.reduce((largest, current) => Math.max(largest, current));
 
-export const getWrapperStyle = (
-	current: ParentTree,
-	parent: ParentTree,
-	imageData: ImageDetails
-): Partial<CSSStyleDeclaration> => {
-	const readouts = current.style;
-	const { overrides, style: parentReadouts } = parent;
-	const { maxHeight, maxWidth } = imageData;
-
-	if (parentReadouts.at(-1)!.position === "static" && !overrides.styles?.position) {
-		overrides.styles ??= {};
-		overrides.styles.position = "relative";
-	}
-
-	return {
-		position: "absolute",
-		left: readouts.at(-1)!.currentLeft - (parentReadouts?.at(-1)!.currentLeft ?? 0) + "px",
-		top: readouts.at(-1)!.currentTop - (parentReadouts?.at(-1)!.currentTop ?? 0) + "px",
-		height: `${maxHeight}px`,
-		width: `${maxWidth}px`,
-		pointerEvents: "none",
-		overflow: "hidden",
-		gridArea: "1/1/2/2", //if the parent element is a grid element, it will be absolutly positioned from its dedicated area and not from the edge of the element
-	};
-};
-
 export const calculateImageKeyframes = (readouts: TreeStyle[], easing: EasingTable): Keyframe[] => {
 	const maxHeight = highestNumber(readouts.map((style) => style.currentHeight));
 	const maxWidth = highestNumber(readouts.map((style) => style.currentWidth));

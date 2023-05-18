@@ -68,7 +68,7 @@ export type TreeStyle = {
 };
 
 export type DomTree = {
-	style: TreeStyle[];
+	style: TreeStyle;
 	key: string;
 	easings: string;
 	children: DomTree[];
@@ -87,14 +87,20 @@ export type DomChangeTransferable = {
 	currentTime: number;
 };
 
+export type ResultTransferable = {
+	keyframes: Map<string, Keyframe[]>;
+	overrides: Map<string, Partial<CSSStyleDeclaration>>;
+	flags: Map<string, AnimationFlag>;
+};
+
 export type WorkerMessages = {
 	sendDOMRects: DomChangeTransferable;
-	sendAnimationTrees: Map<string, ResultingDomTree>;
+	sendAnimationTrees: ResultTransferable;
 };
 
 export type MainMessages = {
 	domChanges: DomChangeTransferable;
-	animationTrees: Map<string, ResultingDomTree>;
+	animationTrees: ResultTransferable;
 };
 
 export type AtomicWorker = <Current extends keyof MainMessages>(
@@ -102,7 +108,7 @@ export type AtomicWorker = <Current extends keyof MainMessages>(
 ) => WorkerContext<Current, MainMessages, WorkerMessages>;
 
 export type AnimationState = {
-	animations: Map<string, ClientAnimationTree>;
+	animations: Map<string, Animation>;
 	elementResets: Map<HTMLElement, Map<string, string>>;
 };
 
@@ -133,7 +139,12 @@ export interface DimensionalDifferences {
 export type EasingTable = Record<number, string>;
 
 export type WorkerState = {
-	intermediateTree: Map<string, DomTree>;
+	readouts: Map<string, TreeStyle[]>;
+	easings: Map<string, TimelineEntry[]>;
+	keyframes: Map<string, Keyframe[]>;
+	overrides: Map<string, Partial<CSSStyleDeclaration>>;
+	flags: Map<string, AnimationFlag>;
+	isObserverRequired: false;
 };
 
 export type ClientAnimationTree = {
@@ -154,6 +165,7 @@ export type Overrides = {
 };
 
 export type ParentTree = {
+	key: string;
 	style: TreeStyle[];
 	overrides: Overrides;
 	flag: AnimationFlag;
@@ -161,10 +173,16 @@ export type ParentTree = {
 	isRoot: boolean;
 };
 
-export type AnimationFlag = "default" | "addition" | "removal";
+export type AnimationFlag = "addition" | "removal";
 
 export type ImageDetails = {
 	maxWidth: number;
 	maxHeight: number;
 	easing: EasingTable;
+};
+
+export type AnimationData = {
+	keyframes: Map<string, Keyframe[]>;
+	overrides: Map<string, Partial<CSSStyleDeclaration>>;
+	isObserverRequired: boolean;
 };

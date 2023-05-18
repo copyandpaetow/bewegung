@@ -1,10 +1,10 @@
 import {
 	AnimationFlag,
 	DimensionalDifferences,
-	EasingTable,
+	DomTree,
 	ImageDetails,
-	ParentTree,
 	TreeStyle,
+	WorkerState,
 } from "../types";
 import { defaultImageStyles } from "../utils/constants";
 import { calculateBorderRadius } from "./border-radius";
@@ -12,7 +12,6 @@ import { calculateDimensionDifferences, calculateRootDifferences } from "./calcu
 import {
 	calculateImageKeyframes,
 	getWrapperKeyframes,
-	getWrapperStyle,
 	highestNumber,
 } from "./calculate-image-differences";
 import { calculateEasings } from "./easings";
@@ -41,11 +40,11 @@ export const getEmptyReadouts = (readouts: TreeStyle[]) => {
 export const isEntryVisible = (entry: TreeStyle) =>
 	entry.display !== "none" && entry.unsaveWidth !== 0 && entry.unsaveHeight !== 0;
 
-export const normalizeStyles = (
-	readouts: TreeStyle[],
-	parentReadouts: TreeStyle[]
-): TreeStyle[] => {
+//TODO: is might not work for the root, if there is no parent readout
+export const normalizeStyles = (tree: DomTree, parentKey: string, state: WorkerState) => {
 	const updatedReadouts: TreeStyle[] = [];
+	const readouts = state.readouts.get(tree.key)!;
+	const parentReadouts = state.readouts.get(parentKey) ?? readouts;
 
 	parentReadouts
 		.map((parentReadout) => parentReadout.offset)
@@ -76,8 +75,7 @@ export const normalizeStyles = (
 
 			return;
 		});
-
-	return updatedReadouts;
+	state.readouts.set(tree.key, updatedReadouts);
 };
 
 export const getBorderRadius = (calculatedProperties: TreeStyle[]) => {
@@ -135,7 +133,7 @@ const getRootDifferences = (readouts: TreeStyle[]) =>
 const animationNotNeeded = (
 	readouts: TreeStyle[],
 	differences: DimensionalDifferences[],
-	flag: AnimationFlag
+	flag: AnimationFlag | undefined
 ) => {
 	if (readouts.length === 0 || differences.length === 0) {
 		return true;
@@ -159,14 +157,16 @@ const animationNotNeeded = (
 	);
 };
 
-const getDefaultKeyframes = (
+const setDefaultKeyframes = (
 	differences: DimensionalDifferences[],
-	readouts: TreeStyle[],
-	easing: EasingTable
+	tree: DomTree,
+	state: WorkerState
 ) => {
+	const readouts = state.readouts.get(tree.key)!;
 	const borderRadius = getBorderRadius(readouts);
+	const easing = calculateEasings(state.easings.get(tree.key)!);
 
-	return differences.map(
+	const keyframes = differences.map(
 		({ leftDifference, topDifference, widthDifference, heightDifference, offset }) => {
 			return {
 				offset,
@@ -178,60 +178,78 @@ const getDefaultKeyframes = (
 			};
 		}
 	);
+
+	state.keyframes.set(tree.key, keyframes);
 };
 
-const getImageKeyframes = (current: ParentTree, parent: ParentTree, easing: EasingTable) => {
-	const { style: readouts, overrides } = current;
-	const { style: parentReadouts } = parent;
+const setImageKeyframes = (tree: DomTree, parentKey: string, state: WorkerState) => {
+	const parentReadouts = state.readouts.get(parentKey)!;
+	const readouts = state.readouts.get(tree.key)!;
 
 	const imageData: ImageDetails = {
-		easing,
+		easing: calculateEasings(state.easings.get(tree.key)!),
 		maxHeight: highestNumber(readouts.map((style) => style.currentHeight)),
 		maxWidth: highestNumber(readouts.map((style) => style.currentWidth)),
 	};
 
-	const imageKeyframes = calculateImageKeyframes(readouts, easing);
+	const imageKeyframes = calculateImageKeyframes(readouts, imageData.easing);
 
 	if (imageKeyframes.length === 0) {
 		return [];
 	}
-	overrides.styles = {
-		...overrides.styles,
-		...defaultImageStyles,
-	};
 
-	overrides.wrapper = {
-		keyframes: getWrapperKeyframes(readouts, parentReadouts, imageData),
-		style: getWrapperStyle(current, parent, imageData),
-	};
-	overrides.placeholder = {
-		style: {
-			height: readouts.at(-1)!.unsaveHeight + "px",
-			width: readouts.at(-1)!.unsaveWidth + "px",
-		},
-	};
+	state.keyframes.set(tree.key, imageKeyframes);
+	state.keyframes.set(
+		`${tree.key}-wrapper`,
+		getWrapperKeyframes(readouts, parentReadouts, imageData)
+	);
+
+	state.overrides.set(tree.key, { ...state.overrides.get(tree.key), ...defaultImageStyles });
+	state.overrides.set(`${tree.key}-placeholder`, {
+		height: readouts.at(-1)!.unsaveHeight + "px",
+		width: readouts.at(-1)!.unsaveWidth + "px",
+	});
+	state.overrides.set(`${tree.key}-wrapper`, {
+		position: "absolute",
+		left: readouts.at(-1)!.currentLeft - (parentReadouts?.at(-1)!.currentLeft ?? 0) + "px",
+		top: readouts.at(-1)!.currentTop - (parentReadouts?.at(-1)!.currentTop ?? 0) + "px",
+		height: `${imageData.maxHeight}px`,
+		width: `${imageData.maxWidth}px`,
+		pointerEvents: "none",
+		overflow: "hidden",
+		gridArea: "1/1/2/2", //if the parent element is a grid element, it will be absolutly positioned from its dedicated area and not from the edge of the element
+	});
+
+	const parentOverrides = state.overrides.get(parentKey);
+	if (parentReadouts.at(-1)!.position === "static" && !parentOverrides?.position) {
+		state.overrides.set(parentKey, {
+			...parentOverrides,
+			position: "relative",
+		});
+	}
 
 	return imageKeyframes;
 };
 
-export const getKeyframes = (current: ParentTree, parent: ParentTree): Keyframe[] => {
-	const { style: readouts, easings } = current;
-	const { style: parentReadouts, flag, isRoot } = parent;
+export const setKeyframes = (tree: DomTree, parentKey: string, state: WorkerState) => {
+	const parentReadouts = state.readouts.get(parentKey)!;
+	const readouts = state.readouts.get(tree.key)!;
+	const flag = state.flags.get(tree.key);
 
-	const differences = isRoot
+	const differences = !parentKey
 		? getRootDifferences(readouts)
 		: getDifferences(readouts, parentReadouts);
 
 	if (animationNotNeeded(readouts, differences, flag)) {
-		return [];
+		state.keyframes.set(tree.key, []);
+		return;
 	}
 
-	const easing = calculateEasings(easings);
 	const isImage = Boolean(readouts.at(-1)!.ratio);
 
-	if (isImage) {
-		return getImageKeyframes(current, parent, easing);
+	if (!isImage) {
+		setDefaultKeyframes(differences, tree, state);
+		return;
 	}
-
-	return getDefaultKeyframes(differences, readouts, easing);
+	setImageKeyframes(tree, parentKey, state);
 };

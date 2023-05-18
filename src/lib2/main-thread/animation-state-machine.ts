@@ -29,11 +29,7 @@ export const getAnimationStateMachine = (
 	const resetState = async () => {
 		await nextRaf();
 		animationState = await createAnimationState(callbacks, totalRuntime, worker);
-		animationState?.animations.set("timekeeper", {
-			animation: timekeeper,
-			children: [],
-			key: "timekeeper",
-		});
+		animationState?.animations.set("timekeeper", timekeeper);
 	};
 
 	const machine = createMachine({
@@ -59,9 +55,7 @@ export const getAnimationStateMachine = (
 				console.log(`calculation took ${Date.now() - time}ms`);
 
 				animationState?.animations.forEach((animation) => {
-					walkAnimationTree(animation, (anim) => {
-						anim.play();
-					});
+					animation.play();
 				});
 			},
 			scrollAnimations() {
@@ -83,7 +77,7 @@ export const getAnimationStateMachine = (
 				querySelectorAll(`[${Attributes.key}]`).forEach((element) => {
 					Object.keys(element.dataset).forEach((attributeName) => {
 						if (attributeName.includes("bewegung")) {
-							delete element.dataset[attributeName];
+							//delete element.dataset[attributeName];
 						}
 					});
 				});

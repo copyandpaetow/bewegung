@@ -5,14 +5,17 @@ import {
 	separateEntries,
 } from "./observe-dom";
 import {
+	AnimationData,
 	AnimationState,
 	AtomicWorker,
 	ClientAnimationTree,
 	Overrides,
+	ResultTransferable,
 	ResultingDomTree,
 } from "../types";
 import { Attributes, emptyImageSrc } from "../utils/constants";
-import { applyCSSStyles, getChilden, querySelectorAll } from "../utils/helper";
+import { applyCSSStyles, getChilden, nextRaf, querySelectorAll } from "../utils/helper";
+import { isHTMLElement } from "../utils/predicates";
 
 export const saveOriginalStyle = (element: HTMLElement) => {
 	const attributes = new Map<string, string>();
@@ -142,34 +145,135 @@ const createAnimationTree = (
 	return animationTree;
 };
 
-export const setOnPlayObserver = (
-	result: Map<string, ResultingDomTree>,
+const setAnimations = (
+	element: HTMLElement,
+	result: ResultTransferable,
+	animations: Map<string, Animation>,
+	onStart: Map<string, VoidFunction>,
+	totalRuntime: number
+) => {
+	const key = element.dataset.bewegungsKey ?? "";
+	const keyframes = result.keyframes.get(key) ?? [];
+	const overrides = result.overrides.get(key);
+	if (!keyframes.length && !overrides) {
+		return;
+	}
+
+	const anim = new Animation(new KeyframeEffect(element, keyframes, totalRuntime));
+	animations.set(key, anim);
+
+	if (element.tagName === "IMG" && result.keyframes.has(`${key}-wrapper`)) {
+		const parentElement = element.parentElement!;
+		const nextSibling = element.nextElementSibling;
+
+		const placeholderElement = createPlaceholder(
+			element,
+			result.overrides.get(`${key}-placeholder`)!
+		);
+		const wrapperElement = createWrapperElement(result.overrides.get(`${key}-wrapper`)!);
+		const placeholderAnimation = new Animation(
+			new KeyframeEffect(placeholderElement, [], totalRuntime)
+		);
+		const wrapperAnimation = new Animation(
+			new KeyframeEffect(wrapperElement, result.keyframes.get(`${key}-wrapper`)!, totalRuntime)
+		);
+		animations.set(`${key}-wrapper`, wrapperAnimation);
+		animations.set(`${key}-placeholder`, placeholderAnimation);
+
+		placeholderAnimation.onfinish = () => {
+			parentElement.replaceChild(element, placeholderElement);
+		};
+		wrapperAnimation.onfinish = () => {
+			wrapperElement.remove();
+		};
+
+		onStart.set(`${key}-wrapper`, () => {
+			nextSibling
+				? parentElement.insertBefore(wrapperElement.appendChild(element), nextSibling)
+				: parentElement.appendChild(wrapperElement).appendChild(element);
+		});
+		onStart.set(`${key}-placeholder`, () => {
+			nextSibling
+				? parentElement.insertBefore(placeholderElement, nextSibling)
+				: parentElement.appendChild(placeholderElement);
+		});
+	}
+
+	if (!overrides) {
+		anim.onfinish = () => {
+			if (element.dataset.bewegungsRemoveable) {
+				element.remove();
+			}
+		};
+		return;
+	}
+	element.dataset.bewegungsCssText = element.style.cssText;
+	onStart.set(key, () => {
+		applyCSSStyles(element, overrides);
+	});
+	anim.onfinish = () => {
+		if (element.dataset.bewegungsRemoveable) {
+			element.remove();
+		}
+		element.style.cssText = element.dataset.bewegungsCssText!;
+	};
+};
+
+export const setOnPlayObserver = async (
+	result: ResultTransferable,
 	callbacks: Map<number, VoidFunction[]>,
 	totalRuntime: number
-): Promise<Map<string, ClientAnimationTree>> =>
-	new Promise<Map<string, ClientAnimationTree>>((resolve) => {
-		const animationTrees = new Map<string, ClientAnimationTree>();
-		console.log(result);
+): Promise<Map<string, Animation>> => {
+	const animations = new Map<string, Animation>();
+	const onStart = new Map<string, VoidFunction>();
 
+	result.keyframes.forEach((_, key) => {
+		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
+		if (!element) {
+			return;
+		}
+		setAnimations(element, result, animations, onStart, totalRuntime);
+	});
+	await nextRaf();
+
+	return new Promise<Map<string, Animation>>((resolve) => {
 		const observerCallback: MutationCallback = (entries, observer) => {
 			observer.disconnect();
 			const { removeEntries, addEntries } = separateEntries(entries);
 			readdRemovedNodes(removeEntries);
 			addKeyToCustomElements(addEntries);
+			const onStartInner = new Map<string, VoidFunction>();
 
-			result.forEach((animationTree, key) => {
-				const rootElement = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
-
-				animationTrees.set(key, createAnimationTree(animationTree, rootElement, totalRuntime));
+			addEntries.forEach((mutationRecord) => {
+				mutationRecord.addedNodes.forEach((node) => {
+					if (!isHTMLElement(node)) {
+						return;
+					}
+					setAnimations(node as HTMLElement, result, animations, onStartInner, totalRuntime);
+				});
 			});
-			resolve(animationTrees);
+			onStartInner.forEach((cb, key) => {
+				cb();
+				console.log(key);
+			});
+			resolve(animations);
 		};
 		const observer = new MutationObserver(observerCallback);
-		observer.observe(document.body, { childList: true, subtree: true, attributes: true });
 		requestAnimationFrame(() => {
+			onStart.forEach((cb) => {
+				cb();
+			});
+			if (result.flags.size) {
+				observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+				callbacks.get(1)!.forEach((cb) => cb());
+				return;
+			}
+
 			callbacks.get(1)!.forEach((cb) => cb());
+			resolve(animations);
 		});
 	});
+};
 
 const saveElementStyle = () => {
 	const elementResets = new Map<HTMLElement, Map<string, string>>();
@@ -182,31 +286,6 @@ const saveElementStyle = () => {
 	return elementResets;
 };
 
-/*
-- changing the dom, creating the animations, applying override styles, and adding elements creates a lot of stress for the dom
-
-- the big problem is: only when we call the user callbacks we got the right dom tree
-=> before there could be elements missing
-
-- we can create some animations beforehand but it doesnt really decrease the style work for the browser
-
-- maybe a tree is not the best return type from the worker
-=> we could return some maps for keyframes, overrides etc
-
-
-```
-* create animations beforehand?
-requestAnimationFrame(() => {
-			* add onStart-Callbacks (element creation, overrides styles to apply) etc here
-			observer.observe(document.body, { childList: true, subtree: true, attributes: true });
-			callbacks.get(1)!.forEach((cb) => cb());
-		});
-
-		```
-in the callback, we would only need to do the work for the added elements
-
-*/
-
 export const createAnimationState = async (
 	callbacks: Map<number, VoidFunction[]>,
 	totalRuntime: number,
@@ -215,9 +294,9 @@ export const createAnimationState = async (
 	await observeDom(callbacks, worker);
 	const elementResets = saveElementStyle();
 
-	const result = (await worker("animationTrees").onMessage(
-		(animationTrees) => animationTrees
-	)) as Map<string, ResultingDomTree>;
+	const result = (await worker("animationTrees").onMessage((result) => {
+		return result;
+	})) as ResultTransferable;
 	const animations = await setOnPlayObserver(result, callbacks, totalRuntime);
 
 	return { animations, elementResets };
