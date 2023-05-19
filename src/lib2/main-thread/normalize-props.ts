@@ -1,12 +1,13 @@
 import {
 	BewegungsConfig,
-	BewegungsEntry,
+	BewegungsInputs,
 	BewegungsOption,
 	ElementOrSelector,
+	NormalizedProps,
 	TimelineEntry,
 } from "../types";
 import { defaultOptions } from "../utils/constants";
-import { getChilden, uuid } from "../utils/helper";
+import { getChilden, toArray, uuid } from "../utils/helper";
 
 const computeCallbacks = (props: PropsWithRelativeTiming[]) => {
 	const callbacks = new Map<number, VoidFunction[]>();
@@ -28,9 +29,8 @@ const getElement = (element: ElementOrSelector) => {
 	return document.querySelector(element) as HTMLElement;
 };
 
-type NormalizedProps = Required<BewegungsOption> & { callback: VoidFunction };
-const normalizeOptions = (props: BewegungsEntry[], config?: BewegungsConfig): NormalizedProps[] =>
-	props.map((entry) => {
+const normalizeOptions = (props: BewegungsInputs, config?: BewegungsConfig): NormalizedProps[] =>
+	toArray(props).map((entry) => {
 		const callback = entry?.[0] ?? entry;
 		const options = entry?.[1] ?? {};
 
@@ -144,7 +144,7 @@ const labelRootElements = (propsWithRelativeTiming: PropsWithRelativeTiming[]) =
 	});
 };
 
-export const normalizeProps = (props: BewegungsEntry[], config?: BewegungsConfig) => {
+export const normalizeProps = (props: BewegungsInputs, config?: BewegungsConfig) => {
 	const normalizedProps = normalizeOptions(props, config);
 	const totalRuntime = getTotalRuntime(normalizedProps);
 

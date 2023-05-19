@@ -17,11 +17,16 @@ export type BewegungsOption = {
 	at?: number;
 };
 
-export type BewegungsEntry = [BewegungsCallback, BewegungsOption] | BewegungsCallback;
-
 export type BewegungsConfig = {
 	defaultOptions: Partial<BewegungsOption>;
 };
+
+type BewegungsEntry = [BewegungsCallback, BewegungsOption?];
+
+type PossibleBewegungsInputs = BewegungsCallback | BewegungsEntry;
+export type BewegungsInputs = PossibleBewegungsInputs | PossibleBewegungsInputs[];
+
+export type NormalizedProps = Required<BewegungsOption> & { callback: VoidFunction };
 
 export type TimelineEntry = {
 	start: number;
@@ -33,19 +38,6 @@ export type TempTimelineEntry = {
 	start: number;
 	end: number;
 	easing: Set<string>;
-};
-
-export type NormalizedProps = {
-	start: number;
-	end: number;
-	iterations: number;
-	easing:
-		| "ease"
-		| "ease-in"
-		| "ease-out"
-		| "ease-in-out"
-		| "linear"
-		| `cubic-bezier(${number},${number},${number},${number})`;
 };
 
 export type TreeStyle = {
@@ -95,12 +87,12 @@ export type ResultTransferable = {
 
 export type WorkerMessages = {
 	sendDOMRects: DomChangeTransferable;
-	sendAnimationTrees: ResultTransferable;
+	sendAnimationData: ResultTransferable;
 };
 
 export type MainMessages = {
 	domChanges: DomChangeTransferable;
-	animationTrees: ResultTransferable;
+	animationData: ResultTransferable;
 };
 
 export type AtomicWorker = <Current extends keyof MainMessages>(
@@ -144,7 +136,6 @@ export type WorkerState = {
 	keyframes: Map<string, Keyframe[]>;
 	overrides: Map<string, Partial<CSSStyleDeclaration>>;
 	flags: Map<string, AnimationFlag>;
-	isObserverRequired: false;
 };
 
 export type ClientAnimationTree = {

@@ -16,6 +16,8 @@ import {
 } from "./calculate-image-differences";
 import { calculateEasings } from "./easings";
 
+//TODO: this file needs some cleanup
+
 export const getEmptyReadouts = (readouts: TreeStyle[]) => {
 	return readouts.map((readouts) => ({
 		currentTop: 0,
@@ -39,44 +41,6 @@ export const getEmptyReadouts = (readouts: TreeStyle[]) => {
 
 export const isEntryVisible = (entry: TreeStyle) =>
 	entry.display !== "none" && entry.unsaveWidth !== 0 && entry.unsaveHeight !== 0;
-
-//TODO: is might not work for the root, if there is no parent readout
-export const normalizeStyles = (tree: DomTree, parentKey: string, state: WorkerState) => {
-	const updatedReadouts: TreeStyle[] = [];
-	const readouts = state.readouts.get(tree.key)!;
-	const parentReadouts = state.readouts.get(parentKey) ?? readouts;
-
-	parentReadouts
-		.map((parentReadout) => parentReadout.offset)
-		.forEach((offset) => {
-			const nextIndex = readouts.findIndex((entry) => entry.offset === offset);
-			const correspondingReadout = readouts[nextIndex];
-
-			if (correspondingReadout && isEntryVisible(correspondingReadout)) {
-				updatedReadouts.push(correspondingReadout);
-				return;
-			}
-
-			const nextVisibleReadout =
-				readouts.slice(nextIndex).find(isEntryVisible) || updatedReadouts.at(-1);
-
-			if (!nextVisibleReadout) {
-				//If there is no visible next element and not a previous one, the element is always hidden and can be deleted
-				return;
-			}
-
-			updatedReadouts.push({
-				...nextVisibleReadout,
-				display: correspondingReadout ? correspondingReadout.display : nextVisibleReadout.display,
-				unsaveHeight: 0,
-				unsaveWidth: 0,
-				offset,
-			});
-
-			return;
-		});
-	state.readouts.set(tree.key, updatedReadouts);
-};
 
 export const getBorderRadius = (calculatedProperties: TreeStyle[]) => {
 	const styleTable: Record<number, string> = {};
