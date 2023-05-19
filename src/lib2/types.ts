@@ -180,7 +180,7 @@ export type AnimationData = {
 };
 
 export type AnimationController = {
-	preload(): Promise<void>;
+	prefetch(): Promise<void>;
 	play(): Promise<void>;
 	scroll(progress: number, done: boolean): Promise<void>;
 	pause(): Promise<void>;

@@ -10,6 +10,7 @@ export type Bewegung = {
 	scroll(scrollAmount: number, done?: boolean): void;
 	cancel(): void;
 	finish(): void;
+	prefetch(): Promise<void>;
 	finished: Promise<Animation>;
 	playState: AnimationPlayState;
 };
@@ -17,11 +18,6 @@ export type Bewegung = {
 /*
 TODO:
 
-? What should the reactivity include?
-- easiest would be to check (while on pause) if elements changed and if so, to cancel all animations, delete the existing animationState, and recalc everything
-- should there also be a preload method?
-=> we could split the loading into 1) observing the dom and 2) creating the animations
-=> that would add some complexity to the state machine
 
 Improvements
 - "at" needs to be more refined
@@ -41,9 +37,6 @@ export const bewegung2 = (props: BewegungsInputs, config?: BewegungsConfig): Bew
 	const { callbacks, totalRuntime } = normalizeProps(props, config);
 	const timekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
 	const controller = animationController(callbacks, totalRuntime, timekeeper);
-
-	timekeeper.onfinish = () => controller.finish();
-	timekeeper.oncancel = () => controller.cancel();
 
 	const reduceMotion =
 		config?.reduceMotion ?? window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
@@ -68,6 +61,9 @@ export const bewegung2 = (props: BewegungsInputs, config?: BewegungsConfig): Bew
 		},
 		finish() {
 			controller.finish();
+		},
+		async prefetch() {
+			await controller.prefetch();
 		},
 		get finished() {
 			return timekeeper.finished;
