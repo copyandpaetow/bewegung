@@ -1,6 +1,8 @@
-import { getAnimationStateMachine } from "./main-thread/animation-state-machine";
+import { animationController } from "./main-thread/animation-controller";
 import { normalizeProps } from "./main-thread/normalize-props";
-import { AllPlayStates, BewegungsConfig, BewegungsInputs } from "./types";
+import { BewegungsConfig, BewegungsInputs } from "./types";
+import { emptyApi } from "./utils/constants";
+import { transformProgress } from "./utils/helper";
 
 export type Bewegung = {
 	play(): void;
@@ -9,7 +11,7 @@ export type Bewegung = {
 	cancel(): void;
 	finish(): void;
 	finished: Promise<Animation>;
-	playState: AllPlayStates;
+	playState: AnimationPlayState;
 };
 
 /*
@@ -29,6 +31,7 @@ Improvements
 
 - how to handle the unanimatable properties?
 - how to handle user properties for properties we use (transform & clipPath)
+- how to handle if elements are already part of another bewegungs-animation? The data-states would interfere with each other
 
 if there is an overlap within the sequence, it will create additional easings
 
@@ -37,32 +40,40 @@ if there is an overlap within the sequence, it will create additional easings
 export const bewegung2 = (props: BewegungsInputs, config?: BewegungsConfig): Bewegung => {
 	const { callbacks, totalRuntime } = normalizeProps(props, config);
 	const timekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
-	const machine = getAnimationStateMachine(callbacks, totalRuntime, timekeeper);
+	const controller = animationController(callbacks, totalRuntime, timekeeper);
 
-	timekeeper.onfinish = () => machine.transition("finish");
-	timekeeper.oncancel = () => machine.transition("cancel");
+	timekeeper.onfinish = () => controller.finish();
+	timekeeper.oncancel = () => controller.cancel();
+
+	const reduceMotion =
+		config?.reduceMotion ?? window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
+
+	if (reduceMotion) {
+		timekeeper.finish();
+		return emptyApi();
+	}
 
 	return {
 		play() {
-			machine.transition("play");
+			controller.play();
 		},
 		pause() {
-			machine.transition("pause");
+			controller.pause();
 		},
 		scroll(scrollAmount: number, done = false) {
-			machine.transition("scroll", { scrollAmount, done });
+			controller.scroll(transformProgress(totalRuntime, scrollAmount, done), done);
 		},
 		cancel() {
-			machine.transition("cancel");
+			controller.cancel();
 		},
 		finish() {
-			machine.transition("finish");
+			controller.finish();
 		},
 		get finished() {
 			return timekeeper.finished;
 		},
 		get playState() {
-			return machine.state();
+			return timekeeper.playState;
 		},
 	};
 };

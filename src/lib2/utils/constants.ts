@@ -1,3 +1,4 @@
+import { Bewegung } from "../bewegung";
 import { BewegungsOption } from "../types";
 
 export const defaultOptions: BewegungsOption = {
@@ -55,3 +56,27 @@ export const emptyComputedStle = {
 	objectFit: "fill",
 	objectPosition: "50% 50%",
 };
+
+export const emptyApi = (): Bewegung => ({
+	play() {
+		console.warn("the user prefers reduced motion");
+	},
+	pause() {
+		console.warn("the user prefers reduced motion");
+	},
+	scroll(scrollAmount: number, done = false) {
+		console.warn("the user prefers reduced motion");
+	},
+	cancel() {
+		console.warn("the user prefers reduced motion");
+	},
+	finish() {
+		console.warn("the user prefers reduced motion");
+	},
+	get finished() {
+		return Promise.resolve(new Animation());
+	},
+	get playState() {
+		return "finished" as AnimationPlayState;
+	},
+});

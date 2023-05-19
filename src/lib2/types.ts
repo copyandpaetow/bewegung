@@ -18,7 +18,8 @@ export type BewegungsOption = {
 };
 
 export type BewegungsConfig = {
-	defaultOptions: Partial<BewegungsOption>;
+	defaultOptions?: Partial<BewegungsOption>;
+	reduceMotion?: boolean;
 };
 
 type BewegungsEntry = [BewegungsCallback, BewegungsOption?];
@@ -176,4 +177,13 @@ export type AnimationData = {
 	keyframes: Map<string, Keyframe[]>;
 	overrides: Map<string, Partial<CSSStyleDeclaration>>;
 	isObserverRequired: boolean;
+};
+
+export type AnimationController = {
+	preload(): Promise<void>;
+	play(): Promise<void>;
+	scroll(progress: number, done: boolean): Promise<void>;
+	pause(): Promise<void>;
+	cancel(): Promise<void>;
+	finish(): void;
 };
