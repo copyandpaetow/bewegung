@@ -131,7 +131,7 @@ const createAnimationsFromExistingElements = (result: ResultTransferable, totalR
 	return { animations, onStart };
 };
 
-export const setAnimations = async (
+export const createAnimations = async (
 	result: ResultTransferable,
 	callbacks: Map<number, VoidFunction[]>,
 	totalRuntime: number
@@ -172,29 +172,13 @@ export const setAnimations = async (
 	});
 };
 
-const getElementResets = () => {
-	const resets = new Map<HTMLElement, Map<string, string>>();
-	requestAnimationFrame(() => {
-		querySelectorAll(`[${Attributes.reset}]`).forEach((element) => {
-			resets.set(element, saveOriginalStyle(element));
+export const getElementResets = () =>
+	new Promise<Map<HTMLElement, Map<string, string>>>((resolve) => {
+		const resets = new Map<HTMLElement, Map<string, string>>();
+		requestAnimationFrame(() => {
+			querySelectorAll(`[${Attributes.reset}]`).forEach((element) => {
+				resets.set(element, saveOriginalStyle(element));
+			});
+			resolve(resets);
 		});
 	});
-
-	return resets;
-};
-
-export const createAnimationState = async (
-	callbacks: Map<number, VoidFunction[]>,
-	totalRuntime: number,
-	worker: AtomicWorker
-): Promise<AnimationState> => {
-	await observeDom(callbacks, worker);
-	const elementResets = getElementResets();
-
-	const result = (await worker("animationData").onMessage((result) => {
-		return result;
-	})) as ResultTransferable;
-	const animations = await setAnimations(result, callbacks, totalRuntime);
-
-	return { animations, elementResets };
-};
