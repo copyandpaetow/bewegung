@@ -9,20 +9,20 @@ import { onDomChange } from "./watch-dom-changes";
 const workerManager = getWorker();
 
 const restoreElements = (elementResets: Map<HTMLElement, Map<string, string>>) => {
-	elementResets.forEach((attributes, element) => {
-		if (element.dataset.bewegungsRemoveable) {
-			elementResets.delete(element);
-			element.remove();
-			return;
-		}
+	querySelectorAll(`[${Attributes.removable}], [${Attributes.key}*="added"]`).forEach((element) => {
+		console.log("remove element: ", element);
+		elementResets.delete(element);
+		element.remove();
+	});
 
+	elementResets.forEach((attributes, element) => {
 		attributes.forEach((value, key) => {
 			element.setAttribute(key, value);
 		});
 	});
 };
 
-const removeDataAttributes = () => {
+export const removeDataAttributes = () => {
 	querySelectorAll(`[${Attributes.key}]`).forEach((element) => {
 		Object.keys(element.dataset).forEach((attributeName) => {
 			if (attributeName.includes("bewegung")) {
@@ -30,6 +30,14 @@ const removeDataAttributes = () => {
 			}
 		});
 	});
+};
+
+const setAnimationProgress = (animations: Map<string, Animation>, progress: null | number) => {
+	if (!progress) {
+		return;
+	}
+
+	animations.forEach((animation) => (animation.currentTime = progress));
 };
 
 export const animationController = (
@@ -44,6 +52,7 @@ export const animationController = (
 	let resets: null | Promise<Map<HTMLElement, Map<string, string>>> = null;
 	let disconnect: null | VoidFunction = null;
 	let time = Date.now();
+	let progress: null | number = null;
 
 	const getData = async () => {
 		if (data) {
@@ -68,35 +77,44 @@ export const animationController = (
 			await getData();
 			animations = await createAnimations(data!, callbacks, totalRuntime);
 			animations.set("timekeeper", timekeeper);
+			timekeeper.onfinish = () =>
+				requestAnimationFrame(() => {
+					removeDataAttributes();
+					progress = null;
+				});
+			setAnimationProgress(animations, progress);
 		} catch (error) {
 			api.cancel();
 		}
 		return animations as Map<string, Animation>;
 	};
 
-	const reactivity = () => {
-		disconnect = onDomChange(() => {
-			data = null;
-			animations = null;
+	const watchDomForChanges = () => {
+		disconnect = onDomChange(async () => {
 			disconnect?.();
 			disconnect = null;
+			data = null;
+			if (animations) {
+				progress = timekeeper.currentTime;
+				await api.cancel();
+				animations = null;
+
+				await nextRaf();
+				//api.pause();
+			}
 		});
 	};
 
-	const cleanup = () => {
-		requestAnimationFrame(removeDataAttributes);
-	};
-
 	const api = {
-		async preload() {
+		async prefetch() {
 			await getData();
-			reactivity();
+			watchDomForChanges();
 		},
 		async play() {
 			(await getAnimations()).forEach((animation) => animation.play());
 			console.log(`calculation took ${Date.now() - time}ms`);
 		},
-		async scroll(progress, done) {
+		async scroll(progress: number, done: boolean) {
 			(await getAnimations()).forEach((animation) => (animation.currentTime = progress));
 
 			if (done) {
@@ -105,25 +123,23 @@ export const animationController = (
 		},
 		async pause() {
 			(await getAnimations()).forEach((animation) => animation.pause());
-			reactivity();
+			requestAnimationFrame(watchDomForChanges);
 		},
 		async cancel() {
 			if (animations) {
 				(await getAnimations()).forEach((animation) => animation.cancel());
 			}
 			restoreElements(await resets!);
-			cleanup();
 		},
 
 		finish() {
 			if (animations) {
 				getAnimations().then((allAnimations) => {
-					allAnimations.forEach((animation) => animation.finish);
+					allAnimations.forEach((animation) => animation.finish());
 				});
-			} else {
-				callbacks.get(1)!.forEach((cb) => cb());
+				return;
 			}
-			cleanup();
+			callbacks.get(1)!.forEach((cb) => cb());
 		},
 	};
 

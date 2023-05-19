@@ -15,6 +15,7 @@ export const emptyImageSrc =
 export const enum Attributes {
 	key = "data-bewegungs-key",
 	reset = "data-bewegungs-reset",
+	removable = "data-bewegungs-removable",
 	rootEasing = "data-bewegungs-easing",
 }
 
@@ -60,6 +61,9 @@ export const emptyComputedStle = {
 export const emptyApi = (): Bewegung => ({
 	play() {
 		console.warn("the user prefers reduced motion");
+	},
+	prefetch() {
+		return Promise.resolve();
 	},
 	pause() {
 		console.warn("the user prefers reduced motion");

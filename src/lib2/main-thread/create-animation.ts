@@ -77,10 +77,10 @@ const setElementAnimation = (
 		animations.set(`${key}-wrapper`, wrapperAnimation);
 		animations.set(`${key}-placeholder`, placeholderAnimation);
 
-		placeholderAnimation.onfinish = () => {
+		placeholderAnimation.onfinish = placeholderAnimation.oncancel = () => {
 			parentElement.replaceChild(element, placeholderElement);
 		};
-		wrapperAnimation.onfinish = () => {
+		wrapperAnimation.onfinish = wrapperAnimation.oncancel = () => {
 			wrapperElement.remove();
 		};
 
@@ -97,11 +97,6 @@ const setElementAnimation = (
 	}
 
 	if (!overrides) {
-		anim.onfinish = () => {
-			if (element.dataset.bewegungsRemoveable) {
-				element.remove();
-			}
-		};
 		return;
 	}
 	onStart.set(key, () => {
@@ -109,9 +104,6 @@ const setElementAnimation = (
 		applyCSSStyles(element, overrides);
 	});
 	anim.onfinish = () => {
-		if (element.dataset.bewegungsRemoveable) {
-			element.remove();
-		}
 		element.style.cssText = element.dataset.bewegungsCssText!;
 	};
 };

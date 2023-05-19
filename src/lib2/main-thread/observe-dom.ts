@@ -94,7 +94,7 @@ export const addKeyToCustomElements = (entries: MutationRecord[]) => {
 		.forEach(addKeyToNewlyAddedElement);
 };
 
-const observe = (observer: MutationObserver) =>
+export const observe = (observer: MutationObserver) =>
 	observer.observe(document.body, {
 		childList: true,
 		subtree: true,
