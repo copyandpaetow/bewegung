@@ -40,6 +40,8 @@ const updateReadouts = (tree: DomTree, state: WorkerState) => {
 	tree.children.forEach((childTree) => updateReadouts(childTree, state));
 };
 
+const clearState = () => Object.values(state).forEach((map) => map.clear());
+
 workerAtom("sendDOMRects").onMessage((domChanges) => {
 	const { domTrees, offset } = domChanges;
 
@@ -58,6 +60,6 @@ workerAtom("sendDOMRects").onMessage((domChanges) => {
 			flags: state.flags,
 		});
 
-		Object.values(state).forEach((map) => map.clear());
+		clearState();
 	}
 });

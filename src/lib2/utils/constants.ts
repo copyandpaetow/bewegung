@@ -36,3 +36,22 @@ export const defaultImageStyles: Partial<CSSStyleDeclaration> = {
 	willChange: "initial",
 	width: "100%",
 };
+
+export const emptyBoundClientRect = {
+	currentTop: 0,
+	currentLeft: 0,
+	currentWidth: 1,
+	currentHeight: 1,
+	unsaveWidth: 1,
+	unsaveHeight: 1,
+};
+
+export const emptyComputedStle = {
+	display: "block",
+	borderRadius: "0px",
+	position: "static",
+	transform: "none",
+	transformOrigin: "0px 0px",
+	objectFit: "fill",
+	objectPosition: "50% 50%",
+};

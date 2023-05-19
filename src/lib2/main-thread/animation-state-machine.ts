@@ -49,6 +49,9 @@ export const getAnimationStateMachine = (
 
 				animationState?.animations.forEach((animation) => {
 					animation.play();
+					// setTimeout(() => {
+					// 	animation.pause();
+					// }, 1000);
 				});
 			},
 			scrollAnimations() {

@@ -1,8 +1,8 @@
-import { createSerializableElement } from "./read-element-styles";
 import { AtomicWorker, DomTree } from "../types";
-import { isHTMLElement } from "../utils/predicates";
-import { querySelectorAll } from "../utils/helper";
 import { Attributes } from "../utils/constants";
+import { querySelectorAll } from "../utils/helper";
+import { isHTMLElement } from "../utils/predicates";
+import { readElementStyles } from "./read-element-styles";
 
 const resetNodeStyle = (entries: MutationRecord[]) => {
 	[...entries].reverse().forEach((entry) => {
@@ -23,7 +23,6 @@ const resetNodeStyle = (entries: MutationRecord[]) => {
 const addKeyToNewlyAddedElement = (element: HTMLElement, index: number) => {
 	const key = `key-added-${(element as HTMLElement).tagName}-${index}`;
 	element.dataset.bewegungsKey = key;
-	element.dataset.bewegungsRemoveable = "";
 
 	querySelectorAll("*", element).forEach((child, innerIndex) => {
 		child.dataset.bewegungsKey = `${key}-${innerIndex}`;
@@ -76,6 +75,7 @@ export const readdRemovedNodes = (entries: MutationRecord[]) => {
 			entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 			if (isHTMLElement(element)) {
 				(element as HTMLElement).dataset.bewegungsReset = "";
+				(element as HTMLElement).dataset.bewegungsRemoveable = "";
 			}
 		});
 	});
@@ -143,7 +143,7 @@ export const observeDom = (callbacks: Map<number, VoidFunction[]>, worker: Atomi
 
 			querySelectorAll(`[${Attributes.rootEasing}]`).forEach((rootElement) => {
 				const key = rootElement.dataset.bewegungsKey!;
-				domTrees.set(key, createSerializableElement(rootElement, offset));
+				domTrees.set(key, readElementStyles(rootElement, offset));
 			});
 
 			reply("sendDOMRects", {

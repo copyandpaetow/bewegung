@@ -6,7 +6,12 @@ import {
 	TreeStyle,
 	WorkerState,
 } from "../types";
-import { defaultImageStyles } from "../utils/constants";
+import { defaultImageStyles, emptyBoundClientRect, emptyComputedStle } from "../utils/constants";
+import {
+	doesElementChangeInScale,
+	isElementUnchanged,
+	isHiddenBecauseOfParent,
+} from "../utils/predicates";
 import { calculateBorderRadius } from "./border-radius";
 import { calculateDimensionDifferences, calculateRootDifferences } from "./calculate-differences";
 import {
@@ -20,60 +25,34 @@ import { calculateEasings } from "./easings";
 
 export const getEmptyReadouts = (readouts: TreeStyle[]) => {
 	return readouts.map((readouts) => ({
-		currentTop: 0,
-		currentLeft: 0,
-		currentWidth: 1,
-		currentHeight: 1,
-		unsaveWidth: 1,
-		unsaveHeight: 1,
-		position: "static",
-		transform: "none",
-		transformOrigin: "0px 0px",
-		objectFit: "fill",
-		objectPosition: "50% 50%",
-		display: "block",
-		borderRadius: "0px",
+		...emptyComputedStle,
+		...emptyBoundClientRect,
 		ratio: "",
 		text: "",
 		offset: readouts.offset,
 	}));
 };
 
-export const isEntryVisible = (entry: TreeStyle) =>
-	entry.display !== "none" && entry.unsaveWidth !== 0 && entry.unsaveHeight !== 0;
-
-export const getBorderRadius = (calculatedProperties: TreeStyle[]) => {
+export const getBorderRadius = (
+	calculatedProperties: TreeStyle[],
+	key: string,
+	overrides: Map<string, Partial<CSSStyleDeclaration>>
+) => {
 	const styleTable: Record<number, string> = {};
 
 	if (calculatedProperties.every((style) => style.borderRadius === "0px")) {
 		return styleTable;
 	}
 
+	overrides.set(key, {
+		...(overrides.get(key) ?? {}),
+		borderRadius: "0px",
+	});
+
 	calculatedProperties.forEach((style) => {
 		styleTable[style.offset] = calculateBorderRadius(style);
 	});
 	return styleTable;
-};
-
-export const isElementUnchanged = ({
-	leftDifference,
-	topDifference,
-	widthDifference,
-	heightDifference,
-}: DimensionalDifferences) =>
-	leftDifference === 0 && topDifference === 0 && widthDifference === 1 && heightDifference === 1;
-
-const isHiddenBecauseOfParent = ({
-	leftDifference,
-	topDifference,
-	widthDifference,
-	heightDifference,
-}: DimensionalDifferences) => {
-	const samePosition = leftDifference === 0 && topDifference === 0;
-	const hiddenOrDefaultWidth = widthDifference === 1 || widthDifference === 0;
-	const hiddenOrDefaultHeight = heightDifference === 1 || heightDifference === 0;
-
-	return samePosition && hiddenOrDefaultWidth && hiddenOrDefaultHeight;
 };
 
 const getDifferences = (readouts: TreeStyle[], parentReadouts: TreeStyle[]) =>
@@ -104,14 +83,7 @@ const animationNotNeeded = (
 	}
 	const isImage = Boolean(readouts.at(-1)!.ratio);
 
-	if (
-		isImage &&
-		readouts.some(
-			(entry) =>
-				entry.unsaveWidth !== readouts.at(-1)!.unsaveWidth ||
-				entry.unsaveHeight !== readouts.at(-1)!.unsaveHeight
-		)
-	) {
+	if (isImage && doesElementChangeInScale(readouts)) {
 		return false;
 	}
 
@@ -127,7 +99,7 @@ const setDefaultKeyframes = (
 	state: WorkerState
 ) => {
 	const readouts = state.readouts.get(tree.key)!;
-	const borderRadius = getBorderRadius(readouts);
+	const borderRadius = getBorderRadius(readouts, tree.key, state.overrides);
 	const easing = calculateEasings(state.easings.get(tree.key)!);
 
 	const keyframes = differences.map(
@@ -204,6 +176,8 @@ export const setKeyframes = (tree: DomTree, parentKey: string, state: WorkerStat
 		? getRootDifferences(readouts)
 		: getDifferences(readouts, parentReadouts);
 
+	//TODO: currently if an element gets removed and its an image, it still get the image treatment, which is not needed
+	//? but if the element changes before and is then removed it would be needed
 	if (animationNotNeeded(readouts, differences, flag)) {
 		state.keyframes.set(tree.key, []);
 		return;
