@@ -1,5 +1,6 @@
-import { DomTree, TimelineEntry, TreeStyle, WorkerState } from "../types";
-import { isEntryVisible, setKeyframes } from "./get-keyframes";
+import { DomTree, TreeStyle, WorkerState } from "../types";
+import { isEntryVisible } from "../utils/predicates";
+import { setKeyframes } from "./get-keyframes";
 
 const normalizeStyles = (tree: DomTree, parentKey: string, state: WorkerState) => {
 	const updatedReadouts: TreeStyle[] = [];
@@ -38,19 +39,22 @@ const normalizeStyles = (tree: DomTree, parentKey: string, state: WorkerState) =
 	state.readouts.set(tree.key, updatedReadouts);
 };
 
-const setOverrides = (tree: DomTree, parentKey: string, state: WorkerState) => {
+const setAbsoluteOverrides = (tree: DomTree, parentKey: string, state: WorkerState) => {
 	const parentFlag = state.flags.get(parentKey)!;
 	const parentReadouts = state.readouts.get(parentKey)!;
 	const parentOverrides = state.overrides.get(parentKey) ?? {};
+	const flag = state.flags.get(tree.key);
 	const readouts = state.readouts.get(tree.key)!;
 
-	//TODO: do the currentFlag need to be here as well?
-	if (parentFlag !== "removal") {
+	if (parentFlag === "removal" || flag !== "removal") {
+		//if the parent is getting removed, we dont need to do any position the element absolutly because the parent already is
+		//if the element is not getting removed, we also dont need this absolute styling
 		return;
 	}
 
 	const absoluteStyle = {
 		position: "absolute",
+		display: "unset",
 		left: readouts.at(-1)!.currentLeft - (parentReadouts?.at(-1)!.currentLeft ?? 0) + "px",
 		top: readouts.at(-1)!.currentTop - (parentReadouts?.at(-1)!.currentTop ?? 0) + "px",
 		width: readouts.at(-1)!.currentWidth + "px",
@@ -97,7 +101,7 @@ export const updateKeyframes = (tree: DomTree, parentKey: string, state: WorkerS
 	normalizeStyles(tree, parentKey, state);
 	setAnimationFlag(tree, parentKey, state);
 	setEasings(tree, parentKey, state);
-	setOverrides(tree, parentKey, state);
+	setAbsoluteOverrides(tree, parentKey, state);
 	setKeyframes(tree, parentKey, state);
 
 	tree.children.forEach((childTree) => updateKeyframes(childTree, tree.key, state));

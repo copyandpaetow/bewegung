@@ -15,12 +15,6 @@ export type Bewegung = {
 /*
 TODO:
 
-1. reactivity,
-2. borderRadius needs to be re-enabled
-3. cleanup and unifying
-=> isVisible exists in several variants
-=> names
-
 ? What should the reactivity include?
 - easiest would be to check (while on pause) if elements changed and if so, to cancel all animations, delete the existing animationState, and recalc everything
 - should there also be a preload method?

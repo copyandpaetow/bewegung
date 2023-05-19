@@ -104,8 +104,8 @@ const setElementAnimation = (
 		};
 		return;
 	}
-	element.dataset.bewegungsCssText = element.style.cssText;
 	onStart.set(key, () => {
+		element.dataset.bewegungsCssText = element.style.cssText;
 		applyCSSStyles(element, overrides);
 	});
 	anim.onfinish = () => {
@@ -145,24 +145,20 @@ export const setAnimations = async (
 			const { removeEntries, addEntries } = separateEntries(entries);
 			readdRemovedNodes(removeEntries);
 			addKeyToCustomElements(addEntries);
-			const onStartInner = new Map<string, VoidFunction>();
 
 			addEntries.forEach((mutationRecord) => {
 				mutationRecord.addedNodes.forEach((node) => {
 					if (!isHTMLElement(node)) {
 						return;
 					}
-					setElementAnimation(node as HTMLElement, result, animations, onStartInner, totalRuntime);
+					setElementAnimation(node as HTMLElement, result, animations, onStart, totalRuntime);
 				});
 			});
-			onStartInner.forEach((cb) => {
-				cb();
-			});
+			onStart.forEach((cb) => cb());
 			resolve(animations);
 		};
 		const observer = new MutationObserver(observerCallback);
 		requestAnimationFrame(() => {
-			onStart.forEach((cb) => cb());
 			if (result.flags.size) {
 				observer.observe(document.body, { childList: true, subtree: true, attributes: true });
 				callbacks.get(1)!.forEach((cb) => cb());
@@ -170,6 +166,7 @@ export const setAnimations = async (
 			}
 
 			callbacks.get(1)!.forEach((cb) => cb());
+			onStart.forEach((cb) => cb());
 			resolve(animations);
 		});
 	});
