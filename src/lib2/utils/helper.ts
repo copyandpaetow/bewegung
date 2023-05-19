@@ -31,3 +31,7 @@ export const querySelectorAll = (
 export const getChilden = (element: HTMLElement) => {
 	return Array.from(element.children) as HTMLElement[];
 };
+
+export const toArray = <MaybeArrayType>(
+	maybeArray: MaybeArrayType | MaybeArrayType[]
+): MaybeArrayType[] => (Array.isArray(maybeArray) ? maybeArray : [maybeArray]);

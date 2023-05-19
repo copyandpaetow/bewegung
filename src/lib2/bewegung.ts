@@ -1,6 +1,6 @@
 import { getAnimationStateMachine } from "./main-thread/animation-state-machine";
 import { normalizeProps } from "./main-thread/normalize-props";
-import { AllPlayStates, BewegungsConfig, BewegungsEntry } from "./types";
+import { AllPlayStates, BewegungsConfig, BewegungsInputs } from "./types";
 
 export type Bewegung = {
 	play(): void;
@@ -15,6 +15,19 @@ export type Bewegung = {
 /*
 TODO:
 
+1. reactivity,
+2. borderRadius needs to be re-enabled
+3. cleanup and unifying
+=> isVisible exists in several variants
+=> names
+
+? What should the reactivity include?
+- easiest would be to check (while on pause) if elements changed and if so, to cancel all animations, delete the existing animationState, and recalc everything
+- should there also be a preload method?
+=> we could split the loading into 1) observing the dom and 2) creating the animations
+=> that would add some complexity to the state machine
+
+Improvements
 - "at" needs to be more refined
 =>  iterations need to be included in the calculations
 - options need to be rechecked. Should more be included? 
@@ -25,15 +38,9 @@ TODO:
 
 if there is an overlap within the sequence, it will create additional easings
 
-- the animationTree-creation takes too long. Maybe we need to split it into creating the animation and an onStart callbackarray
-=> we call the callbacks when we start walking the dom
-
-- borderRadis needs to be re-enabled
-
-- reactivity
 */
 
-export const bewegung2 = (props: BewegungsEntry[], config?: BewegungsConfig): Bewegung => {
+export const bewegung2 = (props: BewegungsInputs, config?: BewegungsConfig): Bewegung => {
 	const { callbacks, totalRuntime } = normalizeProps(props, config);
 	const timekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
 	const machine = getAnimationStateMachine(callbacks, totalRuntime, timekeeper);

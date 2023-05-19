@@ -8,7 +8,7 @@ import {
 	WorkerState,
 } from "../types";
 import { useWorker } from "../utils/use-worker";
-import { revertEasings, updateKeyframes } from "./calculate-animation-tree";
+import { updateKeyframes } from "./calculate-animation-tree";
 
 //@ts-expect-error typescript doesnt
 const worker = self as Worker;
@@ -20,7 +20,13 @@ const state: WorkerState = {
 	keyframes: new Map<string, Keyframe[]>(),
 	overrides: new Map<string, Partial<CSSStyleDeclaration>>(),
 	flags: new Map<string, AnimationFlag>(),
-	isObserverRequired: false,
+};
+
+const revertEasings = (easing: string): TimelineEntry[] => {
+	if (!easing) {
+		return [];
+	}
+	return JSON.parse(easing);
 };
 
 const updateReadouts = (tree: DomTree, state: WorkerState) => {
@@ -46,12 +52,12 @@ workerAtom("sendDOMRects").onMessage((domChanges) => {
 			updateKeyframes(tree, "", state);
 		});
 
-		workerAtom("sendAnimationTrees").reply("animationTrees", {
+		workerAtom("sendAnimationData").reply("animationData", {
 			keyframes: state.keyframes,
 			overrides: state.overrides,
 			flags: state.flags,
 		});
 
-		//TODO: we might need to clean up the state after that
+		Object.values(state).forEach((map) => map.clear());
 	}
 });

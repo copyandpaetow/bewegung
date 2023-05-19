@@ -1,11 +1,41 @@
-import { DomTree, TimelineEntry, WorkerState } from "../types";
-import { isEntryVisible, normalizeStyles, setKeyframes } from "./get-keyframes";
+import { DomTree, TimelineEntry, TreeStyle, WorkerState } from "../types";
+import { isEntryVisible, setKeyframes } from "./get-keyframes";
 
-export const revertEasings = (easing: string): TimelineEntry[] => {
-	if (!easing) {
-		return [];
-	}
-	return JSON.parse(easing);
+const normalizeStyles = (tree: DomTree, parentKey: string, state: WorkerState) => {
+	const updatedReadouts: TreeStyle[] = [];
+	const readouts = state.readouts.get(tree.key)!;
+	const parentReadouts = state.readouts.get(parentKey) ?? readouts;
+
+	parentReadouts
+		.map((parentReadout) => parentReadout.offset)
+		.forEach((offset) => {
+			const nextIndex = readouts.findIndex((entry) => entry.offset === offset);
+			const correspondingReadout = readouts[nextIndex];
+
+			if (correspondingReadout && isEntryVisible(correspondingReadout)) {
+				updatedReadouts.push(correspondingReadout);
+				return;
+			}
+
+			const nextVisibleReadout =
+				readouts.slice(nextIndex).find(isEntryVisible) || updatedReadouts.at(-1);
+
+			if (!nextVisibleReadout) {
+				//If there is no visible next element and not a previous one, the element is always hidden and can be deleted
+				return;
+			}
+
+			updatedReadouts.push({
+				...nextVisibleReadout,
+				display: correspondingReadout ? correspondingReadout.display : nextVisibleReadout.display,
+				unsaveHeight: 0,
+				unsaveWidth: 0,
+				offset,
+			});
+
+			return;
+		});
+	state.readouts.set(tree.key, updatedReadouts);
 };
 
 const setOverrides = (tree: DomTree, parentKey: string, state: WorkerState) => {
@@ -14,6 +44,7 @@ const setOverrides = (tree: DomTree, parentKey: string, state: WorkerState) => {
 	const parentOverrides = state.overrides.get(parentKey) ?? {};
 	const readouts = state.readouts.get(tree.key)!;
 
+	//TODO: do the currentFlag need to be here as well?
 	if (parentFlag !== "removal") {
 		return;
 	}

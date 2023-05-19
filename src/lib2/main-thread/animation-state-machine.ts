@@ -1,16 +1,9 @@
-import { createAnimationState } from "./create-animation-state";
-import { AnimationState, ClientAnimationTree, MainMessages, WorkerMessages } from "../types";
+import { AnimationState, MainMessages, WorkerMessages } from "../types";
+import { Attributes } from "../utils/constants";
 import { nextRaf, querySelectorAll } from "../utils/helper";
 import { createMachine } from "../utils/state-machine";
 import { getWorker, useWorker } from "../utils/use-worker";
-import { Attributes } from "../utils/constants";
-
-const walkAnimationTree = (tree: ClientAnimationTree, callback: (animation: Animation) => void) => {
-	if (tree.animation) {
-		callback(tree.animation);
-	}
-	tree.children.forEach((child) => walkAnimationTree(child, callback));
-};
+import { createAnimationState } from "./create-animation-state";
 
 const workerManager = getWorker();
 

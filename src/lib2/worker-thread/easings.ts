@@ -1,9 +1,5 @@
 import { EasingTable, TempTimelineEntry, TimelineEntry } from "../types";
 
-export const toArray = <MaybeArrayType>(
-	maybeArray: MaybeArrayType | MaybeArrayType[]
-): MaybeArrayType[] => (Array.isArray(maybeArray) ? maybeArray : [maybeArray]);
-
 const easingValues = {
 	linear: [0, 0, 1, 1],
 	ease: [0.25, 0.1, 0.25, 1],

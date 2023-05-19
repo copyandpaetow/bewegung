@@ -1,21 +1,13 @@
+import { AnimationState, AtomicWorker, ResultTransferable } from "../types";
+import { Attributes, emptyImageSrc } from "../utils/constants";
+import { applyCSSStyles, nextRaf, querySelectorAll } from "../utils/helper";
+import { isHTMLElement } from "../utils/predicates";
 import {
 	addKeyToCustomElements,
 	observeDom,
 	readdRemovedNodes,
 	separateEntries,
 } from "./observe-dom";
-import {
-	AnimationData,
-	AnimationState,
-	AtomicWorker,
-	ClientAnimationTree,
-	Overrides,
-	ResultTransferable,
-	ResultingDomTree,
-} from "../types";
-import { Attributes, emptyImageSrc } from "../utils/constants";
-import { applyCSSStyles, getChilden, nextRaf, querySelectorAll } from "../utils/helper";
-import { isHTMLElement } from "../utils/predicates";
 
 export const saveOriginalStyle = (element: HTMLElement) => {
 	const attributes = new Map<string, string>();
@@ -28,42 +20,6 @@ export const saveOriginalStyle = (element: HTMLElement) => {
 	}
 
 	return attributes;
-};
-
-const overrideElementStyles = (element: HTMLElement, override: Overrides) => {
-	const callbacks: VoidFunction[] = [];
-
-	if (override.styles) {
-		const style = element.style.cssText;
-		applyCSSStyles(element, override.styles);
-		callbacks.push(() => (element.style.cssText = style));
-	}
-
-	if (element.dataset.bewegungsRemoveable) {
-		callbacks.length = 0;
-		callbacks.push(() => element.remove());
-	}
-
-	if (callbacks.length === 0) {
-		return null;
-	}
-
-	return () => callbacks.forEach((cb) => cb());
-};
-
-const getAnimation = (tree: ResultingDomTree, element: HTMLElement, totalRuntime: number) => {
-	if (tree.keyframes.length === 0 && !tree.overrides.styles) {
-		return null;
-	}
-
-	const animation = new Animation(new KeyframeEffect(element, tree.keyframes, totalRuntime));
-	const resetOverrides = overrideElementStyles(element, tree.overrides);
-
-	if (resetOverrides) {
-		animation.onfinish = resetOverrides;
-	}
-
-	return animation;
 };
 
 const createPlaceholder = (element: HTMLElement, style: Partial<CSSStyleDeclaration>) => {
@@ -86,66 +42,7 @@ const createWrapperElement = (style: Partial<CSSStyleDeclaration>) => {
 	return wrapperElement;
 };
 
-const getOverrideAnimations = (
-	tree: ResultingDomTree,
-	element: HTMLElement,
-	totalRuntime: number
-): ClientAnimationTree[] => {
-	const { wrapper, placeholder } = tree.overrides;
-	if (!wrapper || !placeholder) {
-		return [];
-	}
-	const parentElement = element.parentElement!;
-	const nextSibling = element.nextElementSibling;
-
-	const placeholderElement = createPlaceholder(element, placeholder.style);
-	const wrapperElement = createWrapperElement(wrapper.style);
-
-	const placeholderAnimation = new Animation(
-		new KeyframeEffect(placeholderElement, [], totalRuntime)
-	);
-	const wrapperAnimation = new Animation(
-		new KeyframeEffect(wrapperElement, wrapper.keyframes, totalRuntime)
-	);
-
-	placeholderAnimation.onfinish = () => {
-		parentElement.replaceChild(element, placeholderElement);
-	};
-	wrapperAnimation.onfinish = () => {
-		wrapperElement.remove();
-	};
-
-	parentElement.appendChild(wrapperElement).appendChild(element);
-	nextSibling
-		? parentElement.insertBefore(placeholderElement, nextSibling)
-		: parentElement.appendChild(placeholderElement);
-
-	return [
-		{ key: `${tree.key}-placeholder`, animation: placeholderAnimation, children: [] },
-		{ key: `${tree.key}-wrapper`, animation: wrapperAnimation, children: [] },
-	];
-};
-
-const createAnimationTree = (
-	tree: ResultingDomTree,
-	element: HTMLElement,
-	totalRuntime: number
-): ClientAnimationTree => {
-	const elementChildren = getChilden(element);
-	const overrideAnimations = getOverrideAnimations(tree, element, totalRuntime);
-
-	const animationTree = {
-		key: tree.key,
-		animation: getAnimation(tree, element, totalRuntime),
-		children: tree.children
-			.map((child, index) => createAnimationTree(child, elementChildren[index], totalRuntime))
-			.concat(overrideAnimations),
-	};
-
-	return animationTree;
-};
-
-const setAnimations = (
+const setElementAnimation = (
 	element: HTMLElement,
 	result: ResultTransferable,
 	animations: Map<string, Animation>,
@@ -219,11 +116,7 @@ const setAnimations = (
 	};
 };
 
-export const setOnPlayObserver = async (
-	result: ResultTransferable,
-	callbacks: Map<number, VoidFunction[]>,
-	totalRuntime: number
-): Promise<Map<string, Animation>> => {
+const createAnimationsFromExistingElements = (result: ResultTransferable, totalRuntime: number) => {
 	const animations = new Map<string, Animation>();
 	const onStart = new Map<string, VoidFunction>();
 
@@ -232,8 +125,18 @@ export const setOnPlayObserver = async (
 		if (!element) {
 			return;
 		}
-		setAnimations(element, result, animations, onStart, totalRuntime);
+		setElementAnimation(element, result, animations, onStart, totalRuntime);
 	});
+
+	return { animations, onStart };
+};
+
+export const setAnimations = async (
+	result: ResultTransferable,
+	callbacks: Map<number, VoidFunction[]>,
+	totalRuntime: number
+): Promise<Map<string, Animation>> => {
+	const { animations, onStart } = createAnimationsFromExistingElements(result, totalRuntime);
 	await nextRaf();
 
 	return new Promise<Map<string, Animation>>((resolve) => {
@@ -249,20 +152,17 @@ export const setOnPlayObserver = async (
 					if (!isHTMLElement(node)) {
 						return;
 					}
-					setAnimations(node as HTMLElement, result, animations, onStartInner, totalRuntime);
+					setElementAnimation(node as HTMLElement, result, animations, onStartInner, totalRuntime);
 				});
 			});
-			onStartInner.forEach((cb, key) => {
+			onStartInner.forEach((cb) => {
 				cb();
-				console.log(key);
 			});
 			resolve(animations);
 		};
 		const observer = new MutationObserver(observerCallback);
 		requestAnimationFrame(() => {
-			onStart.forEach((cb) => {
-				cb();
-			});
+			onStart.forEach((cb) => cb());
 			if (result.flags.size) {
 				observer.observe(document.body, { childList: true, subtree: true, attributes: true });
 				callbacks.get(1)!.forEach((cb) => cb());
@@ -275,15 +175,15 @@ export const setOnPlayObserver = async (
 	});
 };
 
-const saveElementStyle = () => {
-	const elementResets = new Map<HTMLElement, Map<string, string>>();
+const getElementResets = () => {
+	const resets = new Map<HTMLElement, Map<string, string>>();
 	requestAnimationFrame(() => {
 		querySelectorAll(`[${Attributes.reset}]`).forEach((element) => {
-			elementResets.set(element, saveOriginalStyle(element));
+			resets.set(element, saveOriginalStyle(element));
 		});
 	});
 
-	return elementResets;
+	return resets;
 };
 
 export const createAnimationState = async (
@@ -292,12 +192,12 @@ export const createAnimationState = async (
 	worker: AtomicWorker
 ): Promise<AnimationState> => {
 	await observeDom(callbacks, worker);
-	const elementResets = saveElementStyle();
+	const elementResets = getElementResets();
 
-	const result = (await worker("animationTrees").onMessage((result) => {
+	const result = (await worker("animationData").onMessage((result) => {
 		return result;
 	})) as ResultTransferable;
-	const animations = await setOnPlayObserver(result, callbacks, totalRuntime);
+	const animations = await setAnimations(result, callbacks, totalRuntime);
 
 	return { animations, elementResets };
 };
