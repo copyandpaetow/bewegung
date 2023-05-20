@@ -100,11 +100,11 @@ const setElementAnimation = (
 		return;
 	}
 	onStart.set(key, () => {
-		element.dataset.bewegungsCssText = element.style.cssText;
+		element.dataset.bewegungsCssText = element.style.cssText ?? " ";
 		applyCSSStyles(element, overrides);
 	});
-	anim.onfinish = () => {
-		element.style.cssText = element.dataset.bewegungsCssText!;
+	anim.onfinish = anim.oncancel = () => {
+		element.style.cssText = element.dataset.bewegungsCssText ?? " ";
 	};
 };
 

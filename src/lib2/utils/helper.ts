@@ -37,5 +37,5 @@ export const toArray = <MaybeArrayType>(
 ): MaybeArrayType[] => (Array.isArray(maybeArray) ? maybeArray : [maybeArray]);
 
 export const transformProgress = (totalRuntime: number, progress: number, done?: boolean) => {
-	return -1 * Math.min(Math.max(progress, 0.001), done === undefined ? 1 : 0.999) * totalRuntime;
+	return Math.min(Math.max(progress, 0.001), done === undefined ? 1 : 0.999) * totalRuntime;
 };
