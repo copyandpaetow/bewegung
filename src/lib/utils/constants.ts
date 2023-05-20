@@ -1,7 +1,7 @@
 import { Bewegung } from "../bewegung";
 import { BewegungsOption } from "../types";
 
-export const defaultOptions: BewegungsOption = {
+export const defaultOptions: Required<BewegungsOption> = {
 	duration: 400,
 	easing: "ease",
 	iterations: 1,
@@ -69,7 +69,7 @@ export const emptyApi = (): Bewegung => ({
 		console.warn("the user prefers reduced motion");
 	},
 	scroll(scrollAmount: number, done = false) {
-		console.warn("the user prefers reduced motion");
+		console.warn("the user prefers reduced motion", { scrollAmount, done });
 	},
 	cancel() {
 		console.warn("the user prefers reduced motion");

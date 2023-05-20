@@ -1,5 +1,5 @@
-import { Bewegung, bewegung2 } from "../../lib2/bewegung";
-import { BewegungsInputs } from "../../lib2/types";
+import { Bewegung, bewegung } from "../../lib/bewegung";
+import { BewegungsInputs } from "../../lib/types";
 
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
@@ -96,7 +96,7 @@ const initCards = () => {
 			// [() => changeWidth(20), { duration: 2000 }],
 		];
 
-		return bewegung2(sequence, {
+		return bewegung(sequence, {
 			defaultOptions: { easing: "ease" },
 		});
 	};

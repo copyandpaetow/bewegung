@@ -1,8 +1,8 @@
-import { calculateBorderRadius } from "./border-radius";
-import { getScales, getTranslates } from "./calculate-differences";
-import { EasingTable, ImageDetails, ParentTree, TreeStyle } from "../types";
+import { EasingTable, ImageDetails, TreeStyle } from "../types";
 import { save } from "../utils/helper";
 import { isElementUnchanged } from "../utils/predicates";
+import { calculateBorderRadius } from "./border-radius";
+import { getScales, getTranslates } from "./calculate-differences";
 
 export const highestNumber = (numbers: number[]) =>
 	numbers.reduce((largest, current) => Math.max(largest, current));

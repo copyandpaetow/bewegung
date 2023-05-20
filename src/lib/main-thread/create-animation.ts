@@ -1,13 +1,8 @@
-import { AnimationState, AtomicWorker, ResultTransferable } from "../types";
+import { ResultTransferable } from "../types";
 import { Attributes, emptyImageSrc } from "../utils/constants";
 import { applyCSSStyles, nextRaf, querySelectorAll } from "../utils/helper";
 import { isHTMLElement } from "../utils/predicates";
-import {
-	addKeyToCustomElements,
-	observeDom,
-	readdRemovedNodes,
-	separateEntries,
-} from "./observe-dom";
+import { addKeyToCustomElements, readdRemovedNodes, separateEntries } from "./observe-dom";
 
 export const saveOriginalStyle = (element: HTMLElement) => {
 	const attributes = new Map<string, string>();
