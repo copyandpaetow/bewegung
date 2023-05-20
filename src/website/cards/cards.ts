@@ -108,6 +108,15 @@ const initCards = () => {
 		if (!animation) {
 			animation = highlight();
 		}
+
+		// const raf = () => {
+		// 	let scrollpercentage = window.scrollY / (document.body.clientHeight / 4);
+
+		// 	animation?.scroll(scrollpercentage, scrollpercentage > 0.5);
+		// 	requestAnimationFrame(raf);
+		// };
+		// raf();
+
 		animation.playState !== "running" ? animation.play() : animation.pause();
 		paused && animation.pause();
 		animation.finished.then(() => {

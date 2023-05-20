@@ -10,7 +10,6 @@ const workerManager = getWorker();
 
 const restoreElements = (elementResets: Map<HTMLElement, Map<string, string>>) => {
 	querySelectorAll(`[${Attributes.removable}], [${Attributes.key}*="added"]`).forEach((element) => {
-		console.log("remove element: ", element);
 		elementResets.delete(element);
 		element.remove();
 	});
@@ -50,9 +49,9 @@ export const animationController = (
 	let data: null | ResultTransferable = null;
 	let animations: null | Map<string, Animation> = null;
 	let resets: null | Promise<Map<HTMLElement, Map<string, string>>> = null;
-	let disconnect: null | VoidFunction = null;
 	let time = Date.now();
-	let progress: null | number = null;
+	let disconnectDomWatcher: null | VoidFunction = null;
+	let allowNextTick = true;
 
 	const getData = async () => {
 		if (data) {
@@ -68,21 +67,23 @@ export const animationController = (
 	};
 
 	const getAnimations = async () => {
+		disconnectDomWatcher?.();
+
 		if (animations) {
 			return animations;
 		}
 
 		try {
-			disconnect?.();
 			await getData();
 			animations = await createAnimations(data!, callbacks, totalRuntime);
 			animations.set("timekeeper", timekeeper);
-			timekeeper.onfinish = () =>
+			timekeeper.onfinish = () => {
 				requestAnimationFrame(() => {
 					removeDataAttributes();
-					progress = null;
 				});
-			setAnimationProgress(animations, progress);
+			};
+
+			setAnimationProgress(animations, timekeeper.currentTime);
 		} catch (error) {
 			api.cancel();
 		}
@@ -90,17 +91,17 @@ export const animationController = (
 	};
 
 	const watchDomForChanges = () => {
-		disconnect = onDomChange(async () => {
-			disconnect?.();
-			disconnect = null;
+		disconnectDomWatcher = onDomChange(async () => {
+			disconnectDomWatcher?.();
+			disconnectDomWatcher = null;
 			data = null;
 			if (animations) {
-				progress = timekeeper.currentTime;
+				animations.delete("timekeeper");
 				await api.cancel();
 				animations = null;
 
 				await nextRaf();
-				//api.pause();
+				api.pause();
 			}
 		});
 	};
@@ -112,18 +113,26 @@ export const animationController = (
 		},
 		async play() {
 			(await getAnimations()).forEach((animation) => animation.play());
+
 			console.log(`calculation took ${Date.now() - time}ms`);
 		},
 		async scroll(progress: number, done: boolean) {
+			if (!allowNextTick) {
+				return;
+			}
+			allowNextTick = false;
+
 			(await getAnimations()).forEach((animation) => (animation.currentTime = progress));
 
+			allowNextTick = true;
 			if (done) {
 				api.finish();
+				allowNextTick = false;
 			}
 		},
 		async pause() {
 			(await getAnimations()).forEach((animation) => animation.pause());
-			requestAnimationFrame(watchDomForChanges);
+			watchDomForChanges();
 		},
 		async cancel() {
 			if (animations) {
