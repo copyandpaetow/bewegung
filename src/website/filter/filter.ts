@@ -1,4 +1,4 @@
-import { bewegung2 } from "../../lib2/bewegung";
+import { bewegung } from "../../lib/bewegung";
 
 const initFilter = () => {
 	const checkboxes = document.querySelectorAll("#filter input");
@@ -9,7 +9,7 @@ const initFilter = () => {
 				document.querySelectorAll(`img[data-color=${element.value}]`)
 			).map((element) => element.parentElement) as HTMLElement[];
 			if (element.checked) {
-				const animation = bewegung2([
+				const animation = bewegung([
 					[
 						() => {
 							selectedImages.forEach((element) => (element.style.display = ""));
@@ -19,7 +19,7 @@ const initFilter = () => {
 				]);
 				animation.play();
 			} else {
-				const animation = bewegung2([
+				const animation = bewegung([
 					[
 						() => {
 							selectedImages.forEach((element) => (element.style.display = "none"));

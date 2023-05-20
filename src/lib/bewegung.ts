@@ -1,126 +1,74 @@
-import { animationFactory } from "./animation";
-import { unifyPropStructure, updateUserInput } from "./main-thread/normalize-props";
-import { getSelectors } from "./main-thread/update-state";
-import { reactivity } from "./main-thread/watch-changes";
-import { getPlayState } from "./play-state";
-import { getWorker, useWorker } from "./shared/use-worker";
-import {
-	AnimationFactory,
-	BewegungAPI,
-	BewegungProps,
-	CustomKeyframeEffect,
-	MainMessages,
-	PlayStateManager,
-	WorkerMessages,
-} from "./types";
+import { animationController } from "./main-thread/animation-controller";
+import { normalizeProps } from "./main-thread/normalize-props";
+import { BewegungsConfig, BewegungsInputs } from "./types";
+import { emptyApi } from "./utils/constants";
+import { transformProgress } from "./utils/helper";
 
-const allWorker = getWorker();
+export type Bewegung = {
+	play(): void;
+	pause(): void;
+	scroll(scrollAmount: number, done?: boolean): void;
+	cancel(): void;
+	finish(): void;
+	prefetch(): Promise<void>;
+	finished: Promise<Animation>;
+	playState: AnimationPlayState;
+};
 
 /*
-# timekeeper
-- callbacks
-- keep and restore progress
+TODO:
 
-maybe it would be nicer to move the complexity somehwere else, currently its really crowded and repetitive
+Improvements
+- "at" needs to be more refined
+=>  iterations need to be included in the calculations
+- options need to be rechecked. Should more be included? 
+- counter scaling with combining easings is still an issue
 
+- how to handle the unanimatable properties?
+- how to handle user properties for properties we use (transform & clipPath)
+- how to handle if elements are already part of another bewegungs-animation? The data-states would interfere with each other
+
+if there is an overlap within the sequence, it will create additional easings
 
 */
 
-export class Bewegung implements BewegungAPI {
-	#now: number;
-	#state: AnimationFactory;
-	#playStateManager: PlayStateManager;
-	#worker: Worker;
-	#userInput: CustomKeyframeEffect[];
-	#unobserveReactivity = () => {};
+export const bewegung = (props: BewegungsInputs, config?: BewegungsConfig): Bewegung => {
+	const { callbacks, totalRuntime } = normalizeProps(props, config);
+	const timekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
+	const controller = animationController(callbacks, totalRuntime, timekeeper);
 
-	constructor(...bewegungProps: BewegungProps) {
-		this.#now = Date.now();
-		this.#worker = allWorker.current();
-		this.#userInput = unifyPropStructure(bewegungProps);
-		this.#state = animationFactory(
-			this.#userInput,
-			useWorker<MainMessages, WorkerMessages>(this.#worker)
-		);
-		this.#playStateManager = getPlayState(this.#state);
+	const reduceMotion =
+		config?.reduceMotion ?? window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
+
+	if (reduceMotion) {
+		timekeeper.finish();
+		return emptyApi();
 	}
 
-	async #addReactivity() {
-		const result = await this.#state.results();
-		this.#unobserveReactivity = reactivity(result, getSelectors(this.#userInput), {
-			onDimensionOrPositionChange: () => {
-				this.#unobserveReactivity();
-				this.#state.invalidateDomChanges();
-			},
-			onSecondaryElementChange: (elements) => {
-				this.#unobserveReactivity();
-				elements.forEach((element) => result.translation.delete(element));
-				this.#state.invalidateGeneralState();
-			},
-			onMainElementChange: (removedElements, addedElements) => {
-				this.#unobserveReactivity();
-				this.#userInput = updateUserInput(this.#userInput, removedElements, addedElements);
-				this.#state = animationFactory(
-					this.#userInput,
-					useWorker<MainMessages, WorkerMessages>(this.#worker)
-				);
-			},
-		});
-	}
-
-	async precalc() {
-		await this.#state.results();
-		this.#addReactivity();
-		return this;
-	}
-
-	async play() {
-		await this.#playStateManager.next("running");
-
-		console.log(`it took ${Date.now() - this.#now}ms`);
-	}
-	async pause() {
-		await this.#playStateManager.next("paused");
-		this.#addReactivity();
-	}
-	async scroll(progress: number, done: boolean = false) {
-		await this.#playStateManager.next("paused", { progress, done });
-	}
-	async reverse() {
-		await this.#playStateManager.next("reversing");
-	}
-	async cancel() {
-		await this.#playStateManager.next("finished");
-	}
-	async finish() {
-		await this.#playStateManager.next("finished");
-	}
-	async commitStyles() {
-		await this.#playStateManager.next("finished");
-	}
-	async updatePlaybackRate(rate: number) {
-		await this.#playStateManager.next("finished");
-	}
-
-	get playState() {
-		if (["scrolling", "reversing"].includes(this.#playStateManager.current())) {
-			return "running";
-		}
-		if (["running", "finished", "paused"].includes(this.#playStateManager.current())) {
-			return this.#playStateManager.current() as AnimationPlayState;
-		}
-
-		return "idle" as AnimationPlayState;
-	}
-
-	get finished() {
-		return this.#state
-			.results()
-			.then(({ animations }) => {
-				return Array.from(animations.values(), (animation) => animation.finished);
-			})
-			.then((animationPromises) => {
-				return Promise.all(animationPromises);
-			});
-	}
-}
+	return {
+		play() {
+			controller.play();
+		},
+		pause() {
+			controller.pause();
+		},
+		scroll(scrollAmount: number, done = false) {
+			controller.scroll(transformProgress(totalRuntime, scrollAmount, done), done);
+		},
+		cancel() {
+			controller.cancel();
+		},
+		finish() {
+			controller.finish();
+		},
+		async prefetch() {
+			await controller.prefetch();
+		},
+		get finished() {
+			return timekeeper.finished;
+		},
+		get playState() {
+			return timekeeper.playState;
+		},
+	};
+};

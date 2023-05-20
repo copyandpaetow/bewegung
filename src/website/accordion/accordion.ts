@@ -1,4 +1,4 @@
-import { bewegung2 } from "../../lib2/bewegung";
+import { bewegung } from "../../lib/bewegung";
 
 const toggleAccordions = () => {
 	const accordionHeaders = [
@@ -12,7 +12,7 @@ const toggleAccordions = () => {
 		accordionHeader.addEventListener("click", () => {
 			let expanded = accordionHeader.getAttribute("aria-expanded") === "true" || false;
 
-			const animation = bewegung2([
+			const animation = bewegung([
 				[
 					() => {
 						target.classList.toggle("hidden");

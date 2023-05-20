@@ -1,52 +1,65 @@
-import { initGeneralState, initMainElementState } from "../shared/object-creators";
-import { useWorker } from "../shared/use-worker";
-import { MainMessages, WorkerMessages } from "../types";
-import { constructKeyframes, deriveResultState } from "./sort-keyframes";
-import { setMainState } from "./update-state";
+import {
+	AnimationFlag,
+	DomTree,
+	MainMessages,
+	TimelineEntry,
+	TreeStyle,
+	WorkerMessages,
+	WorkerState,
+} from "../types";
+import { useWorker } from "../utils/use-worker";
+import { updateKeyframes } from "./calculate-animation-tree";
 
 //@ts-expect-error typescript doesnt
 const worker = self as Worker;
 const workerAtom = useWorker<WorkerMessages, MainMessages>(worker);
 
-let mainElementState = initMainElementState();
-let generalState = initGeneralState();
+const state: WorkerState = {
+	readouts: new Map<string, TreeStyle[]>(),
+	easings: new Map<string, TimelineEntry[]>(),
+	keyframes: new Map<string, Keyframe[]>(),
+	overrides: new Map<string, Partial<CSSStyleDeclaration>>(),
+	flags: new Map<string, AnimationFlag>(),
+};
 
-workerAtom("receiveMainState").onMessage((mainTransferables) => {
-	mainElementState = setMainState(mainTransferables);
-});
-
-workerAtom("receiveGeneralState").onMessage((generalTransferable, { reply }) => {
-	const { changeProperties, appliableKeyframes } = mainElementState;
-	generalState = generalTransferable;
-	reply("domChanges", {
-		appliableKeyframes,
-		changeProperties,
-	});
-});
-
-workerAtom("receiveKeyframeRequest").onMessage((_, { reply }) => {
-	const { changeProperties, appliableKeyframes } = mainElementState;
-	reply("domChanges", {
-		appliableKeyframes,
-		changeProperties,
-	});
-});
-
-workerAtom("receiveReadouts").onMessage((newReadouts, { reply }) => {
-	const { done, value: readouts } = newReadouts;
-	readouts.forEach((readout, elementID) => {
-		mainElementState.readouts.set(
-			elementID,
-			(mainElementState.readouts.get(elementID) ?? []).concat(readout)
-		);
-	});
-	if (!done) {
-		return;
+const revertEasings = (easing: string): TimelineEntry[] => {
+	if (!easing) {
+		return [];
 	}
-	const resultState = deriveResultState(mainElementState, generalState);
-	reply("receiveConstructedKeyframes", constructKeyframes(resultState));
-});
+	return JSON.parse(easing);
+};
 
-workerAtom("receiveTask").onMessage((_, { reply }) => {
-	reply("task");
+const updateReadouts = (tree: DomTree, state: WorkerState) => {
+	const key = tree.key;
+
+	state.readouts.set(key, (state.readouts.get(key) ?? []).concat(tree.style));
+	if (!state.easings.has(key)) {
+		state.easings.set(key, revertEasings(tree.easings));
+	}
+
+	tree.children.forEach((childTree) => updateReadouts(childTree, state));
+};
+
+const clearState = () => Object.values(state).forEach((map) => map.clear());
+
+workerAtom("sendDOMRects").onMessage((domChanges) => {
+	const { domTrees, offset } = domChanges;
+
+	domTrees.forEach((tree) => {
+		updateReadouts(tree, state);
+	});
+
+	if (offset === 1) {
+		domTrees.forEach((tree) => {
+			updateKeyframes(tree, "", state);
+		});
+
+		workerAtom("sendAnimationData").reply("animationData", {
+			keyframes: state.keyframes,
+			overrides: state.overrides,
+			flags: state.flags,
+		});
+
+		clearState();
+	}
 });
