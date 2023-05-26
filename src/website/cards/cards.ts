@@ -1,40 +1,76 @@
-import { Bewegung } from "../../lib/bewegung";
-import { CustomKeyframeEffect } from "../../lib/types";
+import { Bewegung, bewegung } from "../../lib/bewegung";
+import { BewegungsInputs } from "../../lib/types";
 
 const initCards = () => {
 	const cardsAbortButton = document.querySelector(".cards__button--abort");
 	const cardsPlayButton = document.querySelector(".cards__button--play");
 	const cardsPauseButton = document.querySelector(".cards__button--pause");
 	let activeIndex = 1;
-	const cards = document.querySelectorAll(".card");
+	const cards = Array.from(document.querySelectorAll(".card"));
 
 	const updateIndex = (index: number) => {
 		activeIndex = Math.abs((activeIndex + index) % cards.length);
 		return activeIndex;
 	};
 
+	const getRange = (from: number, to: number, steps = 5) => {
+		const value = (to - from) / steps;
+		return Array.from({ length: steps }, (_, num) => from + value * num).concat(to);
+	};
+	const height = getRange(60, 25, 1).map((num) => num + "vh");
+	const width = getRange(30, 100, 5).map((num) => num + "%");
+
 	const highlight = () => {
-		const highlightCard: CustomKeyframeEffect = [
-			cards[activeIndex],
-			{
-				width: ["30%", "100%", "55%"],
-				height: ["50vh", "25vh", "70vh", "60vh"],
-				callback: [() => console.log("cb1")],
-			},
-			{ duration: 1000, easing: "ease", rootSelector: "main", iterations: 2 },
+		const changeWidth = (newWidth: number) => {
+			const element = cards[activeIndex] as HTMLElement;
+			element.style.width = `${newWidth}%`;
+		};
+		const addSomeAttribute = () => {
+			const element = cards[activeIndex] as HTMLElement;
+			element.setAttribute("data-test", "something");
+		};
+		const resetOthers = () => {
+			const otherElements = [...cards].splice(activeIndex, 1) as HTMLElement[];
+
+			otherElements.forEach((element) => {
+				element.style.width = "";
+			});
+		};
+
+		bewegung([() => {}, { duration: 1000 }]);
+
+		const sequence: BewegungsInputs = [
+			[
+				() => {
+					changeWidth(100);
+					addSomeAttribute();
+				},
+				{ duration: 2000, at: 0, easing: "ease" },
+			],
+
+			[
+				() => {
+					const element = cards[0].cloneNode(true) as HTMLElement;
+					//element.setAttribute("data-bewegungskey", "something");
+
+					cards[0].parentElement?.insertBefore(element, cards[3]);
+				},
+				{ duration: 2000, easing: "ease-out" },
+			],
+			// [
+			// 	() => {
+			// 		const element = cards[activeIndex] as HTMLElement;
+			// 		console.log(element);
+			// 		element.remove();
+			// 	},
+			// 	{ duration: 2000, at: -200, easing: "cubic-bezier(.5,.25,.8,.6)" },
+			// ],
+			// [() => changeWidth(20), { duration: 2000 }],
 		];
 
-		const hideOthers: CustomKeyframeEffect = [
-			[...cards].filter((_, index) => index !== activeIndex),
-			{
-				width: "",
-				height: "",
-				callback: () => console.log("cb2"),
-			},
-			{ duration: 2000, easing: "ease-in", rootSelector: "main" },
-		];
-
-		return new Bewegung(highlightCard, hideOthers);
+		return bewegung(sequence, {
+			defaultOptions: { easing: "ease" },
+		});
 	};
 
 	let animation: Bewegung | undefined;
@@ -44,12 +80,20 @@ const initCards = () => {
 		if (!animation) {
 			animation = highlight();
 		}
+
+		// const raf = () => {
+		// 	let scrollpercentage = window.scrollY / (document.body.clientHeight / 4);
+
+		// 	animation?.scroll(scrollpercentage, scrollpercentage > 0.5);
+		// 	requestAnimationFrame(raf);
+		// };
+		// raf();
+
 		animation.playState !== "running" ? animation.play() : animation.pause();
 		paused && animation.pause();
 		animation.finished.then(() => {
 			animation = undefined;
 			updateIndex(+1);
-			console.log("finished");
 		});
 	});
 	cardsPauseButton?.addEventListener("click", () => {
@@ -70,22 +114,6 @@ const initAdditionalImages = () => {
 	imageWrappers.forEach((element, index) => {
 		element.addEventListener("click", () => {
 			const image = element.querySelector("img")! || element.querySelector("div")!;
-
-			if (imageExpandedState[index]) {
-				const animation = new Bewegung(
-					[element, { height: "", width: "" }, { duration: 4000, easing: "ease-in" }],
-					[image, { height: "", width: "" }, { duration: 4000, easing: "ease-in" }]
-				);
-				animation.play();
-				imageExpandedState[index] = false;
-			} else {
-				const animation = new Bewegung(
-					[element, { height: "20vh", width: "30vh" }, { duration: 4000, easing: "ease-in" }],
-					[image, { width: "20vh" }, { duration: 4000, easing: "ease-in" }]
-				);
-				animation.play();
-				imageExpandedState[index] = true;
-			}
 		});
 	});
 };

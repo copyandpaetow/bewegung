@@ -1,92 +1,102 @@
-export type ElementOrSelector =
-	| HTMLElement
-	| Element
-	| HTMLElement[]
-	| Element[]
-	| NodeListOf<Element>
-	| HTMLCollection
-	| string;
+import { WorkerContext } from "./utils/use-worker";
 
-export type ValueOf<T> = T[keyof T];
+export type ElementOrSelector = HTMLElement | Element | string;
 
-export type CssRuleName = "cssOffset" | keyof CSSStyleDeclaration;
+export type BewegungsCallback = VoidFunction;
+export type BewegungsOption = {
+	duration: number;
+	iterations?: number;
+	root?: ElementOrSelector;
+	easing?:
+		| "ease"
+		| "ease-in"
+		| "ease-out"
+		| "ease-in-out"
+		| "linear"
+		| `cubic-bezier(${number},${number},${number},${number})`;
+	at?: number;
+};
 
-export type CustomKeyframeArrayValueSyntax = Partial<
-	Record<CssRuleName, string[] | number[]> & {
-		callback: VoidFunction[];
-		offset: number[];
-		class: string[];
-		attribute: string[];
-	}
->;
+type BewegungsEntry = [BewegungsCallback, BewegungsOption?];
 
-export type NonCSSEntries = {
-	class: string;
-	attribute: string;
-	callback: VoidFunction;
+type PossibleBewegungsInputs = BewegungsCallback | BewegungsEntry;
+export type BewegungsInputs = PossibleBewegungsInputs | PossibleBewegungsInputs[];
+export type BewegungsConfig = {
+	defaultOptions?: Partial<BewegungsOption>;
+	reduceMotion?: boolean;
+};
+
+export type NormalizedProps = Required<BewegungsOption> & { callback: VoidFunction };
+
+export type TimelineEntry = {
+	start: number;
+	end: number;
+	easing: string;
+};
+
+export type TempTimelineEntry = {
+	start: number;
+	end: number;
+	easing: Set<string>;
+};
+
+export type TreeStyle = {
+	currentTop: number;
+	currentLeft: number;
+	currentHeight: number;
+	currentWidth: number;
+	unsaveWidth: number;
+	unsaveHeight: number;
+	ratio: string;
+	position: string;
+	transform: string;
+	transformOrigin: string;
+	objectFit: string;
+	objectPosition: string;
+	display: string;
+	borderRadius: string;
+	text: string;
 	offset: number;
 };
 
-export type CustomKeyframe = Partial<Record<CssRuleName, string | number> & NonCSSEntries>;
+export type DomTree = {
+	style: TreeStyle;
+	key: string;
+	easings: string;
+	children: DomTree[];
+};
 
-export type EveryKeyframeSyntax =
-	| CustomKeyframe
-	| CustomKeyframe[]
-	| CustomKeyframeArrayValueSyntax;
-
-export interface BewegungsOptions extends KeyframeEffectOptions, ComputedEffectTiming {
-	rootSelector?: string;
-}
-
-export type EveryOptionSyntax = number | BewegungsOptions | undefined;
-
-export type CustomKeyframeEffect = [
-	target: ElementOrSelector,
-	keyframes: EveryKeyframeSyntax,
-	options: EveryOptionSyntax
-];
-
-export type Callbacks = {
-	callback: VoidFunction;
+export type DomChangeTransferable = {
+	domTrees: Map<string, DomTree>;
 	offset: number;
+	currentTime: number;
 };
 
-export interface BewegungAPI {
-	play: () => void;
-	pause: () => void;
-	scroll: (progress: number, done?: boolean) => void;
-	reverse: () => void;
-	cancel: () => void;
-	commitStyles: () => void;
-	finish: () => void;
-	updatePlaybackRate: (newPlaybackRate: number) => void;
-	readonly finished: Promise<void>;
-	readonly playState: AnimationPlayState;
-}
-
-export type BewegungProps = CustomKeyframeEffect | (CustomKeyframeEffect | KeyframeEffect)[];
-
-export type ElementReadouts = {
-	dimensions: PartialDomRect;
-	computedStyle: Partial<CSSStyleDeclaration>;
-	offset: number;
+export type ResultTransferable = {
+	keyframes: Map<string, Keyframe[]>;
+	overrides: Map<string, Partial<CSSStyleDeclaration>>;
+	flags: Map<string, AnimationFlag>;
 };
 
-export type DifferenceArray = [ElementReadouts, ElementReadouts];
-
-export type PartialDomRect = {
-	top: number;
-	right: number;
-	bottom: number;
-	left: number;
-	width: number;
-	height: number;
+export type WorkerMessages = {
+	sendDOMRects: DomChangeTransferable;
+	sendAnimationData: ResultTransferable;
 };
 
-export type StyleChangePossibilities = {
-	style: Partial<CSSStyleDeclaration>;
-	classes: string[];
-	attributes: string[];
+export type MainMessages = {
+	domChanges: DomChangeTransferable;
+	animationData: ResultTransferable;
+};
+
+export type AtomicWorker = <Current extends keyof MainMessages>(
+	eventName: Current
+) => WorkerContext<Current, MainMessages, WorkerMessages>;
+
+export type ChildParentDimensions = {
+	current: TreeStyle;
+	reference: TreeStyle;
+	parent: TreeStyle;
+	parentReference: TreeStyle;
 };
 
 export interface DimensionalDifferences {
@@ -97,90 +107,29 @@ export interface DimensionalDifferences {
 	offset: number;
 }
 
-export interface TimelineEntry {
-	start: number;
-	end: number;
-	easing: string | string[];
-}
-export type Timeline = TimelineEntry[];
+export type EasingTable = Record<number, string>;
 
-export type AnimationEntry = {
-	target: HTMLElement[];
-	keyframes: CustomKeyframe[];
-	callbacks: Callbacks[];
-	options: BewegungsOptions;
-	selector: string;
+export type WorkerState = {
+	readouts: Map<string, TreeStyle[]>;
+	easings: Map<string, TimelineEntry[]>;
+	keyframes: Map<string, Keyframe[]>;
+	overrides: Map<string, Partial<CSSStyleDeclaration>>;
+	flags: Map<string, AnimationFlag>;
 };
 
-export interface State {
-	mainElements: Set<HTMLElement>;
-	secondaryElements: Set<HTMLElement>;
-	keyframes: WeakMap<HTMLElement, CustomKeyframe[][]>;
-	callbacks: WeakMap<HTMLElement, Callbacks[][]>;
-	options: WeakMap<HTMLElement, BewegungsOptions[]>;
-	selectors: WeakMap<HTMLElement, string[]>;
-	totalRuntime: number;
-	rootElement: WeakMap<HTMLElement, HTMLElement>;
-	cssStyleReset: WeakMap<HTMLElement, Map<string, string>>;
-	animations: Map<HTMLElement, Animation>;
-	timeKeeper: Animation;
-	onStart: WeakMap<HTMLElement, VoidFunction[]>;
-	onEnd: WeakMap<HTMLElement, VoidFunction[]>;
-}
+export type AnimationFlag = "addition" | "removal";
 
-export interface WatchState {
-	IO: WeakMap<HTMLElement, IntersectionObserver>;
-	RO: WeakMap<HTMLElement, ResizeObserver>;
-	MO: MutationObserver | undefined;
-}
-
-export interface AnimationState {
-	readouts: Map<HTMLElement, ElementReadouts[]>;
-	imageReadouts: Map<HTMLImageElement, ElementReadouts[]>;
-}
-
-export interface CalculationState {
-	calculations: DimensionalDifferences[];
-	easingTable: Record<number, string>;
-	borderRadiusTable: Record<number, string>;
-	opacityTable: Record<number, string>;
-	filterTable: Record<number, string>;
-	userTransformTable: Record<number, string>;
-}
-
-export interface Result {
-	animations: Map<HTMLElement, Animation>;
-	timekeeper: Animation;
-	resetStyle: (element: HTMLElement) => void;
-	onStart: (element: HTMLElement) => void;
-	onEnd: (element: HTMLElement) => void;
-	observe: (before: VoidFunction, after: VoidFunction) => VoidFunction;
-	scroll: (progress: number, done?: boolean) => number;
-}
-
-export interface DomState {
-	timings: number[];
-	properties: CssRuleName[];
-	keyframeMap: Map<number, Map<HTMLElement, StyleChangePossibilities>>;
-}
-
-type ExtendedPlayStates = "scrolling" | "reversing";
-export type AllPlayStates = AnimationPlayState | ExtendedPlayStates;
-export type StateMachine = Record<AllPlayStates, Partial<Record<AllPlayStates, VoidFunction>>>;
-
-export interface ImageState {
-	element: HTMLImageElement;
-	originalStyle: string;
-	parent: HTMLElement;
-	sibling: Element | null;
-	ratio: number;
-	wrapper: HTMLElement;
-	placeholder: HTMLImageElement;
+export type ImageDetails = {
 	maxWidth: number;
 	maxHeight: number;
-	easingTable: Record<number, string>;
-	wrapperKeyframes: Keyframe[];
-	keyframes: Keyframe[];
-}
+	easing: EasingTable;
+};
 
-export type schedulerEntry = { callback: Function; level: number };
+export type AnimationController = {
+	prefetch(): Promise<void>;
+	play(): Promise<void>;
+	scroll(progress: number, done: boolean): Promise<void>;
+	pause(): Promise<void>;
+	cancel(): Promise<void>;
+	finish(): void;
+};
