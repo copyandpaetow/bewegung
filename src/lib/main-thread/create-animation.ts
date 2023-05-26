@@ -37,6 +37,50 @@ const createWrapperElement = (style: Partial<CSSStyleDeclaration>) => {
 	return wrapperElement;
 };
 
+const createAdditionalImageElements = (
+	element: HTMLElement,
+	result: ResultTransferable,
+	animations: Map<string, Animation>,
+	onStart: Map<string, VoidFunction>,
+	totalRuntime: number
+) => {
+	const parentElement = element.parentElement!;
+	const nextSibling = element.nextElementSibling;
+	const key = element.dataset.bewegungsKey ?? "";
+
+	const placeholderElement = createPlaceholder(
+		element,
+		result.overrides.get(`${key}-placeholder`)!
+	);
+	const wrapperElement = createWrapperElement(result.overrides.get(`${key}-wrapper`)!);
+	const placeholderAnimation = new Animation(
+		new KeyframeEffect(placeholderElement, [], totalRuntime)
+	);
+	const wrapperAnimation = new Animation(
+		new KeyframeEffect(wrapperElement, result.keyframes.get(`${key}-wrapper`)!, totalRuntime)
+	);
+	animations.set(`${key}-wrapper`, wrapperAnimation);
+	animations.set(`${key}-placeholder`, placeholderAnimation);
+
+	placeholderAnimation.onfinish = placeholderAnimation.oncancel = () => {
+		parentElement.replaceChild(element, placeholderElement);
+	};
+	wrapperAnimation.onfinish = wrapperAnimation.oncancel = () => {
+		wrapperElement.remove();
+	};
+
+	onStart.set(`${key}-wrapper`, () => {
+		nextSibling
+			? parentElement.insertBefore(wrapperElement.appendChild(element), nextSibling)
+			: parentElement.appendChild(wrapperElement).appendChild(element);
+	});
+	onStart.set(`${key}-placeholder`, () => {
+		nextSibling
+			? parentElement.insertBefore(placeholderElement, nextSibling)
+			: parentElement.appendChild(placeholderElement);
+	});
+};
+
 const setElementAnimation = (
 	element: HTMLElement,
 	result: ResultTransferable,
@@ -44,9 +88,10 @@ const setElementAnimation = (
 	onStart: Map<string, VoidFunction>,
 	totalRuntime: number
 ) => {
-	const key = element.dataset.bewegungsKey ?? "";
+	const key = element.dataset.bewegungsKey!;
 	const keyframes = result.keyframes.get(key) ?? [];
 	const overrides = result.overrides.get(key);
+
 	if (!keyframes.length && !overrides) {
 		return;
 	}
@@ -55,40 +100,7 @@ const setElementAnimation = (
 	animations.set(key, anim);
 
 	if (element.tagName === "IMG" && result.keyframes.has(`${key}-wrapper`)) {
-		const parentElement = element.parentElement!;
-		const nextSibling = element.nextElementSibling;
-
-		const placeholderElement = createPlaceholder(
-			element,
-			result.overrides.get(`${key}-placeholder`)!
-		);
-		const wrapperElement = createWrapperElement(result.overrides.get(`${key}-wrapper`)!);
-		const placeholderAnimation = new Animation(
-			new KeyframeEffect(placeholderElement, [], totalRuntime)
-		);
-		const wrapperAnimation = new Animation(
-			new KeyframeEffect(wrapperElement, result.keyframes.get(`${key}-wrapper`)!, totalRuntime)
-		);
-		animations.set(`${key}-wrapper`, wrapperAnimation);
-		animations.set(`${key}-placeholder`, placeholderAnimation);
-
-		placeholderAnimation.onfinish = placeholderAnimation.oncancel = () => {
-			parentElement.replaceChild(element, placeholderElement);
-		};
-		wrapperAnimation.onfinish = wrapperAnimation.oncancel = () => {
-			wrapperElement.remove();
-		};
-
-		onStart.set(`${key}-wrapper`, () => {
-			nextSibling
-				? parentElement.insertBefore(wrapperElement.appendChild(element), nextSibling)
-				: parentElement.appendChild(wrapperElement).appendChild(element);
-		});
-		onStart.set(`${key}-placeholder`, () => {
-			nextSibling
-				? parentElement.insertBefore(placeholderElement, nextSibling)
-				: parentElement.appendChild(placeholderElement);
-		});
+		createAdditionalImageElements(element, result, animations, onStart, totalRuntime);
 	}
 
 	if (!overrides) {
@@ -133,14 +145,13 @@ export const createAnimations = async (
 			readdRemovedNodes(removeEntries);
 			addKeyToCustomElements(addEntries);
 
-			addEntries.forEach((mutationRecord) => {
-				mutationRecord.addedNodes.forEach((node) => {
-					if (!isHTMLElement(node)) {
-						return;
-					}
+			addEntries
+				.flatMap((mutations) => [...mutations.addedNodes])
+				.filter(isHTMLElement)
+				.forEach((node) => {
 					setElementAnimation(node as HTMLElement, result, animations, onStart, totalRuntime);
 				});
-			});
+
 			onStart.forEach((cb) => cb());
 			resolve(animations);
 		};
