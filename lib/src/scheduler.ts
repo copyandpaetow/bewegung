@@ -68,7 +68,6 @@ export const scheduleCallback = (callback: VoidFunction) => {
 	if (nesting === 0) {
 		queue.push({ callback, level: nesting });
 	} else {
-		//@ts-expect-error ts doesnt know
 		let lastIndex = queue.findLastIndex((entry) => entry.level === nesting);
 
 		if (lastIndex === -1) {

@@ -8,13 +8,18 @@
     "animation"
   ],
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+    "dev": "astro dev --config website/astro.config.ts",
+    "build": "astro build  --config website/astro.config.ts",
+    "build:lib": "vite build --config lib/vite.config.ts && tsc --project lib/tsconfig.json",
+    "preview": "astro preview --config website/astro.config.ts",
+    "astro": "astro --config website/astro.config.ts"
   },
   "dependencies": {
-    "astro": "^2.5.1"
+    "astro": "^2.5.1",
+    "typescript": "^5.0.4",
+    "vite": "^4.3.9"
+  },
+  "devDependencies": {
+    "@types/node": "^20.2.4"
   }
 }
