@@ -3,7 +3,7 @@
 		"target": "ESNext",
 		"useDefineForClassFields": true,
 		"module": "ESNext",
-		"lib": ["ESNext", "DOM", "DOM.Iterable", "ES2021.String", "WebWorker"],
+		"lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"],
 		"moduleResolution": "Node",
 		"strict": true,
 		"sourceMap": true,
@@ -15,7 +15,8 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noImplicitReturns": true,
-		"strictPropertyInitialization": false
+		"strictPropertyInitialization": false,
+		"skipLibCheck": true
 	},
 	"include": ["src/bewegung.ts"]
 }

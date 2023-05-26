@@ -25,8 +25,10 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 	onError(errorCallback: WorkerError): void;
 };
 
+const workerURL = new URL("../worker-thread/worker.ts", import.meta.url);
+
 const spawnWorker = () =>
-	new Worker(new URL("../worker-thread/worker.ts", import.meta.url), {
+	new Worker(workerURL, {
 		type: "module",
 	});
 
