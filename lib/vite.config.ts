@@ -1,13 +1,13 @@
 import path from "path";
 import { defineConfig } from "vite";
 
-module.exports = defineConfig({
+export default defineConfig({
+	root: "lib",
 	build: {
 		lib: {
-			entry: path.resolve(__dirname, "src/lib/bewegung.ts"),
+			entry: path.resolve(__dirname, "lib/bewegung.ts"),
 			name: "bewegung",
 			fileName: (format) => `bewegung.${format}.js`,
 		},
-		rollupOptions: {},
 	},
 });
