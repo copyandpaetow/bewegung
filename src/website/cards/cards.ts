@@ -21,36 +21,6 @@ const initCards = () => {
 	const width = getRange(30, 100, 5).map((num) => num + "%");
 
 	const highlight = () => {
-		// const highlightCard: CustomKeyframeEffect = [
-		// 	cards[activeIndex],
-		// 	{
-		// 		height,
-		// 	},
-		// 	{ delay: 1000, duration: 4000, easing: "ease", rootSelector: "main" },
-		// ];
-
-		// const hideOthers: CustomKeyframeEffect = [
-		// 	".card:not(.main)",
-		// 	{
-		// 		height: "",
-		// 	},
-		// 	{ duration: 2000, easing: "ease-in", rootSelector: "main" },
-		// ];
-
-		// const hidePauseButton: CustomKeyframeEffect = [
-		// 	cards[activeIndex],
-		// 	[
-		// 		{
-		// 			display: "none",
-		// 			offset: 0.2,
-		// 		},
-		// 		{
-		// 			display: "",
-		// 		},
-		// 	],
-		// 	10500,
-		// ];
-
 		const changeWidth = (newWidth: number) => {
 			const element = cards[activeIndex] as HTMLElement;
 			element.style.width = `${newWidth}%`;
@@ -66,6 +36,8 @@ const initCards = () => {
 				element.style.width = "";
 			});
 		};
+
+		bewegung([() => {}, { duration: 1000 }]);
 
 		const sequence: BewegungsInputs = [
 			[
@@ -142,22 +114,6 @@ const initAdditionalImages = () => {
 	imageWrappers.forEach((element, index) => {
 		element.addEventListener("click", () => {
 			const image = element.querySelector("img")! || element.querySelector("div")!;
-
-			// if (imageExpandedState[index]) {
-			// 	const animation = new Bewegung(
-			// 		[element, { height: "", width: "" }, { duration: 4000, easing: "ease-in" }],
-			// 		[image, { height: "", width: "" }, { duration: 4000, easing: "ease-in" }]
-			// 	);
-			// 	animation.play();
-			// 	imageExpandedState[index] = false;
-			// } else {
-			// 	const animation = new Bewegung(
-			// 		[element, { height: "20vh", width: "30vh" }, { duration: 4000, easing: "ease-in" }],
-			// 		[image, { width: "20vh" }, { duration: 4000, easing: "ease-in" }]
-			// 	);
-			// 	animation.play();
-			// 	imageExpandedState[index] = true;
-			// }
 		});
 	});
 };

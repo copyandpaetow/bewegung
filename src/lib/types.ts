@@ -17,15 +17,14 @@ export type BewegungsOption = {
 	at?: number;
 };
 
-export type BewegungsConfig = {
-	defaultOptions?: Partial<BewegungsOption>;
-	reduceMotion?: boolean;
-};
-
 type BewegungsEntry = [BewegungsCallback, BewegungsOption?];
 
 type PossibleBewegungsInputs = BewegungsCallback | BewegungsEntry;
 export type BewegungsInputs = PossibleBewegungsInputs | PossibleBewegungsInputs[];
+export type BewegungsConfig = {
+	defaultOptions?: Partial<BewegungsOption>;
+	reduceMotion?: boolean;
+};
 
 export type NormalizedProps = Required<BewegungsOption> & { callback: VoidFunction };
 
