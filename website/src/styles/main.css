@@ -1,12 +1,3 @@
-.example__list {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--space-90);
-}
-
-.example__list li {
-	flex-basis: calc(50% - var(--space-90));
-}
 
 .background-animation {
 	position: absolute;
