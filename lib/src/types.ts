@@ -17,7 +17,7 @@ export type BewegungsOption = {
 	at?: number;
 };
 
-type BewegungsEntry = [BewegungsCallback, BewegungsOption?];
+export type BewegungsEntry = [BewegungsCallback, BewegungsOption?];
 
 type PossibleBewegungsInputs = BewegungsCallback | BewegungsEntry;
 export type BewegungsInputs = PossibleBewegungsInputs | PossibleBewegungsInputs[];
@@ -64,6 +64,7 @@ export type DomTree = {
 	key: string;
 	easings: string;
 	children: DomTree[];
+	parent: DomTree | null;
 };
 
 export type DomChangeTransferable = {

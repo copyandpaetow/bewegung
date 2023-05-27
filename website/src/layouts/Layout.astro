@@ -28,4 +28,18 @@ const { title } = Astro.props;
 		</main>
 	</body>
 </html>
-<style is:global></style>
+<style is:global>
+	body {
+		background-color: var(--color-main);
+		color: var(--color-secondary);
+	}
+
+	main {
+		min-height: 100vh;
+		display: grid;
+		grid-template-columns: repeat(12, calc((100% / 12) - var(--space-100) * 11 / 12));
+		row-gap: var(--space-400);
+		column-gap: var(--space-100);
+		grid-auto-rows: max-content;
+	}
+</style>

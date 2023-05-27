@@ -51,7 +51,7 @@ workerAtom("sendDOMRects").onMessage((domChanges) => {
 
 	if (offset === 1) {
 		domTrees.forEach((tree) => {
-			updateKeyframes(tree, "", state);
+			updateKeyframes(tree, state);
 		});
 
 		workerAtom("sendAnimationData").reply("animationData", {

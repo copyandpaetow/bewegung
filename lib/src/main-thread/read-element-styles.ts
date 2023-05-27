@@ -34,13 +34,17 @@ const getBoundingClientRect = (element: HTMLElement) => {
 	};
 };
 
-export const readElementStyles = (element: HTMLElement, offset: number): DomTree => {
+export const readElementStyles = (
+	element: HTMLElement,
+	parent: DomTree | null,
+	offset: number
+): DomTree => {
 	const easings = element.dataset.bewegungsEasing ?? "";
 	const key = element.dataset.bewegungsKey!;
 	const ratio = element.dataset.bewegungsRatio ?? "";
 	const text = element.dataset.bewegungsText ?? "";
 
-	return {
+	const treeNode: DomTree = {
 		style: {
 			...getBoundingClientRect(element),
 			...getComputedStyle(element),
@@ -50,6 +54,13 @@ export const readElementStyles = (element: HTMLElement, offset: number): DomTree
 		},
 		key,
 		easings,
-		children: getChilden(element).map((element) => readElementStyles(element, offset)),
+		children: [],
+		parent,
 	};
+
+	getChilden(element).forEach((element) =>
+		treeNode.children.push(readElementStyles(element, treeNode, offset))
+	);
+
+	return treeNode;
 };

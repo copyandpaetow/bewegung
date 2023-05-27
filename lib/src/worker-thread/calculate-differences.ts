@@ -63,15 +63,19 @@ export const getScales = (dimensions: ChildParentDimensions) => {
 	const heightDifference = childHeightDifference / parentHeightDifference;
 	const widthDifference = childWidthDifference / parentWidthDifference;
 
-	const textCorrection =
-		(parent.currentWidth - parentReference.currentWidth) / 2 / parentWidthDifference;
+	const textWidthCorrection =
+		(current.currentWidth - reference.currentWidth) / 2 / parentWidthDifference;
+
+	const textHeightCorrection =
+		(current.currentHeight - reference.currentHeight) / 2 / parentHeightDifference;
 
 	return {
 		parentWidthDifference,
 		parentHeightDifference,
 		heightDifference,
 		widthDifference,
-		textCorrection,
+		textWidthCorrection,
+		textHeightCorrection,
 	};
 };
 
@@ -93,7 +97,8 @@ export const calculateDimensionDifferences = (
 		parentHeightDifference,
 		heightDifference,
 		widthDifference,
-		textCorrection,
+		textWidthCorrection,
+		textHeightCorrection,
 	} = getScales(dimensions);
 
 	const leftDifference = currentLeftDifference / parentWidthDifference - referenceLeftDifference;
@@ -108,14 +113,12 @@ export const calculateDimensionDifferences = (
 	};
 
 	if (isTextElement) {
-		const correctedLeftDifference =
-			currentLeftDifference / parentWidthDifference - referenceLeftDifference - textCorrection;
-
 		return {
-			...differences,
 			heightDifference: save(1 / parentHeightDifference, 1),
 			widthDifference: save(1 / parentWidthDifference, 1),
-			leftDifference: save(correctedLeftDifference, 0),
+			leftDifference: save(leftDifference - textWidthCorrection, 0),
+			topDifference: save(topDifference - textHeightCorrection, 0),
+			offset: current.offset,
 		};
 	}
 

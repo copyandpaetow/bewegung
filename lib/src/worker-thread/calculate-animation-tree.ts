@@ -2,10 +2,10 @@ import { DomTree, TreeStyle, WorkerState } from "../types";
 import { isEntryVisible } from "../utils/predicates";
 import { setKeyframes } from "./get-keyframes";
 
-const normalizeStyles = (tree: DomTree, parentKey: string, state: WorkerState) => {
+const normalizeStyles = (tree: DomTree, state: WorkerState) => {
 	const updatedReadouts: TreeStyle[] = [];
 	const readouts = state.readouts.get(tree.key)!;
-	const parentReadouts = state.readouts.get(parentKey) ?? readouts;
+	const parentReadouts = state.readouts.get(tree.parent?.key ?? "") ?? readouts;
 
 	parentReadouts
 		.map((parentReadout) => parentReadout.offset)
@@ -39,9 +39,10 @@ const normalizeStyles = (tree: DomTree, parentKey: string, state: WorkerState) =
 	state.readouts.set(tree.key, updatedReadouts);
 };
 
-const setAbsoluteOverrides = (tree: DomTree, parentKey: string, state: WorkerState) => {
-	const parentFlag = state.flags.get(parentKey)!;
-	const parentReadouts = state.readouts.get(parentKey)!;
+const setAbsoluteOverrides = (tree: DomTree, state: WorkerState) => {
+	const parentKey = tree.parent?.key ?? "";
+	const parentFlag = state.flags.get(parentKey);
+	const parentReadouts = state.readouts.get(parentKey);
 	const parentOverrides = state.overrides.get(parentKey) ?? {};
 	const flag = state.flags.get(tree.key);
 	const readouts = state.readouts.get(tree.key)!;
@@ -62,7 +63,7 @@ const setAbsoluteOverrides = (tree: DomTree, parentKey: string, state: WorkerSta
 	};
 
 	state.overrides.set(tree.key, { ...state.overrides.get(tree.key), ...absoluteStyle });
-	if (parentReadouts.at(-1)!.position === "static" && !parentOverrides?.position) {
+	if (parentReadouts?.at(-1)!.position === "static" && !parentOverrides?.position) {
 		state.overrides.set(parentKey, {
 			...parentOverrides,
 			position: "relative",
@@ -70,9 +71,9 @@ const setAbsoluteOverrides = (tree: DomTree, parentKey: string, state: WorkerSta
 	}
 };
 
-const setAnimationFlag = (tree: DomTree, parentKey: string, state: WorkerState) => {
+const setAnimationFlag = (tree: DomTree, state: WorkerState) => {
 	const readouts = state.readouts.get(tree.key)!;
-	const parentFlag = state.flags.get(parentKey);
+	const parentFlag = state.flags.get(tree.parent?.key ?? tree.key);
 
 	if (parentFlag === "removal") {
 		state.flags.set(tree.key, "removal");
@@ -90,19 +91,19 @@ const setAnimationFlag = (tree: DomTree, parentKey: string, state: WorkerState) 
 	return;
 };
 
-const setEasings = (tree: DomTree, parentKey: string, state: WorkerState) => {
+const setEasings = (tree: DomTree, state: WorkerState) => {
 	const easing = state.easings.get(tree.key)!;
-	const parentEasing = state.easings.get(parentKey) ?? [];
+	const parentEasing = state.easings.get(tree.parent?.key ?? "") ?? [];
 
 	state.easings.set(tree.key, parentEasing.concat(easing));
 };
 
-export const updateKeyframes = (tree: DomTree, parentKey: string, state: WorkerState) => {
-	normalizeStyles(tree, parentKey, state);
-	setAnimationFlag(tree, parentKey, state);
-	setEasings(tree, parentKey, state);
-	setAbsoluteOverrides(tree, parentKey, state);
-	setKeyframes(tree, parentKey, state);
+export const updateKeyframes = (tree: DomTree, state: WorkerState) => {
+	normalizeStyles(tree, state);
+	setAnimationFlag(tree, state);
+	setEasings(tree, state);
+	setAbsoluteOverrides(tree, state);
+	setKeyframes(tree, state);
 
-	tree.children.forEach((childTree) => updateKeyframes(childTree, tree.key, state));
+	tree.children.forEach((childTree) => updateKeyframes(childTree, state));
 };

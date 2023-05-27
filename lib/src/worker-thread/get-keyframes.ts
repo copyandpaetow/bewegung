@@ -167,7 +167,20 @@ const setImageKeyframes = (tree: DomTree, parentKey: string, state: WorkerState)
 	return imageKeyframes;
 };
 
-export const setKeyframes = (tree: DomTree, parentKey: string, state: WorkerState) => {
+const getParentKey = (tree: DomTree, state: WorkerState): string => {
+	if (!tree.parent) {
+		return "";
+	}
+	if (state.keyframes.get(tree.parent.key)?.length) {
+		return tree.parent.key;
+	}
+
+	return getParentKey(tree.parent, state);
+};
+
+export const setKeyframes = (tree: DomTree, state: WorkerState) => {
+	const parentKey = getParentKey(tree, state);
+
 	const parentReadouts = state.readouts.get(parentKey)!;
 	const readouts = state.readouts.get(tree.key)!;
 	const flag = state.flags.get(tree.key);

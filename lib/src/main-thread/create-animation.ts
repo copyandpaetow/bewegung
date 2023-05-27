@@ -99,7 +99,7 @@ const setElementAnimation = (
 	const anim = new Animation(new KeyframeEffect(element, keyframes, totalRuntime));
 	animations.set(key, anim);
 
-	if (element.tagName === "IMG" && result.keyframes.has(`${key}-wrapper`)) {
+	if (result.keyframes.has(`${key}-wrapper`)) {
 		createAdditionalImageElements(element, result, animations, onStart, totalRuntime);
 	}
 

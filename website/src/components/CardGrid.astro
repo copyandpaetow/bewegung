@@ -1,0 +1,129 @@
+---
+export interface Props {
+	icon: string;
+	headline: string;
+	copy: string;
+}
+
+const { copy, icon, headline } = Astro.props;
+---
+
+<li>
+	{icon}
+	<h2>
+		{headline}
+	</h2>
+	<p>
+		{copy}
+	</p>
+	<nav>
+		<button id="js-highlight">highlight</button>
+		<button id="js-filter">filter every 3.</button>
+		<button id="js-shuffle">shuffle</button>
+	</nav>
+	<div class="animation-container">
+		<div></div>
+		<div></div>
+		<div></div>
+		<div></div>
+		<div></div>
+		<div></div>
+		<div></div>
+		<div></div>
+		<div></div>
+	</div>
+</li>
+
+<script>
+	import { bewegung } from "../../../lib/src/bewegung";
+
+	const highlightButton = document.getElementById("js-highlight");
+	const filterButton = document.getElementById("js-filter");
+	const shuffleButton = document.getElementById("js-shuffle");
+
+	const resetStyle = (elements: HTMLElement[]) => {
+		elements.forEach((element) => (element.style.cssText = ""));
+	};
+
+	const getElements = () => {
+		const container = document.querySelector(".animation-container") as HTMLElement;
+		const divs = Array.from(container.querySelectorAll("*")) as HTMLElement[];
+
+		return { divs, container };
+	};
+
+	shuffleButton?.addEventListener("click", () => {
+		const { divs, container } = getElements();
+
+		bewegung([
+			() => {
+				divs.forEach((element) => {
+					element.parentNode!.insertBefore(element, element.previousElementSibling);
+				});
+			},
+			{ duration: 1000, root: container },
+		]).play();
+	});
+
+	filterButton?.addEventListener("click", () => {
+		const { divs } = getElements();
+
+		bewegung([
+			() => {
+				resetStyle(divs);
+				divs.forEach((element, index) => {
+					if ((index + 1) % 3 === 0) {
+						element.remove();
+					}
+				});
+			},
+			{ duration: 1000 },
+		]).play();
+	});
+
+	highlightButton?.addEventListener("click", () => {
+		const { divs } = getElements();
+		const randomNumber = Math.floor(Math.random() * divs.length + 1);
+		const element = divs[randomNumber];
+		console.log(element);
+
+		bewegung([
+			() => {
+				resetStyle(divs);
+				element.style.flexBasis = "100%";
+				element.style.order = "-1";
+			},
+			{ duration: 1000 },
+		]).play();
+	});
+</script>
+
+<style>
+	li {
+		padding: var(--space-200);
+		background-color: var(--color-card);
+		border-radius: var(--space-100);
+		grid-column: span 8;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+	}
+
+	button {
+		color: var(--color-main);
+		border-radius: var(--space-80);
+	}
+
+	.animation-container {
+		grid-column: 2/3;
+		grid-row: 1/5;
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-100);
+	}
+
+	.animation-container div {
+		background-color: var(--color-secondary);
+		flex-basis: calc(100% / 3 - var(--space-100) * 2 / 3);
+		aspect-ratio: 2;
+	}
+</style>

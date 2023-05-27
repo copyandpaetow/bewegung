@@ -1,11 +1,16 @@
 # TODOs
 
-## upcoming tasks
+## animation options in the config file
 
-- custom properties?
-- background images
-- prefer reduced motion
-- update docs
+- iterations
+- direction?
+
+## update docs
+
+## root handling
+
+- if the root element is removed, its absolute position might lead to bugs because we dont know the next anchor parent
+  => maybe we would need to change the code in a way that the parent is the first non-animation element
 
 ## test
 
@@ -22,6 +27,7 @@
 ## Maybes
 
 - helper functions for
-  - a data attribute "data-bewegung=[...]" which we could look for and add those as well with their value as input arguments
-  - adding and deleting elements from the dom
+
+  - apply css
+
 - logic to allow unperformant entries to pass through, like color etc

@@ -22,10 +22,9 @@
 	--border-size: var(--space-30);
 	--border-color: grey;
 
-	--color-main: white;
-	--color-main-inverted: hsla(0, 0%, 3%, 1);
-	--color-secondary: hsla(0, 0%, 3%, 1);
-	--color-secondary-inverted: white;
+	--color-main: hsla(0, 0%, 10%, 1);
+	--color-secondary: hsla(0, 0%, 95%, 1);
+	--color-card: hsla(0, 0%, 15%, 1);
 
 	--glass-background-color: rgba(255, 255, 255, 0.125);
 	--glass-border-color: rgba(17, 25, 40, 0.26);

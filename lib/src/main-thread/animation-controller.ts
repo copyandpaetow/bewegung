@@ -80,6 +80,7 @@ export const animationController = (
 			timekeeper.onfinish = () => {
 				requestAnimationFrame(() => {
 					removeDataAttributes();
+					workerManager.addWorker();
 				});
 			};
 
@@ -112,7 +113,9 @@ export const animationController = (
 			watchDomForChanges();
 		},
 		async play() {
-			(await getAnimations()).forEach((animation) => animation.play());
+			(await getAnimations()).forEach((animation) => {
+				animation.play();
+			});
 
 			console.log(`calculation took ${Date.now() - time}ms`);
 		},

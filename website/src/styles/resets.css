@@ -12,6 +12,7 @@ body {
 	min-height: 100vh;
 	font-family: Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif;
 	line-height: 1.5;
+	margin: 0;
 }
 
 h1,
@@ -24,10 +25,14 @@ figure,
 figcaption,
 blockquote,
 dl,
-dd {
+dd,
+ul,
+ol {
 	margin: 0;
+	padding: 0;
 }
 
+a,
 textarea,
 select,
 button,
@@ -35,6 +40,7 @@ input,
 label,
 code {
 	font: inherit;
+	color: currentColor;
 }
 
 a {
