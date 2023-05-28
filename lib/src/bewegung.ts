@@ -15,23 +15,6 @@ export type Bewegung = {
 	playState: AnimationPlayState;
 };
 
-/*
-TODO:
-
-Improvements
-- "at" needs to be more refined
-=>  iterations need to be included in the calculations
-- options need to be rechecked. Should more be included? 
-- counter scaling with combining easings is still an issue
-
-- how to handle the unanimatable properties?
-- how to handle user properties for properties we use (transform & clipPath)
-- how to handle if elements are already part of another bewegungs-animation? The data-states would interfere with each other
-
-if there is an overlap within the sequence, it will create additional easings
-
-*/
-
 export const bewegung = (props: BewegungsInputs, config?: BewegungsConfig): Bewegung => {
 	const { callbacks, totalRuntime } = normalizeProps(props, config);
 	const timekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));

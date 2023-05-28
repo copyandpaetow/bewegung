@@ -124,10 +124,7 @@ const addSkipAttribute = (element: HTMLElement) => {
 };
 
 const labelElements = (element: HTMLElement) => {
-	if (element.dataset.bewegungsKey) {
-		return;
-	}
-	element.dataset.bewegungsKey = uuid(element.tagName);
+	element.dataset.bewegungsKey ??= uuid(element.tagName);
 	addTextAttribute(element);
 	addMediaRatioAttribute(element);
 	addSkipAttribute(element);

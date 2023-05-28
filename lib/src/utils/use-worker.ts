@@ -23,6 +23,7 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 	cleanup(): void;
 	onMessage(callback: WorkerCallback<Current, Self, Target>): Promise<unknown>;
 	onError(errorCallback: WorkerError): void;
+	terminate(): void;
 };
 
 const workerURL = new URL("../worker-thread/worker.ts", import.meta.url);
@@ -98,6 +99,10 @@ export const useWorker =
 			},
 			onError(errorCallback: WorkerError) {
 				callbacks.onError = errorCallback;
+			},
+			terminate() {
+				context.cleanup();
+				worker.terminate();
 			},
 		};
 

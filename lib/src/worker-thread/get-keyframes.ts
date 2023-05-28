@@ -21,8 +21,6 @@ import {
 } from "./calculate-image-differences";
 import { calculateEasings } from "./easings";
 
-//TODO: this file needs some cleanup
-
 export const getEmptyReadouts = (readouts: TreeStyle[]) => {
 	return readouts.map((readouts) => ({
 		...emptyComputedStle,
@@ -65,11 +63,12 @@ const getDifferences = (readouts: TreeStyle[], parentReadouts: TreeStyle[]) =>
 		})
 	);
 
-const getRootDifferences = (readouts: TreeStyle[]) =>
+const getRootDifferences = (readouts: TreeStyle[], key: string) =>
 	readouts.map((currentReadout) =>
 		calculateRootDifferences({
 			current: currentReadout,
 			reference: readouts.at(-1)!,
+			doesNeedBodyFix: key.includes("BODY"),
 		})
 	);
 
@@ -186,11 +185,9 @@ export const setKeyframes = (tree: DomTree, state: WorkerState) => {
 	const flag = state.flags.get(tree.key);
 
 	const differences = !parentKey
-		? getRootDifferences(readouts)
+		? getRootDifferences(readouts, tree.key)
 		: getDifferences(readouts, parentReadouts);
 
-	//TODO: currently if an element gets removed and its an image, it still get the image treatment, which is not needed
-	//? but if the element changes before and is then removed it would be needed
 	if (animationNotNeeded(readouts, differences, flag)) {
 		state.keyframes.set(tree.key, []);
 		return;

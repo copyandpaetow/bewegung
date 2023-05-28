@@ -22,7 +22,9 @@ const restoreElements = (elementResets: Map<HTMLElement, Map<string, string>>) =
 };
 
 export const removeDataAttributes = () => {
-	querySelectorAll(`[${Attributes.key}]`).forEach((element) => {
+	querySelectorAll(
+		`[${Attributes.key}*='_']:not([${Attributes.from}], [${Attributes.to}])`
+	).forEach((element) => {
 		Object.keys(element.dataset).forEach((attributeName) => {
 			if (attributeName.includes("bewegung")) {
 				delete element.dataset[attributeName];
@@ -80,6 +82,7 @@ export const animationController = (
 			timekeeper.onfinish = () => {
 				requestAnimationFrame(() => {
 					removeDataAttributes();
+					worker("animationData").terminate();
 					workerManager.addWorker();
 				});
 			};

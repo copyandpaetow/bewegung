@@ -128,9 +128,11 @@ export const calculateDimensionDifferences = (
 export const calculateRootDifferences = ({
 	current,
 	reference,
+	doesNeedBodyFix,
 }: {
 	current: TreeStyle;
 	reference: TreeStyle;
+	doesNeedBodyFix: boolean;
 }) => {
 	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(reference);
 	const [originCurrentLeft, originCurrentTop] = parseTransformOrigin(current);
@@ -151,10 +153,14 @@ export const calculateRootDifferences = ({
 
 		*/
 
-	const weirdBrowserBehaviorCorrectionTop =
-		currentTopDifference > referenceTopDifference && heightDifference < 1 ? -1 : 1;
 	const weirdBrowserBehaviorCorrectionLeft =
-		currentLeftDifference > referenceLeftDifference && widthDifference < 1 ? -1 : 1;
+		doesNeedBodyFix && currentLeftDifference > referenceLeftDifference && widthDifference < 1
+			? -1
+			: 1;
+	const weirdBrowserBehaviorCorrectionTop =
+		doesNeedBodyFix && currentTopDifference > referenceTopDifference && heightDifference < 1
+			? -1
+			: 1;
 
 	const leftDifference =
 		(currentLeftDifference - referenceLeftDifference) * weirdBrowserBehaviorCorrectionLeft;
