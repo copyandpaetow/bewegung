@@ -1,50 +1,188 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Card from "../components/Card.astro";
-import CardGrid from "../components/CardGrid.astro";
 ---
 
+<script>
+	import { bewegung } from "../../../lib/src/bewegung";
+
+	const list = document.getElementById("js-list") as HTMLElement;
+	const addColumns = () => {
+		list.style.gridTemplateColumns = "1fr 1fr";
+	};
+	const removeGridArea = () => {
+		list.querySelectorAll("li").forEach((element) => {
+			element.style.gridArea = "unset";
+		});
+	};
+
+	setTimeout(() => {
+		bewegung([addColumns, removeGridArea], {
+			defaultOptions: { duration: 1000, root: "aside" },
+		}).play();
+	}, 1000);
+</script>
+
 <Layout title="Bewegung">
-	<header>
-		🔥
-		<h1>bring Bewegung to your site</h1>
-		<p>
-			[bə&#39veːɡʊŋ]: the german word for movement. A small FLIP animation library to animate stuff.
-			Still in pre-alpha-prequel, bugs are included
-		</p>
-	</header>
-	<section>
-		<ul>
-			<Card
-				headline="small footprint"
-				icon="📱"
-				copy="small in size and in memory usage"
-				columnSpan={4}
-			/>
-			<Card
-				headline="0 dependencies"
-				icon="📦"
-				copy="will not break when leftpad or isOdd are gone"
-				columnSpan={4}
-			/>
-			<CardGrid headline="Works well with grids" icon="📦" copy="re-arrange items smoothly" />
-		</ul>
-	</section>
+	<main>
+		<article>
+			<nav></nav>
+			<section>
+				<h1>Unleash the Power of Speed - High Performance</h1>
+				<p>
+					High Performance Experience lightning-fast animations like never before. Our library
+					capitalizes on the efficiency of the FLIP technique to deliver buttery smooth and highly
+					performant animations. This ensures a seamless user experience even on less powerful
+					devices, making your application truly shine.
+				</p>
+			</section>
+			<section>
+				<h1>Animate Your Way - Scrollable Animations</h1>
+				<p>
+					Set your creativity free with scrollable animations. Our library provides the tools you
+					need to animate based on the user's scroll position. Now, you can easily design dynamic,
+					interactive animations that engage users and create a truly immersive browsing experience.
+				</p>
+			</section>
+			<section>
+				<h1>Break the Boundaries - Animate Unanimatable Properties</h1>
+				<p>
+					Defy the limitations of traditional CSS. With our library, even properties like display:
+					none can be animated, opening up a new world of possibilities. This means you can animate
+					just about any CSS property to achieve the effect you're envisioning.
+				</p>
+			</section>
+			<section>
+				<h1>Bring Elements to Life - Animate Addition and Removal of Elements</h1>
+				<p>
+					Breathe life into your web pages. Our library lets you animate the adding or removing of
+					elements, making transitions more fluid and visually appealing. Your users will appreciate
+					the added detail and the polished look it gives your application.
+				</p>
+			</section>
+			<section>
+				<h1>Take Control - Low-Level API</h1>
+				<p>
+					Dive deep into the nuts and bolts of your animations. Our library's low-level API allows
+					for a high degree of control, so you can fine-tune your animations to the last detail.
+					It's ideal for developers who want to get their hands dirty and truly customize their
+					animations.
+				</p>
+			</section>
+			<section>
+				<h1>Lightweight & Independent - Small Size, Zero Dependencies</h1>
+				<p>
+					Keep things light and simple. Our library stands on its own, without relying on other
+					libraries, and it's compact in size. This means it won't bloat your application or
+					complicate your project with unnecessary dependencies, making your development process
+					smoother and more efficient.
+				</p>
+			</section>
+		</article>
+		<aside>
+			<ul id="js-list">
+				<Card
+					headline="red"
+					copy="from 1992"
+					imgSrc="red.jpeg"
+					imgAlt="coffee and flowers on a table"
+					class="position"
+				/>
+				<Card
+					headline="blue"
+					copy="out of the"
+					imgSrc="blue.jpeg"
+					imgAlt="distant hills"
+					class="position"
+				/>
+				<Card
+					headline="green"
+					copy="calming and nice"
+					imgSrc="green.jpeg"
+					imgAlt="wigs and leafes in front of a wall"
+					class="position"
+				/>
+				<Card
+					headline="yellow"
+					copy="inperfectly perfect"
+					imgSrc="yellow.jpeg"
+					imgAlt="flowers in front of a wall"
+					class="position"
+				/>
+			</ul>
+		</aside>
+	</main>
 </Layout>
 
-<style>
-	header {
-		grid-column: 3/11;
-	}
-	section {
-		grid-column: 3/11;
+<style lang="scss">
+	main {
+		min-height: 100vh;
+		display: grid;
+		grid-auto-rows: max-content;
+		grid-template-columns: 1fr;
+
+		@media (min-width: 40rem) {
+			grid-template-columns: 1fr 1fr;
+		}
 	}
 
-	ul {
-		display: grid;
-		grid-template-columns: repeat(8, calc((100% / 8) - var(--space-100) * 7 / 8));
-		gap: var(--space-100);
-		grid-auto-rows: max-content;
+	article {
+		grid-row: 2/3;
+		background-color: var(--grey-95);
 		min-height: 100vh;
+
+		@media (min-width: 40rem) {
+			grid-row: 1/2;
+			grid-column: 2/3;
+		}
+	}
+
+	section {
+		background: linear-gradient(to bottom, var(--grey-95) 0%, var(--grey-93) 100%);
+		min-height: 100vh;
+		display: grid;
+		grid-auto-rows: max-content;
+		place-content: center;
+		padding: 0 clamp(var(--space-400), 10vw, var(--space-700));
+	}
+
+	section:first-of-type {
+		min-height: 50vh;
+
+		@media (min-width: 40rem) {
+			min-height: 100vh;
+		}
+	}
+
+	section > * {
+		margin-block-start: 1em;
+	}
+
+	aside {
+		grid-column: 1/2;
+		grid-row: 1/2;
+		height: 50vh;
+		position: sticky;
+		top: 0;
+		background-color: var(--grey-90);
+		display: grid;
+		place-content: center;
+
+		@media (min-width: 40rem) {
+			height: 100vh;
+		}
+	}
+
+	aside > ul {
+		border: 2px solid var(--grey-85);
+		border-radius: var(--space-100);
+		padding: var(--space-100);
+		display: grid;
+		gap: var(--space-100);
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.position {
+		// grid-area: 1 / 1 / 2 / 2;
 	}
 </style>

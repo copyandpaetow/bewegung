@@ -27,7 +27,8 @@ blockquote,
 dl,
 dd,
 ul,
-ol {
+ol,
+dialog {
 	margin: 0;
 	padding: 0;
 }

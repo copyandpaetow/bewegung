@@ -5,6 +5,7 @@ import {
 	BewegungsOption,
 	ElementOrSelector,
 	NormalizedProps,
+	PropsWithRelativeTiming,
 	TimelineEntry,
 } from "../types";
 import { defaultOptions } from "../utils/constants";
@@ -30,15 +31,26 @@ const getElement = (element: ElementOrSelector) => {
 	return document.querySelector(element) as HTMLElement;
 };
 
-const normalizeStructure = (props: BewegungsInputs): BewegungsEntry[] => {
+const hasOptionsObject = (props: BewegungsEntry | BewegungsEntry[]) => {
+	return typeof props.at(-1) === "object" && !Array.isArray(props.at(-1));
+};
+
+const normalizeStructure = (props: BewegungsInputs) => {
 	if (typeof props === "function") {
-		return [[props]];
+		return [[props, undefined] as BewegungsEntry];
 	}
-	if (Array.isArray(props) && typeof props[0] === "function") {
+
+	if (hasOptionsObject(props as BewegungsEntry | BewegungsEntry[])) {
 		return [props as BewegungsEntry];
 	}
 
-	return props as BewegungsEntry[];
+	return props.map((entry) => {
+		if (Array.isArray(entry)) {
+			return entry;
+		}
+
+		return [entry, undefined] as BewegungsEntry;
+	});
 };
 
 const normalizeOptions = (props: BewegungsInputs, config?: BewegungsConfig): NormalizedProps[] => {
@@ -58,20 +70,6 @@ const getTotalRuntime = (props: NormalizedProps[]) =>
 		return accumulator + current.at + current.duration;
 	}, 0);
 
-type PropsWithRelativeTiming = {
-	start: number;
-	end: number;
-	iterations: number;
-	root: ElementOrSelector;
-	easing:
-		| "ease"
-		| "ease-in"
-		| "ease-out"
-		| "ease-in-out"
-		| "linear"
-		| `cubic-bezier(${number},${number},${number},${number})`;
-	callback: VoidFunction;
-};
 const getRelativeTimings = (
 	props: NormalizedProps[],
 	totalRuntime: number

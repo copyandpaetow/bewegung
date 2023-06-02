@@ -19,7 +19,7 @@ export type BewegungsOption = {
 
 export type BewegungsEntry = [BewegungsCallback, BewegungsOption?];
 
-type PossibleBewegungsInputs = BewegungsCallback | BewegungsEntry;
+export type PossibleBewegungsInputs = BewegungsCallback | BewegungsEntry;
 export type BewegungsInputs = PossibleBewegungsInputs | PossibleBewegungsInputs[];
 export type BewegungsConfig = {
 	defaultOptions?: Partial<BewegungsOption>;
@@ -27,6 +27,21 @@ export type BewegungsConfig = {
 };
 
 export type NormalizedProps = Required<BewegungsOption> & { callback: VoidFunction };
+
+export type PropsWithRelativeTiming = {
+	start: number;
+	end: number;
+	iterations: number;
+	root: ElementOrSelector;
+	easing:
+		| "ease"
+		| "ease-in"
+		| "ease-out"
+		| "ease-in-out"
+		| "linear"
+		| `cubic-bezier(${number},${number},${number},${number})`;
+	callback: VoidFunction;
+};
 
 export type TimelineEntry = {
 	start: number;
