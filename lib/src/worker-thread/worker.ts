@@ -57,7 +57,6 @@ workerAtom("sendDOMRects").onMessage((domChanges) => {
 		workerAtom("sendAnimationData").reply("animationData", {
 			keyframes: state.keyframes,
 			overrides: state.overrides,
-			flags: state.flags,
 		});
 
 		clearState();

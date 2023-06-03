@@ -19,11 +19,11 @@ export const saveOriginalStyle = (element: HTMLElement) => {
 
 const createPlaceholder = (element: HTMLElement, style: Partial<CSSStyleDeclaration>) => {
 	const placeholderElement = document.createElement("img");
-	placeholderElement.src = emptyImageSrc;
 
 	element.getAttributeNames().forEach((attribute) => {
 		placeholderElement.setAttribute(attribute, element.getAttribute(attribute)!);
 	});
+	placeholderElement.src = emptyImageSrc;
 
 	applyCSSStyles(placeholderElement, style);
 
@@ -157,15 +157,9 @@ export const createAnimations = async (
 		};
 		const observer = new MutationObserver(observerCallback);
 		requestAnimationFrame(() => {
-			if (result.flags.size) {
-				observer.observe(document.body, { childList: true, subtree: true, attributes: true });
-				callbacks.get(1)!.forEach((cb) => cb());
-				return;
-			}
-
+			observer.observe(document.body, { childList: true, subtree: true, attributes: true });
 			callbacks.get(1)!.forEach((cb) => cb());
-			onStart.forEach((cb) => cb());
-			resolve(animations);
+			return;
 		});
 	});
 };

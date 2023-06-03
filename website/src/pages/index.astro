@@ -1,9 +1,10 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Card from "../components/Card.astro";
+import Nav from "../components/Nav.astro";
 ---
 
-<script>
+<!-- <script>
 	import { bewegung } from "../../../lib/src/bewegung";
 
 	const list = document.getElementById("js-list") as HTMLElement;
@@ -21,14 +22,15 @@ import Card from "../components/Card.astro";
 			defaultOptions: { duration: 1000, root: "aside" },
 		}).play();
 	}, 1000);
-</script>
+</script> -->
 
 <Layout title="Bewegung">
 	<main>
 		<article>
-			<nav></nav>
+			<Nav pages={[]} active="home" />
 			<section>
-				<h1>Unleash the Power of Speed - High Performance</h1>
+				<h1>bewegung.</h1>
+				<h2>Unleash the Power of Speed - High Performance</h2>
 				<p>
 					High Performance Experience lightning-fast animations like never before. Our library
 					capitalizes on the efficiency of the FLIP technique to deliver buttery smooth and highly
@@ -37,7 +39,7 @@ import Card from "../components/Card.astro";
 				</p>
 			</section>
 			<section>
-				<h1>Animate Your Way - Scrollable Animations</h1>
+				<h2>Animate Your Way - Scrollable Animations</h2>
 				<p>
 					Set your creativity free with scrollable animations. Our library provides the tools you
 					need to animate based on the user's scroll position. Now, you can easily design dynamic,
@@ -45,7 +47,7 @@ import Card from "../components/Card.astro";
 				</p>
 			</section>
 			<section>
-				<h1>Break the Boundaries - Animate Unanimatable Properties</h1>
+				<h2>Break the Boundaries - Animate Unanimatable Properties</h2>
 				<p>
 					Defy the limitations of traditional CSS. With our library, even properties like display:
 					none can be animated, opening up a new world of possibilities. This means you can animate
@@ -53,7 +55,7 @@ import Card from "../components/Card.astro";
 				</p>
 			</section>
 			<section>
-				<h1>Bring Elements to Life - Animate Addition and Removal of Elements</h1>
+				<h2>Bring Elements to Life - Animate Addition and Removal of Elements</h2>
 				<p>
 					Breathe life into your web pages. Our library lets you animate the adding or removing of
 					elements, making transitions more fluid and visually appealing. Your users will appreciate
@@ -61,7 +63,7 @@ import Card from "../components/Card.astro";
 				</p>
 			</section>
 			<section>
-				<h1>Take Control - Low-Level API</h1>
+				<h2>Take Control - Low-Level API</h2>
 				<p>
 					Dive deep into the nuts and bolts of your animations. Our library's low-level API allows
 					for a high degree of control, so you can fine-tune your animations to the last detail.
@@ -70,7 +72,7 @@ import Card from "../components/Card.astro";
 				</p>
 			</section>
 			<section>
-				<h1>Lightweight & Independent - Small Size, Zero Dependencies</h1>
+				<h2>Lightweight & Independent - Small Size, Zero Dependencies</h2>
 				<p>
 					Keep things light and simple. Our library stands on its own, without relying on other
 					libraries, and it's compact in size. This means it won't bloat your application or
@@ -147,15 +149,15 @@ import Card from "../components/Card.astro";
 	}
 
 	section:first-of-type {
-		min-height: 50vh;
+		min-height: calc(50vh - var(--space-400));
 
 		@media (min-width: 40rem) {
-			min-height: 100vh;
+			min-height: calc(100vh - var(--space-400));
 		}
 	}
 
-	section > * {
-		margin-block-start: 1em;
+	section > *:not(:first-child) {
+		margin-block-start: 1.25em;
 	}
 
 	aside {
@@ -183,6 +185,6 @@ import Card from "../components/Card.astro";
 	}
 
 	.position {
-		// grid-area: 1 / 1 / 2 / 2;
+		//grid-area: 1 / 1 / 2 / 2;
 	}
 </style>

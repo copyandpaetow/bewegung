@@ -91,7 +91,6 @@ export type DomChangeTransferable = {
 export type ResultTransferable = {
 	keyframes: Map<string, Keyframe[]>;
 	overrides: Map<string, Partial<CSSStyleDeclaration>>;
-	flags: Map<string, AnimationFlag>;
 };
 
 export type WorkerMessages = {
