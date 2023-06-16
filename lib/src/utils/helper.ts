@@ -39,3 +39,17 @@ export const toArray = <MaybeArrayType>(
 export const transformProgress = (totalRuntime: number, progress: number, done?: boolean) => {
 	return Math.min(Math.max(progress, 0.001), done === undefined ? 1 : 0.999) * totalRuntime;
 };
+
+export const resolvable = <Value>() => {
+	let resolve: (value: Value | PromiseLike<Value>) => void = () => {};
+	let reject: (reason?: any) => void = () => {};
+
+	const promise = new Promise<Value>((res, rej) => {
+		resolve = res;
+		reject = rej;
+	});
+
+	return { resolve, reject, promise };
+};
+
+export const execute = (callback: VoidFunction) => callback();

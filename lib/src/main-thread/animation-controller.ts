@@ -1,160 +1,71 @@
-import { AnimationController, MainMessages, ResultTransferable, WorkerMessages } from "../types";
-import { Attributes } from "../utils/constants";
-import { nextRaf, querySelectorAll } from "../utils/helper";
-import { getWorker, useWorker } from "../utils/use-worker";
-import { getElementResets, createAnimations } from "./create-animation";
-import { observeDom } from "./observe-dom";
-import { onDomChange } from "./watch-dom-changes";
+import { AnimationController, NormalizedProps } from "../types";
+import { resolvable } from "../utils/helper";
+import { fetchAnimationData } from "./animation-calculator";
+import { getReactivity } from "./watch-dom-changes";
 
-const workerManager = getWorker();
-
-const restoreElements = (elementResets: Map<HTMLElement, Map<string, string>>) => {
-	querySelectorAll(`[${Attributes.removable}], [${Attributes.key}*="added"]`).forEach((element) => {
-		elementResets.delete(element);
-		element.remove();
-	});
-
-	elementResets.forEach((attributes, element) => {
-		attributes.forEach((value, key) => {
-			element.setAttribute(key, value);
-		});
-	});
+const filterProps = (normalizedProps: NormalizedProps[]): NormalizedProps[] => {
+	return normalizedProps.filter((entry) => entry.root.isConnected);
 };
 
-export const removeDataAttributes = () => {
-	querySelectorAll(`[${Attributes.key}*='_']`).forEach((element) => {
-		Object.keys(element.dataset).forEach((attributeName) => {
-			if (attributeName.includes("bewegung")) {
-				delete element.dataset[attributeName];
-			}
-		});
-	});
-};
-
-const setAnimationProgress = (animations: Map<string, Animation>, progress: null | number) => {
-	if (!progress) {
-		return;
-	}
-
-	animations.forEach((animation) => (animation.currentTime = progress));
-};
-
-export const animationController = (
-	callbacks: Map<number, VoidFunction[]>,
-	totalRuntime: number,
-	timekeeper: Animation
-): AnimationController => {
-	const worker = useWorker<MainMessages, WorkerMessages>(workerManager.current());
-
-	let data: null | ResultTransferable = null;
-	let animations: null | Map<string, Animation> = null;
-	let resets: null | Promise<Map<HTMLElement, Map<string, string>>> = null;
+export const getAnimationController = (props: NormalizedProps[]): AnimationController => {
+	let allAnimations: Promise<Map<string, Animation>> | null = null;
+	let playState: AnimationPlayState = "idle";
+	const finishedResolvable = resolvable<Animation>();
 	let time = Date.now();
-	let disconnectDomWatcher: null | VoidFunction = null;
 	let allowNextTick = true;
+	const reactivity = getReactivity();
 
-	const getData = async () => {
-		if (data) {
-			return;
-		}
-		await nextRaf();
-		await observeDom(callbacks, worker);
-		await worker("animationData").onMessage((result) => {
-			data = result;
-		});
-
-		resets = getElementResets();
-	};
-
-	const getAnimations = async () => {
-		disconnectDomWatcher?.();
-
-		if (animations) {
-			return animations;
-		}
-
-		try {
-			await getData();
-			animations = await createAnimations(data!, callbacks, totalRuntime);
-			animations.set("timekeeper", timekeeper);
-			timekeeper.onfinish = () => {
-				requestAnimationFrame(() => {
-					removeDataAttributes();
-					worker("animationData").terminate();
-					workerManager.addWorker();
-				});
-			};
-
-			setAnimationProgress(animations, timekeeper.currentTime);
-		} catch (error) {
-			api.cancel();
-		}
-		return animations as Map<string, Animation>;
-	};
-
-	const watchDomForChanges = () => {
-		disconnectDomWatcher = onDomChange(async () => {
-			disconnectDomWatcher?.();
-			disconnectDomWatcher = null;
-			data = null;
-			if (animations) {
-				animations.delete("timekeeper");
-				await api.cancel();
-				animations = null;
-
-				await nextRaf();
-				api.pause();
-			}
-		});
-	};
-
-	const api = {
-		async prefetch() {
-			await getData();
-			watchDomForChanges();
-		},
+	const methods = {
 		async play() {
-			(await getAnimations()).forEach((animation) => {
-				animation.play();
-			});
-
+			(await allAnimations)?.forEach((anim) => anim.play());
 			console.log(`calculation took ${Date.now() - time}ms`);
 		},
-		async scroll(progress: number, done: boolean) {
+		async pause() {
+			(await allAnimations)?.forEach((animation) => animation.pause());
+			const progress = ((await allAnimations)?.get("timekeeper")?.currentTime ?? 0) as number;
+			reactivity.observe(() => {
+				allAnimations = fetchAnimationData(filterProps(props));
+				methods.seek({ progress, done: false });
+			});
+		},
+		async seek(payload: { progress: number; done: boolean }) {
 			if (!allowNextTick) {
 				return;
 			}
 			allowNextTick = false;
-
-			(await getAnimations()).forEach((animation) => (animation.currentTime = progress));
-
+			(await allAnimations)?.forEach((animation) => (animation.currentTime = payload.progress));
 			allowNextTick = true;
-			if (done) {
-				api.finish();
+			if (payload.done) {
+				methods.finish();
 				allowNextTick = false;
 			}
 		},
-		async pause() {
-			(await getAnimations()).forEach((animation) => animation.pause());
-			watchDomForChanges();
-		},
 		async cancel() {
-			if (animations) {
-				(await getAnimations()).forEach((animation) => animation.cancel());
-			}
-			restoreElements(await resets!);
+			(await allAnimations)?.forEach((animation) => animation.cancel());
 		},
-
 		finish() {
-			if (animations) {
-				getAnimations().then((allAnimations) => {
+			if (allAnimations) {
+				allAnimations.then((allAnimations) => {
 					allAnimations.forEach((animation) => animation.finish());
 				});
 				return;
 			}
-			callbacks.get(1)!.forEach((cb) => cb());
 		},
 	};
 
-	return api;
+	return {
+		queue(method, payload) {
+			if (!allAnimations) {
+				allAnimations = fetchAnimationData(props);
+			}
+			//todo: queuing system needed
+			methods[method](payload);
+		},
+		finished() {
+			return finishedResolvable.promise;
+		},
+		playState() {
+			return playState;
+		},
+	};
 };

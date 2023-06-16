@@ -151,6 +151,8 @@ export const calculateRootDifferences = ({
 		(by jumping down in the page) and lead to weird behaviour
 		The first condition can be true if the element shrinks, so therefore we also need to check if the element needs to be scaled down
 
+		=> is is dependent on the viewport height and occures only if the animation happens above the current viewport + 100% viewport height. 
+
 		*/
 
 	const weirdBrowserBehaviorCorrectionLeft =

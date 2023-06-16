@@ -1,4 +1,4 @@
-import { EasingTable, TempTimelineEntry, TimelineEntry } from "../types";
+import { TempTimelineEntry, TimelineEntry } from "../types";
 
 const easingValues = {
 	linear: [0, 0, 1, 1],
@@ -103,13 +103,17 @@ const computeTimeline = (entries: TimelineEntry[]) => {
 	return timeline;
 };
 
-export const calculateEasings = (easings: TimelineEntry[]) => {
-	const easingTable: EasingTable = { 0: "ease" };
+export const calculateEasings = (easings: TimelineEntry[] | undefined) => {
+	const easingMap = new Map<number, string>();
+
+	if (!easings) {
+		return easingMap;
+	}
+
 	computeTimeline(easings).forEach((entry) => {
 		const { end, easing } = entry;
-
-		easingTable[end] = easing;
+		easingMap.set(end, easing);
 	});
 
-	return easingTable;
+	return easingMap;
 };

@@ -1,57 +1,42 @@
-import { animationController } from "./main-thread/animation-controller";
-import { normalizeProps } from "./main-thread/normalize-props";
+import { getAnimationController } from "./main-thread/animation-controller";
+import { normalize } from "./main-thread/normalize-props";
 import { BewegungsConfig, BewegungsInputs } from "./types";
-import { emptyApi } from "./utils/constants";
-import { transformProgress } from "./utils/helper";
 
 export type Bewegung = {
 	play(): void;
 	pause(): void;
-	scroll(scrollAmount: number, done?: boolean): void;
+	seek(scrollAmount: number, done?: boolean): void;
 	cancel(): void;
 	finish(): void;
-	prefetch(): Promise<void>;
 	finished: Promise<Animation>;
 	playState: AnimationPlayState;
 };
 
 export const bewegung = (props: BewegungsInputs, config?: BewegungsConfig): Bewegung => {
-	const { callbacks, totalRuntime } = normalizeProps(props, config);
-	const timekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
-	const controller = animationController(callbacks, totalRuntime, timekeeper);
-
-	const reduceMotion =
-		config?.reduceMotion ?? window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
-
-	if (reduceMotion) {
-		timekeeper.finish();
-		return emptyApi();
-	}
+	const normalizedProps = normalize(props, config);
+	const controller = getAnimationController(normalizedProps);
 
 	return {
 		play() {
-			controller.play();
+			controller.queue("play");
 		},
 		pause() {
-			controller.pause();
+			controller.queue("pause");
 		},
-		scroll(scrollAmount: number, done = false) {
-			controller.scroll(transformProgress(totalRuntime, scrollAmount, done), done);
+		seek(amount, done) {
+			controller.queue("seek", { amount, done });
 		},
 		cancel() {
-			controller.cancel();
+			controller.queue("cancel");
 		},
 		finish() {
-			controller.finish();
-		},
-		async prefetch() {
-			await controller.prefetch();
+			controller.queue("cancel");
 		},
 		get finished() {
-			return timekeeper.finished;
+			return controller.finished();
 		},
 		get playState() {
-			return timekeeper.playState;
+			return controller.playState();
 		},
 	};
 };

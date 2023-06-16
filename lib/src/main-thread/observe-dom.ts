@@ -141,16 +141,11 @@ export const observeDom = (callbacks: Map<number, VoidFunction[]>, worker: Atomi
 
 			addKeyToCustomElements(addEntries);
 
-			querySelectorAll(`[${Attributes.rootEasing}]`).forEach((rootElement) => {
+			querySelectorAll(`[${Attributes.root}]`).forEach((rootElement) => {
 				const key = rootElement.dataset.bewegungsKey!;
 				domTrees.set(key, readElementStyles(rootElement, null, offset));
 			});
-
-			reply("sendDOMRects", {
-				domTrees,
-				currentTime: Date.now(),
-				offset,
-			});
+			reply("sendDOMRects", domTrees);
 
 			removeAddedNodes(addEntries);
 			readdRemovedNodes(removeEntries);

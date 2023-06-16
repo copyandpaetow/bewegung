@@ -5,7 +5,6 @@ export type ElementOrSelector = HTMLElement | Element | string;
 export type BewegungsCallback = VoidFunction;
 export type BewegungsOption = {
 	duration: number;
-	iterations?: number;
 	root?: ElementOrSelector;
 	easing?:
 		| "ease"
@@ -26,13 +25,15 @@ export type BewegungsConfig = {
 	reduceMotion?: boolean;
 };
 
-export type NormalizedProps = Required<BewegungsOption> & { callback: VoidFunction };
+export type NormalizedProps = Required<BewegungsOption> & {
+	callback: VoidFunction;
+	root: HTMLElement;
+};
 
 export type PropsWithRelativeTiming = {
 	start: number;
 	end: number;
-	iterations: number;
-	root: ElementOrSelector;
+	root: HTMLElement;
 	easing:
 		| "ease"
 		| "ease-in"
@@ -77,15 +78,14 @@ export type TreeStyle = {
 export type DomTree = {
 	style: TreeStyle;
 	key: string;
-	easings: string;
 	children: DomTree[];
 	parent: DomTree | null;
+	parentRoot: string;
 };
 
-export type DomChangeTransferable = {
-	domTrees: Map<string, DomTree>;
-	offset: number;
-	currentTime: number;
+export type MetaData = {
+	allOffsets: number[];
+	easings: Map<string, TimelineEntry[]>;
 };
 
 export type ResultTransferable = {
@@ -94,13 +94,15 @@ export type ResultTransferable = {
 };
 
 export type WorkerMessages = {
-	sendDOMRects: DomChangeTransferable;
+	sendDOMRects: Map<string, DomTree>;
 	sendAnimationData: ResultTransferable;
+	sendMetaData: MetaData;
 };
 
 export type MainMessages = {
-	domChanges: DomChangeTransferable;
+	domChanges: Map<string, DomTree>;
 	animationData: ResultTransferable;
+	metaData: MetaData;
 };
 
 export type AtomicWorker = <Current extends keyof MainMessages>(
@@ -122,14 +124,13 @@ export interface DimensionalDifferences {
 	offset: number;
 }
 
-export type EasingTable = Record<number, string>;
-
 export type WorkerState = {
-	readouts: Map<string, TreeStyle[]>;
+	readouts: Map<string, Map<number, TreeStyle>>;
 	easings: Map<string, TimelineEntry[]>;
 	keyframes: Map<string, Keyframe[]>;
 	overrides: Map<string, Partial<CSSStyleDeclaration>>;
-	flags: Map<string, AnimationFlag>;
+	lastReadout: Map<string, string>;
+	pastOffsets: number[];
 };
 
 export type AnimationFlag = "addition" | "removal";
@@ -137,14 +138,24 @@ export type AnimationFlag = "addition" | "removal";
 export type ImageDetails = {
 	maxWidth: number;
 	maxHeight: number;
-	easing: EasingTable;
+	easing: Map<number, string>;
 };
 
+type AnimationMethods = "play" | "pause" | "seek" | "cancel" | "finish";
+//todo: needs to be more refined
 export type AnimationController = {
-	prefetch(): Promise<void>;
-	play(): Promise<void>;
-	scroll(progress: number, done: boolean): Promise<void>;
-	pause(): Promise<void>;
-	cancel(): Promise<void>;
-	finish(): void;
+	queue(method: AnimationMethods, payload?: any): void;
+	finished(): Promise<Animation>;
+	playState(): AnimationPlayState;
+};
+
+export type Reactivity = {
+	observe(callback: VoidFunction): void;
+	disconnect(): void;
+};
+
+export type AnimationCalculator = {
+	run(
+		updateFn?: (normalizedProps: NormalizedProps[]) => NormalizedProps[]
+	): Promise<Map<string, Animation>>;
 };

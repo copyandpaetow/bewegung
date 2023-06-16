@@ -5,30 +5,17 @@ import {
 	BewegungsOption,
 	ElementOrSelector,
 	NormalizedProps,
-	PropsWithRelativeTiming,
-	TimelineEntry,
 } from "../types";
 import { defaultOptions } from "../utils/constants";
-import { getChilden, uuid } from "../utils/helper";
-
-const computeCallbacks = (props: PropsWithRelativeTiming[]) => {
-	const callbacks = new Map<number, VoidFunction[]>();
-	const timings = new Set([0, ...props.map((entry) => entry.end)]);
-
-	timings.forEach((currentTime) => {
-		const relevantEntries = props.filter((entry) => entry.end <= currentTime);
-
-		callbacks.set(currentTime, [...new Set(relevantEntries.map((entry) => entry.callback))]);
-	});
-
-	return callbacks;
-};
 
 const getElement = (element: ElementOrSelector) => {
-	if (typeof element !== "string") {
+	if (typeof element === "string") {
+		return document.querySelector(element) as HTMLElement | null;
+	}
+	if (element.isConnected) {
 		return element as HTMLElement;
 	}
-	return document.querySelector(element) as HTMLElement;
+	return null;
 };
 
 const hasOptionsObject = (props: BewegungsEntry | BewegungsEntry[]) => {
@@ -53,8 +40,8 @@ const normalizeStructure = (props: BewegungsInputs) => {
 	});
 };
 
-const normalizeOptions = (props: BewegungsInputs, config?: BewegungsConfig): NormalizedProps[] => {
-	return normalizeStructure(props).map(([callback, options]) => {
+const normalizeOptions = (props: BewegungsEntry[], config?: BewegungsConfig): NormalizedProps[] => {
+	return props.map(([callback, options]) => {
 		const combinedOptions: Required<BewegungsOption> = {
 			...defaultOptions,
 			...(config?.defaultOptions ?? {}),
@@ -65,101 +52,22 @@ const normalizeOptions = (props: BewegungsInputs, config?: BewegungsConfig): Nor
 	});
 };
 
-const getTotalRuntime = (props: NormalizedProps[]) =>
-	props.reduce((accumulator, current) => {
-		return accumulator + current.at + current.duration;
-	}, 0);
+const normalizeRoot = (normalizedProps: NormalizedProps[]) => {
+	//if there is an error with the root element, we skip it
+	return normalizedProps.reduce((accumulator, current) => {
+		const rootElement = getElement(current.root);
 
-const getRelativeTimings = (
-	props: NormalizedProps[],
-	totalRuntime: number
-): PropsWithRelativeTiming[] => {
-	let currentTime = 0;
-
-	return props.map((entry) => {
-		const { duration, at, ...remainingOptions } = entry;
-
-		const start = (currentTime = currentTime + at) / totalRuntime;
-		const end = (currentTime = currentTime + duration) / totalRuntime;
-
-		return {
-			...remainingOptions,
-			start,
-			end,
-		};
-	});
-};
-
-const addTextAttribute = (element: HTMLElement) => {
-	let text = 0;
-	element.childNodes.forEach((node) => {
-		if (node.nodeType !== 3) {
-			return;
+		if (rootElement) {
+			accumulator.push({ ...current, root: rootElement });
 		}
-		text += node.textContent!.trim().length;
-	});
-	if (text === 0) {
-		return;
-	}
-
-	element.dataset.bewegungsText = `${text}`;
+		return accumulator;
+	}, [] as NormalizedProps[]);
 };
 
-const addMediaRatioAttribute = (element: HTMLElement) => {
-	//@ts-expect-error
-	if (!element.naturalWidth || !element.naturalHeight) {
-		return;
-	}
-	element.dataset.bewegungsRatio = `${
-		(element as HTMLImageElement).naturalWidth / (element as HTMLImageElement).naturalHeight
-	}`;
-};
+export const normalize = (props: BewegungsInputs, config?: BewegungsConfig) => {
+	const normalizedStructure = normalizeStructure(props);
+	const normalizedOptions = normalizeOptions(normalizedStructure, config);
+	const normalizedRoot = normalizeRoot(normalizedOptions);
 
-const addSkipAttribute = (element: HTMLElement) => {
-	if (element.getAnimations().some((animation) => animation.playState === "running")) {
-		element.dataset.bewegungsSkip = "";
-	}
-};
-
-const labelElements = (element: HTMLElement) => {
-	element.dataset.bewegungsKey ??= uuid(element.tagName);
-	addTextAttribute(element);
-	addMediaRatioAttribute(element);
-	addSkipAttribute(element);
-
-	getChilden(element).forEach(labelElements);
-};
-
-const labelRootElements = (propsWithRelativeTiming: PropsWithRelativeTiming[]) => {
-	const rootMap = new Map<HTMLElement, TimelineEntry[]>();
-
-	propsWithRelativeTiming.forEach((entry) => {
-		const { start, end, easing, root } = entry;
-		const rootElement = getElement(root);
-
-		rootMap.set(rootElement, (rootMap.get(rootElement) ?? []).concat([{ start, end, easing }]));
-	});
-
-	rootMap.forEach((timelineEntry, domElement) => {
-		const key = uuid(`root`);
-		domElement.dataset.bewegungsKey = key;
-		domElement.dataset.bewegungsEasing = JSON.stringify(timelineEntry);
-
-		getChilden(domElement).forEach(labelElements);
-	});
-};
-
-export const normalizeProps = (props: BewegungsInputs, config?: BewegungsConfig) => {
-	const normalizedProps = normalizeOptions(props, config);
-	const totalRuntime = getTotalRuntime(normalizedProps);
-
-	const withStartAndEndTimes = getRelativeTimings(normalizedProps, totalRuntime);
-	const callbacks = computeCallbacks(withStartAndEndTimes);
-
-	requestAnimationFrame(() => labelRootElements(withStartAndEndTimes));
-
-	return {
-		callbacks,
-		totalRuntime,
-	};
+	return normalizedRoot;
 };

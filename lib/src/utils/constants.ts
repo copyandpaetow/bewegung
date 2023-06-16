@@ -1,10 +1,8 @@
-import { Bewegung } from "../bewegung";
 import { BewegungsOption } from "../types";
 
 export const defaultOptions: Required<BewegungsOption> = {
 	duration: 400,
 	easing: "ease",
-	iterations: 1,
 	root: "body",
 	at: 0,
 };
@@ -17,6 +15,7 @@ export const enum Attributes {
 	reset = "data-bewegungs-reset",
 	removable = "data-bewegungs-removable",
 	rootEasing = "data-bewegungs-easing",
+	root = "data-bewegungs-root",
 }
 
 export const defaultImageStyles: Partial<CSSStyleDeclaration> = {
@@ -57,30 +56,3 @@ export const emptyComputedStle = {
 	objectFit: "fill",
 	objectPosition: "50% 50%",
 };
-
-export const emptyApi = (): Bewegung => ({
-	play() {
-		console.warn("the user prefers reduced motion");
-	},
-	prefetch() {
-		return Promise.resolve();
-	},
-	pause() {
-		console.warn("the user prefers reduced motion");
-	},
-	scroll(scrollAmount: number, done = false) {
-		console.warn("the user prefers reduced motion", { scrollAmount, done });
-	},
-	cancel() {
-		console.warn("the user prefers reduced motion");
-	},
-	finish() {
-		console.warn("the user prefers reduced motion");
-	},
-	get finished() {
-		return Promise.resolve(new Animation());
-	},
-	get playState() {
-		return "finished" as AnimationPlayState;
-	},
-});

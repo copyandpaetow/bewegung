@@ -4,7 +4,7 @@ import Card from "../components/Card.astro";
 import Nav from "../components/Nav.astro";
 ---
 
-<!-- <script>
+<script>
 	import { bewegung } from "../../../lib/src/bewegung";
 
 	const list = document.getElementById("js-list") as HTMLElement;
@@ -21,8 +21,8 @@ import Nav from "../components/Nav.astro";
 		bewegung([addColumns, removeGridArea], {
 			defaultOptions: { duration: 1000, root: "aside" },
 		}).play();
-	}, 1000);
-</script> -->
+	}, 2000);
+</script>
 
 <Layout title="Bewegung">
 	<main>
@@ -181,10 +181,10 @@ import Nav from "../components/Nav.astro";
 		padding: var(--space-100);
 		display: grid;
 		gap: var(--space-100);
-		grid-template-columns: 1fr 1fr;
+		//grid-template-columns: 1fr 1fr;
 	}
 
 	.position {
-		//grid-area: 1 / 1 / 2 / 2;
+		grid-area: 1 / 1 / 2 / 2;
 	}
 </style>

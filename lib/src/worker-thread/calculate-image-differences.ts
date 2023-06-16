@@ -1,4 +1,4 @@
-import { EasingTable, ImageDetails, TreeStyle } from "../types";
+import { ImageDetails, TreeStyle } from "../types";
 import { save } from "../utils/helper";
 import { isElementUnchanged } from "../utils/predicates";
 import { calculateBorderRadius } from "./border-radius";
@@ -7,9 +7,11 @@ import { getScales, getTranslates } from "./calculate-differences";
 export const highestNumber = (numbers: number[]) =>
 	numbers.reduce((largest, current) => Math.max(largest, current));
 
-export const calculateImageKeyframes = (readouts: TreeStyle[], easing: EasingTable): Keyframe[] => {
-	const maxHeight = highestNumber(readouts.map((style) => style.currentHeight));
-	const maxWidth = highestNumber(readouts.map((style) => style.currentWidth));
+export const calculateImageKeyframes = (
+	readouts: TreeStyle[],
+	imageData: ImageDetails
+): Keyframe[] => {
+	const { maxHeight, maxWidth, easing } = imageData;
 
 	const differences = readouts.map((readout) => {
 		const ratio = parseFloat(readout.ratio);
@@ -66,7 +68,7 @@ export const calculateImageKeyframes = (readouts: TreeStyle[], easing: EasingTab
 
 export const getWrapperKeyframes = (
 	readouts: TreeStyle[],
-	parentReadouts: TreeStyle[],
+	parentReadouts: Map<number, TreeStyle>,
 	imageData: ImageDetails
 ): Keyframe[] => {
 	const { easing, maxHeight, maxWidth } = imageData;
@@ -75,8 +77,8 @@ export const getWrapperKeyframes = (
 		const dimensions = {
 			current: readout,
 			reference: readouts.at(-1)!,
-			parent: parentReadouts.find((entry) => entry.offset === readout.offset)!,
-			parentReference: parentReadouts.at(-1)!,
+			parent: parentReadouts.get(readout.offset)!,
+			parentReference: parentReadouts.get(1)!,
 		};
 
 		const {
@@ -111,7 +113,7 @@ export const getWrapperKeyframes = (
 			transform: `translate(${translateX}px, ${translateY}px) scale(${1 / parentWidthDifference}, ${
 				1 / parentHeightDifference
 			})`,
-			easing: easing[readout.offset] ?? "ease",
+			easing: easing.get(readout.offset) ?? "ease",
 		};
 	});
 };

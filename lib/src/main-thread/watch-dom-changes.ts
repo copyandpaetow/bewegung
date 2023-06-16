@@ -1,3 +1,4 @@
+import { Reactivity } from "../types";
 import { Attributes } from "../utils/constants";
 import { querySelectorAll } from "../utils/helper";
 import { isHTMLElement } from "../utils/predicates";
@@ -72,7 +73,7 @@ const watchForPositionChanges = (animationElements: HTMLElement[], callback: Voi
 
 	animationElements.forEach((element) => {
 		intersectionObservers.get(element)?.disconnect();
-		const rootElement = element.closest(`[${Attributes.rootEasing}]`) ?? document.body;
+		const rootElement = element.closest(`[${Attributes.root}]`) ?? document.body;
 
 		let isInitialCallback = true;
 		const observer = new IntersectionObserver(
@@ -102,13 +103,14 @@ const watchForPositionChanges = (animationElements: HTMLElement[], callback: Voi
 	};
 };
 
-export const onDomChange = (callback: VoidFunction) => {
-	const animationElements = querySelectorAll(`[${Attributes.rootEasing}]`).flatMap((rootElement) =>
-		[rootElement]
-			.concat(querySelectorAll("*", rootElement))
-			.filter((element) => element.dataset.bewegungsSkip === undefined)
-	);
-
+export const getReactivity = (): Reactivity => {
+	let mutationObserver: MutationObserver;
+	let resizeObserver: {
+		disconnect(): void;
+	};
+	let positionObserver: {
+		disconnect(): void;
+	};
 	let resizeIdleCallback: NodeJS.Timeout | undefined;
 
 	const throttledCallback = (callback: VoidFunction) => {
@@ -117,17 +119,25 @@ export const onDomChange = (callback: VoidFunction) => {
 			callback();
 		}, 200);
 	};
-	const withThrottle = () => throttledCallback(callback);
 
-	const mutationObserver = watchForDomMutations(withThrottle);
-	const resizeObserver = watchForResizes(animationElements, withThrottle);
-	const positionObserver = watchForPositionChanges(animationElements, withThrottle);
+	return {
+		observe(callback: VoidFunction) {
+			const animationElements = querySelectorAll(`[${Attributes.rootEasing}]`).flatMap(
+				(rootElement) =>
+					[rootElement]
+						.concat(querySelectorAll("*", rootElement))
+						.filter((element) => element.dataset.bewegungsSkip === undefined)
+			);
+			const withThrottle = () => throttledCallback(callback);
 
-	const disconnect = () => {
-		mutationObserver.disconnect();
-		resizeObserver.disconnect();
-		positionObserver.disconnect();
+			mutationObserver = watchForDomMutations(withThrottle);
+			resizeObserver = watchForResizes(animationElements, withThrottle);
+			positionObserver = watchForPositionChanges(animationElements, withThrottle);
+		},
+		disconnect() {
+			mutationObserver.disconnect();
+			resizeObserver.disconnect();
+			positionObserver.disconnect();
+		},
 	};
-
-	return disconnect;
 };

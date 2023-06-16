@@ -34,15 +34,16 @@ const getBoundingClientRect = (element: HTMLElement) => {
 	};
 };
 
+//todo: we need to stop reading if a child is a root element
 export const readElementStyles = (
 	element: HTMLElement,
 	parent: DomTree | null,
 	offset: number
 ): DomTree => {
-	const easings = element.dataset.bewegungsEasing ?? "";
 	const key = element.dataset.bewegungsKey!;
 	const ratio = element.dataset.bewegungsRatio ?? "";
 	const text = element.dataset.bewegungsText ?? "";
+	const parentRoot = element.dataset.parentRoot ?? "";
 
 	const treeNode: DomTree = {
 		style: {
@@ -53,14 +54,20 @@ export const readElementStyles = (
 			offset,
 		},
 		key,
-		easings,
 		children: [],
 		parent,
+		parentRoot,
 	};
 
-	getChilden(element).forEach((element) =>
-		treeNode.children.push(readElementStyles(element, treeNode, offset))
-	);
+	const children = treeNode.style.display === "none" ? [] : getChilden(element);
+
+	//todo: if we dont use the parentLookup, we can remove that as well
+	children.forEach((element) => {
+		if (element.dataset.bewegungsRoot) {
+			return;
+		}
+		treeNode.children.push(readElementStyles(element, treeNode, offset));
+	});
 
 	return treeNode;
 };
