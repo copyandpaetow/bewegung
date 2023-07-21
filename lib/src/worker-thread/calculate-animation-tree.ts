@@ -1,129 +1,109 @@
-import { DimensionalDifferences, DomTree, TreeStyle, WorkerState } from "../types";
+import { DimensionalDifferences, Result, ResultTree, TreeStyle } from "../types";
 import { doesElementChangeInScale, isElementUnchanged } from "../utils/predicates";
 import { calculateDimensionDifferences, calculateRootDifferences } from "./calculate-differences";
-import { setDefaultKeyframes, setImageKeyframes } from "./get-keyframes";
+import { calculateImageDifferences } from "./calculate-image-differences";
+import { getImageData, setDefaultKeyframes, setImageRelatedKeyframes } from "./get-keyframes";
 
-const setAbsoluteOverrides = (tree: DomTree, state: WorkerState, parentKey: string) => {
-	const parentReadouts = state.readouts.get(parentKey);
-	const parentOverrides = state.overrides.get(parentKey) ?? {};
-	const readouts = state.readouts.get(tree.key)!;
-	const lastReadoout = readouts.get(1)!;
-	const lastParentReadout = parentReadouts?.get(1);
+const setAbsoluteOverrides = (
+	tree: ResultTree,
+	parent: ResultTree | undefined,
+	overrides: Map<string, Partial<CSSStyleDeclaration>>
+) => {
+	const parentReadouts = parent?.readouts;
+	const readouts = tree.readouts;
+	const lastReadoout = readouts.at(1)!;
+	const lastParentReadout = parentReadouts?.at(1);
 
-	const absoluteStyle = {
-		position: "absolute",
-		display: "unset",
-		left: lastReadoout.currentLeft - (lastParentReadout?.currentLeft ?? 0) + "px",
-		top: lastReadoout.currentTop - (lastParentReadout?.currentTop ?? 0) + "px",
-		width: lastReadoout.currentWidth + "px",
-		height: lastReadoout.currentHeight + "px",
-	};
+	const currentOverride = overrides.get(tree.key) ?? {};
 
-	state.overrides.set(tree.key, { ...state.overrides.get(tree.key), ...absoluteStyle });
-	if (lastParentReadout?.position === "static" && !parentOverrides?.position) {
-		state.overrides.set(parentKey, {
-			...parentOverrides,
-			position: "relative",
-		});
+	currentOverride.position = "absolute";
+	currentOverride.display = "unset";
+	currentOverride.left = lastReadoout.currentLeft - (lastParentReadout?.currentLeft ?? 0) + "px";
+	currentOverride.top = lastReadoout.currentTop - (lastParentReadout?.currentTop ?? 0) + "px";
+	currentOverride.width = lastReadoout.currentWidth + "px";
+	currentOverride.height = lastReadoout.currentHeight + "px";
+
+	overrides.set(tree.key, currentOverride);
+
+	if (!parent) {
+		return;
 	}
+
+	const parentOverride = overrides.get(parent.key) ?? {};
+
+	if (lastParentReadout?.position !== "static" || parentOverride.position) {
+		return;
+	}
+	parentOverride.position = "relative";
 };
 
-const setEasings = (tree: DomTree, state: WorkerState) => {
-	const easing = state.easings.get(tree.key)!;
-	const parentEasing = state.easings.get(tree.parent?.key ?? "") ?? [];
+const getDifferences = (readouts: TreeStyle[], parentReadouts: TreeStyle[]) => {
+	const reference = readouts.at(1)!;
+	const parentReference = parentReadouts.at(1)!;
 
-	state.easings.set(tree.key, parentEasing.concat(easing));
-};
-
-const getDifferences = (
-	readouts: Map<number, TreeStyle>,
-	parentReadouts: Map<number, TreeStyle>
-) => {
-	const dimensions: DimensionalDifferences[] = [];
-	const reference = readouts.get(1)!;
-	const parentReference = parentReadouts.get(1)!;
-
-	readouts.forEach((currentReadout, offset) =>
-		dimensions.push(
-			calculateDimensionDifferences({
-				current: currentReadout,
-				reference,
-				parent: parentReadouts.get(offset)!,
-				parentReference,
-			})
-		)
+	return readouts.map((currentReadout, index) =>
+		calculateDimensionDifferences({
+			current: currentReadout,
+			reference,
+			parent: parentReadouts.at(index)!,
+			parentReference,
+		})
 	);
-	return dimensions;
 };
 
-const getRootDifferences = (readouts: Map<number, TreeStyle>, key: string) => {
-	const dimensions: DimensionalDifferences[] = [];
-	const reference = readouts.get(1)!;
+const getRootDifferences = (readouts: TreeStyle[]) => {
+	const reference = readouts.at(1)!;
 
-	readouts.forEach((currentReadout) =>
-		dimensions.push(
-			calculateRootDifferences({
-				current: currentReadout,
-				reference,
-				doesNeedBodyFix: false, //todo: this needs to be fixed again
-			})
-		)
+	return readouts.map((currentReadout) =>
+		calculateRootDifferences({
+			current: currentReadout,
+			reference,
+		})
 	);
-	return dimensions;
 };
 
-//todo: we still need something similar to the flag approach
-const animationNotNeeded = (
-	readouts: Map<number, TreeStyle>,
-	differences: DimensionalDifferences[]
-) => {
-	if (readouts.size === 0 || differences.length === 0) {
+const areObjectsEqual = <Type extends Record<string, any>>(a: Type, b: Type) =>
+	Object.entries(a).every(([key, value]) => b[key] === value);
+
+const areDifferencesEqual = (a: DimensionalDifferences[], b: DimensionalDifferences[]) =>
+	a.every((entry, index) => areObjectsEqual(entry, b[index]));
+
+const animationNotNeeded = (tree: ResultTree, parent: ResultTree | undefined, isImage: boolean) => {
+	if (parent && !isImage && areDifferencesEqual(tree.differences, parent.differences)) {
 		return true;
 	}
-	const isImage = Boolean(readouts.get(1)!.ratio);
 
-	if (isImage && doesElementChangeInScale(Array.from(readouts.values()))) {
-		return false;
-	}
-
-	return differences.every(isElementUnchanged);
+	return tree.differences.every(isElementUnchanged);
 };
 
-/*
-	in the case of a nested root element, if we stop there we lose the the parentNode
-- we could store it in a map
-- or ignore it, if nested but then we would need to  
-
-=> if we stop reading the dom if we encounter a nested root, the updater function would stop anyways
-
-*/
-
 export const updateKeyframes = (
-	tree: DomTree,
-	state: WorkerState,
-	parentKey: string | undefined
+	tree: ResultTree,
+	parent: ResultTree | undefined,
+	result: Result
 ) => {
-	//if we know early that this treeNode is not needed for the animation we could pass the parentReadouts down instead of the current ones
+	const isImage = Boolean(tree.readouts.at(1)!.ratio) && doesElementChangeInScale(tree.readouts);
 
-	const readouts = state.readouts.get(tree.key)!;
-	const parentReadouts = parentKey ? state.readouts.get(parentKey) : null;
-
-	const differences = !parentReadouts
-		? getRootDifferences(readouts, tree.key)
-		: getDifferences(readouts, parentReadouts);
-
-	if (animationNotNeeded(readouts, differences)) {
-		return tree.children.forEach((childTree) => updateKeyframes(childTree, state, parentKey));
+	if (isImage) {
+		tree.differences = calculateImageDifferences(tree.readouts);
+	} else {
+		tree.differences = !parent
+			? getRootDifferences(tree.readouts)
+			: getDifferences(tree.readouts, parent.readouts);
 	}
 
-	const rootKey = parentKey ?? tree.key;
-	state.lastReadout.set(rootKey, tree.key);
+	if (animationNotNeeded(tree, parent, isImage)) {
+		return tree.children.forEach((childTree) => updateKeyframes(childTree, parent, result));
+	}
 
-	setAbsoluteOverrides(tree, state, parentKey ?? ""); //if the parentKey is undefined, this would be an absolute positioned root element, which is still unhandled
-	const isImage = Boolean(readouts.get(1)!.ratio);
-	isImage
-		? setImageKeyframes(tree, parentKey ?? "", state)
-		: setDefaultKeyframes(differences, tree, state);
+	//todo: real condition for when elements are deleted or display none towards the end
+	if (false) {
+		setAbsoluteOverrides(tree, parent, result.overrides); //if the parentKey is undefined, this would be an absolute positioned root element, which is still unhandled
+	}
+	result.keyframes.set(tree.key, setDefaultKeyframes(tree, result.overrides));
 
-	tree.children.forEach((childTree) => updateKeyframes(childTree, state, tree.key));
+	if (isImage) {
+		setImageRelatedKeyframes(tree, parent, result);
+	}
+
+	tree.children.forEach((childTree) => updateKeyframes(childTree, tree, result));
 };

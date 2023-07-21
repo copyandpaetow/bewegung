@@ -1,19 +1,14 @@
-import { ImageDetails, TreeStyle } from "../types";
+import { DimensionalDifferences, ImageDetails, TreeStyle } from "../types";
 import { save } from "../utils/helper";
 import { isElementUnchanged } from "../utils/predicates";
 import { calculateBorderRadius } from "./border-radius";
 import { getScales, getTranslates } from "./calculate-differences";
+import { getImageData } from "./get-keyframes";
 
-export const highestNumber = (numbers: number[]) =>
-	numbers.reduce((largest, current) => Math.max(largest, current));
+export const calculateImageDifferences = (readouts: TreeStyle[]): DimensionalDifferences[] => {
+	const { maxHeight, maxWidth } = getImageData(readouts);
 
-export const calculateImageKeyframes = (
-	readouts: TreeStyle[],
-	imageData: ImageDetails
-): Keyframe[] => {
-	const { maxHeight, maxWidth, easing } = imageData;
-
-	const differences = readouts.map((readout) => {
+	return readouts.map((readout) => {
 		const ratio = parseFloat(readout.ratio);
 		let scaleWidth: number = readout.unsaveWidth / maxWidth;
 		let scaleHeight: number = readout.unsaveHeight / maxHeight;
@@ -50,35 +45,26 @@ export const calculateImageKeyframes = (
 			leftDifference: save(translateX, 0),
 			topDifference: save(translateY, 0),
 			offset: readout.offset,
+			easing: readout.easing,
 		};
 	});
-
-	if (differences.every(isElementUnchanged)) {
-		return [];
-	}
-
-	return differences.map(
-		({ heightDifference, widthDifference, topDifference, leftDifference, offset }) => ({
-			offset,
-			transform: `translate(${leftDifference}px, ${topDifference}px) scale(${widthDifference}, ${heightDifference})`,
-			easing: easing[offset] ?? "ease",
-		})
-	);
 };
 
 export const getWrapperKeyframes = (
 	readouts: TreeStyle[],
-	parentReadouts: Map<number, TreeStyle>,
+	parentReadouts: TreeStyle[],
 	imageData: ImageDetails
 ): Keyframe[] => {
-	const { easing, maxHeight, maxWidth } = imageData;
+	const { maxHeight, maxWidth } = imageData;
+	const reference = readouts.at(-1)!;
+	const parentReference = parentReadouts.at(1)!;
 
-	return readouts.map((readout) => {
+	return readouts.map((readout, index) => {
 		const dimensions = {
 			current: readout,
-			reference: readouts.at(-1)!,
-			parent: parentReadouts.get(readout.offset)!,
-			parentReference: parentReadouts.get(1)!,
+			reference,
+			parent: parentReadouts.at(index)!,
+			parentReference,
 		};
 
 		const {
@@ -113,7 +99,7 @@ export const getWrapperKeyframes = (
 			transform: `translate(${translateX}px, ${translateY}px) scale(${1 / parentWidthDifference}, ${
 				1 / parentHeightDifference
 			})`,
-			easing: easing.get(readout.offset) ?? "ease",
+			easing: readout.easing,
 		};
 	});
 };

@@ -1,8 +1,7 @@
-import { AtomicWorker, DomTree } from "../types";
-import { Attributes } from "../utils/constants";
-import { querySelectorAll } from "../utils/helper";
+import { AtomicWorker, DomRepresentation, PropsWithRelativeTiming2 } from "../types";
+import { execute, querySelectorAll } from "../utils/helper";
 import { isHTMLElement } from "../utils/predicates";
-import { readElementStyles } from "./read-element-styles";
+import { recordElement } from "./label-elements";
 
 const resetNodeStyle = (entries: MutationRecord[]) => {
 	[...entries].reverse().forEach((entry) => {
@@ -95,57 +94,57 @@ export const addKeyToCustomElements = (entries: MutationRecord[]) => {
 };
 
 export const observe = (observer: MutationObserver) =>
-	observer.observe(document.body, {
+	observer.observe(document.documentElement, {
 		childList: true,
 		subtree: true,
 		attributes: true,
 		attributeOldValue: true,
 	});
 
-export const observeDom = (callbacks: Map<number, VoidFunction[]>, worker: AtomicWorker) =>
+export const observeDom = (domUpdates: PropsWithRelativeTiming2[], worker: AtomicWorker) =>
 	new Promise<void>((resolve) => {
 		const { reply, cleanup } = worker("domChanges");
-		const changes = callbacks.entries();
-		let offset = -1;
-		let change: VoidFunction[] = [];
+		let currentIndex = -1;
+		let waitingForCallback = false;
 
 		const callNextChange = (observer: MutationObserver) => {
-			const { value, done } = changes.next();
-			if (Boolean(done)) {
+			currentIndex += 1;
+
+			if (domUpdates[currentIndex] === undefined) {
 				observer.disconnect();
 				cleanup();
 				resolve();
 				return;
 			}
 
-			offset = value[0];
-			change = value[1];
-
 			requestAnimationFrame(() => {
-				if (change.length === 0) {
-					observerCallback([], observer);
-					return;
-				}
-
 				observe(observer);
-				change.forEach((callback: VoidFunction) => {
-					callback();
+				domUpdates[currentIndex].callback.forEach(execute);
+				waitingForCallback = true;
+
+				requestAnimationFrame(() => {
+					if (waitingForCallback) {
+						callNextChange(observer);
+					}
 				});
 			});
 		};
 
 		const observerCallback: MutationCallback = (entries, observer) => {
 			observer.disconnect();
+			waitingForCallback = false;
 			const { addEntries, removeEntries, attributeEntries } = separateEntries(entries);
-			const domTrees = new Map<string, DomTree>();
-
 			addKeyToCustomElements(addEntries);
+			const domRepresentation: DomRepresentation[] = [];
 
-			querySelectorAll(`[${Attributes.root}]`).forEach((rootElement) => {
-				const key = rootElement.dataset.bewegungsKey!;
-				domTrees.set(key, readElementStyles(rootElement, null, offset));
-			});
-			reply("sendDOMRects", domTrees);
+			domRepresentation.push(
+				recordElement(domUpdates[currentIndex].root, {
+					easing: domUpdates[currentIndex].easing,
+					offset: domUpdates[currentIndex].end,
+				})
+			);
+
+			reply("sendDOMRepresentation", domRepresentation);
 
 			removeAddedNodes(addEntries);
 			readdRemovedNodes(removeEntries);
@@ -154,8 +153,5 @@ export const observeDom = (callbacks: Map<number, VoidFunction[]>, worker: Atomi
 			callNextChange(observer);
 		};
 
-		const observer = new MutationObserver(observerCallback);
-
-		observe(observer);
-		callNextChange(observer);
+		callNextChange(new MutationObserver(observerCallback));
 	});

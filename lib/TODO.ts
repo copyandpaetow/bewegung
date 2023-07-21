@@ -22,26 +22,19 @@ TODOs
 => like this there could be some fine tuning from the user
 => if we add a delay, the animation would be finished later. The stagger-delay would need to be included in the calculations...
 
-- from/to
-=> modals are kinda annoying to do if you need to calculate them yourself
-=> if we use from/to as the last or first spot only it is not that difficult
-=> we could use a number to indicate the function call to which it belongs to like "data-bewegung-from-1" (default would be "data-bewegung-from-0")
-=> maybe we could use them internally to indicate relationships? 
+
 
 * bugs
+
+- if you change the sequence entry with at to something negative like [{change: fn1, duration: 1000}, {change: fn2,duration: 1000, at: -3000}], everything breaks :/
+- we might need to sort (or error out) the props if the "at" is changing the entry so much, that it actually changes the order of the sequence
+=> the example above would need to be [{change: fn2, duration: 1000}, {change: fn1,duration: 1000, at: 1000}]
 
 - we might need some meta data because the jumping issue is based on the viewport
 => we could also generate 2 sets of keyframes and chose based on the viewport
 => since there could be a delay between the generation of the animation and its playing, we would need to decide at playtime
 
 - counter scaling looks still buggy => easing issue
-
-- certain elements rely on their parent element for e.g. overrides. 
-=> If we change the parent, we would also need to change the related calculations
-=> add overrides to the new parent etc
-? maybe it makes more sense to remove the unanimated elements sooner? Currently we check it in different places again and again
-=> instead of looking everything up, we can pass down parentData that either updates to the current treeNode or (if they dont partake in the animation)
-keep passing the parentData down
 
 - if the root element is removed, its absolute position might lead to bugs because we dont know the next anchor parent
 => maybe we would need to change the code in a way that the parent is the first non-animation element
@@ -60,24 +53,12 @@ keep passing the parentData down
 - the easings could maybe be better included within the tree data instead of a data-attribute
 - then we could also add a root attribute, which is more descriptive
 
-- if the preferes reduced motion is set (and not overwritten) it is pointless to do all the calculations 
-=> maybe it would be smarter to calculate a different controller instead like const controller = isReducedMotion ? reducedAnimationController : AnimationController
-
-- we mix sync and async methods. If the user would call play(), pause(), play(), ... the calculations would start several times
-=> we could use a queue to do this or make the methods async as well
-
-
-
-
-- seek() could be a better name instead of scroll()
 
 * tasks
 
 - update docs
 
 */
-
-
 
 /*
 * example 1
@@ -119,5 +100,25 @@ const bewegung3 = (props: BewegungsInputs, config?: BewegungsConfig): Bewegung =
 
 ...
 }
+
+
+! things that didnt really work
+
+- combining the labeling with the inital readout doubled the labeling time
+
+- reading all callouts after each other => the overhead of setting things up takes some time
+
+- combining all independent changes into one because the reading takes so long
+
+- intersection observer 
+=> cloning or hiding the actual dom to do changes there
+=> cloning will take a long time because the browser needs a calculate all elements new (and render images new)
+=> hiding the dom with an image or an svg takes very long since the visible dom needs to be rebuild
+
+- from/to
+=> modals are kinda annoying to do if you need to calculate them yourself
+=> if we use from/to as the last or first spot only it is not that difficult
+=> we could use a number to indicate the function call to which it belongs to like "data-bewegung-from-1" (default would be "data-bewegung-from-0")
+=> maybe we could use them internally to indicate relationships? 
 
 */

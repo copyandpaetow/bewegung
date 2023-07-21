@@ -8,19 +8,41 @@ import Nav from "../components/Nav.astro";
 	import { bewegung } from "../../../lib/src/bewegung";
 
 	const list = document.getElementById("js-list") as HTMLElement;
-	const addColumns = () => {
-		list.style.gridTemplateColumns = "1fr 1fr";
+	const main = document.querySelector("main") as HTMLElement;
+	const h1 = document.querySelector("h1") as HTMLElement;
+	const sibling = document.querySelector(".sibling") as HTMLElement;
+	const article = document.querySelector("article") as HTMLElement;
+
+	const increaseH1Spacing = () => {
+		h1.style.marginBlockEnd = "2rem";
 	};
+
 	const removeGridArea = () => {
+		list.style.gridTemplateColumns = "1fr 1fr";
 		list.querySelectorAll("li").forEach((element) => {
 			element.style.gridArea = "unset";
 		});
 	};
+	const expandArea = () => {
+		main.style.gridTemplateColumns = "2fr 1fr";
+	};
+
+	const removeSibling = () => {
+		sibling.remove();
+	};
+
+	const expandArticlePadding = () => {
+		article.style.padding = "5%";
+	};
 
 	setTimeout(() => {
-		bewegung([addColumns, removeGridArea], {
-			defaultOptions: { duration: 1000, root: "aside" },
-		}).play();
+		bewegung([
+			[removeGridArea, { root: "aside", duration: 1000 }],
+			[expandArticlePadding, { duration: 1000, root: article }],
+			[increaseH1Spacing, { root: "article section", duration: 1000, at: -500 }],
+			[expandArea, { duration: 1000, at: -500, root: main }],
+			[removeSibling, { duration: 2000, root: sibling }],
+		]).play();
 	}, 2000);
 </script>
 
@@ -114,9 +136,16 @@ import Nav from "../components/Nav.astro";
 			</ul>
 		</aside>
 	</main>
+	<div class="sibling"></div>
 </Layout>
 
 <style lang="scss">
+	.sibling {
+		width: 100%;
+		height: 5rem;
+		background-color: gray;
+	}
+
 	main {
 		min-height: 100vh;
 		display: grid;

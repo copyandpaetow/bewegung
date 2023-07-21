@@ -1,3 +1,5 @@
+import { Resolvable } from "../types";
+
 export const save = (value: number, alternative: number): number => {
 	return value === Infinity || value === -Infinity || isNaN(value) ? alternative : value;
 };
@@ -40,7 +42,7 @@ export const transformProgress = (totalRuntime: number, progress: number, done?:
 	return Math.min(Math.max(progress, 0.001), done === undefined ? 1 : 0.999) * totalRuntime;
 };
 
-export const resolvable = <Value>() => {
+export const resolvable = <Value>(): Resolvable<Value> => {
 	let resolve: (value: Value | PromiseLike<Value>) => void = () => {};
 	let reject: (reason?: any) => void = () => {};
 
@@ -53,3 +55,29 @@ export const resolvable = <Value>() => {
 };
 
 export const execute = (callback: VoidFunction) => callback();
+
+export const queue = <Type>(promiseFn: () => Promise<Type>) => {
+	let nextPromise: Promise<Type> | null;
+	let done = false;
+
+	return {
+		next(method: (result: Type) => void) {
+			if (done) {
+				method(nextPromise as Type);
+				return;
+			}
+			if (!nextPromise) {
+				nextPromise = promiseFn();
+				nextPromise = nextPromise.then((result) => {
+					done = true;
+					return result;
+				});
+			}
+
+			nextPromise = nextPromise.then((result) => {
+				method(result);
+				return result;
+			});
+		},
+	};
+};

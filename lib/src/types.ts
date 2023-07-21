@@ -44,6 +44,33 @@ export type PropsWithRelativeTiming = {
 	callback: VoidFunction;
 };
 
+export type PropsWithRelativeTiming2 = {
+	start: number;
+	end: number;
+	root: HTMLElement;
+	easing:
+		| "ease"
+		| "ease-in"
+		| "ease-out"
+		| "ease-in-out"
+		| "linear"
+		| `cubic-bezier(${number},${number},${number},${number})`;
+	callback: VoidFunction[];
+};
+
+export type RenderProps = {
+	callback: VoidFunction[];
+	root: HTMLElement;
+	easing:
+		| "ease"
+		| "ease-in"
+		| "ease-out"
+		| "ease-in-out"
+		| "linear"
+		| `cubic-bezier(${number},${number},${number},${number})`;
+	offset: number;
+};
+
 export type TimelineEntry = {
 	start: number;
 	end: number;
@@ -56,14 +83,34 @@ export type TempTimelineEntry = {
 	easing: Set<string>;
 };
 
-export type TreeStyle = {
+export type TreeStyle = TreeStyleUpdate & {
+	ratio: number;
+	text: number;
+	easing: string;
+};
+
+export type TreeElement = {
+	key: string;
+	text: number;
 	currentTop: number;
 	currentLeft: number;
 	currentHeight: number;
 	currentWidth: number;
-	unsaveWidth: number;
-	unsaveHeight: number;
-	ratio: string;
+	position: string;
+	transform: string;
+	transformOrigin: string;
+	display: string;
+	borderRadius: string;
+	offset: number;
+};
+
+export type TreeMedia = {
+	ratio: number;
+	key: string;
+	currentTop: number;
+	currentLeft: number;
+	currentHeight: number;
+	currentWidth: number;
 	position: string;
 	transform: string;
 	transformOrigin: string;
@@ -71,16 +118,32 @@ export type TreeStyle = {
 	objectPosition: string;
 	display: string;
 	borderRadius: string;
-	text: string;
+	offset: number;
+};
+
+export type TreeEntry = TreeElement | TreeMedia;
+
+export type DomRepresentation = (TreeEntry | DomRepresentation)[];
+
+export type TreeStyleUpdate = {
+	currentTop: number;
+	currentLeft: number;
+	currentHeight: number;
+	currentWidth: number;
+	position: string;
+	transform: string;
+	transformOrigin: string;
+	objectFit: string;
+	objectPosition: string;
+	display: string;
+	borderRadius: string;
 	offset: number;
 };
 
 export type DomTree = {
-	style: TreeStyle;
+	style: TreeStyle | TreeStyleUpdate;
 	key: string;
 	children: DomTree[];
-	parent: DomTree | null;
-	parentRoot: string;
 };
 
 export type MetaData = {
@@ -94,7 +157,7 @@ export type ResultTransferable = {
 };
 
 export type WorkerMessages = {
-	sendDOMRects: Map<string, DomTree>;
+	sendDOMRepresentation: DomRepresentation[];
 	sendAnimationData: ResultTransferable;
 	sendMetaData: MetaData;
 };
@@ -122,15 +185,12 @@ export interface DimensionalDifferences {
 	leftDifference: number;
 	topDifference: number;
 	offset: number;
+	easing: string;
 }
 
-export type WorkerState = {
-	readouts: Map<string, Map<number, TreeStyle>>;
-	easings: Map<string, TimelineEntry[]>;
+export type Result = {
 	keyframes: Map<string, Keyframe[]>;
 	overrides: Map<string, Partial<CSSStyleDeclaration>>;
-	lastReadout: Map<string, string>;
-	pastOffsets: number[];
 };
 
 export type AnimationFlag = "addition" | "removal";
@@ -138,15 +198,6 @@ export type AnimationFlag = "addition" | "removal";
 export type ImageDetails = {
 	maxWidth: number;
 	maxHeight: number;
-	easing: Map<number, string>;
-};
-
-type AnimationMethods = "play" | "pause" | "seek" | "cancel" | "finish";
-//todo: needs to be more refined
-export type AnimationController = {
-	queue(method: AnimationMethods, payload?: any): void;
-	finished(): Promise<Animation>;
-	playState(): AnimationPlayState;
 };
 
 export type Reactivity = {
@@ -154,8 +205,31 @@ export type Reactivity = {
 	disconnect(): void;
 };
 
-export type AnimationCalculator = {
-	run(
-		updateFn?: (normalizedProps: NormalizedProps[]) => NormalizedProps[]
-	): Promise<Map<string, Animation>>;
+export type Resolvable<Value> = {
+	resolve: (value: Value | PromiseLike<Value>) => void;
+	reject: (reason?: any) => void;
+	promise: Promise<Value>;
+};
+
+export type ResultTree = {
+	key: string;
+	readouts: TreeStyle[];
+	differences: DimensionalDifferences[];
+	children: ResultTree[];
+};
+
+export type SortedProps = {
+	independetEntries: PropsWithRelativeTiming2[];
+	dependentEntries: PropsWithRelativeTiming2[];
+};
+
+export type RootData = {
+	offset: number;
+	easing:
+		| "ease"
+		| "ease-in"
+		| "ease-out"
+		| "ease-in-out"
+		| "linear"
+		| `cubic-bezier(${number},${number},${number},${number})`;
 };

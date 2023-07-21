@@ -110,6 +110,7 @@ export const calculateDimensionDifferences = (
 		leftDifference: save(leftDifference, 0),
 		topDifference: save(topDifference, 0),
 		offset: current.offset,
+		easing: current.easing,
 	};
 
 	if (isTextElement) {
@@ -119,6 +120,7 @@ export const calculateDimensionDifferences = (
 			leftDifference: save(leftDifference - textWidthCorrection, 0),
 			topDifference: save(topDifference - textHeightCorrection, 0),
 			offset: current.offset,
+			easing: current.easing,
 		};
 	}
 
@@ -128,12 +130,10 @@ export const calculateDimensionDifferences = (
 export const calculateRootDifferences = ({
 	current,
 	reference,
-	doesNeedBodyFix,
 }: {
 	current: TreeStyle;
 	reference: TreeStyle;
-	doesNeedBodyFix: boolean;
-}) => {
+}): DimensionalDifferences => {
 	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(reference);
 	const [originCurrentLeft, originCurrentTop] = parseTransformOrigin(current);
 
@@ -156,13 +156,9 @@ export const calculateRootDifferences = ({
 		*/
 
 	const weirdBrowserBehaviorCorrectionLeft =
-		doesNeedBodyFix && currentLeftDifference > referenceLeftDifference && widthDifference < 1
-			? -1
-			: 1;
+		currentLeftDifference > referenceLeftDifference && widthDifference < 1 ? -1 : 1;
 	const weirdBrowserBehaviorCorrectionTop =
-		doesNeedBodyFix && currentTopDifference > referenceTopDifference && heightDifference < 1
-			? -1
-			: 1;
+		currentTopDifference > referenceTopDifference && heightDifference < 1 ? -1 : 1;
 
 	const leftDifference =
 		(currentLeftDifference - referenceLeftDifference) * weirdBrowserBehaviorCorrectionLeft;
@@ -175,5 +171,6 @@ export const calculateRootDifferences = ({
 		leftDifference: save(leftDifference, 0),
 		topDifference: save(topDifference, 0),
 		offset: current.offset,
+		easing: current.easing,
 	};
 };

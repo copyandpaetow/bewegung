@@ -1,6 +1,6 @@
 import { ResultTransferable } from "../types";
 import { Attributes, emptyImageSrc } from "../utils/constants";
-import { applyCSSStyles, nextRaf, querySelectorAll } from "../utils/helper";
+import { applyCSSStyles, execute, nextRaf, querySelectorAll } from "../utils/helper";
 import { isHTMLElement } from "../utils/predicates";
 import { addKeyToCustomElements, readdRemovedNodes, separateEntries } from "./observe-dom";
 
@@ -132,7 +132,7 @@ const createAnimationsFromExistingElements = (result: ResultTransferable, totalR
 
 export const createAnimations = async (
 	result: ResultTransferable,
-	callbacks: Map<number, VoidFunction[]>,
+	callbacks: VoidFunction[],
 	totalRuntime: number
 ): Promise<Map<string, Animation>> => {
 	const { animations, onStart } = createAnimationsFromExistingElements(result, totalRuntime);
@@ -152,13 +152,13 @@ export const createAnimations = async (
 					setElementAnimation(node as HTMLElement, result, animations, onStart, totalRuntime);
 				});
 
-			onStart.forEach((cb) => cb());
+			onStart.forEach(execute);
 			resolve(animations);
 		};
 		const observer = new MutationObserver(observerCallback);
 		requestAnimationFrame(() => {
 			observer.observe(document.body, { childList: true, subtree: true, attributes: true });
-			callbacks.get(1)!.forEach((cb) => cb());
+			callbacks.forEach(execute);
 			return;
 		});
 	});

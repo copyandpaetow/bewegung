@@ -71,3 +71,7 @@ export const normalize = (props: BewegungsInputs, config?: BewegungsConfig) => {
 
 	return normalizedRoot;
 };
+
+export const filterProps = (normalizedProps: NormalizedProps[]): NormalizedProps[] => {
+	return normalizedProps.filter((entry) => entry.root.isConnected);
+};

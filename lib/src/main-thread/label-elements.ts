@@ -1,7 +1,15 @@
-import { NormalizedProps } from "../types";
-import { uuid, getChilden } from "../utils/helper";
+import {
+	AtomicWorker,
+	DomRepresentation,
+	NormalizedProps,
+	RootData,
+	TreeElement,
+	TreeEntry,
+	TreeMedia,
+} from "../types";
+import { nextRaf, uuid } from "../utils/helper";
 
-const addTextAttribute = (element: HTMLElement) => {
+const getTextAttribute = (element: HTMLElement) => {
 	let text = 0;
 	element.childNodes.forEach((node) => {
 		if (node.nodeType !== 3) {
@@ -9,56 +17,97 @@ const addTextAttribute = (element: HTMLElement) => {
 		}
 		text += node.textContent!.trim().length;
 	});
-	if (text === 0) {
-		return;
-	}
 
-	element.dataset.bewegungsText = `${text}`;
+	return text;
 };
 
-const addMediaRatioAttribute = (element: HTMLElement) => {
+const getMediaRatioAttribute = (element: HTMLElement) => {
 	//@ts-expect-error
 	if (!element.naturalWidth || !element.naturalHeight) {
-		return;
+		return 0;
 	}
-	element.dataset.bewegungsRatio = `${
-		(element as HTMLImageElement).naturalWidth / (element as HTMLImageElement).naturalHeight
-	}`;
+	return (element as HTMLImageElement).naturalWidth / (element as HTMLImageElement).naturalHeight;
 };
 
-const addSkipAttribute = (element: HTMLElement) => {
-	if (element.getAnimations().some((animation) => animation.playState === "running")) {
-		element.dataset.bewegungsSkip = "";
+export const readElement = (element: HTMLElement, key: string, rootData: RootData): TreeEntry => {
+	const dimensions = element.getBoundingClientRect();
+	const style = window.getComputedStyle(element);
+
+	if (element.tagName === "IMG" || element.tagName === "VIDEO") {
+		return {
+			currentLeft: dimensions.left,
+			currentTop: dimensions.top,
+			currentWidth: dimensions.width,
+			currentHeight: dimensions.height,
+			display: style.getPropertyValue("display"),
+			borderRadius: style.getPropertyValue("border-radius"),
+			position: style.getPropertyValue("position"),
+			transform: style.getPropertyValue("transform"),
+			transformOrigin: style.getPropertyValue("transform-origin"),
+			objectFit: style.getPropertyValue("object-fit"),
+			objectPosition: style.getPropertyValue("object-position"),
+			ratio: getMediaRatioAttribute(element),
+			key,
+			...rootData,
+		} as TreeMedia;
 	}
+
+	return {
+		currentLeft: dimensions.left,
+		currentTop: dimensions.top,
+		currentWidth: dimensions.width,
+		currentHeight: dimensions.height,
+		display: style.getPropertyValue("display"),
+		borderRadius: style.getPropertyValue("border-radius"),
+		transform: style.getPropertyValue("transform"),
+		transformOrigin: style.getPropertyValue("transform-origin"),
+		position: style.getPropertyValue("position"),
+		text: getTextAttribute(element),
+		key,
+		...rootData,
+	} as TreeElement;
 };
 
-const labelElements = (element: HTMLElement, rootKey: string) => {
-	element.dataset.bewegungsKey ??= uuid(element.tagName);
-	addTextAttribute(element);
-	addMediaRatioAttribute(element);
-	addSkipAttribute(element);
+export const isNotVisible = (style: TreeEntry) => {
+	return style.display === "none" || style.currentHeight === 0 || style.currentWidth === 0;
+};
 
-	getChilden(element).forEach((child) => {
-		if (child.dataset.bewegungsRoot) {
-			child.dataset.parentRoot = rootKey;
-			return;
+export const recordElement = (element: HTMLElement, rootData: RootData): DomRepresentation => {
+	const key = (element.dataset.bewegungsKey ??= uuid(element.tagName));
+	const entry = readElement(element, key, rootData);
+
+	const representation: DomRepresentation = [];
+	const children = element.children;
+	const isElementHidden = isNotVisible(entry);
+
+	for (let index = 0; index < children.length; index++) {
+		const child = children.item(index) as HTMLElement;
+		if (isElementHidden) {
+			continue;
 		}
-		labelElements(child, rootKey);
-	});
+
+		representation.push(recordElement(child, rootData));
+	}
+
+	return [entry, representation];
 };
 
-export const labelRootElements = (normalizedProps: NormalizedProps[]) =>
-	new Promise<void>((resolve) => {
-		requestAnimationFrame(() => {
-			normalizedProps
-				.map((entry) => {
-					entry.root.dataset.bewegungsKey ??= uuid(entry.root.tagName);
-					entry.root.dataset.bewegungsRoot ??= entry.root.dataset.bewegungsKey;
-					return entry.root;
-				})
-				.forEach((root) => {
-					labelElements(root, root.dataset.bewegungsRoot!);
-				});
-			resolve();
-		});
-	});
+const filterPrimaryRoots = (entry: NormalizedProps, _: number, array: NormalizedProps[]) =>
+	!array.some((innerEntry) => innerEntry.root.contains(entry.root) && entry !== innerEntry);
+
+export const recordInitialDom = async (
+	normalizedProps: NormalizedProps[],
+	worker: AtomicWorker
+) => {
+	const { reply } = worker("domChanges");
+
+	await nextRaf();
+
+	console.time("domRepresentation1");
+	const domRepresentation = normalizedProps
+		.filter(filterPrimaryRoots)
+		.map((entry) => recordElement(entry.root, { offset: 0, easing: entry.easing }));
+	console.timeEnd("domRepresentation1");
+
+	reply("sendDOMRepresentation", domRepresentation);
+};
