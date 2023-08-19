@@ -2,17 +2,19 @@ import { WorkerContext } from "./utils/use-worker";
 
 export type ElementOrSelector = HTMLElement | Element | string;
 
+type Easing =
+	| "ease"
+	| "ease-in"
+	| "ease-out"
+	| "ease-in-out"
+	| "linear"
+	| `cubic-bezier(${number},${number},${number},${number})`;
+
 export type BewegungsCallback = VoidFunction;
 export type BewegungsOption = {
 	duration: number;
 	root?: ElementOrSelector;
-	easing?:
-		| "ease"
-		| "ease-in"
-		| "ease-out"
-		| "ease-in-out"
-		| "linear"
-		| `cubic-bezier(${number},${number},${number},${number})`;
+	easing?: Easing;
 	at?: number;
 };
 
@@ -55,38 +57,7 @@ export type PropsWithRelativeTiming2 = {
 		| "ease-in-out"
 		| "linear"
 		| `cubic-bezier(${number},${number},${number},${number})`;
-	callback: VoidFunction[];
-};
-
-export type RenderProps = {
-	callback: VoidFunction[];
-	root: HTMLElement;
-	easing:
-		| "ease"
-		| "ease-in"
-		| "ease-out"
-		| "ease-in-out"
-		| "linear"
-		| `cubic-bezier(${number},${number},${number},${number})`;
-	offset: number;
-};
-
-export type TimelineEntry = {
-	start: number;
-	end: number;
-	easing: string;
-};
-
-export type TempTimelineEntry = {
-	start: number;
-	end: number;
-	easing: Set<string>;
-};
-
-export type TreeStyle = TreeStyleUpdate & {
-	ratio: number;
-	text: number;
-	easing: string;
+	callback: Set<VoidFunction>;
 };
 
 export type TreeElement = {
@@ -96,6 +67,8 @@ export type TreeElement = {
 	currentLeft: number;
 	currentHeight: number;
 	currentWidth: number;
+	unsaveHeight: number;
+	unsaveWidth: number;
 	position: string;
 	transform: string;
 	transformOrigin: string;
@@ -111,6 +84,8 @@ export type TreeMedia = {
 	currentLeft: number;
 	currentHeight: number;
 	currentWidth: number;
+	unsaveHeight: number;
+	unsaveWidth: number;
 	position: string;
 	transform: string;
 	transformOrigin: string;
@@ -125,47 +100,24 @@ export type TreeEntry = TreeElement | TreeMedia;
 
 export type DomRepresentation = (TreeEntry | DomRepresentation)[];
 
-export type TreeStyleUpdate = {
-	currentTop: number;
-	currentLeft: number;
-	currentHeight: number;
-	currentWidth: number;
-	position: string;
-	transform: string;
-	transformOrigin: string;
-	objectFit: string;
-	objectPosition: string;
-	display: string;
-	borderRadius: string;
-	offset: number;
-};
-
-export type DomTree = {
-	style: TreeStyle | TreeStyleUpdate;
-	key: string;
-	children: DomTree[];
-};
-
-export type MetaData = {
-	allOffsets: number[];
-	easings: Map<string, TimelineEntry[]>;
-};
-
 export type ResultTransferable = {
-	keyframes: Map<string, Keyframe[]>;
-	overrides: Map<string, Partial<CSSStyleDeclaration>>;
+	keyframeStore: Map<string, Keyframe[]>;
+	overrideStore: Map<string, Partial<CSSStyleDeclaration>>;
 };
+
+export type DomLabel = (string | DomLabel)[];
 
 export type WorkerMessages = {
 	sendDOMRepresentation: DomRepresentation[];
+	sendInitialDOMRepresentation: DomLabel[];
 	sendAnimationData: ResultTransferable;
-	sendMetaData: MetaData;
+	sendTreeUpdate: Map<string, DomLabel>;
 };
 
 export type MainMessages = {
-	domChanges: Map<string, DomTree>;
+	domChanges: Map<string, DomLabel>;
 	animationData: ResultTransferable;
-	metaData: MetaData;
+	treeUpdate: Map<string, DomLabel>;
 };
 
 export type AtomicWorker = <Current extends keyof MainMessages>(
@@ -173,10 +125,10 @@ export type AtomicWorker = <Current extends keyof MainMessages>(
 ) => WorkerContext<Current, MainMessages, WorkerMessages>;
 
 export type ChildParentDimensions = {
-	current: TreeStyle;
-	reference: TreeStyle;
-	parent: TreeStyle;
-	parentReference: TreeStyle;
+	current: TreeEntry;
+	reference: TreeEntry;
+	parent: TreeEntry;
+	parentReference: TreeEntry;
 };
 
 export interface DimensionalDifferences {
@@ -185,15 +137,8 @@ export interface DimensionalDifferences {
 	leftDifference: number;
 	topDifference: number;
 	offset: number;
-	easing: string;
+	id: string;
 }
-
-export type Result = {
-	keyframes: Map<string, Keyframe[]>;
-	overrides: Map<string, Partial<CSSStyleDeclaration>>;
-};
-
-export type AnimationFlag = "addition" | "removal";
 
 export type ImageDetails = {
 	maxWidth: number;
@@ -211,25 +156,7 @@ export type Resolvable<Value> = {
 	promise: Promise<Value>;
 };
 
-export type ResultTree = {
-	key: string;
-	readouts: TreeStyle[];
-	differences: DimensionalDifferences[];
-	children: ResultTree[];
-};
-
-export type SortedProps = {
-	independetEntries: PropsWithRelativeTiming2[];
-	dependentEntries: PropsWithRelativeTiming2[];
-};
-
 export type RootData = {
 	offset: number;
-	easing:
-		| "ease"
-		| "ease-in"
-		| "ease-out"
-		| "ease-in-out"
-		| "linear"
-		| `cubic-bezier(${number},${number},${number},${number})`;
+	easing: Easing;
 };

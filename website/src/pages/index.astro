@@ -10,8 +10,12 @@ import Nav from "../components/Nav.astro";
 	const list = document.getElementById("js-list") as HTMLElement;
 	const main = document.querySelector("main") as HTMLElement;
 	const h1 = document.querySelector("h1") as HTMLElement;
-	const sibling = document.querySelector(".sibling") as HTMLElement;
 	const article = document.querySelector("article") as HTMLElement;
+	const sibling = document.querySelector(".sibling") as HTMLElement;
+
+	const removeSibling = () => {
+		sibling.remove();
+	};
 
 	const increaseH1Spacing = () => {
 		h1.style.marginBlockEnd = "2rem";
@@ -27,10 +31,6 @@ import Nav from "../components/Nav.astro";
 		main.style.gridTemplateColumns = "2fr 1fr";
 	};
 
-	const removeSibling = () => {
-		sibling.remove();
-	};
-
 	const expandArticlePadding = () => {
 		article.style.padding = "5%";
 	};
@@ -41,12 +41,13 @@ import Nav from "../components/Nav.astro";
 			[expandArticlePadding, { duration: 1000, root: article }],
 			[increaseH1Spacing, { root: "article section", duration: 1000, at: -500 }],
 			[expandArea, { duration: 1000, at: -500, root: main }],
-			[removeSibling, { duration: 2000, root: sibling }],
+			[removeSibling, { duration: 2000 }],
 		]).play();
 	}, 2000);
 </script>
 
 <Layout title="Bewegung">
+	<div class="sibling"></div>
 	<main>
 		<article>
 			<Nav pages={[]} active="home" />
@@ -136,7 +137,6 @@ import Nav from "../components/Nav.astro";
 			</ul>
 		</aside>
 	</main>
-	<div class="sibling"></div>
 </Layout>
 
 <style lang="scss">

@@ -55,29 +55,3 @@ export const resolvable = <Value>(): Resolvable<Value> => {
 };
 
 export const execute = (callback: VoidFunction) => callback();
-
-export const queue = <Type>(promiseFn: () => Promise<Type>) => {
-	let nextPromise: Promise<Type> | null;
-	let done = false;
-
-	return {
-		next(method: (result: Type) => void) {
-			if (done) {
-				method(nextPromise as Type);
-				return;
-			}
-			if (!nextPromise) {
-				nextPromise = promiseFn();
-				nextPromise = nextPromise.then((result) => {
-					done = true;
-					return result;
-				});
-			}
-
-			nextPromise = nextPromise.then((result) => {
-				method(result);
-				return result;
-			});
-		},
-	};
-};

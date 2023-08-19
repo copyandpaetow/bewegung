@@ -1,13 +1,16 @@
 import {
 	AtomicWorker,
+	DomLabel,
 	DomRepresentation,
 	NormalizedProps,
+	PropsWithRelativeTiming2,
 	RootData,
 	TreeElement,
 	TreeEntry,
 	TreeMedia,
 } from "../types";
 import { nextRaf, uuid } from "../utils/helper";
+import { sortRoots } from "./update-timings";
 
 const getTextAttribute = (element: HTMLElement) => {
 	let text = 0;
@@ -29,9 +32,10 @@ const getMediaRatioAttribute = (element: HTMLElement) => {
 	return (element as HTMLImageElement).naturalWidth / (element as HTMLImageElement).naturalHeight;
 };
 
-export const readElement = (element: HTMLElement, key: string, rootData: RootData): TreeEntry => {
+export const readElement = (element: HTMLElement, rootData: RootData): TreeEntry => {
 	const dimensions = element.getBoundingClientRect();
 	const style = window.getComputedStyle(element);
+	const key = (element.dataset.bewegungsKey ??= uuid(element.tagName));
 
 	if (element.tagName === "IMG" || element.tagName === "VIDEO") {
 		return {
@@ -48,7 +52,7 @@ export const readElement = (element: HTMLElement, key: string, rootData: RootDat
 			objectPosition: style.getPropertyValue("object-position"),
 			ratio: getMediaRatioAttribute(element),
 			key,
-			...rootData,
+			offset: rootData.offset,
 		} as TreeMedia;
 	}
 
@@ -64,7 +68,7 @@ export const readElement = (element: HTMLElement, key: string, rootData: RootDat
 		position: style.getPropertyValue("position"),
 		text: getTextAttribute(element),
 		key,
-		...rootData,
+		offset: rootData.offset,
 	} as TreeElement;
 };
 
@@ -73,41 +77,51 @@ export const isNotVisible = (style: TreeEntry) => {
 };
 
 export const recordElement = (element: HTMLElement, rootData: RootData): DomRepresentation => {
-	const key = (element.dataset.bewegungsKey ??= uuid(element.tagName));
-	const entry = readElement(element, key, rootData);
-
+	const entry = readElement(element, rootData);
 	const representation: DomRepresentation = [];
 	const children = element.children;
-	const isElementHidden = isNotVisible(entry);
 
-	for (let index = 0; index < children.length; index++) {
-		const child = children.item(index) as HTMLElement;
-		if (isElementHidden) {
-			continue;
+	if (!isNotVisible(entry)) {
+		for (let index = 0; index < children.length; index++) {
+			const child = children.item(index) as HTMLElement;
+
+			representation.push(recordElement(child, rootData));
 		}
-
-		representation.push(recordElement(child, rootData));
 	}
 
 	return [entry, representation];
 };
 
-const filterPrimaryRoots = (entry: NormalizedProps, _: number, array: NormalizedProps[]) =>
-	!array.some((innerEntry) => innerEntry.root.contains(entry.root) && entry !== innerEntry);
+export const recordDomLabels = (element: HTMLElement) => {
+	const label = uuid(element.tagName);
+	const childrenLabel: DomLabel = [];
+	const children = element.children;
 
-export const recordInitialDom = async (
-	normalizedProps: NormalizedProps[],
-	worker: AtomicWorker
-) => {
+	element.dataset.bewegungsKey = label;
+
+	for (let index = 0; index < children.length; index++) {
+		childrenLabel.push(recordDomLabels(children.item(index) as HTMLElement));
+	}
+
+	return [label, childrenLabel];
+};
+
+export const filterPrimaryRoots = <Props extends NormalizedProps | PropsWithRelativeTiming2>(
+	entry: Props,
+	index: number,
+	array: Props[]
+) => !array.slice(index + 1).some((innerEntry) => innerEntry.root.contains(entry.root));
+
+export const labelElements = async (normalizedProps: NormalizedProps[], worker: AtomicWorker) => {
 	const { reply } = worker("domChanges");
 
 	await nextRaf();
 
-	console.time("domRepresentation1");
-	const domRepresentation = normalizedProps
+	console.time("domLabels");
+	const domLabels = normalizedProps
+		.sort(sortRoots)
 		.filter(filterPrimaryRoots)
-		.map((entry) => recordElement(entry.root, { offset: 0, easing: entry.easing }));
-	console.timeEnd("domRepresentation1");
-
-	reply("sendDOMRepresentation", domRepresentation);
+		.map((props) => recordDomLabels(props.root));
+	console.timeEnd("domLabels");
+	reply("sendInitialDOMRepresentation", domLabels);
 };

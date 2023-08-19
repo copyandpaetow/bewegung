@@ -1,15 +1,13 @@
-import { DimensionalDifferences, ImageDetails, TreeStyle } from "../types";
+import { DimensionalDifferences, ImageDetails, TreeEntry, TreeMedia } from "../types";
 import { save } from "../utils/helper";
-import { isElementUnchanged } from "../utils/predicates";
 import { calculateBorderRadius } from "./border-radius";
 import { getScales, getTranslates } from "./calculate-differences";
 import { getImageData } from "./get-keyframes";
 
-export const calculateImageDifferences = (readouts: TreeStyle[]): DimensionalDifferences[] => {
+export const calculateImageDifferences = (readouts: TreeMedia[]): DimensionalDifferences[] => {
 	const { maxHeight, maxWidth } = getImageData(readouts);
 
 	return readouts.map((readout) => {
-		const ratio = parseFloat(readout.ratio);
 		let scaleWidth: number = readout.unsaveWidth / maxWidth;
 		let scaleHeight: number = readout.unsaveHeight / maxHeight;
 
@@ -17,11 +15,11 @@ export const calculateImageDifferences = (readouts: TreeStyle[]): DimensionalDif
 		let translateY: number = 0;
 
 		if (readout.objectFit === "cover") {
-			const alternateScaleWidth = (ratio * maxHeight) / maxWidth;
-			const alternateScaleHeight = maxWidth / ratio / maxHeight;
+			const alternateScaleWidth = (readout.ratio * maxHeight) / maxWidth;
+			const alternateScaleHeight = maxWidth / readout.ratio / maxHeight;
 			const currentRatio = readout.unsaveWidth / readout.unsaveHeight;
 
-			if (currentRatio < ratio) {
+			if (currentRatio < readout.ratio) {
 				scaleWidth = alternateScaleWidth * scaleHeight;
 			} else {
 				scaleHeight = alternateScaleHeight * scaleWidth;
@@ -45,25 +43,25 @@ export const calculateImageDifferences = (readouts: TreeStyle[]): DimensionalDif
 			leftDifference: save(translateX, 0),
 			topDifference: save(translateY, 0),
 			offset: readout.offset,
-			easing: readout.easing,
+			id: readout.key,
 		};
 	});
 };
 
 export const getWrapperKeyframes = (
-	readouts: TreeStyle[],
-	parentReadouts: TreeStyle[],
+	readouts: TreeMedia[],
+	parentReadouts: TreeEntry[] | undefined,
 	imageData: ImageDetails
 ): Keyframe[] => {
 	const { maxHeight, maxWidth } = imageData;
 	const reference = readouts.at(-1)!;
-	const parentReference = parentReadouts.at(1)!;
+	const parentReference = parentReadouts?.at(-1)! ?? reference;
 
 	return readouts.map((readout, index) => {
 		const dimensions = {
 			current: readout,
 			reference,
-			parent: parentReadouts.at(index)!,
+			parent: parentReadouts?.at(index) ?? readout,
 			parentReference,
 		};
 
@@ -99,7 +97,7 @@ export const getWrapperKeyframes = (
 			transform: `translate(${translateX}px, ${translateY}px) scale(${1 / parentWidthDifference}, ${
 				1 / parentHeightDifference
 			})`,
-			easing: readout.easing,
+			id: readout.key + "-wrapper",
 		};
 	});
 };

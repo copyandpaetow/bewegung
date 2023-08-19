@@ -1,4 +1,4 @@
-import { TreeStyle } from "../types";
+import { TreeEntry } from "../types";
 
 const normalizeBorderRadius = (radii: string, dimensions: { height: number; width: number }) => {
 	const radius = radii.split(" ");
@@ -24,7 +24,7 @@ const normalizeBorderRadius = (radii: string, dimensions: { height: number; widt
 };
 
 export const calculateBorderRadius = (
-	styleEntry: TreeStyle,
+	styleEntry: TreeEntry,
 	externalWidth?: number,
 	externalHeight?: number
 ): string => {

@@ -1,7 +1,7 @@
-import { ChildParentDimensions, DimensionalDifferences, TreeStyle } from "../types";
+import { ChildParentDimensions, DimensionalDifferences, TreeElement, TreeEntry } from "../types";
 import { save } from "../utils/helper";
 
-export const parseTransformOrigin = (entry: TreeStyle) => {
+export const parseTransformOrigin = (entry: TreeEntry) => {
 	if (!entry) {
 		return [0, 0];
 	}
@@ -83,7 +83,7 @@ export const calculateDimensionDifferences = (
 	dimensions: ChildParentDimensions
 ): DimensionalDifferences => {
 	const { current } = dimensions;
-	const isTextElement = parseFloat(current.text) > 0;
+	const isTextElement = Boolean((current as TreeElement)?.text);
 
 	const {
 		currentLeftDifference,
@@ -110,7 +110,7 @@ export const calculateDimensionDifferences = (
 		leftDifference: save(leftDifference, 0),
 		topDifference: save(topDifference, 0),
 		offset: current.offset,
-		easing: current.easing,
+		id: current.key,
 	};
 
 	if (isTextElement) {
@@ -120,7 +120,7 @@ export const calculateDimensionDifferences = (
 			leftDifference: save(leftDifference - textWidthCorrection, 0),
 			topDifference: save(topDifference - textHeightCorrection, 0),
 			offset: current.offset,
-			easing: current.easing,
+			id: current.key,
 		};
 	}
 
@@ -131,8 +131,8 @@ export const calculateRootDifferences = ({
 	current,
 	reference,
 }: {
-	current: TreeStyle;
-	reference: TreeStyle;
+	current: TreeEntry;
+	reference: TreeEntry;
 }): DimensionalDifferences => {
 	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(reference);
 	const [originCurrentLeft, originCurrentTop] = parseTransformOrigin(current);
@@ -171,6 +171,6 @@ export const calculateRootDifferences = ({
 		leftDifference: save(leftDifference, 0),
 		topDifference: save(topDifference, 0),
 		offset: current.offset,
-		easing: current.easing,
+		id: current.key,
 	};
 };

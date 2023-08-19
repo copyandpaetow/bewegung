@@ -1,4 +1,4 @@
-import { AtomicWorker, DomRepresentation, PropsWithRelativeTiming2 } from "../types";
+import { AtomicWorker, DomLabel, PropsWithRelativeTiming2 } from "../types";
 import { execute, querySelectorAll } from "../utils/helper";
 import { isHTMLElement } from "../utils/predicates";
 import { recordElement } from "./label-elements";
@@ -74,15 +74,53 @@ export const readdRemovedNodes = (entries: MutationRecord[]) => {
 			entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 			if (isHTMLElement(element)) {
 				(element as HTMLElement).dataset.bewegungsReset = "";
-				(element as HTMLElement).dataset.bewegungsRemoveable = "";
+				(element as HTMLElement).dataset.bewegungsRemovable = "";
 			}
 		});
 	});
 };
 
 const removeAddedNodes = (entries: MutationRecord[]) => {
-	//@ts-expect-error
-	entries.forEach((entry) => entry.addedNodes.forEach((node) => node?.remove()));
+	entries.forEach((entry) =>
+		entry.addedNodes.forEach((node) => {
+			//@ts-expect-error
+			node?.remove();
+		})
+	);
+};
+
+const getDomLabels = (element: HTMLElement) => {
+	const childrenLabel: DomLabel = [];
+	const children = element.children;
+
+	for (let index = 0; index < children.length; index++) {
+		childrenLabel.push(getDomLabels(children.item(index) as HTMLElement));
+	}
+
+	return [element.dataset.bewegungsKey!, childrenLabel];
+};
+
+export const filterNested = (entry: HTMLElement, _: number, array: HTMLElement[]) =>
+	!array.some((innerEntry) => innerEntry.contains(entry) && entry !== innerEntry);
+
+const updateDomTree = (entries: MutationRecord[], worker: AtomicWorker) => {
+	const { reply } = worker("treeUpdate");
+	const update = new Map<string, DomLabel>();
+
+	entries
+		.flatMap((entry) => [...entry.addedNodes])
+		.filter(isHTMLElement)
+		//@ts-expect-error
+		.filter(filterNested)
+		.forEach((entry) => {
+			const key = (entry as HTMLElement).parentElement!.dataset.bewegungsKey!;
+			update.set(key, getDomLabels(entry as HTMLElement));
+		});
+
+	if (update.size === 0) {
+		return;
+	}
+	reply("sendTreeUpdate", update);
 };
 
 export const addKeyToCustomElements = (entries: MutationRecord[]) => {
@@ -101,16 +139,42 @@ export const observe = (observer: MutationObserver) =>
 		attributeOldValue: true,
 	});
 
-export const observeDom = (domUpdates: PropsWithRelativeTiming2[], worker: AtomicWorker) =>
+const stopRunningAnimations = (element: HTMLElement) => {
+	const children = element.children;
+
+	for (let index = 0; index < children.length; index++) {
+		const child = children.item(index) as HTMLElement;
+		element
+			.getAnimations()
+			.filter((anim) => anim.playState === "running")
+			.forEach((anim) => {
+				anim.pause();
+				const currentTime = anim.currentTime;
+				anim.currentTime = anim.effect!.getComputedTiming()!.endTime!;
+
+				queueMicrotask(() => {
+					anim.currentTime = currentTime;
+					anim.play();
+				});
+			});
+
+		stopRunningAnimations(child);
+	}
+};
+
+export const observeDom = (
+	domUpdates: Map<number, PropsWithRelativeTiming2[]>,
+	worker: AtomicWorker
+) =>
 	new Promise<void>((resolve) => {
 		const { reply, cleanup } = worker("domChanges");
-		let currentIndex = -1;
-		let waitingForCallback = false;
+		const changes = domUpdates.values();
+		let current: IteratorResult<PropsWithRelativeTiming2[], PropsWithRelativeTiming2[]>;
 
 		const callNextChange = (observer: MutationObserver) => {
-			currentIndex += 1;
+			current = changes.next();
 
-			if (domUpdates[currentIndex] === undefined) {
+			if (current.done) {
 				observer.disconnect();
 				cleanup();
 				resolve();
@@ -119,28 +183,22 @@ export const observeDom = (domUpdates: PropsWithRelativeTiming2[], worker: Atomi
 
 			requestAnimationFrame(() => {
 				observe(observer);
-				domUpdates[currentIndex].callback.forEach(execute);
-				waitingForCallback = true;
-
-				requestAnimationFrame(() => {
-					if (waitingForCallback) {
-						callNextChange(observer);
-					}
+				current.value.forEach((entry) => {
+					entry.root.style.contain = "layout";
+					entry.callback.forEach(execute);
 				});
 			});
 		};
 
-		const observerCallback: MutationCallback = (entries, observer) => {
+		const observerCallback: MutationCallback = async (entries, observer) => {
 			observer.disconnect();
-			waitingForCallback = false;
 			const { addEntries, removeEntries, attributeEntries } = separateEntries(entries);
 			addKeyToCustomElements(addEntries);
-			const domRepresentation: DomRepresentation[] = [];
 
-			domRepresentation.push(
-				recordElement(domUpdates[currentIndex].root, {
-					easing: domUpdates[currentIndex].easing,
-					offset: domUpdates[currentIndex].end,
+			const domRepresentation = current.value.map((entry) =>
+				recordElement(entry.root, {
+					easing: entry.easing,
+					offset: entry.end,
 				})
 			);
 
@@ -151,6 +209,7 @@ export const observeDom = (domUpdates: PropsWithRelativeTiming2[], worker: Atomi
 			resetNodeStyle(attributeEntries);
 
 			callNextChange(observer);
+			updateDomTree(addEntries, worker);
 		};
 
 		callNextChange(new MutationObserver(observerCallback));

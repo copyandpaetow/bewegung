@@ -22,7 +22,7 @@ TODOs
 => like this there could be some fine tuning from the user
 => if we add a delay, the animation would be finished later. The stagger-delay would need to be included in the calculations...
 
-
+- use a generator to allow the user to do the required steps when they now its save / performant 
 
 * bugs
 
@@ -61,52 +61,13 @@ TODOs
 */
 
 /*
-* example 1
-? maybe this could also be done with a base promise and adding .then over and over again
-
-const bewegung3 = (props: BewegungsInputs, config?: BewegungsConfig): Bewegung => {
-
-	let normalizedProps = normalize(props, config)
-	let api = null;
-	let whileInProgress = []
-
-	const setApi = async (method: string) => {
-		whileInProgress.push(method)
-		if(whileInProgress.length> 1 && api === null){
-			return
-		}
-
-		try {
-			if(preferesReducedMotion){
-				throw "reducedMotion"
-			}
-			api = await animationController(normalizedProps)
-	
-		} catch (error) {
-				if(error === "recalc"){
-					normalizedProps = updateProps(normalizedProps) 
-					api = await animationController(normalizedProps)
-					return
-				}
-				console.warn(error)
-				api = emptyApi()
-	
-		} finally {
-			while (whileInProgress.length) {
-					api[whileInProgress.shift()]()
-			}
-		}
-	}
-
-...
-}
-
 
 ! things that didnt really work
 
 - combining the labeling with the inital readout doubled the labeling time
 
-- reading all callouts after each other => the overhead of setting things up takes some time
+- reading all callouts after each other (even if they happen at the same time) => the overhead of setting things up takes some time
+=> in case of nested roots, the parent root must swallow the child root
 
 - combining all independent changes into one because the reading takes so long
 
