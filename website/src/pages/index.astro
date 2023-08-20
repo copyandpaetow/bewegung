@@ -5,6 +5,7 @@ import Nav from "../components/Nav.astro";
 ---
 
 <script>
+	import { sequence } from "../../../lib/src/sequence/sequence";
 	import { bewegung } from "../../../lib/src/bewegung";
 
 	const list = document.getElementById("js-list") as HTMLElement;
@@ -35,14 +36,56 @@ import Nav from "../components/Nav.astro";
 		article.style.padding = "5%";
 	};
 
+	// setTimeout(() => {
+	// 	const anim = sequence([
+	// 		[removeGridArea, { root: "aside", duration: 1000 }],
+	// 		[expandArticlePadding, { duration: 1000, root: article }],
+	// 		[increaseH1Spacing, { root: "article section", duration: 1000, at: -500 }],
+	// 		[expandArea, { duration: 1000, at: -500, root: main }],
+	// 		[removeSibling, { duration: 2000 }],
+	// 	]);
+
+	// 	anim.play();
+	// }, 1000);
+
 	setTimeout(() => {
-		bewegung([
+		const anim = sequence([
 			[removeGridArea, { root: "aside", duration: 1000 }],
 			[expandArticlePadding, { duration: 1000, root: article }],
 			[increaseH1Spacing, { root: "article section", duration: 1000, at: -500 }],
 			[expandArea, { duration: 1000, at: -500, root: main }],
 			[removeSibling, { duration: 2000 }],
-		]).play();
+		]);
+		let time = performance.now();
+		let direction = "forward";
+
+		let raf = () =>
+			requestAnimationFrame((now) => {
+				let current =
+					direction === "forward"
+						? Math.min(1, (now - time) / 6000)
+						: 1 - Math.min(1, (now - time) / 6000);
+
+				anim.seek(current);
+
+				if (current === 1) {
+					time = now;
+					direction = "backward";
+					requestAnimationFrame(raf);
+					return;
+				}
+
+				if (current < 1 && direction === "forward") {
+					requestAnimationFrame(raf);
+					return;
+				}
+
+				if (current > 0 && direction === "backward") {
+					requestAnimationFrame(raf);
+				}
+			});
+
+		requestAnimationFrame(raf);
 	}, 2000);
 </script>
 

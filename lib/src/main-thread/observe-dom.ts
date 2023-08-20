@@ -1,5 +1,5 @@
-import { AtomicWorker, DomLabel, PropsWithRelativeTiming2 } from "../types";
-import { execute, querySelectorAll } from "../utils/helper";
+import { AtomicWorker, DomLabel, NormalizedOptions } from "../types";
+import { nextRaf, querySelectorAll } from "../utils/helper";
 import { isHTMLElement } from "../utils/predicates";
 import { recordElement } from "./label-elements";
 
@@ -32,7 +32,7 @@ export const getNextElementSibling = (node: Node | null): HTMLElement | null => 
 	if (node === null || isHTMLElement(node)) {
 		return node as HTMLElement | null;
 	}
-	//@ts-expect-error node has the nextElementSibling property
+	//@ts-expect-error node has the nextElementSibling propertys
 	return getNextElementSibling(node.nextElementSibling);
 };
 
@@ -68,16 +68,30 @@ export const separateEntries = (entries: MutationRecord[]) => {
 	};
 };
 
-export const readdRemovedNodes = (entries: MutationRecord[]) => {
+export const readdRemovedNodesHidden = (entries: MutationRecord[]) => {
+	const unhide = new Map<HTMLElement, string>();
+
 	entries.forEach((entry) => {
 		entry.removedNodes.forEach((element) => {
-			entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
-			if (isHTMLElement(element)) {
-				(element as HTMLElement).dataset.bewegungsReset = "";
-				(element as HTMLElement).dataset.bewegungsRemovable = "";
+			if (!isHTMLElement(element)) {
+				return;
 			}
+			const htmlElement = element as HTMLElement;
+			htmlElement.dataset.bewegungsReset = "";
+			htmlElement.dataset.bewegungsRemovable = "";
+
+			unhide.set(htmlElement, htmlElement.style.cssText);
+			htmlElement.style.display = "none";
+
+			entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 		});
 	});
+
+	return () => {
+		unhide.forEach((cssText, element) => {
+			element.style.cssText = cssText;
+		});
+	};
 };
 
 const removeAddedNodes = (entries: MutationRecord[]) => {
@@ -100,29 +114,6 @@ const getDomLabels = (element: HTMLElement) => {
 	return [element.dataset.bewegungsKey!, childrenLabel];
 };
 
-export const filterNested = (entry: HTMLElement, _: number, array: HTMLElement[]) =>
-	!array.some((innerEntry) => innerEntry.contains(entry) && entry !== innerEntry);
-
-const updateDomTree = (entries: MutationRecord[], worker: AtomicWorker) => {
-	const { reply } = worker("treeUpdate");
-	const update = new Map<string, DomLabel>();
-
-	entries
-		.flatMap((entry) => [...entry.addedNodes])
-		.filter(isHTMLElement)
-		//@ts-expect-error
-		.filter(filterNested)
-		.forEach((entry) => {
-			const key = (entry as HTMLElement).parentElement!.dataset.bewegungsKey!;
-			update.set(key, getDomLabels(entry as HTMLElement));
-		});
-
-	if (update.size === 0) {
-		return;
-	}
-	reply("sendTreeUpdate", update);
-};
-
 export const addKeyToCustomElements = (entries: MutationRecord[]) => {
 	entries
 		.flatMap((entry) => [...entry.addedNodes])
@@ -139,78 +130,39 @@ export const observe = (observer: MutationObserver) =>
 		attributeOldValue: true,
 	});
 
-const stopRunningAnimations = (element: HTMLElement) => {
-	const children = element.children;
+export const observeDom = async (
+	props: NormalizedOptions,
+	worker: AtomicWorker,
+	needsInitalReadout: boolean
+) => {
+	const { reply } = worker("domChanges");
+	const observerCallback: MutationCallback = (entries, observer) => {
+		observer.disconnect();
 
-	for (let index = 0; index < children.length; index++) {
-		const child = children.item(index) as HTMLElement;
-		element
-			.getAnimations()
-			.filter((anim) => anim.playState === "running")
-			.forEach((anim) => {
-				anim.pause();
-				const currentTime = anim.currentTime;
-				anim.currentTime = anim.effect!.getComputedTiming()!.endTime!;
+		const { addEntries, removeEntries, attributeEntries } = separateEntries(entries);
+		addKeyToCustomElements(addEntries);
+		/*
+		 we want to readd the element hidden, so the tree still knows about it
+		 we could also shortly add a shallow clone if this is too much browser work
+		*/
+		const unhideRemovedElements = readdRemovedNodesHidden(removeEntries);
+		const domRepresentation = recordElement(props.root, 1);
 
-				queueMicrotask(() => {
-					anim.currentTime = currentTime;
-					anim.play();
-				});
-			});
+		reply("sendLastDOMRepresentation", domRepresentation);
 
-		stopRunningAnimations(child);
+		unhideRemovedElements();
+		removeAddedNodes(addEntries);
+		resetNodeStyle(attributeEntries);
+	};
+
+	if (needsInitalReadout) {
+		await nextRaf();
+		reply("sendFirstDOMRepresentation", recordElement(props.root, 0));
 	}
+
+	const observer = new MutationObserver(observerCallback);
+
+	await nextRaf();
+	observe(observer);
+	props.callback();
 };
-
-export const observeDom = (
-	domUpdates: Map<number, PropsWithRelativeTiming2[]>,
-	worker: AtomicWorker
-) =>
-	new Promise<void>((resolve) => {
-		const { reply, cleanup } = worker("domChanges");
-		const changes = domUpdates.values();
-		let current: IteratorResult<PropsWithRelativeTiming2[], PropsWithRelativeTiming2[]>;
-
-		const callNextChange = (observer: MutationObserver) => {
-			current = changes.next();
-
-			if (current.done) {
-				observer.disconnect();
-				cleanup();
-				resolve();
-				return;
-			}
-
-			requestAnimationFrame(() => {
-				observe(observer);
-				current.value.forEach((entry) => {
-					entry.root.style.contain = "layout";
-					entry.callback.forEach(execute);
-				});
-			});
-		};
-
-		const observerCallback: MutationCallback = async (entries, observer) => {
-			observer.disconnect();
-			const { addEntries, removeEntries, attributeEntries } = separateEntries(entries);
-			addKeyToCustomElements(addEntries);
-
-			const domRepresentation = current.value.map((entry) =>
-				recordElement(entry.root, {
-					easing: entry.easing,
-					offset: entry.end,
-				})
-			);
-
-			reply("sendDOMRepresentation", domRepresentation);
-
-			removeAddedNodes(addEntries);
-			readdRemovedNodes(removeEntries);
-			resetNodeStyle(attributeEntries);
-
-			callNextChange(observer);
-			updateDomTree(addEntries, worker);
-		};
-
-		callNextChange(new MutationObserver(observerCallback));
-	});

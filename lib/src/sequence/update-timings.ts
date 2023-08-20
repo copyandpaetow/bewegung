@@ -1,4 +1,10 @@
-import { NormalizedProps, PropsWithRelativeTiming, PropsWithRelativeTiming2 } from "../types";
+import {
+	NormalizedOptions,
+	NormalizedProps,
+	PropsWithRelativeTiming,
+	PropsWithRelativeTiming2,
+} from "../types";
+import { execute } from "../utils/helper";
 
 export const getTotalRuntime = (props: NormalizedProps[]) =>
 	props.reduce((accumulator, current) => {
@@ -79,13 +85,13 @@ export const separateOverlappingEntries = (props: PropsWithRelativeTiming[]) => 
 		const isHidden = ancestorRoots.some((ancestorEntry) => {
 			if (entry.end <= ancestorEntry.start) {
 				//this animation happens before the ancestors animation, so the ancestor needs the callback
-				union(ancestorEntry.callback, entry.callback);
+				//union(ancestorEntry.callback, entry.callback);
 				return false;
 			}
 
 			if (entry.start >= ancestorEntry.end) {
 				//the ancestor animation finishes before this one starts, we just need its callback
-				union(entry.callback, ancestorEntry.callback);
+				//union(entry.callback, ancestorEntry.callback);
 				return false;
 			}
 			if (entry.start >= ancestorEntry.start && entry.end <= ancestorEntry.end) {
@@ -95,16 +101,15 @@ export const separateOverlappingEntries = (props: PropsWithRelativeTiming[]) => 
 			}
 			if (entry.start < ancestorEntry.start && entry.end <= ancestorEntry.end) {
 				//the animation overlaps with the ancestor, but just in the end
-				union(ancestorEntry.callback, entry.callback);
+				//union(ancestorEntry.callback, entry.callback);
 				entry.end = ancestorEntry.start;
 				return false;
 			}
 
 			if (entry.start >= ancestorEntry.start && entry.end > ancestorEntry.end) {
 				//the animation overlaps with the ancestor, but just in the beginning
-				//since they are related, both need each others callback
 				entry.start = ancestorEntry.end;
-				union(entry.callback, ancestorEntry.callback);
+				//union(entry.callback, ancestorEntry.callback);
 				return false;
 			}
 
@@ -112,7 +117,7 @@ export const separateOverlappingEntries = (props: PropsWithRelativeTiming[]) => 
 				//the last case would be that the root animation is shorter than the entry one and starts later but ends earlier
 				//this would split the entry into two, from which we push the latter into the current array, so it gets the same treatment
 
-				union(ancestorEntry.callback, entry.callback);
+				//union(ancestorEntry.callback, entry.callback);
 				safeProps.splice(index, 0, { ...entry, start: ancestorEntry.end });
 				entry.end = ancestorEntry.start;
 
@@ -131,4 +136,21 @@ export const separateOverlappingEntries = (props: PropsWithRelativeTiming[]) => 
 	}
 
 	return domUpdates.sort((a, b) => a.start - b.start);
+};
+
+export const revertToAbsoluteTiming = (
+	props: PropsWithRelativeTiming2[],
+	totalRuntime: number
+): NormalizedOptions[] => {
+	return props.map((entry) => {
+		return {
+			root: entry.root,
+			easing: entry.easing,
+			duration: (entry.end - entry.start) * totalRuntime,
+			delay: 0,
+			endDelay: 0,
+			callback: () => entry.callback.forEach(execute),
+			reduceMotion: false,
+		};
+	});
 };

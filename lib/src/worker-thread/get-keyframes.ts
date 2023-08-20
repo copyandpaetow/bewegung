@@ -14,11 +14,19 @@ export const getBorderRadius = (readouts: TreeEntry[]) => {
 	return styleTable;
 };
 
+export const changesInScale = (differences: DimensionalDifferences[]) =>
+	differences.some(
+		(entry) =>
+			entry.heightDifference !== entry.widthDifference &&
+			(entry.heightDifference !== 1 || entry.widthDifference !== 1)
+	);
+
 export const setDefaultKeyframes = (
 	differences: DimensionalDifferences[],
-	readouts: TreeEntry[]
+	readouts: TreeEntry[],
+	isChangingInScale: boolean
 ): Keyframe[] => {
-	const borderRadius = getBorderRadius(readouts);
+	const borderRadius = isChangingInScale ? getBorderRadius(readouts) : new Map();
 
 	return differences.map(
 		({ leftDifference, topDifference, widthDifference, heightDifference, offset }) => {

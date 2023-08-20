@@ -1,8 +1,7 @@
 import { fetchAnimationData } from "./main-thread/animation-calculator";
-import { filterProps, normalize } from "./main-thread/normalize-props";
-import { getReactivity } from "./main-thread/watch-dom-changes";
-import { BewegungsConfig, BewegungsInputs } from "./types";
-import { resolvable } from "./utils/helper";
+import { extractAnimationOptions, normalizeOptions } from "./main-thread/normalize-props";
+import { BewegungsCallback, BewegungsOption, MainMessages, WorkerMessages } from "./types";
+import { getWorker, useWorker } from "./utils/use-worker";
 
 export type Bewegung = {
 	play(): void;
@@ -10,39 +9,47 @@ export type Bewegung = {
 	seek(scrollAmount: number, done?: boolean): void;
 	cancel(): void;
 	finish(): void;
-	finished: Promise<Map<string, Animation>>;
+	finished: Promise<Animation>;
 	playState: AnimationPlayState;
 };
 
 const preferesReducedMotion =
 	window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
 
-const getMotionPreference = (config?: BewegungsConfig) =>
-	config?.reduceMotion ?? preferesReducedMotion;
+const workerManager = getWorker();
 
-export const bewegung = (props: BewegungsInputs, config?: BewegungsConfig): Bewegung => {
-	const finishedResolvable = resolvable<Map<string, Animation>>();
-	const reactivity = getReactivity();
-	const reduceMotion = getMotionPreference(config);
+export const bewegung = (domChangeFn: BewegungsCallback, options?: BewegungsOption): Bewegung => {
+	const reduceMotion = options?.reduceMotion ?? preferesReducedMotion;
+	//	const reactivity = getReactivity();
 
-	let normalizedProps = normalize(props, config);
+	let normalizedOptions = normalizeOptions(domChangeFn, options);
 	let state: Map<string, Animation> | null = null;
 	let playState: AnimationPlayState = "idle";
 
-	const enableReactivity = () => {
-		reactivity.observe(() => {
-			reactivity.disconnect();
-			normalizedProps = filterProps(normalize(props, config));
-			state = null;
-		});
-	};
+	const worker = useWorker<MainMessages, WorkerMessages>(workerManager.current());
+	const timekeeper = new Animation(
+		new KeyframeEffect(null, null, extractAnimationOptions(normalizedOptions))
+	);
+
+	// const enableReactivity = () => {
+	// 	reactivity.observe(() => {
+	// 		reactivity.disconnect();
+	// 		normalizedProps = filterProps(normalize(props, config));
+	// 		state = null;
+	// 	});
+	// };
 
 	const getState = async () => {
 		if (reduceMotion && !state) {
-			//todo: set another state
+			//todo: set another empty state
 		}
 
-		state ??= await fetchAnimationData(normalizedProps, finishedResolvable);
+		state ??= await fetchAnimationData({
+			options: normalizedOptions,
+			timekeeper,
+			worker,
+			needsInitalReadout: true,
+		});
 	};
 
 	const api: Bewegung = {
@@ -50,14 +57,16 @@ export const bewegung = (props: BewegungsInputs, config?: BewegungsConfig): Bewe
 			console.time("play");
 			await getState();
 			console.timeEnd("play");
-			state!.forEach((animation) => animation.play());
+			state!.forEach((animation) => {
+				animation.play();
+			});
 			playState = "running";
 		},
 		async pause() {
 			await getState();
 			state!.forEach((animation) => animation.pause());
 			playState = "paused";
-			enableReactivity();
+			// enableReactivity();
 		},
 		async seek(progress, done) {
 			await getState();
@@ -81,7 +90,7 @@ export const bewegung = (props: BewegungsInputs, config?: BewegungsConfig): Bewe
 			}
 		},
 		get finished() {
-			return finishedResolvable.promise;
+			return timekeeper.finished;
 		},
 		get playState() {
 			return playState ?? "idle";

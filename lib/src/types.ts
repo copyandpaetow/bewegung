@@ -2,7 +2,7 @@ import { WorkerContext } from "./utils/use-worker";
 
 export type ElementOrSelector = HTMLElement | Element | string;
 
-type Easing =
+export type Easing =
 	| "ease"
 	| "ease-in"
 	| "ease-out"
@@ -15,6 +15,9 @@ export type BewegungsOption = {
 	duration: number;
 	root?: ElementOrSelector;
 	easing?: Easing;
+	delay?: number;
+	endDelay?: number;
+	reduceMotion?: boolean;
 	at?: number;
 };
 
@@ -32,17 +35,21 @@ export type NormalizedProps = Required<BewegungsOption> & {
 	root: HTMLElement;
 };
 
+export type NormalizedOptions = {
+	callback: VoidFunction;
+	root: HTMLElement;
+	duration: number;
+	easing: Easing;
+	delay: number;
+	endDelay: number;
+	reduceMotion: boolean;
+};
+
 export type PropsWithRelativeTiming = {
 	start: number;
 	end: number;
 	root: HTMLElement;
-	easing:
-		| "ease"
-		| "ease-in"
-		| "ease-out"
-		| "ease-in-out"
-		| "linear"
-		| `cubic-bezier(${number},${number},${number},${number})`;
+	easing: Easing;
 	callback: VoidFunction;
 };
 
@@ -50,13 +57,7 @@ export type PropsWithRelativeTiming2 = {
 	start: number;
 	end: number;
 	root: HTMLElement;
-	easing:
-		| "ease"
-		| "ease-in"
-		| "ease-out"
-		| "ease-in-out"
-		| "linear"
-		| `cubic-bezier(${number},${number},${number},${number})`;
+	easing: Easing;
 	callback: Set<VoidFunction>;
 };
 
@@ -108,8 +109,9 @@ export type ResultTransferable = {
 export type DomLabel = (string | DomLabel)[];
 
 export type WorkerMessages = {
-	sendDOMRepresentation: DomRepresentation[];
-	sendInitialDOMRepresentation: DomLabel[];
+	sendFirstDOMRepresentation: DomRepresentation;
+	sendLastDOMRepresentation: DomRepresentation;
+	sendDomLabels: DomLabel;
 	sendAnimationData: ResultTransferable;
 	sendTreeUpdate: Map<string, DomLabel>;
 };
@@ -148,15 +150,4 @@ export type ImageDetails = {
 export type Reactivity = {
 	observe(callback: VoidFunction): void;
 	disconnect(): void;
-};
-
-export type Resolvable<Value> = {
-	resolve: (value: Value | PromiseLike<Value>) => void;
-	reject: (reason?: any) => void;
-	promise: Promise<Value>;
-};
-
-export type RootData = {
-	offset: number;
-	easing: Easing;
 };

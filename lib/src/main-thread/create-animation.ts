@@ -1,8 +1,9 @@
-import { ResultTransferable } from "../types";
+import { NormalizedOptions, ResultTransferable } from "../types";
 import { Attributes, emptyImageSrc } from "../utils/constants";
-import { applyCSSStyles, execute, nextRaf, querySelectorAll } from "../utils/helper";
+import { applyCSSStyles, execute, querySelectorAll } from "../utils/helper";
 import { isHTMLElement } from "../utils/predicates";
-import { addKeyToCustomElements, readdRemovedNodes, separateEntries } from "./observe-dom";
+import { extractAnimationOptions } from "./normalize-props";
+import { addKeyToCustomElements, getNextElementSibling, separateEntries } from "./observe-dom";
 
 export const saveOriginalStyle = (element: HTMLElement) => {
 	const attributes = new Map<string, string>();
@@ -42,7 +43,7 @@ const createAdditionalImageElements = (
 	result: ResultTransferable,
 	animations: Map<string, Animation>,
 	onStart: Map<string, VoidFunction>,
-	totalRuntime: number
+	options: NormalizedOptions
 ) => {
 	const parentElement = element.parentElement!;
 	const nextSibling = element.nextElementSibling;
@@ -54,10 +55,16 @@ const createAdditionalImageElements = (
 	);
 	const wrapperElement = createWrapperElement(result.overrideStore.get(`${key}-wrapper`)!);
 	const placeholderAnimation = new Animation(
-		new KeyframeEffect(placeholderElement, [], totalRuntime)
+		new KeyframeEffect(placeholderElement, [], {
+			...extractAnimationOptions(options),
+			fill: "both",
+		})
 	);
 	const wrapperAnimation = new Animation(
-		new KeyframeEffect(wrapperElement, result.keyframeStore.get(`${key}-wrapper`)!, totalRuntime)
+		new KeyframeEffect(wrapperElement, result.keyframeStore.get(`${key}-wrapper`)!, {
+			...extractAnimationOptions(options),
+			fill: "both",
+		})
 	);
 	animations.set(`${key}-wrapper`, wrapperAnimation);
 	animations.set(`${key}-placeholder`, placeholderAnimation);
@@ -86,7 +93,7 @@ const setElementAnimation = (
 	results: ResultTransferable,
 	animations: Map<string, Animation>,
 	onStart: Map<string, VoidFunction>,
-	totalRuntime: number
+	options: NormalizedOptions
 ) => {
 	const { keyframeStore, overrideStore } = results;
 	const key = element.dataset.bewegungsKey!;
@@ -97,11 +104,13 @@ const setElementAnimation = (
 		return;
 	}
 
-	const anim = new Animation(new KeyframeEffect(element, keyframes, totalRuntime));
+	const anim = new Animation(
+		new KeyframeEffect(element, keyframes, { ...extractAnimationOptions(options), fill: "both" })
+	);
 	animations.set(key, anim);
 
 	if (keyframeStore.has(`${key}-wrapper`)) {
-		createAdditionalImageElements(element, results, animations, onStart, totalRuntime);
+		createAdditionalImageElements(element, results, animations, onStart, options);
 	}
 
 	if (!overrides) {
@@ -118,7 +127,7 @@ const setElementAnimation = (
 
 const createAnimationsFromExistingElements = (
 	results: ResultTransferable,
-	totalRuntime: number
+	options: NormalizedOptions
 ) => {
 	const animations = new Map<string, Animation>();
 	const onStart = new Map<string, VoidFunction>();
@@ -128,20 +137,30 @@ const createAnimationsFromExistingElements = (
 		if (!element) {
 			return;
 		}
-		setElementAnimation(element, results, animations, onStart, totalRuntime);
+		setElementAnimation(element, results, animations, onStart, options);
 	});
 
 	return { animations, onStart };
 };
 
+const readdRemovedNodes = (entries: MutationRecord[]) => {
+	entries.forEach((entry) => {
+		entry.removedNodes.forEach((element) => {
+			entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
+			if (isHTMLElement(element)) {
+				(element as HTMLElement).dataset.bewegungsReset = "";
+				(element as HTMLElement).dataset.bewegungsRemovable = "";
+			}
+		});
+	});
+};
+
 //TODO: we could delay animation that are not in the viewport
 export const createAnimations = async (
 	results: ResultTransferable,
-	callbacks: VoidFunction[],
-	totalRuntime: number
+	options: NormalizedOptions
 ): Promise<Map<string, Animation>> => {
-	const { animations, onStart } = createAnimationsFromExistingElements(results, totalRuntime);
-	await nextRaf();
+	const { animations, onStart } = createAnimationsFromExistingElements(results, options);
 
 	return new Promise<Map<string, Animation>>((resolve) => {
 		const observerCallback: MutationCallback = (entries, observer) => {
@@ -154,7 +173,7 @@ export const createAnimations = async (
 				.flatMap((mutations) => [...mutations.addedNodes])
 				.filter(isHTMLElement)
 				.forEach((node) => {
-					setElementAnimation(node as HTMLElement, results, animations, onStart, totalRuntime);
+					setElementAnimation(node as HTMLElement, results, animations, onStart, options);
 				});
 
 			onStart.forEach(execute);
@@ -163,7 +182,7 @@ export const createAnimations = async (
 		const observer = new MutationObserver(observerCallback);
 		requestAnimationFrame(() => {
 			observer.observe(document.body, { childList: true, subtree: true, attributes: true });
-			callbacks.forEach(execute);
+			options.callback();
 			return;
 		});
 	});

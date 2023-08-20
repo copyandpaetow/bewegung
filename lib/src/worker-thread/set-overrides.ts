@@ -1,16 +1,11 @@
 import { TreeEntry } from "../types";
 
 export const setOverrides = (
-	key: string,
-	parentKey: string | undefined,
-	overrideStore: Map<string, Partial<CSSStyleDeclaration>>,
-	dimensionStore: Map<string, TreeEntry[]>
+	lastReadout: TreeEntry,
+	lastParentReadout: TreeEntry | undefined,
+	overrideStore: Map<string, Partial<CSSStyleDeclaration>>
 ) => {
-	const readouts = dimensionStore.get(key)!;
-	const lastReadout = readouts.at(-1)!;
-	const lastParentReadout = parentKey ? dimensionStore.get(parentKey)?.at(1) : undefined;
-
-	const currentOverride = overrideStore.get(key) ?? {};
+	const currentOverride = overrideStore.get(lastReadout.key) ?? {};
 
 	currentOverride.position = "absolute";
 	currentOverride.display = "unset";
@@ -19,12 +14,12 @@ export const setOverrides = (
 	currentOverride.width = lastReadout.currentWidth + "px";
 	currentOverride.height = lastReadout.currentHeight + "px";
 
-	overrideStore.set(key, currentOverride);
+	overrideStore.set(lastReadout.key, currentOverride);
 
-	if (!parentKey) {
+	if (!lastParentReadout) {
 		return;
 	}
-	const parentOverride = overrideStore.get(parentKey) ?? {};
+	const parentOverride = overrideStore.get(lastParentReadout.key) ?? {};
 
 	if (lastParentReadout?.position !== "static" || parentOverride.position) {
 		return;

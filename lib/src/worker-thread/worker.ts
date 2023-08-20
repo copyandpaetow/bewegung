@@ -1,6 +1,5 @@
 import {
 	DimensionalDifferences,
-	DomLabel,
 	DomRepresentation,
 	MainMessages,
 	TreeEntry,
@@ -11,83 +10,36 @@ import { isElementUnchanged, isEntryVisible } from "../utils/predicates";
 import { useWorker } from "../utils/use-worker";
 import { calculateDimensionDifferences, calculateRootDifferences } from "./calculate-differences";
 import { calculateImageDifferences, getWrapperKeyframes } from "./calculate-image-differences";
-import { getImageData, setDefaultKeyframes } from "./get-keyframes";
+import { changesInScale, getImageData, setDefaultKeyframes } from "./get-keyframes";
 import { setOverrides } from "./set-overrides";
-import { normalizeReadouts } from "./set-readouts";
 
 //@ts-expect-error typescript doesnt
 const worker = self as Worker;
 const workerAtom = useWorker<WorkerMessages, MainMessages>(worker);
 
-const dimensionStore = new Map<string, TreeEntry[]>();
-const domTreeStore = new Map<string, DomLabel>();
-const relatedRootStore = new Map<string, string>();
-const overrideStore = new Map<string, Partial<CSSStyleDeclaration>>();
-const allOffsets: number[] = [];
+const dimensionStore = new Map<string, TreeEntry>();
 
-workerAtom("sendInitialDOMRepresentation").onMessage((domLabel) => {
-	dimensionStore.clear();
-	domTreeStore.clear();
-	relatedRootStore.clear();
-	overrideStore.clear();
-	allOffsets.length = 0;
-
-	const updateStore = (currentTree: DomLabel, root: string) => {
-		const [current, children] = currentTree;
-		relatedRootStore.set(current as string, root);
-
-		if (children.length === 0) {
-			return;
-		}
-		(children as DomLabel).forEach((entry) => updateStore(entry as DomLabel, root));
-	};
-
-	domLabel.forEach((labelTree) => {
-		const id = labelTree[0] as string;
-		updateStore(labelTree, id);
-		domTreeStore.set(id, labelTree);
-	});
-});
-
-const getNestedTree = (key: string) => {
-	const root = relatedRootStore.get(key)!;
-	const rootTree = domTreeStore.get(root)!;
-	let result: DomLabel = [];
-
-	const findNode = (currentTree: DomLabel) => {
-		const [current, children] = currentTree as DomLabel;
-
-		if (current === key) {
-			result = currentTree;
-			return;
-		}
-		return (children as DomLabel[]).forEach(findNode);
-	};
-
-	findNode(rootTree);
-	return result;
-};
-
-const updateTree = (currentTree: DomRepresentation, dimensionStore: Map<string, TreeEntry[]>) => {
+const updateDimensions = (
+	currentTree: DomRepresentation,
+	dimensionStore: Map<string, TreeEntry>
+) => {
 	const [current, currentChildren] = currentTree as DomRepresentation;
 	const key = (current as TreeEntry).key;
 
-	dimensionStore.set(key, (dimensionStore.get(key) ?? []).concat(current as TreeEntry));
+	dimensionStore.set(key, current as TreeEntry);
 
 	(currentChildren as DomRepresentation).forEach((child) =>
-		updateTree(child as DomRepresentation, dimensionStore)
+		updateDimensions(child as DomRepresentation, dimensionStore)
 	);
 };
 
-workerAtom("sendTreeUpdate").onMessage((treeUpdate) => {
-	treeUpdate.forEach((labels, key) => {
-		(getNestedTree(key)[1] as DomLabel).push(labels);
-	});
-});
+/*
+todo: images require a lot of work downstream
+maybe we can calculate the image like other elements and when their dimensions change, we redo the calculation?
 
+*/
 const calculateDifferences = (current: TreeEntry[], parent: TreeEntry[] | undefined) => {
 	const isRoot = !Boolean(parent);
-	const isImage = Boolean(current[0].hasOwnProperty("ratio"));
 
 	if (isRoot) {
 		return current.map((entry) =>
@@ -96,10 +48,6 @@ const calculateDifferences = (current: TreeEntry[], parent: TreeEntry[] | undefi
 				reference: current.at(-1)!,
 			})
 		);
-	}
-
-	if (isImage) {
-		return calculateImageDifferences(current as TreeMedia[]);
 	}
 
 	return current.map((entry, index) =>
@@ -119,8 +67,10 @@ const calculateKeyframes = (
 	keyframeStore: Map<string, Keyframe[]>,
 	overrideStore: Map<string, Partial<CSSStyleDeclaration>>
 ) => {
-	if (current[0].hasOwnProperty("ratio")) {
-		console.log({ current, parent });
+	const isImage = Boolean(current[0].hasOwnProperty("ratio"));
+	const isChangingInScale = changesInScale(differences);
+
+	if (isImage && isChangingInScale) {
 		const key = current[0].key;
 		const lastReadout = current.at(-1)!;
 		const lastParentReadout = parent ? parent.at(-1) : undefined;
@@ -145,21 +95,49 @@ const calculateKeyframes = (
 		});
 	}
 
-	return setDefaultKeyframes(differences, current);
+	return setDefaultKeyframes(differences, current, isChangingInScale);
 };
 
-const getKeyframes = (
-	domTreeStore: Map<string, DomLabel>,
-	dimensionStore: Map<string, TreeEntry[]>
-) => {
+const getKeyframes = (tree: DomRepresentation, dimensionStore: Map<string, TreeEntry>) => {
 	const keyframeStore = new Map<string, Keyframe[]>();
+	const overrideStore = new Map<string, Partial<CSSStyleDeclaration>>();
 
-	const updateStore = (currentTree: DomLabel, parentKey?: string) => {
-		const [current, children] = currentTree as DomLabel;
-		const key = current as string;
+	const updateStore = (currentNode: DomRepresentation, parentNode?: DomRepresentation) => {
+		const [current, children] = currentNode as DomRepresentation;
+		const key = (current as TreeEntry).key;
+		const parentKey = parentNode ? (parentNode[0] as TreeEntry).key : undefined;
+		//if a previous input is not there the element was newly added
+		const previousDimensions =
+			dimensionStore.get(key) ??
+			({
+				...current,
+				unsaveHeight: 0,
+				unsaveWidth: 0,
+				offset: 0,
+			} as TreeEntry);
 
-		const dimensions = normalizeReadouts(dimensionStore.get(key)!, allOffsets);
-		const parentDimensions = parentKey ? dimensionStore.get(parentKey) : undefined;
+		const currentDimensions = isEntryVisible(current as TreeEntry)
+			? (current as TreeEntry)
+			: ({
+					...previousDimensions,
+					unsaveHeight: 0,
+					unsaveWidth: 0,
+					offset: 1,
+			  } as TreeEntry);
+
+		const dimensions = [previousDimensions, currentDimensions];
+
+		//if both entries are hidden the element was hidden in general and doesnt need any animations as well as their children
+		if (dimensions.every((entry) => !isEntryVisible(entry))) {
+			return;
+		}
+
+		const previousParentDimensions = parentKey ? dimensionStore.get(parentKey) : undefined;
+
+		const parentDimensions =
+			previousParentDimensions && parentNode
+				? [previousParentDimensions, parentNode[0] as TreeEntry]
+				: undefined;
 
 		const differences = calculateDifferences(dimensions, parentDimensions);
 		const keyframes = calculateKeyframes(
@@ -170,47 +148,43 @@ const getKeyframes = (
 			overrideStore
 		);
 
-		dimensionStore.set(key, dimensions);
-		keyframeStore.set(key, keyframes);
-
-		if (dimensions.every((entry) => !isEntryVisible(entry))) {
-			keyframeStore.delete(key);
-			return;
-		}
 		const isUnchanged = differences.every(isElementUnchanged);
 
-		if (isUnchanged) {
-			keyframeStore.delete(key);
+		if (!isUnchanged) {
+			keyframeStore.set(key, keyframes);
 		}
 
 		if (!isEntryVisible(dimensions.at(-1)!)) {
-			setOverrides(key, parentKey, overrideStore, dimensionStore);
+			setOverrides(
+				dimensions.at(0)!,
+				parentNode ? (parentNode[0] as TreeEntry) : undefined,
+				overrideStore
+			);
 		}
 
-		(children as DomLabel[]).forEach((entry) => {
-			updateStore(entry, isUnchanged ? parentKey : key);
+		if (!dimensionStore.has(key)) {
+			//if the element is newly added, we dont need nested animations
+			return;
+		}
+
+		(children as DomRepresentation[]).forEach((entry) => {
+			updateStore(entry, isUnchanged ? parentNode : currentNode);
 		});
 	};
 
-	domTreeStore.forEach((tree) => {
-		const key = tree[0] as string;
-		dimensionStore.set(key, normalizeReadouts(dimensionStore.get(key)!, allOffsets));
-		updateStore(tree);
-	});
+	updateStore(tree);
 
 	return { keyframeStore, overrideStore };
 };
 
-workerAtom("sendDOMRepresentation").onMessage((domRepresentations) => {
-	const offset = (domRepresentations[0][0] as TreeEntry).offset;
-	allOffsets.push(offset);
-	domRepresentations.forEach((domTree) => {
-		updateTree(domTree, dimensionStore);
-	});
-	if (offset === 1) {
-		const result = getKeyframes(domTreeStore, dimensionStore);
-		console.log({ domRepresentations, domTreeStore, result });
+workerAtom("sendLastDOMRepresentation").onMessage((domRepresentations) => {
+	const result = getKeyframes(domRepresentations, dimensionStore);
+	console.log({ result, domRepresentations, dimensionStore });
+	workerAtom("sendAnimationData").reply("animationData", result);
 
-		workerAtom("sendAnimationData").reply("animationData", result);
-	}
+	updateDimensions(domRepresentations, dimensionStore);
+});
+
+workerAtom("sendFirstDOMRepresentation").onMessage((domRepresentations) => {
+	updateDimensions(domRepresentations, dimensionStore);
 });

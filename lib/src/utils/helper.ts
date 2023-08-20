@@ -1,7 +1,10 @@
-import { Resolvable } from "../types";
+const ROUNDING_FACTOR = 10000;
+
+export const round = (number: number): number =>
+	Math.round((number + Number.EPSILON) * ROUNDING_FACTOR) / ROUNDING_FACTOR;
 
 export const save = (value: number, alternative: number): number => {
-	return value === Infinity || value === -Infinity || isNaN(value) ? alternative : value;
+	return value === Infinity || value === -Infinity || isNaN(value) ? alternative : round(value);
 };
 
 export const applyCSSStyles = (element: HTMLElement, style: Partial<CSSStyleDeclaration>) => {
@@ -34,24 +37,8 @@ export const getChilden = (element: HTMLElement) => {
 	return Array.from(element.children) as HTMLElement[];
 };
 
-export const toArray = <MaybeArrayType>(
-	maybeArray: MaybeArrayType | MaybeArrayType[]
-): MaybeArrayType[] => (Array.isArray(maybeArray) ? maybeArray : [maybeArray]);
-
 export const transformProgress = (totalRuntime: number, progress: number, done?: boolean) => {
 	return Math.min(Math.max(progress, 0.001), done === undefined ? 1 : 0.999) * totalRuntime;
-};
-
-export const resolvable = <Value>(): Resolvable<Value> => {
-	let resolve: (value: Value | PromiseLike<Value>) => void = () => {};
-	let reject: (reason?: any) => void = () => {};
-
-	const promise = new Promise<Value>((res, rej) => {
-		resolve = res;
-		reject = rej;
-	});
-
-	return { resolve, reject, promise };
 };
 
 export const execute = (callback: VoidFunction) => callback();
