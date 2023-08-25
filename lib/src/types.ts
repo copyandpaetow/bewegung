@@ -11,6 +11,8 @@ export type Easing =
 	| `cubic-bezier(${number},${number},${number},${number})`;
 
 export type BewegungsCallback = VoidFunction;
+
+//requires at least "from" or "to" to be set
 export type BewegungsOption = {
 	duration: number;
 	root?: ElementOrSelector;
@@ -18,8 +20,14 @@ export type BewegungsOption = {
 	delay?: number;
 	endDelay?: number;
 	reduceMotion?: boolean;
-	at?: number;
-};
+} & (
+	| {
+			from: VoidFunction;
+	  }
+	| {
+			to: VoidFunction;
+	  }
+);
 
 export type BewegungsEntry = [BewegungsCallback, BewegungsOption?];
 
@@ -30,19 +38,14 @@ export type BewegungsConfig = {
 	reduceMotion?: boolean;
 };
 
-export type NormalizedProps = Required<BewegungsOption> & {
-	callback: VoidFunction;
-	root: HTMLElement;
-};
-
 export type NormalizedOptions = {
-	callback: VoidFunction;
+	from: VoidFunction;
+	to: VoidFunction;
 	root: HTMLElement;
 	duration: number;
 	easing: Easing;
 	delay: number;
 	endDelay: number;
-	reduceMotion: boolean;
 };
 
 export type PropsWithRelativeTiming = {
@@ -109,8 +112,7 @@ export type ResultTransferable = {
 export type DomLabel = (string | DomLabel)[];
 
 export type WorkerMessages = {
-	sendFirstDOMRepresentation: DomRepresentation;
-	sendLastDOMRepresentation: DomRepresentation;
+	sendDOMRepresentation: DomRepresentation;
 	sendDomLabels: DomLabel;
 	sendAnimationData: ResultTransferable;
 	sendTreeUpdate: Map<string, DomLabel>;

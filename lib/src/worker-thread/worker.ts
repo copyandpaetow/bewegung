@@ -177,14 +177,15 @@ const getKeyframes = (tree: DomRepresentation, dimensionStore: Map<string, TreeE
 	return { keyframeStore, overrideStore };
 };
 
-workerAtom("sendLastDOMRepresentation").onMessage((domRepresentations) => {
+workerAtom("sendDOMRepresentation").onMessage((domRepresentations) => {
+	if (dimensionStore.size === 0) {
+		updateDimensions(domRepresentations, dimensionStore);
+		return;
+	}
+
 	const result = getKeyframes(domRepresentations, dimensionStore);
 	console.log({ result, domRepresentations, dimensionStore });
 	workerAtom("sendAnimationData").reply("animationData", result);
 
-	updateDimensions(domRepresentations, dimensionStore);
-});
-
-workerAtom("sendFirstDOMRepresentation").onMessage((domRepresentations) => {
-	updateDimensions(domRepresentations, dimensionStore);
+	dimensionStore.clear();
 });

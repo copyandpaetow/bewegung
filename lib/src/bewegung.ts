@@ -3,6 +3,8 @@ import { extractAnimationOptions, normalizeOptions } from "./main-thread/normali
 import { BewegungsCallback, BewegungsOption, MainMessages, WorkerMessages } from "./types";
 import { getWorker, useWorker } from "./utils/use-worker";
 
+const workerManager = getWorker();
+
 export type Bewegung = {
 	play(): void;
 	pause(): void;
@@ -13,24 +15,28 @@ export type Bewegung = {
 	playState: AnimationPlayState;
 };
 
-const preferesReducedMotion =
-	window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
+export type BewegungsArgs = {
+	(props: BewegungsCallback): Bewegung;
+	(props: BewegungsCallback, duration: number): Bewegung;
+	(props: BewegungsOption): Bewegung;
+};
 
-const workerManager = getWorker();
-
-export const bewegung = (domChangeFn: BewegungsCallback, options?: BewegungsOption): Bewegung => {
-	const reduceMotion = options?.reduceMotion ?? preferesReducedMotion;
+export const bewegung: BewegungsArgs = (
+	props: BewegungsCallback | BewegungsOption,
+	duration?: number
+): Bewegung => {
 	//	const reactivity = getReactivity();
 
-	let normalizedOptions = normalizeOptions(domChangeFn, options);
+	const { options, preferesReducedMotion } = normalizeOptions(props, duration);
 	let state: Map<string, Animation> | null = null;
 	let playState: AnimationPlayState = "idle";
 
 	const worker = useWorker<MainMessages, WorkerMessages>(workerManager.current());
 	const timekeeper = new Animation(
-		new KeyframeEffect(null, null, extractAnimationOptions(normalizedOptions))
+		new KeyframeEffect(null, null, extractAnimationOptions(options))
 	);
 
+	// how should this be different compared to the sequence?
 	// const enableReactivity = () => {
 	// 	reactivity.observe(() => {
 	// 		reactivity.disconnect();
@@ -40,15 +46,14 @@ export const bewegung = (domChangeFn: BewegungsCallback, options?: BewegungsOpti
 	// };
 
 	const getState = async () => {
-		if (reduceMotion && !state) {
+		if (preferesReducedMotion && !state) {
 			//todo: set another empty state
 		}
 
 		state ??= await fetchAnimationData({
-			options: normalizedOptions,
+			options,
 			timekeeper,
 			worker,
-			needsInitalReadout: true,
 		});
 	};
 

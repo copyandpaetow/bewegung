@@ -1,5 +1,5 @@
 import { AtomicWorker, DomLabel, NormalizedOptions } from "../types";
-import { nextRaf, querySelectorAll } from "../utils/helper";
+import { applyCSSStyles, nextRaf, querySelectorAll } from "../utils/helper";
 import { isHTMLElement } from "../utils/predicates";
 import { recordElement } from "./label-elements";
 
@@ -87,6 +87,11 @@ export const readdRemovedNodesHidden = (entries: MutationRecord[]) => {
 		});
 	});
 
+	/*
+		 we want to readd the element hidden, so the tree still knows about it
+		 we could also shortly add a shallow clone if this is too much browser work
+		*/
+
 	return () => {
 		unhide.forEach((cssText, element) => {
 			element.style.cssText = cssText;
@@ -130,39 +135,35 @@ export const observe = (observer: MutationObserver) =>
 		attributeOldValue: true,
 	});
 
-export const observeDom = async (
-	props: NormalizedOptions,
-	worker: AtomicWorker,
-	needsInitalReadout: boolean
-) => {
+export const observeDom = async (props: NormalizedOptions, worker: AtomicWorker) => {
 	const { reply } = worker("domChanges");
+	let index = -1;
+
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
 
 		const { addEntries, removeEntries, attributeEntries } = separateEntries(entries);
 		addKeyToCustomElements(addEntries);
-		/*
-		 we want to readd the element hidden, so the tree still knows about it
-		 we could also shortly add a shallow clone if this is too much browser work
-		*/
 		const unhideRemovedElements = readdRemovedNodesHidden(removeEntries);
-		const domRepresentation = recordElement(props.root, 1);
+		const domRepresentation = recordElement(props.root, index);
 
-		reply("sendLastDOMRepresentation", domRepresentation);
+		reply("sendDOMRepresentation", domRepresentation);
 
 		unhideRemovedElements();
 		removeAddedNodes(addEntries);
 		resetNodeStyle(attributeEntries);
 	};
 
-	if (needsInitalReadout) {
-		await nextRaf();
-		reply("sendFirstDOMRepresentation", recordElement(props.root, 0));
-	}
+	const withRootGuards = () => {
+		applyCSSStyles(props.root, { contain: "layout", overflow: "hidden" });
+		props.from();
+	};
 
 	const observer = new MutationObserver(observerCallback);
-
-	await nextRaf();
-	observe(observer);
-	props.callback();
+	for await (const domChangeFn of [withRootGuards, props.to]) {
+		await nextRaf();
+		index += 1;
+		observe(observer);
+		domChangeFn();
+	}
 };

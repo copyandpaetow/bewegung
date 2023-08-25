@@ -1,10 +1,13 @@
-import { BewegungsOption } from "../types";
+import { NormalizedOptions } from "../types";
 
-export const defaultOptions: Required<BewegungsOption> = {
+export const defaultOptions: Omit<NormalizedOptions, "root"> & { root: string } = {
 	duration: 400,
 	easing: "ease",
 	root: "body",
-	at: 0,
+	delay: 0,
+	endDelay: 0,
+	from: () => {},
+	to: () => {},
 };
 
 export const emptyImageSrc =

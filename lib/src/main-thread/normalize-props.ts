@@ -1,40 +1,57 @@
-import { BewegungsOption, ElementOrSelector, NormalizedOptions, NormalizedProps } from "../types";
+import { BewegungsCallback, BewegungsOption, ElementOrSelector, NormalizedOptions } from "../types";
 import { defaultOptions } from "../utils/constants";
 
 export const getElement = (element: ElementOrSelector) => {
+	let resultingElement: HTMLElement | null = null;
+
 	if (typeof element === "string") {
-		return document.querySelector(element) as HTMLElement | null;
+		resultingElement = document.querySelector(element) as HTMLElement | null;
+	} else if (element.isConnected) {
+		resultingElement = element as HTMLElement;
 	}
-	if (element.isConnected) {
-		return element as HTMLElement;
+
+	if (!resultingElement) {
+		console.warn("faulty root was provided, will use the body instead");
+		return document.body;
 	}
-	return null;
+
+	return resultingElement;
 };
 
-export const filterProps = (normalizedProps: NormalizedProps[]): NormalizedProps[] => {
-	return normalizedProps.filter((entry) => entry.root.isConnected);
-};
+// export const filterProps = (normalizedProps: BewegungsOption[]): BewegungsOption[] => {
+// 	return normalizedProps.filter((entry) => entry.root.isConnected);
+// };
+
+const preferesReducedMotion =
+	window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
 
 export const normalizeOptions = (
-	callback: VoidFunction,
-	unsaveOptions: BewegungsOption | undefined
-): NormalizedOptions => {
-	const options: Required<BewegungsOption> = {
-		...defaultOptions,
-		...(unsaveOptions ?? {}),
-	};
+	props: BewegungsCallback | BewegungsOption,
+	duration: number | undefined
+) => {
+	const { reduceMotion, ...rest } =
+		typeof props === "object"
+			? props
+			: {
+					to: props,
+					reduceMotion: preferesReducedMotion,
+					duration: duration ?? defaultOptions.duration,
+			  };
 
-	const rootElement = getElement(options.root)!;
+	const options = {
+		...defaultOptions,
+		...rest,
+		root: getElement(rest?.root ?? defaultOptions.root),
+	} as NormalizedOptions;
 
 	return {
-		...options,
-		callback,
-		root: rootElement,
+		options,
+		preferesReducedMotion: reduceMotion ?? preferesReducedMotion,
 	};
 };
 
 export const extractAnimationOptions = (options: NormalizedOptions) => {
-	const { root, callback, reduceMotion, ...animationOptions } = options;
+	const { root, from, to, ...animationOptions } = options;
 
 	return animationOptions;
 };

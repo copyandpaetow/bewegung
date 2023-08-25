@@ -39,13 +39,12 @@ export const fetchAnimationData = async (props: {
 	options: NormalizedOptions;
 	timekeeper: Animation;
 	worker: AtomicWorker;
-	needsInitalReadout: boolean;
 }): Promise<Map<string, Animation>> => {
-	const { options, timekeeper, worker, needsInitalReadout } = props;
+	const { options, timekeeper, worker } = props;
 
 	try {
 		recordDomLabels(options.root);
-		await observeDom(options, worker, needsInitalReadout);
+		await observeDom(options, worker);
 		const resets = getElementResets();
 		const data = (await worker("animationData").onMessage(
 			(result) => result
@@ -70,7 +69,8 @@ export const fetchAnimationData = async (props: {
 		console.error("something weird happend: ", error);
 		const animations = new Map([["timekeeper", timekeeper]]);
 		timekeeper.onfinish = () => {
-			options.callback();
+			options.from();
+			options.to();
 		};
 
 		return Promise.resolve(animations);

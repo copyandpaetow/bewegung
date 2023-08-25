@@ -36,6 +36,23 @@ import Nav from "../components/Nav.astro";
 		article.style.padding = "5%";
 	};
 
+	setTimeout(() => {
+		// const anim = sequence([
+		// 	[removeGridArea, { root: "aside", duration: 1000 }],
+		// 	[expandArticlePadding, { duration: 1000, root: article }],
+		// 	[increaseH1Spacing, { root: "article section", duration: 1000, at: -500 }],
+		// 	[expandArea, { duration: 1000, at: -500, root: main }],
+		// 	[removeSibling, { duration: 2000 }],
+		// ]);
+
+		const anim = bewegung(removeSibling, 1000);
+
+		// bewegung(expandArea, 1000)
+		// bewegung({from: Fn, to: Fn, duration: 1000})
+
+		anim.play();
+	}, 1000);
+
 	// setTimeout(() => {
 	// 	const anim = sequence([
 	// 		[removeGridArea, { root: "aside", duration: 1000 }],
@@ -44,49 +61,37 @@ import Nav from "../components/Nav.astro";
 	// 		[expandArea, { duration: 1000, at: -500, root: main }],
 	// 		[removeSibling, { duration: 2000 }],
 	// 	]);
+	// 	let time = performance.now();
+	// 	let direction = "forward";
 
-	// 	anim.play();
-	// }, 1000);
+	// 	let raf = () =>
+	// 		requestAnimationFrame((now) => {
+	// 			let current =
+	// 				direction === "forward"
+	// 					? Math.min(1, (now - time) / 6000)
+	// 					: 1 - Math.min(1, (now - time) / 6000);
 
-	setTimeout(() => {
-		const anim = sequence([
-			[removeGridArea, { root: "aside", duration: 1000 }],
-			[expandArticlePadding, { duration: 1000, root: article }],
-			[increaseH1Spacing, { root: "article section", duration: 1000, at: -500 }],
-			[expandArea, { duration: 1000, at: -500, root: main }],
-			[removeSibling, { duration: 2000 }],
-		]);
-		let time = performance.now();
-		let direction = "forward";
+	// 			anim.seek(current);
 
-		let raf = () =>
-			requestAnimationFrame((now) => {
-				let current =
-					direction === "forward"
-						? Math.min(1, (now - time) / 6000)
-						: 1 - Math.min(1, (now - time) / 6000);
+	// 			if (current === 1) {
+	// 				time = now;
+	// 				direction = "backward";
+	// 				requestAnimationFrame(raf);
+	// 				return;
+	// 			}
 
-				anim.seek(current);
+	// 			if (current < 1 && direction === "forward") {
+	// 				requestAnimationFrame(raf);
+	// 				return;
+	// 			}
 
-				if (current === 1) {
-					time = now;
-					direction = "backward";
-					requestAnimationFrame(raf);
-					return;
-				}
+	// 			if (current > 0 && direction === "backward") {
+	// 				requestAnimationFrame(raf);
+	// 			}
+	// 		});
 
-				if (current < 1 && direction === "forward") {
-					requestAnimationFrame(raf);
-					return;
-				}
-
-				if (current > 0 && direction === "backward") {
-					requestAnimationFrame(raf);
-				}
-			});
-
-		requestAnimationFrame(raf);
-	}, 2000);
+	// 	requestAnimationFrame(raf);
+	// }, 2000);
 </script>
 
 <Layout title="Bewegung">

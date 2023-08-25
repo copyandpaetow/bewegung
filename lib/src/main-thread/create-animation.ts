@@ -182,7 +182,8 @@ export const createAnimations = async (
 		const observer = new MutationObserver(observerCallback);
 		requestAnimationFrame(() => {
 			observer.observe(document.body, { childList: true, subtree: true, attributes: true });
-			options.callback();
+			options.from();
+			options.to();
 			return;
 		});
 	});
