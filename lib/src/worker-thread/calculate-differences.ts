@@ -1,4 +1,10 @@
-import { ChildParentDimensions, DimensionalDifferences, TreeElement, TreeEntry } from "../types";
+import {
+	ChildParentDimensions,
+	DimensionalDifferences,
+	MetaData,
+	TreeElement,
+	TreeEntry,
+} from "../types";
 import { save } from "../utils/helper";
 
 export const parseTransformOrigin = (entry: TreeEntry) => {
@@ -130,9 +136,11 @@ export const calculateDimensionDifferences = (
 export const calculateRootDifferences = ({
 	current,
 	reference,
+	metaData,
 }: {
 	current: TreeEntry;
 	reference: TreeEntry;
+	metaData: MetaData;
 }): DimensionalDifferences => {
 	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(reference);
 	const [originCurrentLeft, originCurrentTop] = parseTransformOrigin(current);
@@ -153,6 +161,7 @@ export const calculateRootDifferences = ({
 
 		=> is is dependent on the viewport height and occures only if the animation happens above the current viewport + 100% viewport height. 
 
+		TODO: use meta data for this
 		*/
 
 	const weirdBrowserBehaviorCorrectionLeft =

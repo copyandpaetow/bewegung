@@ -46,11 +46,15 @@ export const bewegung: BewegungsArgs = (
 	// };
 
 	const getState = async () => {
-		if (preferesReducedMotion && !state) {
+		if (state) {
+			return;
+		}
+
+		if (preferesReducedMotion) {
 			//todo: set another empty state
 		}
 
-		state ??= await fetchAnimationData({
+		state = await fetchAnimationData({
 			options,
 			timekeeper,
 			worker,

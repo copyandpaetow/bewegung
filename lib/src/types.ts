@@ -39,8 +39,8 @@ export type BewegungsConfig = {
 };
 
 export type NormalizedOptions = {
-	from: VoidFunction;
-	to: VoidFunction;
+	from: VoidFunction | undefined;
+	to: VoidFunction | undefined;
 	root: HTMLElement;
 	duration: number;
 	easing: Easing;
@@ -106,16 +106,22 @@ export type DomRepresentation = (TreeEntry | DomRepresentation)[];
 
 export type ResultTransferable = {
 	keyframeStore: Map<string, Keyframe[]>;
+	imageKeyframeStore: Map<string, Keyframe[]>;
 	overrideStore: Map<string, Partial<CSSStyleDeclaration>>;
 };
 
 export type DomLabel = (string | DomLabel)[];
 
+export type MetaData = {
+	height: number;
+	width: number;
+	x: number;
+	y: number;
+};
+
 export type WorkerMessages = {
-	sendDOMRepresentation: DomRepresentation;
-	sendDomLabels: DomLabel;
+	sendDOMRepresentation: { domTree: DomRepresentation; metaData: MetaData };
 	sendAnimationData: ResultTransferable;
-	sendTreeUpdate: Map<string, DomLabel>;
 };
 
 export type MainMessages = {

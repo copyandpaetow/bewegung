@@ -1,11 +1,24 @@
-import { AtomicWorker, NormalizedOptions, ResultTransferable } from "../types";
+import { AtomicWorker, NormalizedOptions } from "../types";
 import { Attributes } from "../utils/constants";
-import { nextRaf, querySelectorAll } from "../utils/helper";
-import { createAnimations, getElementResets } from "./create-animation";
+import { execute, nextRaf, querySelectorAll } from "../utils/helper";
+import { createAnimations, interceptDom } from "./create-animation";
 import { recordDomLabels } from "./label-elements";
 import { observeDom } from "./observe-dom";
+import { getElementResets } from "./resets";
 
-export const restoreElements = async (resets: Map<HTMLElement, Map<string, string>>) => {
+const replaceImagePlaceholders = () => {
+	querySelectorAll(`[${Attributes.replace}]`).forEach((element) => {
+		const replaceKey = element.dataset.bewegungsReplace!;
+		const replaceElement = document.querySelector(`[${Attributes.key}=${replaceKey}]`)!;
+		const parent = element.parentElement!;
+
+		parent.replaceChild(replaceElement, element);
+		element.remove();
+	});
+};
+
+const restoreElements = async (resetPromise: Promise<Map<HTMLElement, Map<string, string>>>) => {
+	const resets = await resetPromise;
 	await nextRaf();
 	querySelectorAll(`[${Attributes.removable}], [${Attributes.key}*="added"]`).forEach((element) => {
 		resets.delete(element);
@@ -41,38 +54,44 @@ export const fetchAnimationData = async (props: {
 	worker: AtomicWorker;
 }): Promise<Map<string, Animation>> => {
 	const { options, timekeeper, worker } = props;
+	const startAnimation = new Animation(new KeyframeEffect(null, null, options.delay));
+	const animations = new Map([
+		["timekeeper", timekeeper],
+		["start", startAnimation],
+	]);
 
 	try {
 		recordDomLabels(options.root);
 		await observeDom(options, worker);
 		const resets = getElementResets();
-		const data = (await worker("animationData").onMessage(
-			(result) => result
-		)) as ResultTransferable;
 
-		const animations = await createAnimations(data, options);
+		await worker("animationData").onMessage((result) => {
+			const onStartCallbacks = createAnimations(result, animations, options);
+
+			interceptDom(startAnimation, options, () => {
+				const onAddedStartCallbacks = createAnimations(result, animations, options);
+				onStartCallbacks.forEach(execute);
+				onAddedStartCallbacks.forEach(execute);
+			});
+		});
 
 		timekeeper.oncancel = async () => {
-			const awaitedResets = await resets;
-			restoreElements(awaitedResets);
+			restoreElements(resets);
 		};
 		timekeeper.onfinish = () => {
 			requestAnimationFrame(() => {
+				replaceImagePlaceholders();
 				removeElements();
 				removeDataAttributes();
 			});
 		};
-
-		animations.set("timekeeper", timekeeper);
-		return animations;
 	} catch (error) {
 		console.error("something weird happend: ", error);
-		const animations = new Map([["timekeeper", timekeeper]]);
-		timekeeper.onfinish = () => {
-			options.from();
-			options.to();
+		startAnimation.onfinish = () => {
+			options.from?.();
+			options.to?.();
 		};
-
-		return Promise.resolve(animations);
+	} finally {
+		return animations;
 	}
 };

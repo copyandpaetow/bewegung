@@ -1,7 +1,7 @@
 import {
-	DimensionalDifferences,
 	DomRepresentation,
 	MainMessages,
+	MetaData,
 	TreeEntry,
 	TreeMedia,
 	WorkerMessages,
@@ -19,11 +19,8 @@ const workerAtom = useWorker<WorkerMessages, MainMessages>(worker);
 
 const dimensionStore = new Map<string, TreeEntry>();
 
-const updateDimensions = (
-	currentTree: DomRepresentation,
-	dimensionStore: Map<string, TreeEntry>
-) => {
-	const [current, currentChildren] = currentTree as DomRepresentation;
+const updateDimensions = (domTree: DomRepresentation, dimensionStore: Map<string, TreeEntry>) => {
+	const [current, currentChildren] = domTree as DomRepresentation;
 	const key = (current as TreeEntry).key;
 
 	dimensionStore.set(key, current as TreeEntry);
@@ -33,12 +30,11 @@ const updateDimensions = (
 	);
 };
 
-/*
-todo: images require a lot of work downstream
-maybe we can calculate the image like other elements and when their dimensions change, we redo the calculation?
-
-*/
-const calculateDifferences = (current: TreeEntry[], parent: TreeEntry[] | undefined) => {
+const calculateDifferences = (
+	current: TreeEntry[],
+	parent: TreeEntry[] | undefined,
+	metaData: MetaData
+) => {
 	const isRoot = !Boolean(parent);
 
 	if (isRoot) {
@@ -46,6 +42,7 @@ const calculateDifferences = (current: TreeEntry[], parent: TreeEntry[] | undefi
 			calculateRootDifferences({
 				current: entry,
 				reference: current.at(-1)!,
+				metaData,
 			})
 		);
 	}
@@ -60,46 +57,33 @@ const calculateDifferences = (current: TreeEntry[], parent: TreeEntry[] | undefi
 	);
 };
 
-const calculateKeyframes = (
-	current: TreeEntry[],
-	parent: TreeEntry[] | undefined,
-	differences: DimensionalDifferences[],
-	keyframeStore: Map<string, Keyframe[]>,
-	overrideStore: Map<string, Partial<CSSStyleDeclaration>>
-) => {
-	const isImage = Boolean(current[0].hasOwnProperty("ratio"));
-	const isChangingInScale = changesInScale(differences);
+const calculateWrapperData = (current: TreeEntry[], parent: TreeEntry[] | undefined) => {
+	const lastReadout = current.at(-1)!;
+	const lastParentReadout = parent ? parent.at(-1) : undefined;
+	const imageData = getImageData(current as TreeMedia[]);
+	const keyframes = getWrapperKeyframes(current as TreeMedia[], parent, imageData);
 
-	if (isImage && isChangingInScale) {
-		const key = current[0].key;
-		const lastReadout = current.at(-1)!;
-		const lastParentReadout = parent ? parent.at(-1) : undefined;
-		const imageData = getImageData(current as TreeMedia[]);
-		const wrapperKeyframes = getWrapperKeyframes(current as TreeMedia[], parent, imageData);
-		keyframeStore.set(key + "-wrapper", wrapperKeyframes);
+	const overrides = {
+		position: "absolute",
+		left: lastReadout.currentLeft - (lastParentReadout?.currentLeft ?? 0) + "px",
+		top: lastReadout.currentTop - (lastParentReadout?.currentTop ?? 0) + "px",
+		height: `${imageData.maxHeight}px`,
+		width: `${imageData.maxWidth}px`,
+		pointerEvents: "none",
+		overflow: "hidden",
+		gridArea: "1/1/2/2", //if the parent element is a grid element, it will be absolutly positioned from its dedicated area and not from the edge of the element
+	};
 
-		overrideStore.set(`${key}-wrapper`, {
-			position: "absolute",
-			left: lastReadout.currentLeft - (lastParentReadout?.currentLeft ?? 0) + "px",
-			top: lastReadout.currentTop - (lastParentReadout?.currentTop ?? 0) + "px",
-			height: `${imageData.maxHeight}px`,
-			width: `${imageData.maxWidth}px`,
-			pointerEvents: "none",
-			overflow: "hidden",
-			gridArea: "1/1/2/2", //if the parent element is a grid element, it will be absolutly positioned from its dedicated area and not from the edge of the element
-		});
-
-		overrideStore.set(`${key}-placeholder`, {
-			height: lastReadout.unsaveHeight + "px",
-			width: lastReadout.unsaveWidth + "px",
-		});
-	}
-
-	return setDefaultKeyframes(differences, current, isChangingInScale);
+	return { keyframes, overrides };
 };
 
-const getKeyframes = (tree: DomRepresentation, dimensionStore: Map<string, TreeEntry>) => {
+const getKeyframes = (
+	tree: DomRepresentation,
+	metaData: MetaData,
+	dimensionStore: Map<string, TreeEntry>
+) => {
 	const keyframeStore = new Map<string, Keyframe[]>();
+	const imageKeyframeStore = new Map<string, Keyframe[]>();
 	const overrideStore = new Map<string, Partial<CSSStyleDeclaration>>();
 
 	const updateStore = (currentNode: DomRepresentation, parentNode?: DomRepresentation) => {
@@ -139,53 +123,59 @@ const getKeyframes = (tree: DomRepresentation, dimensionStore: Map<string, TreeE
 				? [previousParentDimensions, parentNode[0] as TreeEntry]
 				: undefined;
 
-		const differences = calculateDifferences(dimensions, parentDimensions);
-		const keyframes = calculateKeyframes(
-			dimensions,
-			parentDimensions,
-			differences,
-			keyframeStore,
-			overrideStore
-		);
+		const differences = calculateDifferences(dimensions, parentDimensions, metaData);
 
-		const isUnchanged = differences.every(isElementUnchanged);
-
-		if (!isUnchanged) {
-			keyframeStore.set(key, keyframes);
+		//if the element doesnt really change in the animation, we just skip it and continue with the children
+		//we cant skip the whole tree because a decendent could still shrink
+		if (differences.every(isElementUnchanged)) {
+			(children as DomRepresentation[]).forEach((entry) => {
+				updateStore(entry, parentNode);
+			});
 		}
 
-		if (!isEntryVisible(dimensions.at(-1)!)) {
-			setOverrides(
-				dimensions.at(0)!,
-				parentNode ? (parentNode[0] as TreeEntry) : undefined,
-				overrideStore
-			);
+		//if the element is a changedImage we put it in a different store
+		const isImage = Boolean(currentDimensions.hasOwnProperty("ratio"));
+		const isChangingInScale = changesInScale(differences);
+
+		if (isChangingInScale && isImage) {
+			const { keyframes, overrides } = calculateWrapperData(dimensions, parentDimensions);
+			imageKeyframeStore.set(key, calculateImageDifferences(dimensions as TreeMedia[]));
+			imageKeyframeStore.set(`${key}-wrapper`, keyframes);
+			overrideStore.set(`${key}-wrapper`, overrides);
+
+			overrideStore.set(`${key}-placeholder`, {
+				height: currentDimensions.unsaveHeight + "px",
+				width: currentDimensions.unsaveWidth + "px",
+			});
+		} else {
+			keyframeStore.set(key, setDefaultKeyframes(differences, dimensions, isChangingInScale));
 		}
 
-		if (!dimensionStore.has(key)) {
-			//if the element is newly added, we dont need nested animations
-			return;
+		if (!isEntryVisible(currentDimensions)) {
+			setOverrides(currentDimensions, parentDimensions?.at(-1), overrideStore);
 		}
 
 		(children as DomRepresentation[]).forEach((entry) => {
-			updateStore(entry, isUnchanged ? parentNode : currentNode);
+			updateStore(entry, currentNode);
 		});
 	};
 
 	updateStore(tree);
 
-	return { keyframeStore, overrideStore };
+	workerAtom("sendAnimationData").reply("animationData", {
+		keyframeStore,
+		imageKeyframeStore,
+		overrideStore,
+	});
 };
 
 workerAtom("sendDOMRepresentation").onMessage((domRepresentations) => {
 	if (dimensionStore.size === 0) {
-		updateDimensions(domRepresentations, dimensionStore);
+		updateDimensions(domRepresentations.domTree, dimensionStore);
 		return;
 	}
 
-	const result = getKeyframes(domRepresentations, dimensionStore);
-	console.log({ result, domRepresentations, dimensionStore });
-	workerAtom("sendAnimationData").reply("animationData", result);
+	getKeyframes(domRepresentations.domTree, domRepresentations.metaData, dimensionStore);
 
 	dimensionStore.clear();
 });

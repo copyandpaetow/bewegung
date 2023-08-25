@@ -29,14 +29,19 @@ export const normalizeOptions = (
 	props: BewegungsCallback | BewegungsOption,
 	duration: number | undefined
 ) => {
-	const { reduceMotion, ...rest } =
-		typeof props === "object"
-			? props
-			: {
-					to: props,
-					reduceMotion: preferesReducedMotion,
-					duration: duration ?? defaultOptions.duration,
-			  };
+	if (typeof props === "function") {
+		return {
+			preferesReducedMotion: preferesReducedMotion,
+			options: {
+				...defaultOptions,
+				duration: duration ?? defaultOptions.duration,
+				root: getElement(defaultOptions.root),
+				to: props,
+			} as NormalizedOptions,
+		};
+	}
+
+	const { reduceMotion, ...rest } = props;
 
 	const options = {
 		...defaultOptions,

@@ -6,8 +6,8 @@ export const defaultOptions: Omit<NormalizedOptions, "root"> & { root: string } 
 	root: "body",
 	delay: 0,
 	endDelay: 0,
-	from: () => {},
-	to: () => {},
+	from: undefined,
+	to: undefined,
 };
 
 export const emptyImageSrc =
@@ -19,4 +19,6 @@ export const enum Attributes {
 	removable = "data-bewegungs-removable",
 	rootEasing = "data-bewegungs-easing",
 	root = "data-bewegungs-root",
+	cssReset = "data-bewegungs-css-reset",
+	replace = "data-bewegungs-replace",
 }

@@ -4,7 +4,7 @@ import { calculateBorderRadius } from "./border-radius";
 import { getScales, getTranslates } from "./calculate-differences";
 import { getImageData } from "./get-keyframes";
 
-export const calculateImageDifferences = (readouts: TreeMedia[]): DimensionalDifferences[] => {
+export const calculateImageDifferences = (readouts: TreeMedia[]): Keyframe[] => {
 	const { maxHeight, maxWidth } = getImageData(readouts);
 
 	return readouts.map((readout) => {
@@ -38,12 +38,12 @@ export const calculateImageDifferences = (readouts: TreeMedia[]): DimensionalDif
 		}
 
 		return {
-			heightDifference: save(scaleHeight, 1),
-			widthDifference: save(scaleWidth, 1),
-			leftDifference: save(translateX, 0),
-			topDifference: save(translateY, 0),
+			transform: `translate(${save(translateX, 0)}px, ${save(translateY, 0)}px) scale(${save(
+				scaleWidth,
+				1
+			)}, ${save(scaleHeight, 1)})`,
+			id: readout.key + "-wrapper",
 			offset: readout.offset,
-			id: readout.key,
 		};
 	});
 };
