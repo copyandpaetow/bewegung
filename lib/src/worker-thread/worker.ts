@@ -131,6 +131,7 @@ const getKeyframes = (
 			(children as DomRepresentation[]).forEach((entry) => {
 				updateStore(entry, parentNode);
 			});
+			return;
 		}
 
 		//if the element is a changedImage we put it in a different store
