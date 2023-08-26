@@ -36,6 +36,7 @@ export const bewegung: BewegungsArgs = (
 		new KeyframeEffect(null, null, extractAnimationOptions(options))
 	);
 
+	//TODO: enable reactivity
 	// how should this be different compared to the sequence?
 	// const enableReactivity = () => {
 	// 	reactivity.observe(() => {

@@ -40,3 +40,16 @@ export const calculateBorderRadius = (
 		height: externalHeight ?? styleEntry.currentHeight,
 	});
 };
+
+export const getBorderRadius = (readouts: TreeEntry[]) => {
+	const styleTable = new Map<number, string>();
+
+	readouts.forEach((style, offset) => {
+		if (style.borderRadius === "0px") {
+			return;
+		}
+		styleTable.set(offset, calculateBorderRadius(style));
+	});
+
+	return styleTable;
+};

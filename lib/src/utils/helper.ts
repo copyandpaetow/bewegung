@@ -13,6 +13,7 @@ export const applyCSSStyles = (element: HTMLElement, style: Partial<CSSStyleDecl
 	Object.assign(element.style, style);
 };
 
+//TODO: a simple let would do the trick as well
 function* idGeneratorFunction() {
 	let index = 0;
 	while (true) {

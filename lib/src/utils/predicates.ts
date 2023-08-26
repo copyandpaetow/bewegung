@@ -16,15 +16,4 @@ export const isElementUnchanged = ({
 }: DimensionalDifferences) =>
 	leftDifference === 0 && topDifference === 0 && widthDifference === 1 && heightDifference === 1;
 
-export const isHiddenBecauseOfParent = ({
-	leftDifference,
-	topDifference,
-	widthDifference,
-	heightDifference,
-}: DimensionalDifferences) => {
-	const samePosition = leftDifference === 0 && topDifference === 0;
-	const hiddenOrDefaultWidth = widthDifference === 1 || widthDifference === 0;
-	const hiddenOrDefaultHeight = heightDifference === 1 || heightDifference === 0;
-
-	return samePosition && hiddenOrDefaultWidth && hiddenOrDefaultHeight;
-};
+//TODO: either move more here or just delete it

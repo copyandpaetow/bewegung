@@ -112,15 +112,8 @@ export type ResultTransferable = {
 
 export type DomLabel = (string | DomLabel)[];
 
-export type MetaData = {
-	height: number;
-	width: number;
-	x: number;
-	y: number;
-};
-
 export type WorkerMessages = {
-	sendDOMRepresentation: { domTree: DomRepresentation; metaData: MetaData };
+	sendDOMRepresentation: DomRepresentation;
 	sendAnimationData: ResultTransferable;
 };
 
@@ -139,6 +132,11 @@ export type ChildParentDimensions = {
 	reference: TreeEntry;
 	parent: TreeEntry;
 	parentReference: TreeEntry;
+};
+
+export type RootDimensions = {
+	current: TreeEntry;
+	reference: TreeEntry;
 };
 
 export interface DimensionalDifferences {

@@ -46,6 +46,8 @@ const workerManager = getWorker();
 export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 	const worker = useWorker<MainMessages, WorkerMessages>(workerManager.current());
 
+	//TODO: how to handle reactivity here?
+
 	let normalizedProps = normalize(props, config);
 	let totalRuntime = getTotalRuntime(normalizedProps);
 	let domUpdates = revertToAbsoluteTiming(

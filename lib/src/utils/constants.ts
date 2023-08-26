@@ -13,6 +13,7 @@ export const defaultOptions: Omit<NormalizedOptions, "root"> & { root: string } 
 export const emptyImageSrc =
 	"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
 
+//TODO: do we use all of these
 export const enum Attributes {
 	key = "data-bewegungs-key",
 	reset = "data-bewegungs-reset",

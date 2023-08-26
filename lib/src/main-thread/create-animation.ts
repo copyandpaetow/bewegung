@@ -59,7 +59,6 @@ const readdRemovedNodes = (element: HTMLElement, entry: MutationRecord) => {
 	entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 };
 
-//TODO: we could delay animation that are not in the viewport
 export const createAnimations = (
 	results: ResultTransferable,
 	animations: Map<string, Animation>,

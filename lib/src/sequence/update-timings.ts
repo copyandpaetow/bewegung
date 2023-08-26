@@ -138,6 +138,7 @@ export const separateOverlappingEntries = (props: PropsWithRelativeTiming[]) => 
 	return domUpdates.sort((a, b) => a.start - b.start);
 };
 
+//TODO: moving to a relative timing and reverting seems too complicated
 export const revertToAbsoluteTiming = (
 	props: PropsWithRelativeTiming2[],
 	totalRuntime: number

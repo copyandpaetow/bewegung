@@ -1,7 +1,7 @@
 import {
 	ChildParentDimensions,
 	DimensionalDifferences,
-	MetaData,
+	RootDimensions,
 	TreeElement,
 	TreeEntry,
 } from "../types";
@@ -136,12 +136,7 @@ export const calculateDimensionDifferences = (
 export const calculateRootDifferences = ({
 	current,
 	reference,
-	metaData,
-}: {
-	current: TreeEntry;
-	reference: TreeEntry;
-	metaData: MetaData;
-}): DimensionalDifferences => {
+}: RootDimensions): DimensionalDifferences => {
 	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(reference);
 	const [originCurrentLeft, originCurrentTop] = parseTransformOrigin(current);
 
@@ -161,7 +156,7 @@ export const calculateRootDifferences = ({
 
 		=> is is dependent on the viewport height and occures only if the animation happens above the current viewport + 100% viewport height. 
 
-		TODO: use meta data for this
+		TODO: we can check the bottom value (top + height) for this if it is negative the element is above the viewport
 		*/
 
 	const weirdBrowserBehaviorCorrectionLeft =

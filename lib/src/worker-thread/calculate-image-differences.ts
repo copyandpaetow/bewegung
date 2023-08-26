@@ -2,7 +2,7 @@ import { DimensionalDifferences, ImageDetails, TreeEntry, TreeMedia } from "../t
 import { save } from "../utils/helper";
 import { calculateBorderRadius } from "./border-radius";
 import { getScales, getTranslates } from "./calculate-differences";
-import { getImageData } from "./get-keyframes";
+import { getImageData } from "./image-keyframes";
 
 export const calculateImageDifferences = (readouts: TreeMedia[]): Keyframe[] => {
 	const { maxHeight, maxWidth } = getImageData(readouts);

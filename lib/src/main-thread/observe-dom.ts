@@ -62,15 +62,7 @@ export const observeDom = async (props: NormalizedOptions, worker: AtomicWorker)
 		iterateAddedElements(entries, addKeyToNewlyAddedElement);
 		iterateRemovedElements(entries, readdRemovedNodesHidden);
 
-		reply("sendDOMRepresentation", {
-			domTree: recordElement(props.root, index),
-			metaData: {
-				height: window.innerHeight,
-				width: window.innerWidth,
-				x: window.scrollX,
-				y: window.scrollY,
-			},
-		});
+		reply("sendDOMRepresentation", recordElement(props.root, index));
 
 		unhideRemovedElements();
 		iterateAddedElements(entries, (element) => element.remove());

@@ -1,18 +1,6 @@
-import { DimensionalDifferences, ImageDetails, TreeEntry, TreeMedia } from "../types";
-import { calculateBorderRadius } from "./border-radius";
-
-export const getBorderRadius = (readouts: TreeEntry[]) => {
-	const styleTable = new Map<number, string>();
-
-	readouts.forEach((style, offset) => {
-		if (style.borderRadius === "0px") {
-			return;
-		}
-		styleTable.set(offset, calculateBorderRadius(style));
-	});
-
-	return styleTable;
-};
+import { DimensionalDifferences, TreeEntry } from "../types";
+import { getBorderRadius } from "./border-radius";
+import { calculateDimensionDifferences, calculateRootDifferences } from "./calculate-differences";
 
 export const changesInScale = (differences: DimensionalDifferences[]) =>
 	differences.some(
@@ -42,14 +30,22 @@ export const setDefaultKeyframes = (
 	);
 };
 
-export const getImageData = (readouts: TreeMedia[]): ImageDetails => {
-	let maxHeight = 0;
-	let maxWidth = 0;
+export const calculateDifferences = (current: TreeEntry[], parent: TreeEntry[] | undefined) => {
+	if (!parent) {
+		return current.map((entry) =>
+			calculateRootDifferences({
+				current: entry,
+				reference: current.at(-1)!,
+			})
+		);
+	}
 
-	readouts.forEach((style) => {
-		maxHeight = Math.max(maxHeight, style.currentHeight);
-		maxWidth = Math.max(maxWidth, style.currentWidth);
-	});
-
-	return { maxHeight, maxWidth };
+	return current.map((entry, index) =>
+		calculateDimensionDifferences({
+			current: entry,
+			reference: current.at(-1)!,
+			parent: parent![index],
+			parentReference: parent!.at(-1)!,
+		})
+	);
 };
