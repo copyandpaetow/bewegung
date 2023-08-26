@@ -1,5 +1,5 @@
 import { ImageDetails, TreeEntry, TreeMedia } from "../types";
-import { calculateImageDifferences, getWrapperKeyframes } from "./calculate-image-differences";
+import { calculateImageDifferences, getWrapperKeyframes } from "./image-differences";
 
 export const calculateWrapperData = (current: TreeEntry[], parent: TreeEntry[] | undefined) => {
 	const lastReadout = current.at(-1)!;
@@ -21,7 +21,7 @@ export const calculateWrapperData = (current: TreeEntry[], parent: TreeEntry[] |
 	return { keyframes, overrides };
 };
 
-//TODO: this needs to go to where the images live
+//TODO: this was written when there where more than 2 readouts, maybe it can be reduced / simplified?
 export const getImageData = (readouts: TreeMedia[]): ImageDetails => {
 	let maxHeight = 0;
 	let maxWidth = 0;

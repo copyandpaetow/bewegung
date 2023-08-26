@@ -1,14 +1,9 @@
 import { NormalizedOptions, ResultTransferable } from "../types";
 import { Attributes, emptyImageSrc } from "../utils/constants";
-import {
-	applyCSSStyles,
-	iterateAddedElements,
-	iterateRemovedElements,
-	nextRaf,
-	observe,
-} from "../utils/helper";
+import { applyCSSStyles, nextRaf } from "../utils/helper";
 import { extractAnimationOptions } from "./normalize-props";
 import { addKeyToNewlyAddedElement, getNextElementSibling } from "./observe-dom";
+import { iterateRemovedElements, iterateAddedElements, observe } from "./observer-helper";
 
 const createWrapperElement = (style: Partial<CSSStyleDeclaration>) => {
 	const wrapperElement = document.createElement("div");
@@ -59,6 +54,79 @@ const readdRemovedNodes = (element: HTMLElement, entry: MutationRecord) => {
 	entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 };
 
+const setDefaultAnimations = (
+	keyframeStore: Map<string, Keyframe[]>,
+	animations: Map<string, Animation>,
+	options: KeyframeEffectOptions
+) => {
+	keyframeStore.forEach((keyframes, key, store) => {
+		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
+		if (!element) {
+			return;
+		}
+
+		animations.set(key, new Animation(new KeyframeEffect(element, keyframes, options)));
+		store.delete(key);
+	});
+};
+
+const setImageAnimations = (
+	results: ResultTransferable,
+	animations: Map<string, Animation>,
+	options: KeyframeEffectOptions
+) => {
+	const imageCallbacks: VoidFunction[] = [];
+
+	results.imageKeyframeStore.forEach((keyframes, key, store) => {
+		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
+		if (!element) {
+			return;
+		}
+
+		animations.set(key, new Animation(new KeyframeEffect(element, keyframes, options)));
+
+		const wrapperKeyframes = store.get(`${key}-wrapper`)!;
+		const wrapperOverrides = results.overrideStore.get(`${key}-wrapper`)!;
+		const placeholderOverrides = results.overrideStore.get(`${key}-placeholder`)!;
+
+		const wrapperElement = createWrapperElement(wrapperOverrides!);
+
+		animations.set(
+			`${key}-wrapper`,
+			new Animation(new KeyframeEffect(wrapperElement, wrapperKeyframes, options))
+		);
+
+		imageCallbacks.push(
+			createImagePlaceholder(element, placeholderOverrides),
+			createImageWrapperCallback(element, wrapperElement)
+		);
+
+		store.delete(key);
+		store.delete(`${key}-wrapper`);
+		results.overrideStore.delete(`${key}-wrapper`);
+		results.overrideStore.delete(`${key}-placeholder`);
+	});
+
+	return imageCallbacks;
+};
+
+const setOverrides = (overrideStore: Map<string, Partial<CSSStyleDeclaration>>) => {
+	const overrideCallbacks: VoidFunction[] = [];
+
+	overrideStore.forEach((overrides, key, store) => {
+		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
+		if (!element) {
+			return;
+		}
+		overrideCallbacks.push(() => {
+			element.dataset.bewegungsCssReset = element.style.cssText ?? " ";
+			applyCSSStyles(element, overrides);
+		});
+		store.delete(key);
+	});
+	return overrideCallbacks;
+};
+
 export const createAnimations = (
 	results: ResultTransferable,
 	animations: Map<string, Animation>,
@@ -69,61 +137,11 @@ export const createAnimations = (
 		fill: "both",
 	};
 
-	const onStart: VoidFunction[] = [];
+	setDefaultAnimations(results.keyframeStore, animations, animationOptions);
+	const overrideCallbacks = setOverrides(results.overrideStore);
+	const imageCallbacks = setImageAnimations(results, animations, animationOptions);
 
-	results.keyframeStore.forEach((keyframes, key) => {
-		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
-		if (!element) {
-			return;
-		}
-
-		animations.set(key, new Animation(new KeyframeEffect(element, keyframes, animationOptions)));
-		results.keyframeStore.delete(key);
-	});
-
-	results.imageKeyframeStore.forEach((keyframes, key) => {
-		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
-		if (!element) {
-			return;
-		}
-
-		animations.set(key, new Animation(new KeyframeEffect(element, keyframes, animationOptions)));
-
-		const wrapperKeyframes = results.imageKeyframeStore.get(`${key}-wrapper`)!;
-		const wrapperOverrides = results.overrideStore.get(`${key}-wrapper`)!;
-		const placeholderOverrides = results.overrideStore.get(`${key}-placeholder`)!;
-
-		const wrapperElement = createWrapperElement(wrapperOverrides!);
-
-		animations.set(
-			`${key}-wrapper`,
-			new Animation(new KeyframeEffect(wrapperElement, wrapperKeyframes, animationOptions))
-		);
-
-		onStart.push(
-			createImagePlaceholder(element, placeholderOverrides),
-			createImageWrapperCallback(element, wrapperElement)
-		);
-
-		results.imageKeyframeStore.delete(key);
-		results.imageKeyframeStore.delete(`${key}-wrapper`);
-		results.overrideStore.delete(`${key}-wrapper`);
-		results.overrideStore.delete(`${key}-placeholder`);
-	});
-
-	results.overrideStore.forEach((overrides, key) => {
-		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
-		if (!element) {
-			return;
-		}
-		onStart.push(() => {
-			element.dataset.bewegungsCssReset = element.style.cssText ?? " ";
-			applyCSSStyles(element, overrides);
-		});
-		results.overrideStore.delete(key);
-	});
-
-	return onStart;
+	return [...overrideCallbacks, ...imageCallbacks];
 };
 
 export const interceptDom = (

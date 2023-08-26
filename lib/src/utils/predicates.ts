@@ -16,4 +16,12 @@ export const isElementUnchanged = ({
 }: DimensionalDifferences) =>
 	leftDifference === 0 && topDifference === 0 && widthDifference === 1 && heightDifference === 1;
 
-//TODO: either move more here or just delete it
+export const changesInScale = (differences: DimensionalDifferences[]) =>
+	differences.some(
+		(entry) =>
+			entry.heightDifference !== entry.widthDifference &&
+			(entry.heightDifference !== 1 || entry.widthDifference !== 1)
+	);
+
+export const isImage = (currentDimensions: [TreeEntry, TreeEntry]) =>
+	currentDimensions[1].hasOwnProperty("ratio");

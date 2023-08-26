@@ -116,7 +116,6 @@ export const calculateDimensionDifferences = (
 		leftDifference: save(leftDifference, 0),
 		topDifference: save(topDifference, 0),
 		offset: current.offset,
-		id: current.key,
 	};
 
 	if (isTextElement) {
@@ -126,7 +125,6 @@ export const calculateDimensionDifferences = (
 			leftDifference: save(leftDifference - textWidthCorrection, 0),
 			topDifference: save(topDifference - textHeightCorrection, 0),
 			offset: current.offset,
-			id: current.key,
 		};
 	}
 
@@ -175,6 +173,5 @@ export const calculateRootDifferences = ({
 		leftDifference: save(leftDifference, 0),
 		topDifference: save(topDifference, 0),
 		offset: current.offset,
-		id: current.key,
 	};
 };

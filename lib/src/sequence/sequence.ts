@@ -48,6 +48,8 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 
 	//TODO: how to handle reactivity here?
 
+	//* we could stop some of the reverting after each animations like keys, deleting elements etc
+
 	let normalizedProps = normalize(props, config);
 	let totalRuntime = getTotalRuntime(normalizedProps);
 	let domUpdates = revertToAbsoluteTiming(
@@ -78,7 +80,6 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 			options: domUpdates[index],
 			timekeeper: localTimekeeper,
 			worker,
-			needsInitalReadout: true,
 		});
 
 		state.set(index, currentAnimations);

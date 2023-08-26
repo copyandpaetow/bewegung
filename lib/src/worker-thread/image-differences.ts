@@ -1,9 +1,10 @@
-import { DimensionalDifferences, ImageDetails, TreeEntry, TreeMedia } from "../types";
+import { ImageDetails, TreeEntry, TreeMedia } from "../types";
 import { save } from "../utils/helper";
 import { calculateBorderRadius } from "./border-radius";
-import { getScales, getTranslates } from "./calculate-differences";
+import { getScales, getTranslates } from "./differences";
 import { getImageData } from "./image-keyframes";
 
+//TODO: this was written when there where more than 2 readouts, maybe it can be reduced / simplified?
 export const calculateImageDifferences = (readouts: TreeMedia[]): Keyframe[] => {
 	const { maxHeight, maxWidth } = getImageData(readouts);
 
@@ -42,12 +43,12 @@ export const calculateImageDifferences = (readouts: TreeMedia[]): Keyframe[] => 
 				scaleWidth,
 				1
 			)}, ${save(scaleHeight, 1)})`,
-			id: readout.key + "-wrapper",
 			offset: readout.offset,
 		};
 	});
 };
 
+//TODO: this was written when there where more than 2 readouts, maybe it can be reduced / simplified?
 export const getWrapperKeyframes = (
 	readouts: TreeMedia[],
 	parentReadouts: TreeEntry[] | undefined,
@@ -97,7 +98,6 @@ export const getWrapperKeyframes = (
 			transform: `translate(${translateX}px, ${translateY}px) scale(${1 / parentWidthDifference}, ${
 				1 / parentHeightDifference
 			})`,
-			id: readout.key + "-wrapper",
 		};
 	});
 };

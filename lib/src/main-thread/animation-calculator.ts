@@ -68,6 +68,10 @@ export const fetchAnimationData = async (props: {
 		await worker("animationData").onMessage((result) => {
 			const onStartCallbacks = createAnimations(result, animations, options);
 
+			/*
+				todo: on start callbacks feel clonky and are also somewhat contrarian with the startAnimation thingy
+			
+			*/
 			interceptDom(startAnimation, options, () => {
 				const onAddedStartCallbacks = createAnimations(result, animations, options);
 				onStartCallbacks.forEach(execute);

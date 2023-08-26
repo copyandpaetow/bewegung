@@ -1,13 +1,6 @@
 import { DimensionalDifferences, TreeEntry } from "../types";
 import { getBorderRadius } from "./border-radius";
-import { calculateDimensionDifferences, calculateRootDifferences } from "./calculate-differences";
-
-export const changesInScale = (differences: DimensionalDifferences[]) =>
-	differences.some(
-		(entry) =>
-			entry.heightDifference !== entry.widthDifference &&
-			(entry.heightDifference !== 1 || entry.widthDifference !== 1)
-	);
+import { calculateDimensionDifferences, calculateRootDifferences } from "./differences";
 
 export const setDefaultKeyframes = (
 	differences: DimensionalDifferences[],
@@ -30,6 +23,7 @@ export const setDefaultKeyframes = (
 	);
 };
 
+//TODO: this was written when there where more than 2 readouts, maybe it can be reduced / simplified?
 export const calculateDifferences = (current: TreeEntry[], parent: TreeEntry[] | undefined) => {
 	if (!parent) {
 		return current.map((entry) =>

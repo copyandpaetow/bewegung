@@ -1,9 +1,9 @@
 import { DomRepresentation, MainMessages, TreeEntry, TreeMedia, WorkerMessages } from "../types";
-import { isElementUnchanged, isEntryVisible } from "../utils/predicates";
+import { isElementUnchanged, isEntryVisible, changesInScale, isImage } from "../utils/predicates";
 import { useWorker } from "../utils/use-worker";
 import { getDimensions, getParentDimensions, updateDimensions } from "./dimensions";
 import { setImageKeyframes } from "./image-keyframes";
-import { calculateDifferences, changesInScale, setDefaultKeyframes } from "./keyframes";
+import { calculateDifferences, setDefaultKeyframes } from "./keyframes";
 import { setOverrides } from "./overrides";
 
 //@ts-expect-error typescript doesnt
@@ -11,9 +11,6 @@ const worker = self as Worker;
 const workerAtom = useWorker<WorkerMessages, MainMessages>(worker);
 
 const dimensionStore = new Map<string, TreeEntry>();
-
-const isImage = (currentDimensions: [TreeEntry, TreeEntry]) =>
-	currentDimensions[1].hasOwnProperty("ratio");
 
 const getKeyframes = (tree: DomRepresentation, dimensionStore: Map<string, TreeEntry>) => {
 	const keyframeStore = new Map<string, Keyframe[]>();

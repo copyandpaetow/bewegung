@@ -145,7 +145,6 @@ export interface DimensionalDifferences {
 	leftDifference: number;
 	topDifference: number;
 	offset: number;
-	id: string;
 }
 
 export type ImageDetails = {

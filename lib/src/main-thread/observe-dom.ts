@@ -1,14 +1,12 @@
 import { AtomicWorker, NormalizedOptions } from "../types";
 import { Attributes } from "../utils/constants";
+import { querySelectorAll, nextRaf, applyCSSStyles } from "../utils/helper";
 import {
-	applyCSSStyles,
 	iterateAddedElements,
 	iterateAttributesReversed,
 	iterateRemovedElements,
-	nextRaf,
 	observe,
-	querySelectorAll,
-} from "../utils/helper";
+} from "./observer-helper";
 import { isHTMLElement } from "../utils/predicates";
 import { recordElement } from "./label-elements";
 
