@@ -1,6 +1,16 @@
 import { fetchAnimationData } from "./main-thread/animation-calculator";
-import { extractAnimationOptions, normalizeOptions } from "./main-thread/normalize-props";
-import { BewegungsCallback, BewegungsOption, MainMessages, WorkerMessages } from "./types";
+import {
+	extractAnimationOptions,
+	normalizeOptions,
+	toBewegungsEntry,
+} from "./main-thread/normalize-props";
+import {
+	BewegungsCallback,
+	BewegungsOption,
+	FullBewegungsOption,
+	MainMessages,
+	WorkerMessages,
+} from "./types";
 import { getWorker, useWorker } from "./utils/use-worker";
 
 const workerManager = getWorker();
@@ -17,17 +27,18 @@ export type Bewegung = {
 
 export type BewegungsArgs = {
 	(props: BewegungsCallback): Bewegung;
-	(props: BewegungsCallback, duration: number): Bewegung;
-	(props: BewegungsOption): Bewegung;
+	(props: BewegungsCallback, options: number): Bewegung;
+	(props: BewegungsCallback, options: BewegungsOption): Bewegung;
+	(props: FullBewegungsOption): Bewegung;
 };
 
 export const bewegung: BewegungsArgs = (
-	props: BewegungsCallback | BewegungsOption,
-	duration?: number
+	props: BewegungsCallback | FullBewegungsOption,
+	config?: BewegungsOption | number
 ): Bewegung => {
 	//	const reactivity = getReactivity();
 
-	const { options, preferesReducedMotion } = normalizeOptions(props, duration);
+	const options = normalizeOptions(toBewegungsEntry(props, config));
 	let state: Map<string, Animation> | null = null;
 	let playState: AnimationPlayState = "idle";
 
@@ -41,7 +52,6 @@ export const bewegung: BewegungsArgs = (
 	// const enableReactivity = () => {
 	// 	reactivity.observe(() => {
 	// 		reactivity.disconnect();
-	// 		normalizedProps = filterProps(normalize(props, config));
 	// 		state = null;
 	// 	});
 	// };
@@ -51,7 +61,7 @@ export const bewegung: BewegungsArgs = (
 			return;
 		}
 
-		if (preferesReducedMotion) {
+		if (options.reduceMotion) {
 			//todo: set another empty state
 		}
 

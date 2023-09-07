@@ -2,7 +2,7 @@ import { Reactivity } from "../types";
 import { Attributes } from "../utils/constants";
 import { querySelectorAll } from "../utils/helper";
 import { isHTMLElement } from "../utils/predicates";
-import { observe } from "./observe-dom";
+import { observe } from "./observer-helper";
 
 const isChildOfAnimationElement = (element: HTMLElement) =>
 	Boolean(element.parentElement?.dataset.bewegungsKey);

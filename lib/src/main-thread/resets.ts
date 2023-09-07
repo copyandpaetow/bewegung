@@ -14,6 +14,7 @@ const saveOriginalStyle = (element: HTMLElement) => {
 	return attributes;
 };
 
+//TODO: these are currently not in use
 export const getElementResets = () =>
 	new Promise<Map<HTMLElement, Map<string, string>>>((resolve) => {
 		const resets = new Map<HTMLElement, Map<string, string>>();

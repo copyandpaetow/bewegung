@@ -1,13 +1,7 @@
 import { fetchAnimationData } from "../main-thread/animation-calculator";
-import {
-	BewegungsConfig,
-	BewegungsInputs,
-	MainMessages,
-	NormalizedOptions,
-	WorkerMessages,
-} from "../types";
+import { normalizeOptions } from "../main-thread/normalize-props";
+import { BewegungsConfig, BewegungsInputs, MainMessages, WorkerMessages } from "../types";
 import { getWorker, useWorker } from "../utils/use-worker";
-import { normalize } from "./manage-props";
 import {
 	getRelativeTimings,
 	getTotalRuntime,
@@ -19,15 +13,29 @@ import {
 
 TODO: 
 
-	- reversing the sequence is not perfect yet => could be a setup issue
-	- the code is unoptimized, especially the prop handling for the sequence
-	but we have several places with very similar functions
-	=> the prop splitting doesnt need the functions from preveious entries anymore
-	- reactivity needs to be added
-	- cleanup is still missing
+	- we need a timing engine that can start animations at certain times
+	- when iterating the element tree, we need to pause the animations shortly for the readout and move them to the time the animation finishes 
+! => this creates visual stutter even without throttling  
+! => we cant read the dom while another animation is running
 
- ? it would make sense to optimize the reading of the elements
- => if 2 animations have the same root / are nested, the second animation reads the dom unessescarily   
+- for a more fine-grained controll, we could split the reading and the animation creation into 2 functions
+todo: we could try to read overlapping elements after each other and then create the animations (read read create create instead of read create & read create)
+todo: or it could be read create read create play play instead of read create play read create play
+=> if they are related and the earlier one has the higher root, its functions might need to be executed for the later one as well so the state of the dom is correct
+? we know that the lower root function has no effect on the higher root function but will it be enough, if we just combine/add the keyframes 
+? for the lower root function?  
+
+- using at will have a downstream effect on the elements before and after the current one
+=> negative at will overlap with the previous animation and adjust all following animations
+? should a positive at overlap with the following animations then as well? 
+* if they want to have gaps, they can use delay/endDelay
+
+- if the first element has a negativ at-value, it will become its delay => the animation starts not at 0
+? the last element with a postive at value should it have become its endDelay?
+
+
+
+
 
 */
 
@@ -50,8 +58,9 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 
 	//* we could stop some of the reverting after each animations like keys, deleting elements etc
 
-	let normalizedProps = normalize(props, config);
+	let normalizedProps = props.map((entry) => normalizeOptions(entry, config?.defaultOptions));
 	let totalRuntime = getTotalRuntime(normalizedProps);
+
 	let domUpdates = revertToAbsoluteTiming(
 		separateOverlappingEntries(getRelativeTimings(normalizedProps, totalRuntime)),
 		totalRuntime

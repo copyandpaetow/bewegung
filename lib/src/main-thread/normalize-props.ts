@@ -1,5 +1,28 @@
-import { BewegungsCallback, BewegungsOption, ElementOrSelector, NormalizedOptions } from "../types";
+import {
+	BewegungsCallback,
+	BewegungsEntry,
+	BewegungsOption,
+	ElementOrSelector,
+	FullBewegungsOption,
+	NormalizedOptions,
+} from "../types";
 import { defaultOptions } from "../utils/constants";
+
+const normalizeStructure = (props: BewegungsEntry): Partial<FullBewegungsOption> => {
+	if (typeof props === "function") {
+		return { to: props };
+	}
+
+	if (!Array.isArray(props)) {
+		return props;
+	}
+
+	if (typeof props[1] === "number") {
+		return { to: props[0] as BewegungsCallback, duration: props[1] };
+	}
+
+	return { to: props[0] as BewegungsCallback, ...(props[1] as BewegungsOption) };
+};
 
 export const getElement = (element: ElementOrSelector) => {
 	let resultingElement: HTMLElement | null = null;
@@ -22,41 +45,32 @@ export const getElement = (element: ElementOrSelector) => {
 // 	return normalizedProps.filter((entry) => entry.root.isConnected);
 // };
 
-const preferesReducedMotion =
-	window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
+export const toBewegungsEntry = (
+	props: BewegungsCallback | FullBewegungsOption,
+	config: BewegungsOption | number | undefined
+): BewegungsEntry =>
+	config
+		? ([props as BewegungsCallback, config] as
+				| [BewegungsCallback, BewegungsOption]
+				| [BewegungsCallback, number])
+		: props;
 
 export const normalizeOptions = (
-	props: BewegungsCallback | BewegungsOption,
-	duration: number | undefined
-) => {
-	if (typeof props === "function") {
-		return {
-			preferesReducedMotion: preferesReducedMotion,
-			options: {
-				...defaultOptions,
-				duration: duration ?? defaultOptions.duration,
-				root: getElement(defaultOptions.root),
-				to: props,
-			} as NormalizedOptions,
-		};
-	}
-
-	const { reduceMotion, ...rest } = props;
-
+	props: BewegungsEntry,
+	defaultConfig?: Partial<BewegungsOption>
+): NormalizedOptions => {
 	const options = {
 		...defaultOptions,
-		...rest,
-		root: getElement(rest?.root ?? defaultOptions.root),
-	} as NormalizedOptions;
-
-	return {
-		options,
-		preferesReducedMotion: reduceMotion ?? preferesReducedMotion,
+		...(defaultConfig ?? {}),
+		...normalizeStructure(props),
 	};
+	options.root = getElement(options.root);
+
+	return options as NormalizedOptions;
 };
 
 export const extractAnimationOptions = (options: NormalizedOptions) => {
-	const { root, from, to, ...animationOptions } = options;
+	const { root, from, to, reduceMotion, ...animationOptions } = options;
 
 	return animationOptions;
 };

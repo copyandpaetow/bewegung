@@ -12,7 +12,6 @@ export type Easing =
 
 export type BewegungsCallback = VoidFunction;
 
-//requires at least "from" or "to" to be set
 export type BewegungsOption = {
 	duration: number;
 	root?: ElementOrSelector;
@@ -20,22 +19,31 @@ export type BewegungsOption = {
 	delay?: number;
 	endDelay?: number;
 	reduceMotion?: boolean;
-} & (
-	| {
-			from: VoidFunction;
-	  }
-	| {
-			to: VoidFunction;
-	  }
-);
+	at?: number;
+};
 
-export type BewegungsEntry = [BewegungsCallback, BewegungsOption?];
+//requires at least "from" or "to" to be set
+export type FullBewegungsOption = BewegungsOption &
+	(
+		| {
+				from: VoidFunction;
+		  }
+		| {
+				to: VoidFunction;
+		  }
+	);
 
-export type PossibleBewegungsInputs = BewegungsCallback | BewegungsEntry;
-export type BewegungsInputs = PossibleBewegungsInputs | PossibleBewegungsInputs[];
+//sequence([[cb, dur], [cb, options], cb, {}])
+
+export type BewegungsEntry =
+	| BewegungsCallback
+	| [BewegungsCallback, BewegungsOption]
+	| [BewegungsCallback, number]
+	| FullBewegungsOption;
+
+export type BewegungsInputs = BewegungsEntry[];
 export type BewegungsConfig = {
 	defaultOptions?: Partial<BewegungsOption>;
-	reduceMotion?: boolean;
 };
 
 export type NormalizedOptions = {
@@ -46,6 +54,8 @@ export type NormalizedOptions = {
 	easing: Easing;
 	delay: number;
 	endDelay: number;
+	reduceMotion: boolean;
+	at: number;
 };
 
 export type PropsWithRelativeTiming = {

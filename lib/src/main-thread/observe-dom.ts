@@ -1,14 +1,14 @@
 import { AtomicWorker, NormalizedOptions } from "../types";
 import { Attributes } from "../utils/constants";
-import { querySelectorAll, nextRaf, applyCSSStyles } from "../utils/helper";
+import { applyCSSStyles, nextRaf, querySelectorAll } from "../utils/helper";
+import { isHTMLElement } from "../utils/predicates";
+import { recordElement } from "./label-elements";
 import {
 	iterateAddedElements,
 	iterateAttributesReversed,
 	iterateRemovedElements,
 	observe,
 } from "./observer-helper";
-import { isHTMLElement } from "../utils/predicates";
-import { recordElement } from "./label-elements";
 
 const resetNodeStyle = (entry: MutationRecord): void => {
 	const element = entry.target as HTMLElement;
@@ -78,7 +78,7 @@ export const observeDom = async (props: NormalizedOptions, worker: AtomicWorker)
 		}
 
 		observe(observer);
-		applyCSSStyles(props.root, { contain: "layout", overflow: "hidden" });
+		applyCSSStyles(props.root, { contain: "layout inline-size" });
 		domChangeFn();
 	}
 };

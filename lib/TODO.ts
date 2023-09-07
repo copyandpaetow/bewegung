@@ -30,14 +30,10 @@ TODOs
 - we might need to sort (or error out) the props if the "at" is changing the entry so much, that it actually changes the order of the sequence
 => the example above would need to be [{change: fn2, duration: 1000}, {change: fn1,duration: 1000, at: 1000}]
 
-- we might need some meta data because the jumping issue is based on the viewport
-=> we could also generate 2 sets of keyframes and chose based on the viewport
-=> since there could be a delay between the generation of the animation and its playing, we would need to decide at playtime
-
 - counter scaling looks still buggy => easing issue
 
 - if the root element is removed, its absolute position might lead to bugs because we dont know the next anchor parent
-=> maybe we would need to change the code in a way that the parent is the first non-animation element
+=> maybe we would need to change the code in a way that the root is the first non-animation element
 => that also would make rootCalculations easier but it is unclear if the weird browser fix could be implemented otherwise
 
 - if the user sets transform or clipPath, we will override them
@@ -49,10 +45,6 @@ TODOs
 
 - it looks like if the image becomes bigger than the parent via implicit overflow, that the image calculations are off
 ? maybe the wrapper style is missing something good to compare to?
-
-- the easings could maybe be better included within the tree data instead of a data-attribute
-- then we could also add a root attribute, which is more descriptive
-
 
 * tasks
 

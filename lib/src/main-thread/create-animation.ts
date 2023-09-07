@@ -1,9 +1,9 @@
 import { NormalizedOptions, ResultTransferable } from "../types";
 import { Attributes, emptyImageSrc } from "../utils/constants";
-import { applyCSSStyles, nextRaf } from "../utils/helper";
+import { applyCSSStyles, execute, nextRaf } from "../utils/helper";
 import { extractAnimationOptions } from "./normalize-props";
 import { addKeyToNewlyAddedElement, getNextElementSibling } from "./observe-dom";
-import { iterateRemovedElements, iterateAddedElements, observe } from "./observer-helper";
+import { iterateAddedElements, iterateRemovedElements, observe } from "./observer-helper";
 
 const createWrapperElement = (style: Partial<CSSStyleDeclaration>) => {
 	const wrapperElement = document.createElement("div");
@@ -144,22 +144,42 @@ export const createAnimations = (
 	return [...overrideCallbacks, ...imageCallbacks];
 };
 
-export const interceptDom = (
-	startAnimation: Animation,
-	options: NormalizedOptions,
-	onFinish: VoidFunction
+/*
+				todo: on start callbacks feel clonky and are also somewhat contrarian with the startAnimation thingy
+				? what needs to happen before the animation can start
+				- both callbacks need to be called
+				- extra elements for images need to be created
+				- overrides need to get applied
+
+				after
+				- overrides need to get restored
+				- extra elements removed
+				- elements finally deleted
+
+				we could either return the animations callbacks next to the animation 
+				or pass in some kind of pubSub / Event thingy
+				
+				for simplicity, we could add some array to the options and mutate it from here
+			 
+			*/
+
+export const interceptDom = async (
+	results: ResultTransferable,
+	animations: Map<string, Animation>,
+	options: NormalizedOptions
 ) => {
+	const onStartCallbacks = createAnimations(results, animations, options);
+
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
 		iterateRemovedElements(entries, readdRemovedNodes);
 		iterateAddedElements(entries, addKeyToNewlyAddedElement);
-		onFinish();
+		onStartCallbacks.forEach(execute);
+		createAnimations(results, animations, options).forEach(execute);
 	};
 
-	startAnimation.onfinish = async () => {
-		await nextRaf();
-		observe(new MutationObserver(observerCallback));
-		options.from?.();
-		options.to?.();
-	};
+	await nextRaf();
+	observe(new MutationObserver(observerCallback));
+	options.from?.();
+	options.to?.();
 };

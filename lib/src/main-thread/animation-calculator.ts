@@ -1,7 +1,7 @@
-import { AtomicWorker, NormalizedOptions } from "../types";
+import { AtomicWorker, NormalizedOptions, ResultTransferable } from "../types";
 import { Attributes } from "../utils/constants";
-import { execute, nextRaf, querySelectorAll } from "../utils/helper";
-import { createAnimations, interceptDom } from "./create-animation";
+import { nextRaf, querySelectorAll } from "../utils/helper";
+import { interceptDom } from "./create-animation";
 import { recordDomLabels } from "./label-elements";
 import { observeDom } from "./observe-dom";
 import { getElementResets } from "./resets";
@@ -65,20 +65,13 @@ export const fetchAnimationData = async (props: {
 		await observeDom(options, worker);
 		const resets = getElementResets();
 
-		await worker("animationData").onMessage((result) => {
-			const onStartCallbacks = createAnimations(result, animations, options);
+		const results = (await worker("animationData").onMessage(
+			(result) => result
+		)) as ResultTransferable;
 
-			/*
-				todo: on start callbacks feel clonky and are also somewhat contrarian with the startAnimation thingy
-			
-			*/
-			interceptDom(startAnimation, options, () => {
-				const onAddedStartCallbacks = createAnimations(result, animations, options);
-				onStartCallbacks.forEach(execute);
-				onAddedStartCallbacks.forEach(execute);
-			});
-		});
+		await interceptDom(results, animations, options);
 
+		//!in a sequence this keeps get overwritten and only fires once
 		timekeeper.oncancel = async () => {
 			restoreElements(resets);
 		};

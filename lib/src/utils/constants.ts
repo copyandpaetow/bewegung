@@ -1,13 +1,18 @@
-import { NormalizedOptions } from "../types";
+import { BewegungsOption } from "../types";
 
-export const defaultOptions: Omit<NormalizedOptions, "root"> & { root: string } = {
+export const defaultOptions: Required<BewegungsOption> & {
+	from: VoidFunction | undefined;
+	to: VoidFunction | undefined;
+} = {
 	duration: 400,
 	easing: "ease",
-	root: "body",
+	root: document.body,
 	delay: 0,
 	endDelay: 0,
 	from: undefined,
 	to: undefined,
+	reduceMotion: window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true,
+	at: 0,
 };
 
 export const emptyImageSrc =

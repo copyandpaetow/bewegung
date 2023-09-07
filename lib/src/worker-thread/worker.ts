@@ -53,6 +53,7 @@ const getKeyframes = (tree: DomRepresentation, dimensionStore: Map<string, TreeE
 			keyframeStore.set(key, setDefaultKeyframes(differences, dimensions, isChangingInScale));
 		}
 
+		//if the element is not visible in the end (removed/display: none), we need to override that
 		if (!isEntryVisible(dimensions[1])) {
 			setOverrides(dimensions[1], parentDimensions?.[1], overrideStore);
 		}
@@ -62,6 +63,7 @@ const getKeyframes = (tree: DomRepresentation, dimensionStore: Map<string, TreeE
 		});
 	};
 
+	overrideStore.set((tree[0] as TreeEntry).key, { contain: "layout inline-size" });
 	updateStore(tree);
 
 	workerAtom("sendAnimationData").reply("animationData", {
@@ -71,7 +73,6 @@ const getKeyframes = (tree: DomRepresentation, dimensionStore: Map<string, TreeE
 	});
 };
 
-//TODO: maybe it would make more sense to split this into 2
 workerAtom("sendDOMRepresentation").onMessage((domRepresentations) => {
 	if (dimensionStore.size === 0) {
 		updateDimensions(domRepresentations, dimensionStore);
