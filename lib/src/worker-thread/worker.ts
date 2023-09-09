@@ -10,9 +10,9 @@ import { setOverrides } from "./overrides";
 const worker = self as Worker;
 const workerAtom = useWorker<WorkerMessages, MainMessages>(worker);
 
-const dimensionStore = new Map<string, TreeEntry>();
+const dimensionStore = new Map<string, Map<string, TreeEntry>>();
 
-const getKeyframes = (tree: DomRepresentation, dimensionStore: Map<string, TreeEntry>) => {
+const getKeyframes = (dom: DomRepresentation, dimensionStore: Map<string, TreeEntry>) => {
 	const keyframeStore = new Map<string, Keyframe[]>();
 	const imageKeyframeStore = new Map<string, Keyframe[]>();
 	const overrideStore = new Map<string, Partial<CSSStyleDeclaration>>();
@@ -63,23 +63,29 @@ const getKeyframes = (tree: DomRepresentation, dimensionStore: Map<string, TreeE
 		});
 	};
 
-	overrideStore.set((tree[0] as TreeEntry).key, { contain: "layout inline-size" });
-	updateStore(tree);
+	// overrideStore.set((dom[0] as TreeEntry).key, { contain: "layout inline-size" });
+	// (dom[1] as DomRepresentation[]).forEach((child) => {
+	// 	updateStore(child);
+	// });
 
-	workerAtom("sendAnimationData").reply("animationData", {
+	//!we currently dont animate the root, maybe this leads to issues
+	updateStore(dom);
+
+	return {
 		keyframeStore,
 		imageKeyframeStore,
 		overrideStore,
-	});
+	};
 };
 
 workerAtom("sendDOMRepresentation").onMessage((domRepresentations) => {
-	if (dimensionStore.size === 0) {
-		updateDimensions(domRepresentations, dimensionStore);
+	if (!dimensionStore.has(domRepresentations.key)) {
+		dimensionStore.set(domRepresentations.key, updateDimensions(domRepresentations.dom));
 		return;
 	}
 
-	getKeyframes(domRepresentations, dimensionStore);
-
-	dimensionStore.clear();
+	workerAtom(`sendAnimationData-${domRepresentations.key}`).reply(
+		`animationData-${domRepresentations.key}`,
+		getKeyframes(domRepresentations.dom, dimensionStore.get(domRepresentations.key)!)
+	);
 });

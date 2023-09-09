@@ -1,22 +1,20 @@
-import { fetchAnimationData } from "../main-thread/animation-calculator";
-import { normalizeOptions } from "../main-thread/normalize-props";
-import { BewegungsConfig, BewegungsInputs, MainMessages, WorkerMessages } from "../types";
-import { getWorker, useWorker } from "../utils/use-worker";
 import {
-	getRelativeTimings,
-	getTotalRuntime,
-	revertToAbsoluteTiming,
-	separateOverlappingEntries,
-} from "./update-timings";
+	read,
+	removeDataAttributes,
+	removeElements,
+	replaceImagePlaceholders,
+} from "./main-thread/animation-calculator";
+import { create } from "./main-thread/create-animation";
+import { getTotalRuntime, normalizeOptions } from "./main-thread/normalize-props";
+import { BewegungsConfig, BewegungsInputs, MainMessages, WorkerMessages } from "./types";
+import { getWorker, useWorker } from "./utils/use-worker";
 
 /*
 
 TODO: 
 
 	- we need a timing engine that can start animations at certain times
-	- when iterating the element tree, we need to pause the animations shortly for the readout and move them to the time the animation finishes 
-! => this creates visual stutter even without throttling  
-! => we cant read the dom while another animation is running
+
 
 - for a more fine-grained controll, we could split the reading and the animation creation into 2 functions
 todo: we could try to read overlapping elements after each other and then create the animations (read read create create instead of read create & read create)
@@ -25,19 +23,42 @@ todo: or it could be read create read create play play instead of read create pl
 ? we know that the lower root function has no effect on the higher root function but will it be enough, if we just combine/add the keyframes 
 ? for the lower root function?  
 
-- using at will have a downstream effect on the elements before and after the current one
-=> negative at will overlap with the previous animation and adjust all following animations
-? should a positive at overlap with the following animations then as well? 
-* if they want to have gaps, they can use delay/endDelay
-
 - if the first element has a negativ at-value, it will become its delay => the animation starts not at 0
 ? the last element with a postive at value should it have become its endDelay?
 
+- we need some kind of versioning for the sequence which cant be the root key
+=> 2 overlapping animations could have the same root
 
+- we cant await the first create functions because the other might return faster and get lost
+=> requesting the data from the main thread would work but adds extra time for traveling and for the worker calculation to finish
+
+- since we also want controll over sheduling some of the Animation creation we might need 3 functions (read, create, flip)
+=> since these all need to happen in order async, we could use an array of generators and only advance the functions needed
+=> we could also multiple arrays for each step
+
+
+
+we want 
+[[Animation, Animation, ...], [Animation, Animation, ...], [Animation, Animation, ...]]
+
+
+intermediate step 2
+[[Animation, Animation, ...], [Animation, Animation, ...], [Animation, Animation, ...]]
+[callback, callback, callback]
++ overrides
+
+intermediate step 1
+[[{transform, offset...}], [{transform, offset...}], [{transform, offset...}]]
++ overrides
+
+we start with
+[{delay, from, to...}, {delay, from, to...}, {delay, from, to...}]
 
 
 
 */
+
+const workerManager = getWorker();
 
 export type Bewegung = {
 	play(): void;
@@ -49,23 +70,25 @@ export type Bewegung = {
 	playState: AnimationPlayState;
 };
 
-const workerManager = getWorker();
-
 export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 	const worker = useWorker<MainMessages, WorkerMessages>(workerManager.current());
 
 	//TODO: how to handle reactivity here?
 
-	//* we could stop some of the reverting after each animations like keys, deleting elements etc
+	let options = props.map((entry) => normalizeOptions(entry, config?.defaultOptions));
+	let totalRuntime = getTotalRuntime(options);
+	let statePromise = options.map((option) => create(option, worker));
 
-	let normalizedProps = props.map((entry) => normalizeOptions(entry, config?.defaultOptions));
-	let totalRuntime = getTotalRuntime(normalizedProps);
-
-	let domUpdates = revertToAbsoluteTiming(
-		separateOverlappingEntries(getRelativeTimings(normalizedProps, totalRuntime)),
-		totalRuntime
-	);
 	const globalTimekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
+
+	globalTimekeeper.onfinish = () => {
+		requestAnimationFrame(() => {
+			replaceImagePlaceholders();
+			removeElements();
+			removeDataAttributes();
+			index = 0;
+		});
+	};
 
 	let state = new Map<number, Map<string, Animation>>();
 	let playState: AnimationPlayState = "idle";
@@ -80,21 +103,22 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 			return;
 		}
 
+		read(options[index], worker);
+
 		console.time("getState");
 
-		const localTimekeeper = new Animation(
-			new KeyframeEffect(null, null, domUpdates[index].duration)
-		);
-		const currentAnimations = await fetchAnimationData({
-			options: domUpdates[index],
-			timekeeper: localTimekeeper,
-			worker,
-		});
+		const nextOption = options.at(index + 1);
 
+		const localTimekeeper = new Animation(
+			new KeyframeEffect(null, null, options[index].duration + (nextOption ? nextOption.at : 0))
+		);
+		const currentAnimations = await statePromise[index];
+
+		currentAnimations.set("localTimekeeper", localTimekeeper);
 		state.set(index, currentAnimations);
 
 		localTimekeeper.onfinish = () => {
-			if (domUpdates.length - 1 === index) {
+			if (!nextOption) {
 				return;
 			}
 
@@ -114,6 +138,7 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 			state.get(index)!.forEach((animation) => {
 				animation.play();
 			});
+			console.log(state);
 		},
 		async pause() {},
 		async seek(progress, done) {
@@ -122,16 +147,16 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 			}
 
 			const relativeProgress =
-				(progress * totalRuntime - accumulatedTime) / domUpdates[index].duration;
+				(progress * totalRuntime - accumulatedTime) / options[index].duration;
 
 			if (relativeProgress <= 0) {
 				index = Math.max(0, index - 1);
-				accumulatedTime = domUpdates.slice(0, index).reduce((acc, cur) => acc + cur.duration, 0);
+				accumulatedTime = options.slice(0, index).reduce((acc, cur) => acc + cur.duration, 0);
 				return;
 			}
 			if (relativeProgress >= 1) {
-				index = Math.min(domUpdates.length - 1, index + 1);
-				accumulatedTime = domUpdates.slice(0, index).reduce((acc, cur) => acc + cur.duration, 0);
+				index = Math.min(options.length - 1, index + 1);
+				accumulatedTime = options.slice(0, index).reduce((acc, cur) => acc + cur.duration, 0);
 				return;
 			}
 			inProgress = true;
@@ -139,7 +164,7 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 			inProgress = false;
 
 			state.get(index)!.forEach((animation) => {
-				animation.currentTime = relativeProgress * domUpdates[index].duration;
+				animation.currentTime = relativeProgress * options[index].duration;
 			});
 		},
 		cancel() {},

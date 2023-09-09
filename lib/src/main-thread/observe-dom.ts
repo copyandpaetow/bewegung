@@ -50,25 +50,56 @@ export const readdRemovedNodesHidden = (element: HTMLElement, entry: MutationRec
 	entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 };
 
-export const observeDom = async (props: NormalizedOptions, worker: AtomicWorker) => {
+export const getRunningAnimations = (element: HTMLElement, animations: Animation[]) => {
+	const children = element.children;
+	const currentAnimations = element.getAnimations();
+
+	for (let index = 0; index < currentAnimations.length; index++) {
+		animations.push(currentAnimations[index]);
+	}
+
+	for (let index = 0; index < children.length; index++) {
+		getRunningAnimations(children.item(index) as HTMLElement, animations);
+	}
+};
+
+export const observeDom = async (options: NormalizedOptions, worker: AtomicWorker) => {
 	const { reply } = worker("domChanges");
+	const runningAnimations: Animation[] = [];
 	let index = -1;
+
+	const recordTime = (anim: Animation) => {
+		//anim.pause();
+		const currentTime = anim.currentTime as number;
+		anim.currentTime = currentTime;
+		const now = Date.now();
+
+		return () => {
+			const timeDiff = Date.now() - now;
+			anim.currentTime = currentTime + timeDiff;
+			console.log(timeDiff);
+			//anim.play();
+		};
+	};
 
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
+		const restoreAnimationTiming = runningAnimations.map(recordTime);
 
 		iterateAddedElements(entries, addKeyToNewlyAddedElement);
 		iterateRemovedElements(entries, readdRemovedNodesHidden);
 
-		reply("sendDOMRepresentation", recordElement(props.root, index));
+		reply("sendDOMRepresentation", { key: options.key, dom: recordElement(options.root, index) });
 
 		unhideRemovedElements();
 		iterateAddedElements(entries, (element) => element.remove());
 		iterateAttributesReversed(entries, resetNodeStyle);
+		restoreAnimationTiming.forEach((cb) => cb());
 	};
 
+	getRunningAnimations(options.root, runningAnimations);
 	const observer = new MutationObserver(observerCallback);
-	for await (const domChangeFn of [props.from, props.to]) {
+	for await (const domChangeFn of [options.from, options.to]) {
 		await nextRaf();
 		index += 1;
 
@@ -78,7 +109,7 @@ export const observeDom = async (props: NormalizedOptions, worker: AtomicWorker)
 		}
 
 		observe(observer);
-		applyCSSStyles(props.root, { contain: "layout inline-size" });
+		applyCSSStyles(options.root, { contain: "layout inline-size" });
 		domChangeFn();
 	}
 };

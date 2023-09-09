@@ -28,3 +28,6 @@ export const enum Attributes {
 	cssReset = "data-bewegungs-css-reset",
 	replace = "data-bewegungs-replace",
 }
+
+//TODO:remove later if debugging is not needed anymore
+export const sleep = (duration: number) => new Promise((resolve) => setTimeout(resolve, duration));

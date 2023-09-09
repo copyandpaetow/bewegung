@@ -1,12 +1,11 @@
-import { AtomicWorker, NormalizedOptions, ResultTransferable } from "../types";
+import { AtomicWorker, NormalizedOptions } from "../types";
 import { Attributes } from "../utils/constants";
 import { nextRaf, querySelectorAll } from "../utils/helper";
-import { interceptDom } from "./create-animation";
 import { recordDomLabels } from "./label-elements";
 import { observeDom } from "./observe-dom";
 import { getElementResets } from "./resets";
 
-const replaceImagePlaceholders = () => {
+export const replaceImagePlaceholders = () => {
 	querySelectorAll(`[${Attributes.replace}]`).forEach((element) => {
 		const replaceKey = element.dataset.bewegungsReplace!;
 		const replaceElement = document.querySelector(`[${Attributes.key}=${replaceKey}]`)!;
@@ -17,7 +16,9 @@ const replaceImagePlaceholders = () => {
 	});
 };
 
-const restoreElements = async (resetPromise: Promise<Map<HTMLElement, Map<string, string>>>) => {
+export const restoreElements = async (
+	resetPromise: Promise<Map<HTMLElement, Map<string, string>>>
+) => {
 	const resets = await resetPromise;
 	await nextRaf();
 	querySelectorAll(`[${Attributes.removable}], [${Attributes.key}*="added"]`).forEach((element) => {
@@ -32,7 +33,7 @@ const restoreElements = async (resetPromise: Promise<Map<HTMLElement, Map<string
 	});
 };
 
-const removeElements = () => {
+export const removeElements = () => {
 	querySelectorAll(`[${Attributes.removable}]`).forEach((element) => {
 		element.remove();
 	});
@@ -48,47 +49,15 @@ export const removeDataAttributes = () => {
 	});
 };
 
-export const fetchAnimationData = async (props: {
-	options: NormalizedOptions;
-	timekeeper: Animation;
-	worker: AtomicWorker;
-}): Promise<Map<string, Animation>> => {
-	const { options, timekeeper, worker } = props;
-	const startAnimation = new Animation(new KeyframeEffect(null, null, options.delay));
-	const animations = new Map([
-		["timekeeper", timekeeper],
-		["start", startAnimation],
-	]);
-
+export const read = async (options: NormalizedOptions, worker: AtomicWorker) => {
 	try {
 		recordDomLabels(options.root);
+		await nextRaf();
 		await observeDom(options, worker);
-		const resets = getElementResets();
-
-		const results = (await worker("animationData").onMessage(
-			(result) => result
-		)) as ResultTransferable;
-
-		await interceptDom(results, animations, options);
-
-		//!in a sequence this keeps get overwritten and only fires once
-		timekeeper.oncancel = async () => {
-			restoreElements(resets);
-		};
-		timekeeper.onfinish = () => {
-			requestAnimationFrame(() => {
-				replaceImagePlaceholders();
-				removeElements();
-				removeDataAttributes();
-			});
-		};
+		return getElementResets();
 	} catch (error) {
-		console.error("something weird happend: ", error);
-		startAnimation.onfinish = () => {
-			options.from?.();
-			options.to?.();
-		};
-	} finally {
-		return animations;
+		options.from?.();
+		options.to?.();
+		return new Map<HTMLElement, Map<string, string>>();
 	}
 };

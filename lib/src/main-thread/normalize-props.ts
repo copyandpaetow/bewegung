@@ -7,6 +7,7 @@ import {
 	NormalizedOptions,
 } from "../types";
 import { defaultOptions } from "../utils/constants";
+import { uuid } from "../utils/helper";
 
 const normalizeStructure = (props: BewegungsEntry): Partial<FullBewegungsOption> => {
 	if (typeof props === "function") {
@@ -63,6 +64,7 @@ export const normalizeOptions = (
 		...defaultOptions,
 		...(defaultConfig ?? {}),
 		...normalizeStructure(props),
+		key: uuid("option"),
 	};
 	options.root = getElement(options.root);
 
@@ -74,3 +76,8 @@ export const extractAnimationOptions = (options: NormalizedOptions) => {
 
 	return animationOptions;
 };
+
+export const getTotalRuntime = (props: NormalizedOptions[]) =>
+	props.reduce((accumulator, current) => {
+		return accumulator + current.at + current.duration;
+	}, 0);

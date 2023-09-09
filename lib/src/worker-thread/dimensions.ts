@@ -3,7 +3,7 @@ import { isEntryVisible } from "../utils/predicates";
 
 export const updateDimensions = (
 	domTree: DomRepresentation,
-	dimensionStore: Map<string, TreeEntry>
+	dimensionStore = new Map<string, TreeEntry>()
 ) => {
 	const [current, currentChildren] = domTree as DomRepresentation;
 	const key = (current as TreeEntry).key;
@@ -13,6 +13,8 @@ export const updateDimensions = (
 	(currentChildren as DomRepresentation).forEach((child) =>
 		updateDimensions(child as DomRepresentation, dimensionStore)
 	);
+
+	return dimensionStore;
 };
 
 export const getDimensions = (

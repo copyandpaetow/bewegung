@@ -56,14 +56,12 @@ export type NormalizedOptions = {
 	endDelay: number;
 	reduceMotion: boolean;
 	at: number;
+	key: string;
 };
 
-export type PropsWithRelativeTiming = {
+export type PropsWithRelativeTiming = NormalizedOptions & {
 	start: number;
 	end: number;
-	root: HTMLElement;
-	easing: Easing;
-	callback: VoidFunction;
 };
 
 export type PropsWithRelativeTiming2 = {
@@ -123,14 +121,16 @@ export type ResultTransferable = {
 export type DomLabel = (string | DomLabel)[];
 
 export type WorkerMessages = {
-	sendDOMRepresentation: DomRepresentation;
-	sendAnimationData: ResultTransferable;
+	sendDOMRepresentation: { key: string; dom: DomRepresentation };
+} & {
+	[key in `sendAnimationData-${string}`]: ResultTransferable;
 };
 
 export type MainMessages = {
 	domChanges: Map<string, DomLabel>;
-	animationData: ResultTransferable;
 	treeUpdate: Map<string, DomLabel>;
+} & {
+	[key in `animationData-${string}`]: ResultTransferable;
 };
 
 export type AtomicWorker = <Current extends keyof MainMessages>(

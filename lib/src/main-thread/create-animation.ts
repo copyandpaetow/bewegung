@@ -1,8 +1,12 @@
-import { NormalizedOptions, ResultTransferable } from "../types";
+import { AtomicWorker, NormalizedOptions, ResultTransferable } from "../types";
 import { Attributes, emptyImageSrc } from "../utils/constants";
 import { applyCSSStyles, execute, nextRaf } from "../utils/helper";
 import { extractAnimationOptions } from "./normalize-props";
-import { addKeyToNewlyAddedElement, getNextElementSibling } from "./observe-dom";
+import {
+	addKeyToNewlyAddedElement,
+	getNextElementSibling,
+	getRunningAnimations,
+} from "./observe-dom";
 import { iterateAddedElements, iterateRemovedElements, observe } from "./observer-helper";
 
 const createWrapperElement = (style: Partial<CSSStyleDeclaration>) => {
@@ -135,6 +139,7 @@ export const createAnimations = (
 	const animationOptions: KeyframeEffectOptions = {
 		...extractAnimationOptions(options),
 		fill: "both",
+		composite: "accumulate",
 	};
 
 	setDefaultAnimations(results.keyframeStore, animations, animationOptions);
@@ -144,42 +149,35 @@ export const createAnimations = (
 	return [...overrideCallbacks, ...imageCallbacks];
 };
 
-/*
-				todo: on start callbacks feel clonky and are also somewhat contrarian with the startAnimation thingy
-				? what needs to happen before the animation can start
-				- both callbacks need to be called
-				- extra elements for images need to be created
-				- overrides need to get applied
+export const create = async (options: NormalizedOptions, worker: AtomicWorker) =>
+	new Promise<Map<string, Animation>>((resolve, reject) => {
+		const animations = new Map<string, Animation>();
+		const runningAnimations: Animation[] = [];
+		const resultWorker = worker(`animationData-${options.key}`);
+		resultWorker.onMessage(async (result) => {
+			resultWorker.cleanup();
+			const onStartCallbacks = createAnimations(result, animations, options);
 
-				after
-				- overrides need to get restored
-				- extra elements removed
-				- elements finally deleted
+			const observerCallback: MutationCallback = (entries, observer) => {
+				observer.disconnect();
+				runningAnimations.forEach((anim) => anim.pause());
 
-				we could either return the animations callbacks next to the animation 
-				or pass in some kind of pubSub / Event thingy
-				
-				for simplicity, we could add some array to the options and mutate it from here
-			 
-			*/
+				iterateRemovedElements(entries, readdRemovedNodes);
+				iterateAddedElements(entries, addKeyToNewlyAddedElement);
 
-export const interceptDom = async (
-	results: ResultTransferable,
-	animations: Map<string, Animation>,
-	options: NormalizedOptions
-) => {
-	const onStartCallbacks = createAnimations(results, animations, options);
+				onStartCallbacks.forEach(execute);
+				createAnimations(result, animations, options).forEach(execute);
+				runningAnimations.forEach((anim) => anim.play());
 
-	const observerCallback: MutationCallback = (entries, observer) => {
-		observer.disconnect();
-		iterateRemovedElements(entries, readdRemovedNodes);
-		iterateAddedElements(entries, addKeyToNewlyAddedElement);
-		onStartCallbacks.forEach(execute);
-		createAnimations(results, animations, options).forEach(execute);
-	};
+				resolve(animations);
+			};
 
-	await nextRaf();
-	observe(new MutationObserver(observerCallback));
-	options.from?.();
-	options.to?.();
-};
+			getRunningAnimations(options.root, runningAnimations);
+			await nextRaf();
+			observe(new MutationObserver(observerCallback));
+			options.from?.();
+			options.to?.();
+		});
+
+		resultWorker.onError(reject);
+	});

@@ -1,4 +1,10 @@
-import { fetchAnimationData } from "./main-thread/animation-calculator";
+import {
+	read,
+	removeDataAttributes,
+	removeElements,
+	replaceImagePlaceholders,
+} from "./main-thread/animation-calculator";
+import { create } from "./main-thread/create-animation";
 import {
 	extractAnimationOptions,
 	normalizeOptions,
@@ -12,8 +18,6 @@ import {
 	WorkerMessages,
 } from "./types";
 import { getWorker, useWorker } from "./utils/use-worker";
-
-const workerManager = getWorker();
 
 export type Bewegung = {
 	play(): void;
@@ -32,6 +36,8 @@ export type BewegungsArgs = {
 	(props: FullBewegungsOption): Bewegung;
 };
 
+const workerManager = getWorker();
+
 export const bewegung: BewegungsArgs = (
 	props: BewegungsCallback | FullBewegungsOption,
 	config?: BewegungsOption | number
@@ -46,6 +52,14 @@ export const bewegung: BewegungsArgs = (
 	const timekeeper = new Animation(
 		new KeyframeEffect(null, null, extractAnimationOptions(options))
 	);
+
+	timekeeper.onfinish = () => {
+		requestAnimationFrame(() => {
+			replaceImagePlaceholders();
+			removeElements();
+			removeDataAttributes();
+		});
+	};
 
 	//TODO: enable reactivity
 	// how should this be different compared to the sequence?
@@ -65,11 +79,10 @@ export const bewegung: BewegungsArgs = (
 			//todo: set another empty state
 		}
 
-		state = await fetchAnimationData({
-			options,
-			timekeeper,
-			worker,
-		});
+		read(options, worker);
+		state = await create(options, worker);
+
+		//state = await fetchAnimationData({options, timekeeper, worker})
 	};
 
 	const api: Bewegung = {

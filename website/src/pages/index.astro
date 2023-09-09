@@ -5,8 +5,9 @@ import Nav from "../components/Nav.astro";
 ---
 
 <script>
-	import { sequence } from "../../../lib/src/sequence/sequence";
+	import { sequence } from "../../../lib/src/sequence";
 	import { bewegung } from "../../../lib/src/bewegung";
+	import { sleep } from "../../../lib/src/utils/constants";
 
 	const list = document.getElementById("js-list") as HTMLElement;
 	const main = document.querySelector("main") as HTMLElement;
@@ -18,34 +19,48 @@ import Nav from "../components/Nav.astro";
 		sibling.remove();
 	};
 
-	const increaseH1Spacing = () => {
-		h1.style.marginBlockEnd = "2rem";
-	};
-
 	const removeGridArea = () => {
 		list.style.gridTemplateColumns = "1fr 1fr";
 		list.querySelectorAll("li").forEach((element) => {
 			element.style.gridArea = "unset";
 		});
 	};
+
 	const expandArea = () => {
 		main.style.gridTemplateColumns = "2fr 1fr";
 	};
 
 	const expandArticlePadding = () => {
-		article.style.padding = "5%";
+		article.style.padding = "0 5%";
 	};
 
-	setTimeout(() => {
-		// const anim = sequence([
-		// 	[removeGridArea, { root: "aside", duration: 1000 }],
-		// 	[expandArticlePadding, { duration: 1000, root: article }],
-		// 	[increaseH1Spacing, { root: "article section", duration: 1000, at: -500 }],
-		// 	[expandArea, { duration: 1000, at: -500, root: main }],
-		// 	[removeSibling, { duration: 2000 }],
-		// ]);
+	const increaseH1Spacing = () => {
+		h1.style.marginBlockEnd = "2rem";
+	};
 
-		const anim = bewegung(removeGridArea, 1000);
+	setTimeout(async () => {
+		// const anim = sequence([
+		// 	{ duration: 4000, to: expandArea },
+		// 	[expandArticlePadding, { duration: 2000, at: -3000 }],
+		// ]);
+		// main.style.transition = "grid-template-columns 5000ms ease";
+		// article.style.transition = "padding 5000ms ease 1000ms";
+		// h1.style.transition = "margin-block-end 2000ms ease 5000ms";
+
+		// requestAnimationFrame(() => {
+		// 	main.style.gridTemplateColumns = "1fr 4fr";
+		// 	article.style.padding = "10%";
+		// 	h1.style.marginBlockEnd = "2rem";
+		// });
+		const anim = sequence([
+			removeGridArea,
+			[expandArticlePadding, { duration: 1000, root: article }],
+			[increaseH1Spacing, { root: "article section", duration: 1000, at: -500 }],
+			{ duration: 1000, at: -500, root: main, to: expandArea },
+			// [removeSibling, 2000],
+		]);
+
+		//const anim = bewegung(expandArticlePadding, { duration: 1000, root: article });
 
 		// bewegung(expandArea, 1000)
 		// bewegung({from: Fn, to: Fn, duration: 1000})

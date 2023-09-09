@@ -14,12 +14,8 @@ const getTextAttribute = (element: HTMLElement) => {
 	return text;
 };
 
-const getMediaRatioAttribute = (element: HTMLElement) => {
-	//@ts-expect-error
-	if (!element.naturalWidth || !element.naturalHeight) {
-		return 0;
-	}
-	return (element as HTMLImageElement).naturalWidth / (element as HTMLImageElement).naturalHeight;
+const getMediaRatioAttribute = (element: HTMLImageElement) => {
+	return element.naturalWidth / element.naturalHeight;
 };
 
 export const readElement = (element: HTMLElement, offset: number): TreeEntry => {
@@ -27,7 +23,7 @@ export const readElement = (element: HTMLElement, offset: number): TreeEntry => 
 	const style = window.getComputedStyle(element);
 	const key = (element.dataset.bewegungsKey ??= uuid(element.tagName));
 
-	if (element.tagName === "IMG" || element.tagName === "VIDEO") {
+	if (element.tagName !== "IMG") {
 		return {
 			currentLeft: dimensions.left,
 			currentTop: dimensions.top,
@@ -37,15 +33,13 @@ export const readElement = (element: HTMLElement, offset: number): TreeEntry => 
 			unsaveHeight: dimensions.height,
 			display: style.getPropertyValue("display"),
 			borderRadius: style.getPropertyValue("border-radius"),
-			position: style.getPropertyValue("position"),
 			transform: style.getPropertyValue("transform"),
 			transformOrigin: style.getPropertyValue("transform-origin"),
-			objectFit: style.getPropertyValue("object-fit"),
-			objectPosition: style.getPropertyValue("object-position"),
-			ratio: getMediaRatioAttribute(element),
+			position: style.getPropertyValue("position"),
+			text: getTextAttribute(element),
 			key,
 			offset,
-		} as TreeMedia;
+		} as TreeElement;
 	}
 
 	return {
@@ -57,13 +51,15 @@ export const readElement = (element: HTMLElement, offset: number): TreeEntry => 
 		unsaveHeight: dimensions.height,
 		display: style.getPropertyValue("display"),
 		borderRadius: style.getPropertyValue("border-radius"),
+		position: style.getPropertyValue("position"),
 		transform: style.getPropertyValue("transform"),
 		transformOrigin: style.getPropertyValue("transform-origin"),
-		position: style.getPropertyValue("position"),
-		text: getTextAttribute(element),
+		objectFit: style.getPropertyValue("object-fit"),
+		objectPosition: style.getPropertyValue("object-position"),
+		ratio: getMediaRatioAttribute(element as HTMLImageElement),
 		key,
 		offset,
-	} as TreeElement;
+	} as TreeMedia;
 };
 
 export const recordElement = (element: HTMLElement, offset: number): DomRepresentation => {
