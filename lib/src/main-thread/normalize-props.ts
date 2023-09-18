@@ -71,10 +71,14 @@ export const normalizeOptions = (
 	return options as NormalizedOptions;
 };
 
-export const extractAnimationOptions = (options: NormalizedOptions) => {
-	const { root, from, to, ...animationOptions } = options;
-
-	return animationOptions;
+export const extractAnimationOptions = (options: NormalizedOptions): KeyframeEffectOptions => {
+	return {
+		duration: options.duration,
+		delay: options.delay,
+		endDelay: options.endDelay,
+		easing: options.easing,
+		composite: "add",
+	};
 };
 
 export const getTotalRuntime = (props: NormalizedOptions[]) =>

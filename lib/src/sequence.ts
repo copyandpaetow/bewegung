@@ -41,12 +41,12 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 	let statePromise = options.map((option) => create(option, worker));
 
 	const globalTimekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
-	// globalTimekeeper.onfinish = () =>
-	// 	requestAnimationFrame(() => {
-	// 		replaceImagePlaceholders();
-	// 		removeElements();
-	// 		removeDataAttributes();
-	// 	});
+	globalTimekeeper.onfinish = () =>
+		requestAnimationFrame(() => {
+			replaceImagePlaceholders();
+			removeElements();
+			removeDataAttributes();
+		});
 
 	const state = {
 		animations: new Map<number, Map<string, Animation>>(),

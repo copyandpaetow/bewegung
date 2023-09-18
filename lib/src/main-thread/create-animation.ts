@@ -121,14 +121,10 @@ const setOverrides = (overrideStore: Map<string, Partial<CSSStyleDeclaration>>) 
 export const create = (options: NormalizedOptions, worker: AtomicWorker) =>
 	new Promise<Map<string, Animation>>((resolve, reject) => {
 		const animations = new Map<string, Animation>();
-		const animationOptions: KeyframeEffectOptions = {
-			...extractAnimationOptions(options),
-			composite: "add",
-		};
+		const animationOptions = extractAnimationOptions(options);
 		const resultWorker = worker(`animationData-${options.key}`);
 
 		resultWorker.onMessage(async (result) => {
-			console.log(structuredClone(result));
 			const observerCallback: MutationCallback = (entries, observer) => {
 				observer.disconnect();
 

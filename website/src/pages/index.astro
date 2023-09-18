@@ -38,35 +38,21 @@ import Nav from "../components/Nav.astro";
 		h1.style.marginBlockEnd = "2rem";
 	};
 
-	setTimeout(async () => {
+	setTimeout(() => {
 		// const anim = sequence([
 		// 	{ duration: 4000, to: expandArea },
 		// 	[expandArticlePadding, { duration: 2000, at: -3000 }],
 		// ]);
-		// main.style.transition = "grid-template-columns 5000ms ease";
-		// article.style.transition = "padding 5000ms ease 1000ms";
-		// h1.style.transition = "margin-block-end 2000ms ease 5000ms";
-
-		// requestAnimationFrame(() => {
-		// 	main.style.gridTemplateColumns = "1fr 4fr";
-		// 	article.style.padding = "10%";
-		// 	h1.style.marginBlockEnd = "2rem";
-		// });
 		const anim = sequence([
 			removeGridArea,
 			[expandArticlePadding, { duration: 1000, root: article }],
 			[increaseH1Spacing, { root: "article section", duration: 1000, at: -500 }],
 			{ duration: 1000, at: -500, root: main, to: expandArea },
-			// [removeSibling, 2000],
+			[removeSibling, 2000],
 		]);
-
-		//const anim = bewegung(expandArticlePadding, { duration: 1000, root: article });
-
-		// bewegung(expandArea, 1000)
-		// bewegung({from: Fn, to: Fn, duration: 1000})
-
+		//const anim = bewegung(removeSibling, { duration: 1000 });
 		anim.play();
-	}, 1000);
+	}, 2000);
 
 	// setTimeout(() => {
 	// 	const anim = sequence([
@@ -232,7 +218,7 @@ import Nav from "../components/Nav.astro";
 	}
 
 	section {
-		background: linear-gradient(to bottom, var(--grey-95) 0%, var(--grey-93) 100%);
+		background: linear-gradient(to bottom, var(--grey-95) 0%, var(--grey-60) 100%);
 		min-height: 100vh;
 		display: grid;
 		grid-auto-rows: max-content;
