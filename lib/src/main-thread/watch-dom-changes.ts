@@ -113,6 +113,7 @@ export const getReactivity = (): Reactivity => {
 	};
 	let resizeIdleCallback: NodeJS.Timeout | undefined;
 
+	//TODO: this could be extracted to be used for the seeking as well
 	const throttledCallback = (callback: VoidFunction) => {
 		resizeIdleCallback && clearTimeout(resizeIdleCallback);
 		resizeIdleCallback = setTimeout(() => {

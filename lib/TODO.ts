@@ -4,16 +4,14 @@ TODOs
 * updates / features
 
 - animation options in the overall options / config file
-=> iterations
+=> iterations? callback after each?
 => direction?
-=> callbacks on iteration/start/end?
-
 
 - "at" needs some improvements / aditions
 => how are easings when there is an overlap?
 
-- cache animations? Let them stay alive?
-=> imagine an animation that is performed often but on an interaction (like hovering over a card to expand it)
+- reactivity 
+=> how to handle seeking and reactivity? Maybe with a debounce? 
 
 * bugs
 
@@ -59,5 +57,6 @@ TODOs
 - independet animation chunks
 => having an animation runnning, stopping it + dom change for reading, revert and resuming the animations as well as setting it to a certain time to read again
 	 doesnt work. There is a very visual stutter
+=> if done poorly, now it works. We dont even need to stop the animations for it to work	 
 
 */

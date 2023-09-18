@@ -25,7 +25,7 @@ const normalizeStructure = (props: BewegungsEntry): Partial<FullBewegungsOption>
 	return { to: props[0] as BewegungsCallback, ...(props[1] as BewegungsOption) };
 };
 
-export const getElement = (element: ElementOrSelector) => {
+const getElement = (element: ElementOrSelector) => {
 	let resultingElement: HTMLElement | null = null;
 
 	if (typeof element === "string") {
@@ -72,7 +72,7 @@ export const normalizeOptions = (
 };
 
 export const extractAnimationOptions = (options: NormalizedOptions) => {
-	const { root, from, to, reduceMotion, ...animationOptions } = options;
+	const { root, from, to, ...animationOptions } = options;
 
 	return animationOptions;
 };

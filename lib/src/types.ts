@@ -18,7 +18,6 @@ export type BewegungsOption = {
 	easing?: Easing;
 	delay?: number;
 	endDelay?: number;
-	reduceMotion?: boolean;
 	at?: number;
 };
 
@@ -54,7 +53,6 @@ export type NormalizedOptions = {
 	easing: Easing;
 	delay: number;
 	endDelay: number;
-	reduceMotion: boolean;
 	at: number;
 	key: string;
 };

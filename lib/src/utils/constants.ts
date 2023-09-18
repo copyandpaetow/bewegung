@@ -11,7 +11,6 @@ export const defaultOptions: Required<BewegungsOption> & {
 	endDelay: 0,
 	from: undefined,
 	to: undefined,
-	reduceMotion: window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true,
 	at: 0,
 };
 

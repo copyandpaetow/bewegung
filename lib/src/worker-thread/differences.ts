@@ -7,7 +7,7 @@ import {
 } from "../types";
 import { save } from "../utils/helper";
 
-export const parseTransformOrigin = (entry: TreeEntry) => {
+const parseTransformOrigin = (entry: TreeEntry) => {
 	if (!entry) {
 		return [0, 0];
 	}

@@ -75,14 +75,9 @@ export const bewegung: BewegungsArgs = (
 			return;
 		}
 
-		if (options.reduceMotion) {
-			//todo: set another empty state
-		}
-
 		read(options, worker);
 		state = await create(options, worker);
-
-		//state = await fetchAnimationData({options, timekeeper, worker})
+		state.set("timekeeper", timekeeper);
 	};
 
 	const api: Bewegung = {

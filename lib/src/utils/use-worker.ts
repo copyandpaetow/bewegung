@@ -28,7 +28,7 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 
 const workerURL = new URL("../worker-thread/worker.ts", import.meta.url);
 
-export const spawnWorker = () =>
+const spawnWorker = () =>
 	new Worker(workerURL, {
 		type: "module",
 	});

@@ -1,7 +1,7 @@
 import { ImageDetails, TreeEntry, TreeMedia } from "../types";
 import { calculateImageDifferences, getWrapperKeyframes } from "./image-differences";
 
-export const calculateWrapperData = (current: TreeEntry[], parent: TreeEntry[] | undefined) => {
+const calculateWrapperData = (current: TreeEntry[], parent: TreeEntry[] | undefined) => {
 	const lastReadout = current.at(-1)!;
 	const lastParentReadout = parent ? parent.at(-1) : undefined;
 	const imageData = getImageData(current as TreeMedia[]);

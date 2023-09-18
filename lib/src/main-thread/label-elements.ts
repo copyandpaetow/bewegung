@@ -18,7 +18,7 @@ const getMediaRatioAttribute = (element: HTMLImageElement) => {
 	return element.naturalWidth / element.naturalHeight;
 };
 
-export const readElement = (element: HTMLElement, offset: number): TreeEntry => {
+const readElement = (element: HTMLElement, offset: number): TreeEntry => {
 	const dimensions = element.getBoundingClientRect();
 	const style = window.getComputedStyle(element);
 	const key = (element.dataset.bewegungsKey ??= uuid(element.tagName));

@@ -1,12 +1,8 @@
 import { AtomicWorker, NormalizedOptions, ResultTransferable } from "../types";
 import { Attributes, emptyImageSrc } from "../utils/constants";
-import { applyCSSStyles, execute, nextRaf } from "../utils/helper";
+import { applyCSSStyles, nextRaf } from "../utils/helper";
 import { extractAnimationOptions } from "./normalize-props";
-import {
-	addKeyToNewlyAddedElement,
-	getNextElementSibling,
-	getRunningAnimations,
-} from "./observe-dom";
+import { addKeyToNewlyAddedElement, getNextElementSibling } from "./observe-dom";
 import { iterateAddedElements, iterateRemovedElements, observe } from "./observer-helper";
 
 const createWrapperElement = (style: Partial<CSSStyleDeclaration>) => {
@@ -79,8 +75,6 @@ const setImageAnimations = (
 	animations: Map<string, Animation>,
 	options: KeyframeEffectOptions
 ) => {
-	const imageCallbacks: VoidFunction[] = [];
-
 	results.imageKeyframeStore.forEach((keyframes, key, store) => {
 		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
 		if (!element) {
@@ -100,79 +94,55 @@ const setImageAnimations = (
 			new Animation(new KeyframeEffect(wrapperElement, wrapperKeyframes, options))
 		);
 
-		imageCallbacks.push(
-			createImagePlaceholder(element, placeholderOverrides),
-			createImageWrapperCallback(element, wrapperElement)
-		);
+		createImagePlaceholder(element, placeholderOverrides);
+		createImageWrapperCallback(element, wrapperElement);
 
 		store.delete(key);
 		store.delete(`${key}-wrapper`);
 		results.overrideStore.delete(`${key}-wrapper`);
 		results.overrideStore.delete(`${key}-placeholder`);
 	});
-
-	return imageCallbacks;
 };
 
 const setOverrides = (overrideStore: Map<string, Partial<CSSStyleDeclaration>>) => {
 	const overrideCallbacks: VoidFunction[] = [];
 
-	overrideStore.forEach((overrides, key, store) => {
+	overrideStore.forEach((overrides, key) => {
 		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
 		if (!element) {
 			return;
 		}
-		overrideCallbacks.push(() => {
-			element.dataset.bewegungsCssReset = element.style.cssText ?? " ";
-			applyCSSStyles(element, overrides);
-		});
-		store.delete(key);
+		element.dataset.bewegungsCssReset = element.style.cssText ?? " ";
+		applyCSSStyles(element, overrides);
 	});
 	return overrideCallbacks;
 };
 
-export const createAnimations = (
-	results: ResultTransferable,
-	animations: Map<string, Animation>,
-	options: NormalizedOptions
-) => {
-	const animationOptions: KeyframeEffectOptions = {
-		...extractAnimationOptions(options),
-		fill: "both",
-		composite: "accumulate",
-	};
-
-	setDefaultAnimations(results.keyframeStore, animations, animationOptions);
-	const overrideCallbacks = setOverrides(results.overrideStore);
-	const imageCallbacks = setImageAnimations(results, animations, animationOptions);
-
-	return [...overrideCallbacks, ...imageCallbacks];
-};
-
-export const create = async (options: NormalizedOptions, worker: AtomicWorker) =>
+export const create = (options: NormalizedOptions, worker: AtomicWorker) =>
 	new Promise<Map<string, Animation>>((resolve, reject) => {
 		const animations = new Map<string, Animation>();
-		const runningAnimations: Animation[] = [];
+		const animationOptions: KeyframeEffectOptions = {
+			...extractAnimationOptions(options),
+			composite: "add",
+		};
 		const resultWorker = worker(`animationData-${options.key}`);
-		resultWorker.onMessage(async (result) => {
-			resultWorker.cleanup();
-			const onStartCallbacks = createAnimations(result, animations, options);
 
+		resultWorker.onMessage(async (result) => {
+			console.log(structuredClone(result));
 			const observerCallback: MutationCallback = (entries, observer) => {
 				observer.disconnect();
-				runningAnimations.forEach((anim) => anim.pause());
 
+				//TODO: this could maybe split into element additions/removals and style updates
 				iterateRemovedElements(entries, readdRemovedNodes);
 				iterateAddedElements(entries, addKeyToNewlyAddedElement);
 
-				onStartCallbacks.forEach(execute);
-				createAnimations(result, animations, options).forEach(execute);
-				runningAnimations.forEach((anim) => anim.play());
+				setDefaultAnimations(result.keyframeStore, animations, animationOptions);
+				setImageAnimations(result, animations, animationOptions);
+				setOverrides(result.overrideStore);
 
 				resolve(animations);
 			};
 
-			getRunningAnimations(options.root, runningAnimations);
 			await nextRaf();
 			observe(new MutationObserver(observerCallback));
 			options.from?.();
