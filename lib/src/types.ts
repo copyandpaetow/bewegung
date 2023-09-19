@@ -98,7 +98,6 @@ export type DomElement = {
 	display?: Display;
 	position?: Position;
 	text?: number;
-	transform?: string;
 	transformOrigin?: string;
 	objectFit?: ObjectFit;
 	objectPosition?: string;
@@ -118,18 +117,17 @@ export type TreeElement = {
 	key: string;
 	offset: number;
 	text: number;
-	transform: string;
-	transformOrigin: string;
+	transformOrigin: [number, number];
 	unsaveHeight: number;
 	unsaveWidth: number;
 	windowHeight: number;
 	windowWidth: number;
 	objectFit: ObjectFit;
-	objectPosition: string;
+	objectPosition: [number, number];
 	ratio: number;
 };
 
-export type TreeRepresentation = (TreeElement | DomRepresentation)[];
+export type TreeRepresentation = (TreeElement | TreeRepresentation)[];
 
 export type ResultTransferable = {
 	keyframeStore: Map<string, Keyframe[]>;

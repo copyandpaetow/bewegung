@@ -1,21 +1,27 @@
 import { DimensionalDifferences, TreeElement } from "../types";
-import { getBorderRadius } from "./border-radius";
 import { calculateDimensionDifferences, calculateRootDifferences } from "./differences";
+import { normalizeBorderRadius } from "./transforms";
 
 export const setDefaultKeyframes = (
 	differences: DimensionalDifferences[],
 	readouts: TreeElement[],
 	isChangingInScale: boolean
 ): Keyframe[] => {
-	const borderRadius = isChangingInScale ? getBorderRadius(readouts) : new Map();
-
 	return differences.map(
-		({ leftDifference, topDifference, widthDifference, heightDifference, offset }) => {
+		({ leftDifference, topDifference, widthDifference, heightDifference, offset }, index) => {
+			const { borderRadius, currentHeight, currentWidth } = readouts[index];
+			const normalizedBorderRadius = normalizeBorderRadius(borderRadius, [
+				currentWidth,
+				currentHeight,
+			]);
+			const hasCurrentOffset = isChangingInScale && normalizedBorderRadius;
+			console.log({ borderRadius, normalizedBorderRadius });
+
 			return {
 				offset,
 				transform: `translate(${leftDifference}px, ${topDifference}px) scale(${widthDifference}, ${heightDifference})`,
-				...(borderRadius.has(offset) && {
-					clipPath: borderRadius.get(offset) ? `inset(0px round ${borderRadius.get(offset)})` : "",
+				...(hasCurrentOffset && {
+					clipPath: `inset(0px round ${normalizedBorderRadius})`,
 					borderRadius: "0px",
 				}),
 			};

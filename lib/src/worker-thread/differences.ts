@@ -6,34 +6,14 @@ import {
 } from "../types";
 import { save } from "../utils/helper";
 
-const parseTransformOrigin = (entry: TreeElement) => {
-	if (!entry) {
-		return [0, 0];
-	}
-
-	const transformOriginString = entry.transformOrigin!;
-
-	const calculated = transformOriginString.split(" ").map((value: string, index: number) => {
-		if (value.includes("px")) {
-			return parseFloat(value);
-		}
-		const heightOrWidth = index ? entry.currentHeight : entry.currentWidth;
-
-		return (parseFloat(value) / 100) * heightOrWidth;
-	});
-
-	return calculated;
-};
-
 export const getTranslates = (dimensions: ChildParentDimensions) => {
 	const { current, parent, parentReference, reference } = dimensions;
 
-	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(reference);
-	const [originParentReferenceLeft, originParentReferenceTop] =
-		parseTransformOrigin(parentReference);
+	const [originReferenceLeft, originReferenceTop] = reference.transformOrigin;
+	const [originParentReferenceLeft, originParentReferenceTop] = parentReference.transformOrigin;
 
-	const [originCurrentLeft, originCurrentTop] = parseTransformOrigin(current);
-	const [originParentCurrentLeft, originParentCurrentTop] = parseTransformOrigin(parent);
+	const [originCurrentLeft, originCurrentTop] = current.transformOrigin;
+	const [originParentCurrentLeft, originParentCurrentTop] = parent.transformOrigin;
 
 	const currentLeftDifference =
 		current.currentLeft + originCurrentLeft - (parent.currentLeft + originParentCurrentLeft);
@@ -134,8 +114,8 @@ export const calculateRootDifferences = ({
 	current,
 	reference,
 }: RootDimensions): DimensionalDifferences => {
-	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(reference);
-	const [originCurrentLeft, originCurrentTop] = parseTransformOrigin(current);
+	const [originReferenceLeft, originReferenceTop] = reference.transformOrigin;
+	const [originCurrentLeft, originCurrentTop] = current.transformOrigin;
 
 	const currentLeftDifference = current.currentLeft + originCurrentLeft;
 	const referenceLeftDifference = reference.currentLeft + originReferenceLeft;

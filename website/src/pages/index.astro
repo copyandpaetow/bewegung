@@ -38,19 +38,24 @@ import Nav from "../components/Nav.astro";
 		h1.style.marginBlockEnd = "2rem";
 	};
 
+	const changeFirstImage = () => {
+		(list.querySelector("li:last-of-type") as HTMLElement).style.aspectRatio = "0.5";
+		(list.querySelector("li:last-of-type") as HTMLElement).style.width = "200px";
+	};
+
 	setTimeout(() => {
 		// const anim = sequence([
 		// 	{ duration: 4000, to: expandArea },
 		// 	[expandArticlePadding, { duration: 2000, at: -3000 }],
 		// ]);
-		const anim = sequence([
-			removeGridArea,
-			[expandArticlePadding, { duration: 1000, root: article }],
-			[increaseH1Spacing, { root: "article section", duration: 1000, at: -500 }],
-			{ duration: 1000, at: -500, root: main, to: expandArea },
-			[removeSibling, 2000],
-		]);
-		//const anim = bewegung(removeSibling, { duration: 1000 });
+		// const anim = sequence([
+		// 	removeGridArea,
+		// 	[expandArticlePadding, { duration: 1000, root: article }],
+		// 	[increaseH1Spacing, { root: "article section", duration: 1000, at: -500 }],
+		// 	{ duration: 1000, at: -500, root: main, to: expandArea },
+		// 	[removeSibling, 2000],
+		// ]);
+		const anim = bewegung(changeFirstImage, { duration: 1000 });
 		anim.play();
 	}, 2000);
 
@@ -191,7 +196,7 @@ import Nav from "../components/Nav.astro";
 <style lang="scss">
 	.sibling {
 		width: 100%;
-		height: 5rem;
+		height: 100px;
 		background-color: gray;
 	}
 

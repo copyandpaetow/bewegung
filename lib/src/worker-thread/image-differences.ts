@@ -1,8 +1,8 @@
 import { ImageDetails, ObjectFit, TreeElement } from "../types";
 import { save } from "../utils/helper";
-import { calculateBorderRadius } from "./border-radius";
 import { getScales, getTranslates } from "./differences";
 import { getImageData } from "./image-keyframes";
+import { normalizeBorderRadius } from "./transforms";
 
 //TODO: this was written when there where more than 2 readouts, maybe it can be reduced / simplified?
 export const calculateImageDifferences = (readouts: TreeElement[]): Keyframe[] => {
@@ -11,9 +11,6 @@ export const calculateImageDifferences = (readouts: TreeElement[]): Keyframe[] =
 	return readouts.map((readout) => {
 		let scaleWidth: number = readout.unsaveWidth / maxWidth;
 		let scaleHeight: number = readout.unsaveHeight / maxHeight;
-
-		let translateX: number = 0;
-		let translateY: number = 0;
 
 		if (readout.objectFit === ObjectFit.cover) {
 			const alternateScaleWidth = (readout.ratio * maxHeight) / maxWidth;
@@ -26,17 +23,10 @@ export const calculateImageDifferences = (readouts: TreeElement[]): Keyframe[] =
 				scaleHeight = alternateScaleHeight * scaleWidth;
 			}
 		}
-		if (readout.objectPosition !== "50% 50%") {
-			const [xAchis, yAchis] = readout.objectPosition!.split(" ").map((value, index) => {
-				if (value.includes("%")) {
-					return (parseFloat(value) - 100) / 100;
-				}
-				return parseFloat(value) / (index === 0 ? readout.currentWidth : readout.currentHeight);
-			});
-
-			translateX = save((maxWidth * scaleWidth - readout.currentWidth) / 2, 0) * xAchis * -1;
-			translateY = save((maxHeight * scaleHeight - readout.currentHeight) / 2, 0) * yAchis * -1;
-		}
+		//TODO: this needs to be re-checked
+		const [xAchis, yAchis] = readout.objectPosition;
+		const translateX = save((maxWidth * scaleWidth - readout.currentWidth) / 2, 0) * xAchis * -1;
+		const translateY = save((maxHeight * scaleHeight - readout.currentHeight) / 2, 0) * yAchis * -1;
 
 		return {
 			transform: `translate(${save(translateX, 0)}px, ${save(translateY, 0)}px) scale(${save(
@@ -90,10 +80,9 @@ export const getWrapperKeyframes = (
 
 		return {
 			offset: readout.offset,
-			clipPath: `inset(${verticalInset}px ${horizontalInset}px round ${calculateBorderRadius(
-				readout,
-				maxWidth,
-				maxHeight
+			clipPath: `inset(${verticalInset}px ${horizontalInset}px round ${normalizeBorderRadius(
+				readout.borderRadius,
+				[maxWidth, maxHeight]
 			)})`,
 			transform: `translate(${translateX}px, ${translateY}px) scale(${1 / parentWidthDifference}, ${
 				1 / parentHeightDifference

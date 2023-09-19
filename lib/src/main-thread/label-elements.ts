@@ -20,7 +20,7 @@ const hasTextAttribute = (element: HTMLElement) => {
 	return hasText;
 };
 
-const getMediaRatioAttribute = (element: HTMLImageElement) => {
+const getMediaRatio = (element: HTMLImageElement) => {
 	return element.naturalWidth / element.naturalHeight;
 };
 
@@ -61,10 +61,6 @@ const readElement = (element: HTMLElement, offset: number): DomElement => {
 		result.objectPosition = style.getPropertyValue("object-position");
 	}
 
-	if (style.getPropertyValue("transform") !== "none") {
-		result.transform = style.getPropertyValue("transform");
-	}
-
 	if (style.getPropertyValue("transform-origin") !== "50% 50%") {
 		result.transformOrigin = style.getPropertyValue("transform-origin");
 	}
@@ -73,7 +69,7 @@ const readElement = (element: HTMLElement, offset: number): DomElement => {
 		result.text = 1;
 	}
 	if (element.hasOwnProperty("naturalWidth")) {
-		result.ratio = getMediaRatioAttribute(element as HTMLImageElement);
+		result.ratio = getMediaRatio(element as HTMLImageElement);
 	}
 
 	return result;
