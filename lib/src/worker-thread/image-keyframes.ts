@@ -1,11 +1,11 @@
-import { ImageDetails, TreeEntry, TreeMedia } from "../types";
+import { ImageDetails, TreeElement } from "../types";
 import { calculateImageDifferences, getWrapperKeyframes } from "./image-differences";
 
-const calculateWrapperData = (current: TreeEntry[], parent: TreeEntry[] | undefined) => {
+const calculateWrapperData = (current: TreeElement[], parent: TreeElement[] | undefined) => {
 	const lastReadout = current.at(-1)!;
 	const lastParentReadout = parent ? parent.at(-1) : undefined;
-	const imageData = getImageData(current as TreeMedia[]);
-	const keyframes = getWrapperKeyframes(current as TreeMedia[], parent, imageData);
+	const imageData = getImageData(current as TreeElement[]);
+	const keyframes = getWrapperKeyframes(current as TreeElement[], parent, imageData);
 
 	const overrides = {
 		position: "absolute",
@@ -22,7 +22,7 @@ const calculateWrapperData = (current: TreeEntry[], parent: TreeEntry[] | undefi
 };
 
 //TODO: this was written when there where more than 2 readouts, maybe it can be reduced / simplified?
-export const getImageData = (readouts: TreeMedia[]): ImageDetails => {
+export const getImageData = (readouts: TreeElement[]): ImageDetails => {
 	let maxHeight = 0;
 	let maxWidth = 0;
 
@@ -35,8 +35,8 @@ export const getImageData = (readouts: TreeMedia[]): ImageDetails => {
 };
 
 export const setImageKeyframes = (
-	dimensions: [TreeMedia, TreeMedia],
-	parentDimensions: [TreeMedia, TreeMedia] | undefined,
+	dimensions: [TreeElement, TreeElement],
+	parentDimensions: [TreeElement, TreeElement] | undefined,
 	imageKeyframeStore: Map<string, Keyframe[]>,
 	overrideStore: Map<string, Partial<CSSStyleDeclaration>>
 ) => {

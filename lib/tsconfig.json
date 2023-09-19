@@ -18,5 +18,6 @@
 		"strictPropertyInitialization": false,
 		"skipLibCheck": true
 	},
-	"include": ["src/bewegung.ts"]
+	"include": ["src/bewegung.ts", "src/sequence.ts"],
+	"exclude": ["src/types.ts"]
 }

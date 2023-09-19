@@ -1,8 +1,8 @@
-import { TreeEntry } from "../types";
+import { Position, TreeElement } from "../types";
 
 export const setOverrides = (
-	lastReadout: TreeEntry,
-	lastParentReadout: TreeEntry | undefined,
+	lastReadout: TreeElement,
+	lastParentReadout: TreeElement | undefined,
 	overrideStore: Map<string, Partial<CSSStyleDeclaration>>
 ) => {
 	const currentOverride = overrideStore.get(lastReadout.key) ?? {};
@@ -21,8 +21,9 @@ export const setOverrides = (
 	}
 	const parentOverride = overrideStore.get(lastParentReadout.key) ?? {};
 
-	if (lastParentReadout?.position !== "static" || parentOverride.position) {
+	if (lastParentReadout?.position !== Position.static || parentOverride.position) {
 		return;
 	}
 	parentOverride.position = "relative";
+	overrideStore.set(lastParentReadout.key, parentOverride);
 };

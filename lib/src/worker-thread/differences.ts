@@ -3,11 +3,10 @@ import {
 	DimensionalDifferences,
 	RootDimensions,
 	TreeElement,
-	TreeEntry,
 } from "../types";
 import { save } from "../utils/helper";
 
-const parseTransformOrigin = (entry: TreeEntry) => {
+const parseTransformOrigin = (entry: TreeElement) => {
 	if (!entry) {
 		return [0, 0];
 	}
@@ -147,25 +146,22 @@ export const calculateRootDifferences = ({
 	const heightDifference = current.unsaveHeight / reference.currentHeight;
 
 	/*
-		Apparently, the browser will keep the viewport from jumping when the size of an element is changed,
+		Apparently, chrome will keep the viewport from jumping when the size of an element is changed,
 		depending on where the element-to-be-changed is, this will move either everything below the element but keep it in view or move everything above 
 		(by jumping down in the page) and lead to weird behaviour
 		The first condition can be true if the element shrinks, so therefore we also need to check if the element needs to be scaled down
 
-		=> is is dependent on the viewport height and occures only if the animation happens above the current viewport + 100% viewport height. 
-
-		TODO: we can check the bottom value (top + height) for this if it is negative the element is above the viewport
-		*/
-
-	const weirdBrowserBehaviorCorrectionLeft =
-		currentLeftDifference > referenceLeftDifference && widthDifference < 1 ? -1 : 1;
-	const weirdBrowserBehaviorCorrectionTop =
-		currentTopDifference > referenceTopDifference && heightDifference < 1 ? -1 : 1;
+	const weirdBrowserBehaviorCorrectionLeft = reference.currentLeft < 0 ? -1 : 1;
+	const weirdBrowserBehaviorCorrectionTop = reference.currentTop < 0 ? -1 : 1;
 
 	const leftDifference =
 		(currentLeftDifference - referenceLeftDifference) * weirdBrowserBehaviorCorrectionLeft;
 	const topDifference =
 		(currentTopDifference - referenceTopDifference) * weirdBrowserBehaviorCorrectionTop;
+		*/
+
+	const leftDifference = currentLeftDifference - referenceLeftDifference;
+	const topDifference = currentTopDifference - referenceTopDifference;
 
 	return {
 		heightDifference: save(heightDifference, 1),

@@ -15,6 +15,8 @@ TODOs
 
 * bugs
 
+- we only need the main library ts values, not the internal stuff
+
 - counter scaling looks still buggy => easing issue
 
 - if the root element is removed, its absolute position might lead to bugs because we dont know the next anchor parent

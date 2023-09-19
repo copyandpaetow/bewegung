@@ -1,65 +1,82 @@
-import { DomRepresentation, TreeElement, TreeEntry, TreeMedia } from "../types";
+import { Display, DomElement, DomRepresentation, ObjectFit, Position } from "../types";
 import { uuid } from "../utils/helper";
-import { isEntryVisible } from "../utils/predicates";
+import { isDomEntryVisible } from "../utils/predicates";
 
-const getTextAttribute = (element: HTMLElement) => {
-	let text = 0;
-	element.childNodes.forEach((node) => {
+const hasTextAttribute = (element: HTMLElement) => {
+	let hasText = false;
+	const children = element.childNodes;
+
+	for (let index = 0; index < children.length; index++) {
+		const node = children[index];
 		if (node.nodeType !== 3) {
-			return;
+			continue;
 		}
-		text += node.textContent!.trim().length;
-	});
+		if (node.textContent!.trim().length) {
+			hasText = true;
+			break;
+		}
+	}
 
-	return text;
+	return hasText;
 };
 
 const getMediaRatioAttribute = (element: HTMLImageElement) => {
 	return element.naturalWidth / element.naturalHeight;
 };
 
-const readElement = (element: HTMLElement, offset: number): TreeEntry => {
+const readElement = (element: HTMLElement, offset: number): DomElement => {
 	const dimensions = element.getBoundingClientRect();
 	const style = window.getComputedStyle(element);
 	const key = (element.dataset.bewegungsKey ??= uuid(element.tagName));
 
-	if (element.tagName !== "IMG") {
-		return {
-			currentLeft: dimensions.left,
-			currentTop: dimensions.top,
-			currentWidth: dimensions.width,
-			currentHeight: dimensions.height,
-			unsaveWidth: dimensions.width,
-			unsaveHeight: dimensions.height,
-			display: style.getPropertyValue("display"),
-			borderRadius: style.getPropertyValue("border-radius"),
-			transform: style.getPropertyValue("transform"),
-			transformOrigin: style.getPropertyValue("transform-origin"),
-			position: style.getPropertyValue("position"),
-			text: getTextAttribute(element),
-			key,
-			offset,
-		} as TreeElement;
-	}
-
-	return {
+	const result: DomElement = {
+		key,
+		offset,
+		windowHeight: window.innerHeight,
+		windowWidth: window.innerWidth,
 		currentLeft: dimensions.left,
 		currentTop: dimensions.top,
 		currentWidth: dimensions.width,
 		currentHeight: dimensions.height,
-		unsaveWidth: dimensions.width,
-		unsaveHeight: dimensions.height,
-		display: style.getPropertyValue("display"),
-		borderRadius: style.getPropertyValue("border-radius"),
-		position: style.getPropertyValue("position"),
-		transform: style.getPropertyValue("transform"),
-		transformOrigin: style.getPropertyValue("transform-origin"),
-		objectFit: style.getPropertyValue("object-fit"),
-		objectPosition: style.getPropertyValue("object-position"),
-		ratio: getMediaRatioAttribute(element as HTMLImageElement),
-		key,
-		offset,
-	} as TreeMedia;
+	};
+
+	if (style.getPropertyValue("display") === "none") {
+		result.display = Display.none;
+		return result;
+	}
+
+	if (style.getPropertyValue("position") !== "static") {
+		result.position = Position.relative;
+	}
+
+	if (style.getPropertyValue("border-radius") !== "0px") {
+		result.borderRadius = style.getPropertyValue("border-radius");
+	}
+
+	if (style.getPropertyValue("object-fit") === "cover") {
+		result.objectFit = ObjectFit.cover;
+	}
+
+	if (style.getPropertyValue("object-position") !== "50% 50%") {
+		result.objectPosition = style.getPropertyValue("object-position");
+	}
+
+	if (style.getPropertyValue("transform") !== "none") {
+		result.transform = style.getPropertyValue("transform");
+	}
+
+	if (style.getPropertyValue("transform-origin") !== "50% 50%") {
+		result.transformOrigin = style.getPropertyValue("transform-origin");
+	}
+
+	if (hasTextAttribute(element)) {
+		result.text = 1;
+	}
+	if (element.hasOwnProperty("naturalWidth")) {
+		result.ratio = getMediaRatioAttribute(element as HTMLImageElement);
+	}
+
+	return result;
 };
 
 export const recordElement = (element: HTMLElement, offset: number): DomRepresentation => {
@@ -67,7 +84,7 @@ export const recordElement = (element: HTMLElement, offset: number): DomRepresen
 	const representation: DomRepresentation = [];
 	const children = element.children;
 
-	if (isEntryVisible(entry)) {
+	if (isDomEntryVisible(entry)) {
 		for (let index = 0; index < children.length; index++) {
 			const child = children.item(index) as HTMLElement;
 

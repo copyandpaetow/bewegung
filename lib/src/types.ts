@@ -70,45 +70,66 @@ export type PropsWithRelativeTiming2 = {
 	callback: Set<VoidFunction>;
 };
 
+export const enum Display {
+	none = 1,
+	visible = 0,
+}
+
+export const enum Position {
+	static = 0,
+	relative = 1,
+}
+
+export const enum ObjectFit {
+	cover = 1,
+	fill = 0,
+}
+
+export type DomElement = {
+	currentHeight: number;
+	currentLeft: number;
+	currentTop: number;
+	currentWidth: number;
+	key: string;
+	offset: number;
+	windowHeight: number;
+	windowWidth: number;
+	borderRadius?: string;
+	display?: Display;
+	position?: Position;
+	text?: number;
+	transform?: string;
+	transformOrigin?: string;
+	objectFit?: ObjectFit;
+	objectPosition?: string;
+	ratio?: number;
+};
+
+export type DomRepresentation = (DomElement | DomRepresentation)[];
+
 export type TreeElement = {
+	borderRadius: string;
+	currentHeight: number;
+	currentLeft: number;
+	currentTop: number;
+	currentWidth: number;
+	display: Display;
+	position: Position;
 	key: string;
+	offset: number;
 	text: number;
-	currentTop: number;
-	currentLeft: number;
-	currentHeight: number;
-	currentWidth: number;
-	unsaveHeight: number;
-	unsaveWidth: number;
-	position: string;
 	transform: string;
 	transformOrigin: string;
-	display: string;
-	borderRadius: string;
-	offset: number;
-};
-
-export type TreeMedia = {
-	ratio: number;
-	key: string;
-	currentTop: number;
-	currentLeft: number;
-	currentHeight: number;
-	currentWidth: number;
 	unsaveHeight: number;
 	unsaveWidth: number;
-	position: string;
-	transform: string;
-	transformOrigin: string;
-	objectFit: string;
+	windowHeight: number;
+	windowWidth: number;
+	objectFit: ObjectFit;
 	objectPosition: string;
-	display: string;
-	borderRadius: string;
-	offset: number;
+	ratio: number;
 };
 
-export type TreeEntry = TreeElement | TreeMedia;
-
-export type DomRepresentation = (TreeEntry | DomRepresentation)[];
+export type TreeRepresentation = (TreeElement | DomRepresentation)[];
 
 export type ResultTransferable = {
 	keyframeStore: Map<string, Keyframe[]>;
@@ -136,15 +157,15 @@ export type AtomicWorker = <Current extends keyof MainMessages>(
 ) => WorkerContext<Current, MainMessages, WorkerMessages>;
 
 export type ChildParentDimensions = {
-	current: TreeEntry;
-	reference: TreeEntry;
-	parent: TreeEntry;
-	parentReference: TreeEntry;
+	current: TreeElement;
+	reference: TreeElement;
+	parent: TreeElement;
+	parentReference: TreeElement;
 };
 
 export type RootDimensions = {
-	current: TreeEntry;
-	reference: TreeEntry;
+	current: TreeElement;
+	reference: TreeElement;
 };
 
 export interface DimensionalDifferences {

@@ -1,26 +1,26 @@
-import { DomRepresentation, TreeEntry } from "../types";
+import { TreeRepresentation, TreeElement } from "../types";
 import { isEntryVisible } from "../utils/predicates";
 
 export const updateDimensions = (
-	domTree: DomRepresentation,
-	dimensionStore = new Map<string, TreeEntry>()
+	domTree: TreeRepresentation,
+	dimensionStore = new Map<string, TreeElement>()
 ) => {
-	const [current, currentChildren] = domTree as DomRepresentation;
-	const key = (current as TreeEntry).key;
+	const [current, currentChildren] = domTree as TreeRepresentation;
+	const key = (current as TreeElement).key;
 
-	dimensionStore.set(key, current as TreeEntry);
+	dimensionStore.set(key, current as TreeElement);
 
-	(currentChildren as DomRepresentation).forEach((child) =>
-		updateDimensions(child as DomRepresentation, dimensionStore)
+	(currentChildren as TreeRepresentation).forEach((child) =>
+		updateDimensions(child as TreeRepresentation, dimensionStore)
 	);
 
 	return dimensionStore;
 };
 
 export const getDimensions = (
-	current: TreeEntry,
-	dimensionStore: Map<string, TreeEntry>
-): [TreeEntry, TreeEntry] => {
+	current: TreeElement,
+	dimensionStore: Map<string, TreeElement>
+): [TreeElement, TreeElement] => {
 	const previousDimensions =
 		dimensionStore.get(current.key) ??
 		({
@@ -28,32 +28,32 @@ export const getDimensions = (
 			unsaveHeight: 0,
 			unsaveWidth: 0,
 			offset: 0,
-		} as TreeEntry);
+		} as TreeElement);
 
-	const currentDimensions = isEntryVisible(current as TreeEntry)
-		? (current as TreeEntry)
+	const currentDimensions = isEntryVisible(current as TreeElement)
+		? (current as TreeElement)
 		: ({
 				...previousDimensions,
 				unsaveHeight: 0,
 				unsaveWidth: 0,
 				offset: 1,
-		  } as TreeEntry);
+		  } as TreeElement);
 
 	return [previousDimensions, currentDimensions];
 };
 
 export const getParentDimensions = (
-	parentNode: DomRepresentation | undefined,
-	dimensionStore: Map<string, TreeEntry>
-): [TreeEntry, TreeEntry] | undefined => {
+	parentNode: TreeRepresentation | undefined,
+	dimensionStore: Map<string, TreeElement>
+): [TreeElement, TreeElement] | undefined => {
 	if (!parentNode) {
 		return;
 	}
-	const parentKey = (parentNode[0] as TreeEntry).key;
+	const parentKey = (parentNode[0] as TreeElement).key;
 
 	if (!dimensionStore.has(parentKey)) {
 		return;
 	}
 
-	return [dimensionStore.get(parentKey)!, parentNode[0] as TreeEntry];
+	return [dimensionStore.get(parentKey)!, parentNode[0] as TreeElement];
 };

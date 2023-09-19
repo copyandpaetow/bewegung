@@ -110,6 +110,11 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 			globalTimekeeper.pause();
 		},
 		async seek(progress, done) {
+			if (done) {
+				globalTimekeeper.finish();
+				return;
+			}
+
 			if (progress === 1 || state.inProgress) {
 				return;
 			}

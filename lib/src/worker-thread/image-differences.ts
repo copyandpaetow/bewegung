@@ -1,11 +1,11 @@
-import { ImageDetails, TreeEntry, TreeMedia } from "../types";
+import { ImageDetails, ObjectFit, TreeElement } from "../types";
 import { save } from "../utils/helper";
 import { calculateBorderRadius } from "./border-radius";
 import { getScales, getTranslates } from "./differences";
 import { getImageData } from "./image-keyframes";
 
 //TODO: this was written when there where more than 2 readouts, maybe it can be reduced / simplified?
-export const calculateImageDifferences = (readouts: TreeMedia[]): Keyframe[] => {
+export const calculateImageDifferences = (readouts: TreeElement[]): Keyframe[] => {
 	const { maxHeight, maxWidth } = getImageData(readouts);
 
 	return readouts.map((readout) => {
@@ -15,7 +15,7 @@ export const calculateImageDifferences = (readouts: TreeMedia[]): Keyframe[] => 
 		let translateX: number = 0;
 		let translateY: number = 0;
 
-		if (readout.objectFit === "cover") {
+		if (readout.objectFit === ObjectFit.cover) {
 			const alternateScaleWidth = (readout.ratio * maxHeight) / maxWidth;
 			const alternateScaleHeight = maxWidth / readout.ratio / maxHeight;
 			const currentRatio = readout.unsaveWidth / readout.unsaveHeight;
@@ -50,8 +50,8 @@ export const calculateImageDifferences = (readouts: TreeMedia[]): Keyframe[] => 
 
 //TODO: this was written when there where more than 2 readouts, maybe it can be reduced / simplified?
 export const getWrapperKeyframes = (
-	readouts: TreeMedia[],
-	parentReadouts: TreeEntry[] | undefined,
+	readouts: TreeElement[],
+	parentReadouts: TreeElement[] | undefined,
 	imageData: ImageDetails
 ): Keyframe[] => {
 	const { maxHeight, maxWidth } = imageData;

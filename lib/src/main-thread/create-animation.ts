@@ -55,18 +55,22 @@ const readdRemovedNodes = (element: HTMLElement, entry: MutationRecord) => {
 };
 
 const setDefaultAnimations = (
-	keyframeStore: Map<string, Keyframe[]>,
+	results: ResultTransferable,
 	animations: Map<string, Animation>,
 	options: KeyframeEffectOptions
 ) => {
-	keyframeStore.forEach((keyframes, key, store) => {
+	results.keyframeStore.forEach((keyframes, key) => {
 		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
 		if (!element) {
 			return;
 		}
 
 		animations.set(key, new Animation(new KeyframeEffect(element, keyframes, options)));
-		store.delete(key);
+
+		if (results.overrideStore.has(key)) {
+			element.dataset.bewegungsCssReset = element.style.cssText ?? " ";
+			applyCSSStyles(element, results.overrideStore.get(key)!);
+		}
 	});
 };
 
@@ -104,40 +108,46 @@ const setImageAnimations = (
 	});
 };
 
-const setOverrides = (overrideStore: Map<string, Partial<CSSStyleDeclaration>>) => {
-	const overrideCallbacks: VoidFunction[] = [];
+const applyOverrides = (
+	element: HTMLElement,
+	overrideStore: Map<string, Partial<CSSStyleDeclaration>>
+) => {
+	const key = element.dataset.bewegungsKey;
+	if (!key || !overrideStore.has(key)) {
+		return;
+	}
 
-	overrideStore.forEach((overrides, key) => {
-		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
-		if (!element) {
-			return;
-		}
-		element.dataset.bewegungsCssReset = element.style.cssText ?? " ";
-		applyCSSStyles(element, overrides);
-	});
-	return overrideCallbacks;
+	element.dataset.bewegungsCssReset = element.style.cssText ?? " ";
+	applyCSSStyles(element, overrideStore.get(key)!);
+	overrideStore.delete(key);
 };
 
 export const create = (options: NormalizedOptions, worker: AtomicWorker) =>
-	new Promise<Map<string, Animation>>((resolve, reject) => {
+	new Promise<Map<string, Animation>>(async (resolve, reject) => {
 		const animations = new Map<string, Animation>();
-		const animationOptions = extractAnimationOptions(options);
 		const resultWorker = worker(`animationData-${options.key}`);
 
 		resultWorker.onMessage(async (result) => {
+			const animationOptions = extractAnimationOptions(options);
 			const observerCallback: MutationCallback = (entries, observer) => {
 				observer.disconnect();
 
 				//TODO: this could maybe split into element additions/removals and style updates
-				iterateRemovedElements(entries, readdRemovedNodes);
-				iterateAddedElements(entries, addKeyToNewlyAddedElement);
+				iterateRemovedElements(entries, (element, entry) => {
+					applyOverrides(element, result.overrideStore);
+					readdRemovedNodes(element, entry);
+				});
+				iterateAddedElements(entries, (element, index) => {
+					addKeyToNewlyAddedElement(element, index);
+					applyOverrides(element, result.overrideStore);
+				});
 
-				setDefaultAnimations(result.keyframeStore, animations, animationOptions);
+				setDefaultAnimations(result, animations, animationOptions);
 				setImageAnimations(result, animations, animationOptions);
-				setOverrides(result.overrideStore);
 
 				resolve(animations);
 			};
+			console.log(structuredClone(result));
 
 			await nextRaf();
 			observe(new MutationObserver(observerCallback));
