@@ -1,5 +1,21 @@
 import { Position, TreeElement } from "../types";
 
+export const setParentToRelative = (
+	parentReadout: TreeElement | undefined,
+	overrideStore: Map<string, Partial<CSSStyleDeclaration>>
+) => {
+	if (!parentReadout) {
+		return;
+	}
+	const parentOverride = overrideStore.get(parentReadout.key) ?? {};
+
+	if (parentReadout?.position !== Position.static || parentOverride.position) {
+		return;
+	}
+	parentOverride.position = "relative";
+	overrideStore.set(parentReadout.key, parentOverride);
+};
+
 export const setOverrides = (
 	lastReadout: TreeElement,
 	lastParentReadout: TreeElement | undefined,
@@ -15,15 +31,5 @@ export const setOverrides = (
 	currentOverride.height = lastReadout.currentHeight + "px";
 
 	overrideStore.set(lastReadout.key, currentOverride);
-
-	if (!lastParentReadout) {
-		return;
-	}
-	const parentOverride = overrideStore.get(lastParentReadout.key) ?? {};
-
-	if (lastParentReadout?.position !== Position.static || parentOverride.position) {
-		return;
-	}
-	parentOverride.position = "relative";
-	overrideStore.set(lastParentReadout.key, parentOverride);
+	setParentToRelative(lastParentReadout, overrideStore);
 };

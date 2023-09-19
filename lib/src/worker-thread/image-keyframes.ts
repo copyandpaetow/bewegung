@@ -1,5 +1,6 @@
 import { ImageDetails, TreeElement } from "../types";
 import { calculateImageDifferences, getWrapperKeyframes } from "./image-differences";
+import { setParentToRelative } from "./overrides";
 
 const calculateWrapperData = (current: TreeElement[], parent: TreeElement[] | undefined) => {
 	const lastReadout = current.at(-1)!;
@@ -41,15 +42,12 @@ export const setImageKeyframes = (
 	overrideStore: Map<string, Partial<CSSStyleDeclaration>>
 ) => {
 	const { keyframes, overrides } = calculateWrapperData(dimensions, parentDimensions);
-	const current = dimensions[0];
+	const [current] = dimensions;
 	const key = current.key;
 
 	imageKeyframeStore.set(key, calculateImageDifferences(dimensions));
 	imageKeyframeStore.set(`${key}-wrapper`, keyframes);
 	overrideStore.set(`${key}-wrapper`, overrides);
 
-	overrideStore.set(`${key}-placeholder`, {
-		height: current.unsaveHeight + "px",
-		width: current.unsaveWidth + "px",
-	});
+	setParentToRelative(parentDimensions?.at(-1), overrideStore);
 };

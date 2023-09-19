@@ -68,7 +68,10 @@ const readElement = (element: HTMLElement, offset: number): DomElement => {
 	if (hasTextAttribute(element)) {
 		result.text = 1;
 	}
-	if (element.hasOwnProperty("naturalWidth")) {
+	if (
+		Boolean((element as HTMLImageElement)?.naturalWidth) ||
+		Boolean((element as HTMLImageElement)?.naturalHeight)
+	) {
 		result.ratio = getMediaRatio(element as HTMLImageElement);
 	}
 

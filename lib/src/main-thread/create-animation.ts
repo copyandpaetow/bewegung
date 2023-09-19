@@ -17,17 +17,16 @@ const createImageWrapperCallback = (element: HTMLElement, wrapperElement: HTMLEl
 	const parentElement = element.parentElement!;
 	const nextSibling = element.nextElementSibling;
 
-	return () => {
-		nextSibling
-			? parentElement.insertBefore(wrapperElement.appendChild(element), nextSibling)
-			: parentElement.appendChild(wrapperElement).appendChild(element);
-	};
+	wrapperElement.appendChild(element);
+
+	if (nextSibling) {
+		parentElement.insertBefore(wrapperElement, nextSibling);
+		return;
+	}
+	parentElement.appendChild(wrapperElement);
 };
 
-const createImagePlaceholder = (
-	element: HTMLElement,
-	overrideStyle: Partial<CSSStyleDeclaration>
-) => {
+const createImagePlaceholder = (element: HTMLElement) => {
 	const parentElement = element.parentElement!;
 	const nextSibling = element.nextElementSibling;
 	const key = element.dataset.bewegungsKey!;
@@ -37,16 +36,12 @@ const createImagePlaceholder = (
 		placeholderElement.setAttribute(attribute, element.getAttribute(attribute)!);
 	});
 	placeholderElement.src = emptyImageSrc;
-
-	applyCSSStyles(placeholderElement, overrideStyle);
 	placeholderElement.dataset.bewegungsReplace = key;
 	placeholderElement.dataset.bewegungsRemovable = "";
 
-	return () => {
-		nextSibling
-			? parentElement.insertBefore(placeholderElement, nextSibling)
-			: parentElement.appendChild(placeholderElement);
-	};
+	nextSibling
+		? parentElement.insertBefore(placeholderElement, nextSibling)
+		: parentElement.appendChild(placeholderElement);
 };
 
 const readdRemovedNodes = (element: HTMLElement, entry: MutationRecord) => {
@@ -79,6 +74,7 @@ const setImageAnimations = (
 	animations: Map<string, Animation>,
 	options: KeyframeEffectOptions
 ) => {
+	console.log(structuredClone(results));
 	results.imageKeyframeStore.forEach((keyframes, key, store) => {
 		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
 		if (!element) {
@@ -89,7 +85,6 @@ const setImageAnimations = (
 
 		const wrapperKeyframes = store.get(`${key}-wrapper`)!;
 		const wrapperOverrides = results.overrideStore.get(`${key}-wrapper`)!;
-		const placeholderOverrides = results.overrideStore.get(`${key}-placeholder`)!;
 
 		const wrapperElement = createWrapperElement(wrapperOverrides!);
 
@@ -98,13 +93,12 @@ const setImageAnimations = (
 			new Animation(new KeyframeEffect(wrapperElement, wrapperKeyframes, options))
 		);
 
-		createImagePlaceholder(element, placeholderOverrides);
+		createImagePlaceholder(element);
 		createImageWrapperCallback(element, wrapperElement);
 
 		store.delete(key);
 		store.delete(`${key}-wrapper`);
 		results.overrideStore.delete(`${key}-wrapper`);
-		results.overrideStore.delete(`${key}-placeholder`);
 	});
 };
 
@@ -147,7 +141,6 @@ export const create = (options: NormalizedOptions, worker: AtomicWorker) =>
 
 				resolve(animations);
 			};
-			console.log(structuredClone(result));
 
 			await nextRaf();
 			observe(new MutationObserver(observerCallback));

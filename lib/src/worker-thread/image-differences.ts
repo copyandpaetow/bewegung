@@ -24,9 +24,14 @@ export const calculateImageDifferences = (readouts: TreeElement[]): Keyframe[] =
 			}
 		}
 		//TODO: this needs to be re-checked
+		//! doesnt work anymore
 		const [xAchis, yAchis] = readout.objectPosition;
-		const translateX = save((maxWidth * scaleWidth - readout.currentWidth) / 2, 0) * xAchis * -1;
-		const translateY = save((maxHeight * scaleHeight - readout.currentHeight) / 2, 0) * yAchis * -1;
+
+		console.log(xAchis, yAchis);
+		const translateX =
+			0 ?? save((maxWidth * scaleWidth - readout.currentWidth) / 2, 0) * xAchis * -1;
+		const translateY =
+			0 ?? save((maxHeight * scaleHeight - readout.currentHeight) / 2, 0) * yAchis * -1;
 
 		return {
 			transform: `translate(${save(translateX, 0)}px, ${save(translateY, 0)}px) scale(${save(
@@ -78,12 +83,13 @@ export const getWrapperKeyframes = (
 			(currentTopDifference - referenceTopDifference) / parentHeightDifference -
 			referenceVerticalInset;
 
+		const borderRadius = normalizeBorderRadius(readout.borderRadius, [maxWidth, maxHeight]);
+
 		return {
 			offset: readout.offset,
-			clipPath: `inset(${verticalInset}px ${horizontalInset}px round ${normalizeBorderRadius(
-				readout.borderRadius,
-				[maxWidth, maxHeight]
-			)})`,
+			clipPath: `inset(${verticalInset}px ${horizontalInset}px ${
+				borderRadius && `round ${borderRadius}`
+			})`,
 			transform: `translate(${translateX}px, ${translateY}px) scale(${1 / parentWidthDifference}, ${
 				1 / parentHeightDifference
 			})`,

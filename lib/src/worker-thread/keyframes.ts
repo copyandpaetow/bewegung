@@ -1,4 +1,5 @@
 import { DimensionalDifferences, TreeElement } from "../types";
+import { isImage } from "../utils/predicates";
 import { calculateDimensionDifferences, calculateRootDifferences } from "./differences";
 import { normalizeBorderRadius } from "./transforms";
 
@@ -15,7 +16,6 @@ export const setDefaultKeyframes = (
 				currentHeight,
 			]);
 			const hasCurrentOffset = isChangingInScale && normalizedBorderRadius;
-			console.log({ borderRadius, normalizedBorderRadius });
 
 			return {
 				offset,
@@ -31,7 +31,7 @@ export const setDefaultKeyframes = (
 
 //TODO: this was written when there where more than 2 readouts, maybe it can be reduced / simplified?
 export const calculateDifferences = (current: TreeElement[], parent: TreeElement[] | undefined) => {
-	if (!parent) {
+	if (!parent || isImage(current as [TreeElement, TreeElement])) {
 		return current.map((entry) =>
 			calculateRootDifferences({
 				current: entry,

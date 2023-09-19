@@ -24,4 +24,4 @@ export const changesInScale = (differences: DimensionalDifferences[]) =>
 	);
 
 export const isImage = (currentDimensions: [TreeElement, TreeElement]) =>
-	Boolean(currentDimensions[1].ratio);
+	currentDimensions.some((entry) => entry.ratio > 0);
