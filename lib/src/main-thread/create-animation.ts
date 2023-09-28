@@ -13,7 +13,8 @@ const createWrapperElement = (style: Partial<CSSStyleDeclaration>) => {
 	return wrapperElement;
 };
 
-const createImageWrapperCallback = (element: HTMLElement, wrapperElement: HTMLElement) => {
+const createImageWrapper = (element: HTMLElement, overrides: Partial<CSSStyleDeclaration>) => {
+	const wrapperElement = createWrapperElement(overrides);
 	const parentElement = element.parentElement!;
 	const nextSibling = element.nextElementSibling;
 
@@ -21,9 +22,11 @@ const createImageWrapperCallback = (element: HTMLElement, wrapperElement: HTMLEl
 
 	if (nextSibling) {
 		parentElement.insertBefore(wrapperElement, nextSibling);
-		return;
+		return wrapperElement;
 	}
 	parentElement.appendChild(wrapperElement);
+
+	return wrapperElement;
 };
 
 const createImagePlaceholder = (element: HTMLElement) => {
@@ -49,12 +52,12 @@ const readdRemovedNodes = (element: HTMLElement, entry: MutationRecord) => {
 	entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 };
 
-const setDefaultAnimations = (
+const setAnimations = (
 	results: ResultTransferable,
 	animations: Map<string, Animation>,
 	options: KeyframeEffectOptions
 ) => {
-	results.keyframeStore.forEach((keyframes, key) => {
+	results.forEach(([keyframes, overrides], key) => {
 		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
 		if (!element) {
 			return;
@@ -62,84 +65,60 @@ const setDefaultAnimations = (
 
 		animations.set(key, new Animation(new KeyframeEffect(element, keyframes, options)));
 
-		if (results.overrideStore.has(key)) {
+		if (overrides) {
 			element.dataset.bewegungsCssReset = element.style.cssText ?? " ";
-			applyCSSStyles(element, results.overrideStore.get(key)!);
+			applyCSSStyles(element, overrides);
+		}
+
+		if (results.has(`${key}-wrapper`)) {
+			const [wrapperKeyframes, wrapperOverrides] = results.get(`${key}-wrapper`)!;
+			const wrapperElement = createImageWrapper(element, wrapperOverrides!);
+			createImagePlaceholder(element);
+			animations.set(
+				`${key}-wrapper`,
+				new Animation(new KeyframeEffect(wrapperElement, wrapperKeyframes, options))
+			);
 		}
 	});
 };
 
-const setImageAnimations = (
-	results: ResultTransferable,
-	animations: Map<string, Animation>,
-	options: KeyframeEffectOptions
-) => {
-	console.log(structuredClone(results));
-	results.imageKeyframeStore.forEach((keyframes, key, store) => {
-		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
-		if (!element) {
-			return;
-		}
+const alignAnimations = (animation: Animation, timekeeper: Animation) => {
+	animation.currentTime = timekeeper.currentTime;
 
-		animations.set(key, new Animation(new KeyframeEffect(element, keyframes, options)));
+	switch (timekeeper.playState) {
+		case "running":
+			animation.play();
+			break;
+		case "paused":
+			animation.pause();
+			break;
+		case "finished":
+			animation.finish();
+			break;
 
-		const wrapperKeyframes = store.get(`${key}-wrapper`)!;
-		const wrapperOverrides = results.overrideStore.get(`${key}-wrapper`)!;
-
-		const wrapperElement = createWrapperElement(wrapperOverrides!);
-
-		animations.set(
-			`${key}-wrapper`,
-			new Animation(new KeyframeEffect(wrapperElement, wrapperKeyframes, options))
-		);
-
-		createImagePlaceholder(element);
-		createImageWrapperCallback(element, wrapperElement);
-
-		store.delete(key);
-		store.delete(`${key}-wrapper`);
-		results.overrideStore.delete(`${key}-wrapper`);
-	});
-};
-
-const applyOverrides = (
-	element: HTMLElement,
-	overrideStore: Map<string, Partial<CSSStyleDeclaration>>
-) => {
-	const key = element.dataset.bewegungsKey;
-	if (!key || !overrideStore.has(key)) {
-		return;
+		default:
+			break;
 	}
-
-	element.dataset.bewegungsCssReset = element.style.cssText ?? " ";
-	applyCSSStyles(element, overrideStore.get(key)!);
-	overrideStore.delete(key);
 };
 
-export const create = (options: NormalizedOptions, worker: AtomicWorker) =>
-	new Promise<Map<string, Animation>>(async (resolve, reject) => {
-		const animations = new Map<string, Animation>();
-		const resultWorker = worker(`animationData-${options.key}`);
+export const animationCreator = (options: NormalizedOptions, worker: AtomicWorker) => {
+	const animations = new Map([["timekeeper", options.timekeeper]]);
+	const resultWorker = worker(`animationData-${options.key}`);
+	const delayedWorker = worker(`delayedAnimationData-${options.key}`);
+	const animationOptions = extractAnimationOptions(options);
 
-		resultWorker.onMessage(async (result) => {
-			const animationOptions = extractAnimationOptions(options);
+	const receiveAnimation = new Promise<void>((resolve) => {
+		resultWorker.onMessage(async (results) => {
 			const observerCallback: MutationCallback = (entries, observer) => {
 				observer.disconnect();
 
-				//TODO: this could maybe split into element additions/removals and style updates
-				iterateRemovedElements(entries, (element, entry) => {
-					applyOverrides(element, result.overrideStore);
-					readdRemovedNodes(element, entry);
-				});
-				iterateAddedElements(entries, (element, index) => {
-					addKeyToNewlyAddedElement(element, index);
-					applyOverrides(element, result.overrideStore);
-				});
+				iterateRemovedElements(entries, readdRemovedNodes);
+				iterateAddedElements(entries, addKeyToNewlyAddedElement);
 
-				setDefaultAnimations(result, animations, animationOptions);
-				setImageAnimations(result, animations, animationOptions);
+				setAnimations(results, animations, animationOptions);
 
-				resolve(animations);
+				worker(`startDelayed-${options.key}`).reply(`receiveDelayed-${options.key}`);
+				resolve();
 			};
 
 			await nextRaf();
@@ -147,6 +126,22 @@ export const create = (options: NormalizedOptions, worker: AtomicWorker) =>
 			options.from?.();
 			options.to?.();
 		});
-
-		resultWorker.onError(reject);
 	});
+	delayedWorker.onMessage((results) => {
+		const newAnimations = new Map<string, Animation>();
+
+		setAnimations(results, animations, animationOptions);
+
+		newAnimations.forEach((anim, key) => {
+			alignAnimations(anim, options.timekeeper);
+			animations.set(key, anim);
+		});
+	});
+
+	return {
+		async current() {
+			await receiveAnimation;
+			return animations;
+		},
+	};
+};

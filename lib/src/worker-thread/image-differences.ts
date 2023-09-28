@@ -12,22 +12,21 @@ export const calculateImageDifferences = (readouts: TreeElement[]): Keyframe[] =
 		let scaleWidth: number = readout.unsaveWidth / maxWidth;
 		let scaleHeight: number = readout.unsaveHeight / maxHeight;
 
-		if (readout.objectFit === ObjectFit.cover) {
-			const alternateScaleWidth = (readout.ratio * maxHeight) / maxWidth;
-			const alternateScaleHeight = maxWidth / readout.ratio / maxHeight;
-			const currentRatio = readout.unsaveWidth / readout.unsaveHeight;
+		// if (readout.objectFit !== ObjectFit.cover) {
+		// 	const alternateScaleWidth = (readout.ratio * maxHeight) / maxWidth;
+		// 	const alternateScaleHeight = maxWidth / readout.ratio / maxHeight;
+		// 	const currentRatio = readout.unsaveWidth / readout.unsaveHeight;
 
-			if (currentRatio < readout.ratio) {
-				scaleWidth = alternateScaleWidth * scaleHeight;
-			} else {
-				scaleHeight = alternateScaleHeight * scaleWidth;
-			}
-		}
+		// 	if (currentRatio < readout.ratio) {
+		// 		scaleWidth = alternateScaleWidth * scaleHeight;
+		// 	} else {
+		// 		scaleHeight = alternateScaleHeight * scaleWidth;
+		// 	}
+		// }
 		//TODO: this needs to be re-checked
 		//! doesnt work anymore
 		const [xAchis, yAchis] = readout.objectPosition;
 
-		console.log(xAchis, yAchis);
 		const translateX =
 			0 ?? save((maxWidth * scaleWidth - readout.currentWidth) / 2, 0) * xAchis * -1;
 		const translateY =

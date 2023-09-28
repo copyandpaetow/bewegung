@@ -55,6 +55,7 @@ export type NormalizedOptions = {
 	endDelay: number;
 	at: number;
 	key: string;
+	timekeeper: Animation;
 };
 
 export type PropsWithRelativeTiming = NormalizedOptions & {
@@ -125,15 +126,14 @@ export type TreeElement = {
 	objectFit: ObjectFit;
 	objectPosition: [number, number];
 	ratio: number;
+	visibility: boolean;
 };
 
 export type TreeRepresentation = (TreeElement | TreeRepresentation)[];
 
-export type ResultTransferable = {
-	keyframeStore: Map<string, Keyframe[]>;
-	imageKeyframeStore: Map<string, Keyframe[]>;
-	overrideStore: Map<string, Partial<CSSStyleDeclaration>>;
-};
+export type Result = [Keyframe[], Partial<CSSStyleDeclaration>?];
+
+export type ResultTransferable = Map<string, Result>;
 
 export type DomLabel = (string | DomLabel)[];
 
@@ -141,6 +141,10 @@ export type WorkerMessages = {
 	sendDOMRepresentation: { key: string; dom: DomRepresentation };
 } & {
 	[key in `sendAnimationData-${string}`]: ResultTransferable;
+} & {
+	[key in `sendDelayedAnimationData-${string}`]: ResultTransferable;
+} & {
+	[key in `receiveDelayed-${string}`]: undefined;
 };
 
 export type MainMessages = {
@@ -148,6 +152,10 @@ export type MainMessages = {
 	treeUpdate: Map<string, DomLabel>;
 } & {
 	[key in `animationData-${string}`]: ResultTransferable;
+} & {
+	[key in `delayedAnimationData-${string}`]: ResultTransferable;
+} & {
+	[key in `startDelayed-${string}`]: undefined;
 };
 
 export type AtomicWorker = <Current extends keyof MainMessages>(

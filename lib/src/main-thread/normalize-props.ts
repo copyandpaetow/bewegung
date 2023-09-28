@@ -65,8 +65,12 @@ export const normalizeOptions = (
 		...(defaultConfig ?? {}),
 		...normalizeStructure(props),
 		key: uuid("option"),
+		timekeeper: new Animation(),
 	};
 	options.root = getElement(options.root);
+	options.timekeeper = new Animation(
+		new KeyframeEffect(null, null, extractAnimationOptions(options as NormalizedOptions))
+	);
 
 	return options as NormalizedOptions;
 };

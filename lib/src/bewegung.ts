@@ -4,12 +4,8 @@ import {
 	removeElements,
 	replaceImagePlaceholders,
 } from "./main-thread/animation-calculator";
-import { create } from "./main-thread/create-animation";
-import {
-	extractAnimationOptions,
-	normalizeOptions,
-	toBewegungsEntry,
-} from "./main-thread/normalize-props";
+import { animationCreator } from "./main-thread/create-animation";
+import { normalizeOptions, toBewegungsEntry } from "./main-thread/normalize-props";
 import {
 	BewegungsCallback,
 	BewegungsOption,
@@ -49,11 +45,8 @@ export const bewegung: BewegungsArgs = (
 	let playState: AnimationPlayState = "idle";
 
 	const worker = useWorker<MainMessages, WorkerMessages>(workerManager.current());
-	const timekeeper = new Animation(
-		new KeyframeEffect(null, null, extractAnimationOptions(options))
-	);
 
-	timekeeper.onfinish = () => {
+	options.timekeeper.onfinish = () => {
 		requestAnimationFrame(() => {
 			replaceImagePlaceholders();
 			removeElements();
@@ -76,8 +69,7 @@ export const bewegung: BewegungsArgs = (
 		}
 
 		read(options, worker);
-		state = await create(options, worker);
-		state.set("timekeeper", timekeeper);
+		state = await animationCreator(options, worker).current();
 	};
 
 	const api: Bewegung = {
@@ -118,7 +110,7 @@ export const bewegung: BewegungsArgs = (
 			}
 		},
 		get finished() {
-			return timekeeper.finished;
+			return options.timekeeper.finished;
 		},
 		get playState() {
 			return playState ?? "idle";

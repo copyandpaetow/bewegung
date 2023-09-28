@@ -1,11 +1,11 @@
 import {
-	DomRepresentation,
-	TreeRepresentation,
-	DomElement,
 	Display,
+	DomElement,
+	DomRepresentation,
 	ObjectFit,
 	Position,
 	TreeElement,
+	TreeRepresentation,
 } from "../types";
 
 const parseStringValues = (value: string, dimensions: [number, number]) =>
@@ -17,6 +17,7 @@ const parseStringValues = (value: string, dimensions: [number, number]) =>
 		return (parseFloat(value) / 100) * dimensions[index];
 	});
 
+//TODO: this is not being used here but elsewhere, should it be here then?
 export const normalizeBorderRadius = (radius: string, [width, height]: [number, number]) => {
 	if (radius === "0px" || radius.includes("/")) {
 		//TODO: handle complex border-radius
@@ -45,6 +46,12 @@ export const normalizeBorderRadius = (radius: string, [width, height]: [number, 
 	return `${widthEntries.join(" ")} / ${heightEntries.join(" ")}`;
 };
 
+const isElementVisible = (entry: DomElement) =>
+	entry.currentTop + entry.currentHeight > 0 &&
+	entry.currentTop < entry.windowHeight &&
+	entry.currentLeft + entry.currentWidth > 0 &&
+	entry.currentLeft < entry.windowWidth;
+
 export const transformDomRepresentation = (dom: DomRepresentation): TreeRepresentation => {
 	const current = dom[0] as DomElement;
 	const children = dom[1] as DomRepresentation[];
@@ -71,6 +78,7 @@ export const transformDomRepresentation = (dom: DomRepresentation): TreeRepresen
 			ratio: current.ratio ?? 0,
 			text: current.text ?? 0,
 			transformOrigin: parseStringValues(current.transformOrigin ?? "0px 0px", dimensions),
+			visibility: isElementVisible(current),
 		} as TreeElement,
 		children.map(transformDomRepresentation),
 	];

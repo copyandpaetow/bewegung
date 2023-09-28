@@ -15,6 +15,8 @@ TODOs
 
 * bugs
 
+- image calculations are off again
+
 - we only need the main library ts values, not the internal stuff
 
 - counter scaling looks still buggy => easing issue

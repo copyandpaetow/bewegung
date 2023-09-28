@@ -43,6 +43,7 @@ const unhideRemovedElements = () => {
 	});
 };
 
+//TODO: recheck this approach => why hide + remove instead of reading without these elements and adding them later?
 export const readdRemovedNodesHidden = (element: HTMLElement, entry: MutationRecord) => {
 	element.dataset.bewegungsRemovable = "";
 	element.dataset.bewegungsCssReset = element.style.cssText;

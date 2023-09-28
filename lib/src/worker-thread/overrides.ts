@@ -1,35 +1,32 @@
-import { Position, TreeElement } from "../types";
+import { Position, Result, TreeElement } from "../types";
 
 export const setParentToRelative = (
 	parentReadout: TreeElement | undefined,
-	overrideStore: Map<string, Partial<CSSStyleDeclaration>>
+	results: Map<string, Result>
 ) => {
-	if (!parentReadout) {
+	if (!parentReadout || !results.has(parentReadout.key)) {
 		return;
 	}
-	const parentOverride = overrideStore.get(parentReadout.key) ?? {};
+	const parentResult = results.get(parentReadout.key)!;
+	const override: Partial<CSSStyleDeclaration> = (parentResult[1] ??= {});
 
-	if (parentReadout?.position !== Position.static || parentOverride.position) {
+	if (parentReadout?.position !== Position.static || override.position) {
 		return;
 	}
-	parentOverride.position = "relative";
-	overrideStore.set(parentReadout.key, parentOverride);
+	override.position = "relative";
 };
 
 export const setOverrides = (
 	lastReadout: TreeElement,
 	lastParentReadout: TreeElement | undefined,
-	overrideStore: Map<string, Partial<CSSStyleDeclaration>>
+	result: Result
 ) => {
-	const currentOverride = overrideStore.get(lastReadout.key) ?? {};
+	const override = (result[1] ??= {});
 
-	currentOverride.position = "absolute";
-	currentOverride.display = "unset";
-	currentOverride.left = lastReadout.currentLeft - (lastParentReadout?.currentLeft ?? 0) + "px";
-	currentOverride.top = lastReadout.currentTop - (lastParentReadout?.currentTop ?? 0) + "px";
-	currentOverride.width = lastReadout.currentWidth + "px";
-	currentOverride.height = lastReadout.currentHeight + "px";
-
-	overrideStore.set(lastReadout.key, currentOverride);
-	setParentToRelative(lastParentReadout, overrideStore);
+	override.position = "absolute";
+	override.display = "unset";
+	override.left = lastReadout.currentLeft - (lastParentReadout?.currentLeft ?? 0) + "px";
+	override.top = lastReadout.currentTop - (lastParentReadout?.currentTop ?? 0) + "px";
+	override.width = lastReadout.currentWidth + "px";
+	override.height = lastReadout.currentHeight + "px";
 };

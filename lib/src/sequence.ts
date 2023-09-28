@@ -4,7 +4,7 @@ import {
 	removeElements,
 	replaceImagePlaceholders,
 } from "./main-thread/animation-calculator";
-import { create } from "./main-thread/create-animation";
+import { animationCreator } from "./main-thread/create-animation";
 import { getTotalRuntime, normalizeOptions } from "./main-thread/normalize-props";
 import { BewegungsConfig, BewegungsInputs, MainMessages, WorkerMessages } from "./types";
 import { getWorker, useWorker } from "./utils/use-worker";
@@ -38,7 +38,7 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 
 	let options = props.map((entry) => normalizeOptions(entry, config?.defaultOptions));
 	let totalRuntime = getTotalRuntime(options);
-	let statePromise = options.map((option) => create(option, worker));
+	let statePromise = options.map((option) => animationCreator(option, worker).current());
 
 	const globalTimekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
 	globalTimekeeper.onfinish = () =>
@@ -92,6 +92,7 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 		};
 		console.timeEnd("getState");
 	};
+
 	const api: Bewegung = {
 		async play() {
 			await getState();
