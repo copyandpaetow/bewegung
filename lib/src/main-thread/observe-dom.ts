@@ -1,6 +1,5 @@
 import { AtomicWorker, NormalizedOptions } from "../types";
-import { Attributes } from "../utils/constants";
-import { applyCSSStyles, nextRaf, querySelectorAll } from "../utils/helper";
+import { applyCSSStyles, nextRaf } from "../utils/helper";
 import { isHTMLElement } from "../utils/predicates";
 import { recordElement } from "./label-elements";
 import {
@@ -36,18 +35,8 @@ export const getNextElementSibling = (node: Node | null): HTMLElement | null => 
 	return getNextElementSibling(node.nextElementSibling);
 };
 
-const unhideRemovedElements = () => {
-	querySelectorAll(`[${Attributes.cssReset}]`).forEach((element) => {
-		const reset = element.dataset.bewegungsReset ?? "";
-		element.style.cssText = reset;
-	});
-};
-
-//TODO: recheck this approach => why hide + remove instead of reading without these elements and adding them later?
-export const readdRemovedNodesHidden = (element: HTMLElement, entry: MutationRecord) => {
+export const readdRemovedNodes = (element: HTMLElement, entry: MutationRecord) => {
 	element.dataset.bewegungsRemovable = "";
-	element.dataset.bewegungsCssReset = element.style.cssText;
-	element.style.display = "none";
 	entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 };
 
@@ -58,12 +47,10 @@ export const observeDom = async (options: NormalizedOptions, worker: AtomicWorke
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
 		iterateAddedElements(entries, addKeyToNewlyAddedElement);
-		iterateRemovedElements(entries, readdRemovedNodesHidden);
 
 		reply("sendDOMRepresentation", { key: options.key, dom: recordElement(options.root, index) });
 
-		unhideRemovedElements();
-		iterateAddedElements(entries, (element) => element.remove());
+		iterateRemovedElements(entries, readdRemovedNodes);
 		iterateAttributesReversed(entries, resetNodeStyle);
 	};
 

@@ -1,21 +1,20 @@
 /*
 TODOs
 
-* updates / features
 
-- animation options in the overall options / config file
-=> iterations? callback after each?
-=> direction?
 
-- "at" needs some improvements / aditions
-=> how are easings when there is an overlap?
+* missing requirements
+
+
+- if the parent of an image is changed and changes in scale, the image doesnt change with. That is sometimes wanted and sometimes it isnt
+- image calculations are off again
+
+- the at in the sequence currently doesnt work. That scheduling system should be reworked in general
 
 - reactivity 
 => how to handle seeking and reactivity? Maybe with a debounce? 
 
 * bugs
-
-- image calculations are off again
 
 - we only need the main library ts values, not the internal stuff
 
@@ -30,9 +29,19 @@ TODOs
 - it looks like if the image becomes bigger than the parent via implicit overflow, that the image calculations are off
 ? maybe the wrapper style is missing something good to compare to?
 
-* tasks
+* adjacent tasks
 
 - update docs
+- think about a website concept
+
+* future improvements 
+
+- animation options in the overall options / config file
+=> iterations? callback after each?
+=> direction?
+
+- "at" needs some improvements / aditions
+=> how are easings when there is an overlap?
 
 */
 

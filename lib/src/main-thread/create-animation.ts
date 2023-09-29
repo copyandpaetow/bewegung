@@ -2,7 +2,7 @@ import { AtomicWorker, NormalizedOptions, ResultTransferable } from "../types";
 import { Attributes, emptyImageSrc } from "../utils/constants";
 import { applyCSSStyles, nextRaf } from "../utils/helper";
 import { extractAnimationOptions } from "./normalize-props";
-import { addKeyToNewlyAddedElement, getNextElementSibling } from "./observe-dom";
+import { addKeyToNewlyAddedElement, readdRemovedNodes } from "./observe-dom";
 import { iterateAddedElements, iterateRemovedElements, observe } from "./observer-helper";
 
 const createWrapperElement = (style: Partial<CSSStyleDeclaration>) => {
@@ -45,11 +45,6 @@ const createImagePlaceholder = (element: HTMLElement) => {
 	nextSibling
 		? parentElement.insertBefore(placeholderElement, nextSibling)
 		: parentElement.appendChild(placeholderElement);
-};
-
-const readdRemovedNodes = (element: HTMLElement, entry: MutationRecord) => {
-	element.dataset.bewegungsRemovable = "";
-	entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 };
 
 const setAnimations = (
