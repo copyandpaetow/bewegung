@@ -102,7 +102,7 @@ export const animationCreator = (options: NormalizedOptions, worker: AtomicWorke
 	const delayedWorker = worker(`delayedAnimationData-${options.key}`);
 	const animationOptions = extractAnimationOptions(options);
 
-	const receiveAnimation = new Promise<void>((resolve) => {
+	const receiveAnimation = new Promise<Map<string, Animation>>((resolve) => {
 		resultWorker.onMessage(async (results) => {
 			const observerCallback: MutationCallback = (entries, observer) => {
 				observer.disconnect();
@@ -113,7 +113,7 @@ export const animationCreator = (options: NormalizedOptions, worker: AtomicWorke
 				setAnimations(results, animations, animationOptions);
 
 				worker(`startDelayed-${options.key}`).reply(`receiveDelayed-${options.key}`);
-				resolve();
+				resolve(animations);
 			};
 
 			await nextRaf();
@@ -133,10 +133,5 @@ export const animationCreator = (options: NormalizedOptions, worker: AtomicWorke
 		});
 	});
 
-	return {
-		async current() {
-			await receiveAnimation;
-			return animations;
-		},
-	};
+	return receiveAnimation;
 };

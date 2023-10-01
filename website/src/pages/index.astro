@@ -40,14 +40,14 @@ import Nav from "../components/Nav.astro";
 
 	const changeFirstImage = () => {
 		(list.querySelector("li:last-of-type") as HTMLElement).style.aspectRatio = "0.5";
-		(list.querySelector("li:last-of-type") as HTMLElement).style.width = "200px";
+		//(list.querySelector("li:last-of-type") as HTMLElement).style.width = "200px";
 	};
 
 	setTimeout(() => {
-		// const anim = sequence([
-		// 	{ duration: 4000, to: expandArea },
-		// 	[expandArticlePadding, { duration: 2000, at: -3000 }],
-		// ]);
+		const anim = sequence([
+			{ duration: 4000, to: expandArea },
+			[expandArticlePadding, { duration: 2000, at: -2000 }],
+		]);
 		// const anim = sequence([
 		// 	removeGridArea,
 		// 	[expandArticlePadding, { duration: 1000, root: article }],
@@ -55,18 +55,19 @@ import Nav from "../components/Nav.astro";
 		// 	{ duration: 1000, at: -500, root: main, to: expandArea },
 		// 	[removeSibling, 2000],
 		// ]);
-		const anim = bewegung(changeFirstImage, { duration: 1000 });
+		// const anim = bewegung(removeSibling, { duration: 1000 });
 		anim.play();
 	}, 2000);
 
 	// setTimeout(() => {
 	// 	const anim = sequence([
 	// 		[removeGridArea, { root: "aside", duration: 1000 }],
-	// 		[expandArticlePadding, { duration: 1000, root: article }],
+	// 		[expandArticlePadding, { duration: 2000, root: article }],
 	// 		[increaseH1Spacing, { root: "article section", duration: 1000, at: -500 }],
-	// 		[expandArea, { duration: 1000, at: -500, root: main }],
+	// 		[expandArea, { duration: 2000, at: -500, root: main }],
 	// 		[removeSibling, { duration: 2000 }],
 	// 	]);
+
 	// 	let time = performance.now();
 	// 	let direction = "forward";
 
@@ -74,8 +75,8 @@ import Nav from "../components/Nav.astro";
 	// 		requestAnimationFrame((now) => {
 	// 			let current =
 	// 				direction === "forward"
-	// 					? Math.min(1, (now - time) / 6000)
-	// 					: 1 - Math.min(1, (now - time) / 6000);
+	// 					? Math.min(1, (now - time) / 7000)
+	// 					: 1 - Math.min(1, (now - time) / 7000);
 
 	// 			anim.seek(current);
 

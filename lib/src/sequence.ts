@@ -5,21 +5,13 @@ import {
 	replaceImagePlaceholders,
 } from "./main-thread/animation-calculator";
 import { animationCreator } from "./main-thread/create-animation";
-import { getTotalRuntime, normalizeOptions } from "./main-thread/normalize-props";
+import {
+	calculateStartTime,
+	getTotalRuntime,
+	normalizeOptions,
+} from "./main-thread/normalize-props";
 import { BewegungsConfig, BewegungsInputs, MainMessages, WorkerMessages } from "./types";
 import { getWorker, useWorker } from "./utils/use-worker";
-
-/*
-
-TODO: 
-
-- we need a timing engine that can start animations at certain times
-- reactivity
-
-- if the first element has a negativ at-value, it will become its delay => the animation starts not at 0
-? the last element with a postive at value should it have become its endDelay?
-
-*/
 
 const workerManager = getWorker();
 
@@ -36,78 +28,61 @@ export type Bewegung = {
 export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 	const worker = useWorker<MainMessages, WorkerMessages>(workerManager.current());
 
-	let options = props.map((entry) => normalizeOptions(entry, config?.defaultOptions));
+	let options = props
+		.map((entry) => normalizeOptions(entry, config?.defaultOptions))
+		.map(calculateStartTime)
+		.sort((a, b) => a.startTime - b.startTime);
+
 	let totalRuntime = getTotalRuntime(options);
-	let statePromise = options.map((option) => animationCreator(option, worker).current());
+	let calculations = options.map((option) => animationCreator(option, worker));
+	let timer = options.map((_) => 0);
+	let animations = new Map<number, Map<string, Animation>>();
+	let inProgress = false;
+	let currentTime = 0;
+	let startTime = 0;
 
 	const globalTimekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
-	globalTimekeeper.onfinish = () =>
+	globalTimekeeper.onfinish = globalTimekeeper.oncancel = () =>
 		requestAnimationFrame(() => {
 			replaceImagePlaceholders();
 			removeElements();
 			removeDataAttributes();
 		});
 
-	const state = {
-		animations: new Map<number, Map<string, Animation>>(),
-		index: 0,
-		inProgress: false,
-		accumulatedTime: 0,
-	};
-
-	const getState = async (mode: "seek" | "play" = "play") => {
-		if (state.animations.has(state.index)) {
-			return;
-		}
-
-		read(options[state.index], worker);
-
-		console.time("getState");
-
-		const nextOption = options.at(state.index + 1);
-
-		const localTimekeeper = new Animation(
-			new KeyframeEffect(
-				null,
-				null,
-				options[state.index].duration + (nextOption ? nextOption.at : 0)
-			)
-		);
-		const currentAnimations = await statePromise[state.index];
-
-		currentAnimations.set("localTimekeeper", localTimekeeper);
-		state.animations.set(state.index, currentAnimations);
-
-		localTimekeeper.onfinish = () => {
-			if (!nextOption) {
-				return;
-			}
-
-			if (mode === "seek") {
-				api.seek(0);
-				return;
-			}
-			state.index = state.index + 1;
-			api.play();
-		};
-		console.timeEnd("getState");
-	};
-
 	const api: Bewegung = {
 		async play() {
-			await getState();
+			startTime = Date.now() - currentTime;
+			options.forEach((entry, index) => {
+				if (currentTime > entry.startTime) {
+					return;
+				}
 
-			state.animations.get(state.index)?.forEach((animation) => {
-				animation.play();
+				timer[index] = window.setTimeout(async () => {
+					read(entry, worker);
+					const localAnimations = await calculations[index];
+					animations.set(index, localAnimations);
+
+					localAnimations.forEach((animation) => animation.play());
+					globalTimekeeper.play();
+				}, entry.startTime - currentTime);
 			});
-			globalTimekeeper.play();
+
+			animations.forEach((animations) => {
+				animations.forEach((animation) => {
+					if (animation.playState !== "paused") {
+						return;
+					}
+					animation.play();
+				});
+			});
 		},
 		async pause() {
-			for (let index = state.index; index >= 0; index--) {
-				state.animations.get(index)?.forEach((animation) => {
-					animation.pause();
-				});
-			}
+			currentTime = Date.now() - startTime;
+			timer.forEach((entry) => clearTimeout(entry));
+
+			animations.forEach((animations) => {
+				animations.forEach((animation) => animation.pause());
+			});
 			globalTimekeeper.pause();
 		},
 		async seek(progress, done) {
@@ -116,47 +91,45 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 				return;
 			}
 
-			if (progress === 1 || state.inProgress) {
-				return;
-			}
+			options.forEach(async (entry, index) => {
+				const activeTime = entry.delay + entry.duration + entry.endDelay;
+				const localProgress = (progress * totalRuntime - entry.startTime) / activeTime;
 
-			const relativeProgress =
-				(progress * totalRuntime - state.accumulatedTime) / options[state.index].duration;
+				if (inProgress || localProgress > 1 || localProgress < 0) {
+					return;
+				}
 
-			if (relativeProgress <= 0) {
-				state.index = Math.max(0, state.index - 1);
-				state.accumulatedTime = options
-					.slice(0, state.index)
-					.reduce((acc, cur) => acc + cur.duration, 0);
-				return;
-			}
-			if (relativeProgress >= 1) {
-				state.index = Math.min(options.length - 1, state.index + 1);
-				state.accumulatedTime = options
-					.slice(0, state.index)
-					.reduce((acc, cur) => acc + cur.duration, 0);
-				return;
-			}
-			state.inProgress = true;
-			await getState("seek");
-			state.inProgress = false;
+				if (!animations.has(index)) {
+					inProgress = true;
+					read(entry, worker);
+					animations.set(index, await calculations[index]);
+					inProgress = false;
+				}
 
-			state.animations.get(state.index)!.forEach((animation) => {
-				animation.currentTime = relativeProgress * options[state.index].duration;
+				animations.get(index)!.forEach((animation) => {
+					animation.currentTime = localProgress * activeTime;
+				});
+
+				globalTimekeeper.currentTime = progress * totalRuntime;
 			});
-
-			globalTimekeeper.currentTime = progress * totalRuntime;
 		},
 		cancel() {
-			state.animations.get(state.index)?.forEach((animation) => {
-				animation.cancel();
+			animations.forEach((animations) => {
+				animations.forEach((animation) => animation.cancel());
 			});
 			globalTimekeeper.cancel();
+			worker("terminate").terminate();
 		},
 		finish() {
-			state.animations.get(state.index)?.forEach((animation) => {
-				animation.finish();
+			options.forEach((entry, index) => {
+				if (animations.has(index)) {
+					animations.get(index)!.forEach((animation) => animation.finish());
+					return;
+				}
+				entry.from?.();
+				entry.to?.();
 			});
+
 			globalTimekeeper.finish();
 		},
 		get finished() {

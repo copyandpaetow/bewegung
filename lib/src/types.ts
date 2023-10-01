@@ -56,6 +56,7 @@ export type NormalizedOptions = {
 	at: number;
 	key: string;
 	timekeeper: Animation;
+	startTime: number;
 };
 
 export type PropsWithRelativeTiming = NormalizedOptions & {
@@ -150,6 +151,7 @@ export type WorkerMessages = {
 export type MainMessages = {
 	domChanges: Map<string, DomLabel>;
 	treeUpdate: Map<string, DomLabel>;
+	terminate: undefined;
 } & {
 	[key in `animationData-${string}`]: ResultTransferable;
 } & {

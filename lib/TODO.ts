@@ -9,8 +9,6 @@ TODOs
 - if the parent of an image is changed and changes in scale, the image doesnt change with. That is sometimes wanted and sometimes it isnt
 - image calculations are off again
 
-- the at in the sequence currently doesnt work. That scheduling system should be reworked in general
-
 - reactivity 
 => how to handle seeking and reactivity? Maybe with a debounce? 
 
@@ -28,6 +26,9 @@ TODOs
 
 - it looks like if the image becomes bigger than the parent via implicit overflow, that the image calculations are off
 ? maybe the wrapper style is missing something good to compare to?
+
+- if the first element has a negativ at-value, it will become its delay => the animation starts not at 0
+? the last element with a postive at value should it have become its endDelay?
 
 * adjacent tasks
 

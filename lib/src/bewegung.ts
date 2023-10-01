@@ -41,12 +41,12 @@ export const bewegung: BewegungsArgs = (
 	//	const reactivity = getReactivity();
 
 	const options = normalizeOptions(toBewegungsEntry(props, config));
-	let state: Map<string, Animation> | null = null;
+	let animations: Map<string, Animation> | null = null;
 	let playState: AnimationPlayState = "idle";
 
 	const worker = useWorker<MainMessages, WorkerMessages>(workerManager.current());
 
-	options.timekeeper.onfinish = () => {
+	options.timekeeper.onfinish = options.timekeeper.oncancel = () => {
 		requestAnimationFrame(() => {
 			replaceImagePlaceholders();
 			removeElements();
@@ -64,12 +64,12 @@ export const bewegung: BewegungsArgs = (
 	// };
 
 	const getState = async () => {
-		if (state) {
+		if (animations) {
 			return;
 		}
 
 		read(options, worker);
-		state = await animationCreator(options, worker).current();
+		animations = await animationCreator(options, worker);
 	};
 
 	const api: Bewegung = {
@@ -77,20 +77,20 @@ export const bewegung: BewegungsArgs = (
 			console.time("play");
 			await getState();
 			console.timeEnd("play");
-			state!.forEach((animation) => {
+			animations!.forEach((animation) => {
 				animation.play();
 			});
 			playState = "running";
 		},
 		async pause() {
 			await getState();
-			state!.forEach((animation) => animation.pause());
+			animations!.forEach((animation) => animation.pause());
 			playState = "paused";
 			// enableReactivity();
 		},
 		async seek(progress, done) {
 			await getState();
-			state!.forEach((animation) => (animation.currentTime = progress));
+			animations!.forEach((animation) => (animation.currentTime = progress));
 
 			//todo: reactivity should be enabled after some time if seeking is used
 			if (done) {
@@ -98,16 +98,22 @@ export const bewegung: BewegungsArgs = (
 			}
 		},
 		cancel() {
-			if (state) {
-				state.forEach((animation) => animation.cancel());
+			if (animations) {
+				animations.forEach((animation) => animation.cancel());
 				playState = "finished";
+				return;
 			}
+			options.timekeeper.cancel();
+			worker("terminate").terminate();
 		},
 		finish() {
-			if (state) {
-				state.forEach((animation) => animation.finish());
+			if (animations) {
+				animations.forEach((animation) => animation.finish());
 				playState = "finished";
+				return;
 			}
+			options.from?.();
+			options.to?.();
 		},
 		get finished() {
 			return options.timekeeper.finished;

@@ -65,14 +65,15 @@ export const normalizeOptions = (
 		...(defaultConfig ?? {}),
 		...normalizeStructure(props),
 		key: uuid("option"),
-		timekeeper: new Animation(),
-	};
+		startTime: 0,
+	} as NormalizedOptions;
+
 	options.root = getElement(options.root);
 	options.timekeeper = new Animation(
-		new KeyframeEffect(null, null, extractAnimationOptions(options as NormalizedOptions))
+		new KeyframeEffect(null, null, extractAnimationOptions(options))
 	);
 
-	return options as NormalizedOptions;
+	return options;
 };
 
 export const extractAnimationOptions = (options: NormalizedOptions): KeyframeEffectOptions => {
@@ -87,5 +88,22 @@ export const extractAnimationOptions = (options: NormalizedOptions): KeyframeEff
 
 export const getTotalRuntime = (props: NormalizedOptions[]) =>
 	props.reduce((accumulator, current) => {
-		return accumulator + current.at + current.duration;
+		return accumulator + current.duration + current.delay + current.endDelay + current.at;
 	}, 0);
+
+export const calculateStartTime = (
+	entry: NormalizedOptions,
+	index: number,
+	array: NormalizedOptions[]
+) => {
+	entry.startTime =
+		array
+			.slice(0, index)
+			.reduce(
+				(accumulatedTime, current) =>
+					accumulatedTime + current.duration + current.delay + current.endDelay + current.at,
+				0
+			) + entry.at;
+
+	return entry;
+};
