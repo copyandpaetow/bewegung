@@ -22,8 +22,6 @@ export const enum Attributes {
 	key = "data-bewegungs-key",
 	reset = "data-bewegungs-reset",
 	removable = "data-bewegungs-removable",
-	rootEasing = "data-bewegungs-easing",
-	root = "data-bewegungs-root",
 	cssReset = "data-bewegungs-css-reset",
 	replace = "data-bewegungs-replace",
 }

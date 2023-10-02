@@ -1,11 +1,6 @@
-import {
-	read,
-	removeDataAttributes,
-	removeElements,
-	replaceImagePlaceholders,
-} from "./main-thread/animation-calculator";
-import { animationCreator } from "./main-thread/create-animation";
 import { normalizeOptions, toBewegungsEntry } from "./main-thread/normalize-props";
+import { readDom } from "./main-thread/observe-dom";
+import { deriveState } from "./main-thread/state";
 import {
 	BewegungsCallback,
 	BewegungsOption,
@@ -13,12 +8,13 @@ import {
 	MainMessages,
 	WorkerMessages,
 } from "./types";
+import { getDebounce, nextRaf } from "./utils/helper";
 import { getWorker, useWorker } from "./utils/use-worker";
 
 export type Bewegung = {
-	play(): void;
+	play(): Promise<void>;
 	pause(): void;
-	seek(scrollAmount: number, done?: boolean): void;
+	seek(scrollAmount: number, done?: boolean): Promise<void>;
 	cancel(): void;
 	finish(): void;
 	finished: Promise<Animation>;
@@ -38,88 +34,77 @@ export const bewegung: BewegungsArgs = (
 	props: BewegungsCallback | FullBewegungsOption,
 	config?: BewegungsOption | number
 ): Bewegung => {
-	//	const reactivity = getReactivity();
-
-	const options = normalizeOptions(toBewegungsEntry(props, config));
-	let animations: Map<string, Animation> | null = null;
-	let playState: AnimationPlayState = "idle";
-
 	const worker = useWorker<MainMessages, WorkerMessages>(workerManager.current());
+	const debounce = getDebounce();
+	const options = normalizeOptions(toBewegungsEntry(props, config));
 
-	options.timekeeper.onfinish = options.timekeeper.oncancel = () => {
-		requestAnimationFrame(() => {
-			replaceImagePlaceholders();
-			removeElements();
-			removeDataAttributes();
+	let state = deriveState(options, worker);
+
+	const enableReactivity = () => {
+		state.reactivity.observe(() => {
+			state.reactivity.disconnect();
+			state = deriveState(options, worker);
+			getState(api.play);
 		});
 	};
 
-	//TODO: enable reactivity
-	// how should this be different compared to the sequence?
-	// const enableReactivity = () => {
-	// 	reactivity.observe(() => {
-	// 		reactivity.disconnect();
-	// 		state = null;
-	// 	});
-	// };
-
-	const getState = async () => {
-		if (animations) {
+	const getState = async (callback: () => Promise<void>) => {
+		if (state.animations.size) {
 			return;
 		}
 
-		read(options, worker);
-		animations = await animationCreator(options, worker);
+		if (state.inProgress) {
+			await nextRaf();
+			await callback();
+			return;
+		}
+		console.time("calculation");
+		state.inProgress = true;
+		readDom(options, worker);
+		state.animations = await state.caluclations;
+		state.inProgress = false;
+		console.timeEnd("calculation");
 	};
 
 	const api: Bewegung = {
 		async play() {
-			console.time("play");
-			await getState();
-			console.timeEnd("play");
-			animations!.forEach((animation) => {
+			await getState(api.play);
+			state.animations.forEach((animation) => {
 				animation.play();
 			});
-			playState = "running";
 		},
-		async pause() {
-			await getState();
-			animations!.forEach((animation) => animation.pause());
-			playState = "paused";
-			// enableReactivity();
+		pause() {
+			state.animations.forEach((animation) => animation.pause());
+			enableReactivity();
 		},
 		async seek(progress, done) {
-			await getState();
-			animations!.forEach((animation) => (animation.currentTime = progress));
-
-			//todo: reactivity should be enabled after some time if seeking is used
 			if (done) {
 				api.finish();
+				state.reactivity.disconnect();
 			}
+
+			await getState(() => api.seek(progress, done));
+			state.animations.forEach((animation) => (animation.currentTime = progress));
+
+			debounce(enableReactivity);
 		},
 		cancel() {
-			if (animations) {
-				animations.forEach((animation) => animation.cancel());
-				playState = "finished";
-				return;
-			}
-			options.timekeeper.cancel();
+			state.animations.forEach((animation) => animation.cancel());
 			worker("terminate").terminate();
 		},
 		finish() {
-			if (animations) {
-				animations.forEach((animation) => animation.finish());
-				playState = "finished";
-				return;
+			state.animations.forEach((animation) => animation.finish());
+
+			if (state.animations.size === 0) {
+				options.from?.();
+				options.to?.();
 			}
-			options.from?.();
-			options.to?.();
 		},
 		get finished() {
 			return options.timekeeper.finished;
 		},
 		get playState() {
-			return playState ?? "idle";
+			return options.timekeeper.playState;
 		},
 	};
 

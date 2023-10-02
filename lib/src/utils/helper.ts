@@ -35,3 +35,14 @@ export const querySelectorAll = (
 };
 
 export const execute = (callback: VoidFunction) => callback();
+
+export const getDebounce = (duration = 200) => {
+	let resizeIdleCallback = 0;
+
+	return (callback: VoidFunction) => {
+		window.clearTimeout(resizeIdleCallback);
+		resizeIdleCallback = window.setTimeout(() => {
+			callback();
+		}, duration);
+	};
+};

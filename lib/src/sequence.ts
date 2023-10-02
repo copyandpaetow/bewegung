@@ -1,24 +1,16 @@
-import {
-	read,
-	removeDataAttributes,
-	removeElements,
-	replaceImagePlaceholders,
-} from "./main-thread/animation-calculator";
-import { animationCreator } from "./main-thread/create-animation";
-import {
-	calculateStartTime,
-	getTotalRuntime,
-	normalizeOptions,
-} from "./main-thread/normalize-props";
+import { calculateStartTime, normalizeOptions } from "./main-thread/normalize-props";
 import { BewegungsConfig, BewegungsInputs, MainMessages, WorkerMessages } from "./types";
+import { getDebounce, nextRaf } from "./utils/helper";
 import { getWorker, useWorker } from "./utils/use-worker";
+import { deriveSequenceState } from "./main-thread/state";
+import { readDom } from "./main-thread/observe-dom";
 
 const workerManager = getWorker();
 
 export type Bewegung = {
-	play(): void;
+	play(): Promise<void>;
 	pause(): void;
-	seek(scrollAmount: number, done?: boolean): void;
+	seek(scrollAmount: number, done?: boolean): Promise<void>;
 	cancel(): void;
 	finish(): void;
 	finished: Promise<Animation>;
@@ -27,47 +19,72 @@ export type Bewegung = {
 
 export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 	const worker = useWorker<MainMessages, WorkerMessages>(workerManager.current());
+	const debounce = getDebounce();
 
 	let options = props
 		.map((entry) => normalizeOptions(entry, config?.defaultOptions))
 		.map(calculateStartTime)
 		.sort((a, b) => a.startTime - b.startTime);
 
-	let totalRuntime = getTotalRuntime(options);
-	let calculations = options.map((option) => animationCreator(option, worker));
-	let timer = options.map((_) => 0);
-	let animations = new Map<number, Map<string, Animation>>();
-	let inProgress = false;
-	let currentTime = 0;
-	let startTime = 0;
+	let state = deriveSequenceState(options, worker);
 
-	const globalTimekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
-	globalTimekeeper.onfinish = globalTimekeeper.oncancel = () =>
-		requestAnimationFrame(() => {
-			replaceImagePlaceholders();
-			removeElements();
-			removeDataAttributes();
-		});
+	const enableReactivity = () =>
+		state.reactivity.observe(async () => {
+			state.reactivity.disconnect();
 
-	const api: Bewegung = {
-		async play() {
-			startTime = Date.now() - currentTime;
-			options.forEach((entry, index) => {
-				if (currentTime > entry.startTime) {
+			const loadedAnimations = options
+				.filter((entry) => state.currentTime > entry.startTime)
+				.map((entry) => entry.key);
+
+			options = options
+				.filter((entry) => entry.root.isConnected)
+				.map(calculateStartTime)
+				.sort((a, b) => a.startTime - b.startTime);
+			state = deriveSequenceState(options, worker);
+
+			for (let index = 0; index < loadedAnimations.length; index++) {
+				const optionIndex = options.findIndex((entry) => entry.key === loadedAnimations[index]);
+				if (optionIndex === -1) {
 					return;
 				}
 
-				timer[index] = window.setTimeout(async () => {
-					read(entry, worker);
-					const localAnimations = await calculations[index];
-					animations.set(index, localAnimations);
+				await getState(optionIndex, api.play);
+			}
+		});
 
-					localAnimations.forEach((animation) => animation.play());
-					globalTimekeeper.play();
-				}, entry.startTime - currentTime);
+	const getState = async (index: number, callback: () => Promise<void>) => {
+		if (state.animations.has(index)) {
+			return;
+		}
+		if (state.inProgress) {
+			await nextRaf();
+			await callback();
+			return;
+		}
+		console.time("calculation");
+		state.inProgress = true;
+		readDom(options[index], worker);
+		state.animations.set(index, await state.calculations[index]);
+		state.inProgress = false;
+		console.timeEnd("calculation");
+	};
+
+	const api: Bewegung = {
+		async play() {
+			state.startTime = Date.now() - state.currentTime;
+			options.forEach((entry, index) => {
+				if (state.currentTime > entry.startTime) {
+					return;
+				}
+
+				state.timer[index] = window.setTimeout(async () => {
+					await getState(index, api.play);
+					state.animations.get(index)?.forEach((animation) => animation.play());
+					state.globalTimekeeper.play();
+				}, entry.startTime - state.currentTime);
 			});
 
-			animations.forEach((animations) => {
+			state.animations.forEach((animations) => {
 				animations.forEach((animation) => {
 					if (animation.playState !== "paused") {
 						return;
@@ -77,66 +94,62 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 			});
 		},
 		async pause() {
-			currentTime = Date.now() - startTime;
-			timer.forEach((entry) => clearTimeout(entry));
+			state.currentTime = Date.now() - state.startTime;
+			state.timer.forEach((entry) => clearTimeout(entry));
 
-			animations.forEach((animations) => {
+			state.animations.forEach((animations) => {
 				animations.forEach((animation) => animation.pause());
 			});
-			globalTimekeeper.pause();
+			state.globalTimekeeper.pause();
+			enableReactivity();
 		},
 		async seek(progress, done) {
 			if (done) {
-				globalTimekeeper.finish();
+				state.globalTimekeeper.finish();
 				return;
 			}
 
 			options.forEach(async (entry, index) => {
 				const activeTime = entry.delay + entry.duration + entry.endDelay;
-				const localProgress = (progress * totalRuntime - entry.startTime) / activeTime;
+				const localProgress = (progress * state.totalRuntime - entry.startTime) / activeTime;
 
-				if (inProgress || localProgress > 1 || localProgress < 0) {
+				if (localProgress > 1 || localProgress < 0) {
 					return;
 				}
 
-				if (!animations.has(index)) {
-					inProgress = true;
-					read(entry, worker);
-					animations.set(index, await calculations[index]);
-					inProgress = false;
-				}
+				await getState(index, () => api.seek(progress, done));
 
-				animations.get(index)!.forEach((animation) => {
+				state.animations.get(index)?.forEach((animation) => {
 					animation.currentTime = localProgress * activeTime;
 				});
-
-				globalTimekeeper.currentTime = progress * totalRuntime;
 			});
+			state.globalTimekeeper.currentTime = progress * state.totalRuntime;
+			debounce(enableReactivity);
 		},
 		cancel() {
-			animations.forEach((animations) => {
+			state.animations.forEach((animations) => {
 				animations.forEach((animation) => animation.cancel());
 			});
-			globalTimekeeper.cancel();
+			state.globalTimekeeper.cancel();
 			worker("terminate").terminate();
 		},
 		finish() {
 			options.forEach((entry, index) => {
-				if (animations.has(index)) {
-					animations.get(index)!.forEach((animation) => animation.finish());
+				if (state.animations.has(index)) {
+					state.animations.get(index)!.forEach((animation) => animation.finish());
 					return;
 				}
 				entry.from?.();
 				entry.to?.();
 			});
 
-			globalTimekeeper.finish();
+			state.globalTimekeeper.finish();
 		},
 		get finished() {
-			return globalTimekeeper.finished;
+			return state.globalTimekeeper.finished;
 		},
 		get playState() {
-			return globalTimekeeper.playState;
+			return state.globalTimekeeper.playState;
 		},
 	};
 	return api;

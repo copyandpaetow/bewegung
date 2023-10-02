@@ -47,11 +47,9 @@ const createImagePlaceholder = (element: HTMLElement) => {
 		: parentElement.appendChild(placeholderElement);
 };
 
-const setAnimations = (
-	results: ResultTransferable,
-	animations: Map<string, Animation>,
-	options: KeyframeEffectOptions
-) => {
+const setAnimations = (results: ResultTransferable, options: KeyframeEffectOptions) => {
+	const animations = new Map<string, Animation>();
+
 	results.forEach(([keyframes, overrides], key) => {
 		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
 		if (!element) {
@@ -75,6 +73,8 @@ const setAnimations = (
 			);
 		}
 	});
+
+	return animations;
 };
 
 const alignAnimations = (animation: Animation, timekeeper: Animation) => {
@@ -96,7 +96,7 @@ const alignAnimations = (animation: Animation, timekeeper: Animation) => {
 	}
 };
 
-export const animationCreator = (options: NormalizedOptions, worker: AtomicWorker) => {
+export const createAnimations = (options: NormalizedOptions, worker: AtomicWorker) => {
 	const animations = new Map([["timekeeper", options.timekeeper]]);
 	const resultWorker = worker(`animationData-${options.key}`);
 	const delayedWorker = worker(`delayedAnimationData-${options.key}`);
@@ -110,7 +110,10 @@ export const animationCreator = (options: NormalizedOptions, worker: AtomicWorke
 				iterateRemovedElements(entries, readdRemovedNodes);
 				iterateAddedElements(entries, addKeyToNewlyAddedElement);
 
-				setAnimations(results, animations, animationOptions);
+				setAnimations(results, animationOptions).forEach((anim, key) => {
+					alignAnimations(anim, options.timekeeper);
+					animations.set(key, anim);
+				});
 
 				worker(`startDelayed-${options.key}`).reply(`receiveDelayed-${options.key}`);
 				resolve(animations);
@@ -123,11 +126,7 @@ export const animationCreator = (options: NormalizedOptions, worker: AtomicWorke
 		});
 	});
 	delayedWorker.onMessage((results) => {
-		const newAnimations = new Map<string, Animation>();
-
-		setAnimations(results, animations, animationOptions);
-
-		newAnimations.forEach((anim, key) => {
+		setAnimations(results, animationOptions).forEach((anim, key) => {
 			alignAnimations(anim, options.timekeeper);
 			animations.set(key, anim);
 		});

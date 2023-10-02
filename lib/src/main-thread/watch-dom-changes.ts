@@ -1,6 +1,5 @@
-import { Reactivity } from "../types";
-import { Attributes } from "../utils/constants";
-import { querySelectorAll } from "../utils/helper";
+import { NormalizedOptions, Reactivity } from "../types";
+import { getDebounce, querySelectorAll } from "../utils/helper";
 import { isHTMLElement } from "../utils/predicates";
 import { observe } from "./observer-helper";
 
@@ -68,12 +67,16 @@ const calculateRootMargin = (rootElement: HTMLElement, mainElement: HTMLElement)
 	return rootMargins.map((px) => `${-1 * Math.floor(px - buffer)}px`).join(" ");
 };
 
-const watchForPositionChanges = (animationElements: HTMLElement[], callback: VoidFunction) => {
+const watchForPositionChanges = (
+	rootElements: HTMLElement[],
+	animationElements: HTMLElement[],
+	callback: VoidFunction
+) => {
 	const intersectionObservers = new WeakMap<HTMLElement, IntersectionObserver>();
 
 	animationElements.forEach((element) => {
 		intersectionObservers.get(element)?.disconnect();
-		const rootElement = element.closest(`[${Attributes.root}]`) ?? document.body;
+		const rootElement = rootElements.find((root) => root.contains(element)) ?? document.body;
 
 		let isInitialCallback = true;
 		const observer = new IntersectionObserver(
@@ -103,7 +106,7 @@ const watchForPositionChanges = (animationElements: HTMLElement[], callback: Voi
 	};
 };
 
-export const getReactivity = (): Reactivity => {
+export const getReactivity = (options: NormalizedOptions[]): Reactivity => {
 	let mutationObserver: MutationObserver;
 	let resizeObserver: {
 		disconnect(): void;
@@ -111,29 +114,21 @@ export const getReactivity = (): Reactivity => {
 	let positionObserver: {
 		disconnect(): void;
 	};
-	let resizeIdleCallback: NodeJS.Timeout | undefined;
 
-	//TODO: this could be extracted to be used for the seeking as well
-	const throttledCallback = (callback: VoidFunction) => {
-		resizeIdleCallback && clearTimeout(resizeIdleCallback);
-		resizeIdleCallback = setTimeout(() => {
-			callback();
-		}, 200);
-	};
+	const debounce = getDebounce();
 
 	return {
 		observe(callback: VoidFunction) {
-			const animationElements = querySelectorAll(`[${Attributes.rootEasing}]`).flatMap(
-				(rootElement) =>
-					[rootElement]
-						.concat(querySelectorAll("*", rootElement))
-						.filter((element) => element.dataset.bewegungsSkip === undefined)
-			);
-			const withThrottle = () => throttledCallback(callback);
+			const roots = options.map((entry) => entry.root);
 
-			mutationObserver = watchForDomMutations(withThrottle);
-			resizeObserver = watchForResizes(animationElements, withThrottle);
-			positionObserver = watchForPositionChanges(animationElements, withThrottle);
+			const animationElements = roots.flatMap((rootElement) =>
+				[rootElement].concat(querySelectorAll("*", rootElement))
+			);
+			const withDebounce = () => debounce(callback);
+
+			mutationObserver = watchForDomMutations(withDebounce);
+			resizeObserver = watchForResizes(animationElements, withDebounce);
+			positionObserver = watchForPositionChanges(roots, animationElements, withDebounce);
 		},
 		disconnect() {
 			mutationObserver.disconnect();

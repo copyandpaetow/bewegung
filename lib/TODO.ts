@@ -5,24 +5,16 @@ TODOs
 
 * missing requirements
 
-
-- if the parent of an image is changed and changes in scale, the image doesnt change with. That is sometimes wanted and sometimes it isnt
-- image calculations are off again
-
-- reactivity 
-=> how to handle seeking and reactivity? Maybe with a debounce? 
+- resets
 
 * bugs
 
 - we only need the main library ts values, not the internal stuff
 
-- counter scaling looks still buggy => easing issue
+- sequence playState and Finished-Promise are not updated on reactivity change
 
-- if the root element is removed, its absolute position might lead to bugs because we dont know the next anchor parent
-=> maybe we would need to change the code in a way that the root is the first non-animation element
-=> that also would make rootCalculations easier but it is unclear if the weird browser fix could be implemented otherwise
-
-- if the user sets transform or clipPath, we will override them
+- if the parent of an image is changed and changes in scale, the image doesnt change with. That is sometimes wanted and sometimes it isnt
+- image calculations are off again
 
 - it looks like if the image becomes bigger than the parent via implicit overflow, that the image calculations are off
 ? maybe the wrapper style is missing something good to compare to?
