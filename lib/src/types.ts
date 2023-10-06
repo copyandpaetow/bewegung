@@ -32,8 +32,6 @@ export type FullBewegungsOption = BewegungsOption &
 		  }
 	);
 
-//sequence([[cb, dur], [cb, options], cb, {}])
-
 export type BewegungsEntry =
 	| BewegungsCallback
 	| [BewegungsCallback, BewegungsOption]
@@ -57,19 +55,6 @@ export type NormalizedOptions = {
 	key: string;
 	timekeeper: Animation;
 	startTime: number;
-};
-
-export type PropsWithRelativeTiming = NormalizedOptions & {
-	start: number;
-	end: number;
-};
-
-export type PropsWithRelativeTiming2 = {
-	start: number;
-	end: number;
-	root: HTMLElement;
-	easing: Easing;
-	callback: Set<VoidFunction>;
 };
 
 export const enum Display {
@@ -104,6 +89,7 @@ export type DomElement = {
 	objectFit?: ObjectFit;
 	objectPosition?: string;
 	ratio?: number;
+	skip?: boolean;
 };
 
 export type DomRepresentation = (DomElement | DomRepresentation)[];
@@ -128,6 +114,7 @@ export type TreeElement = {
 	objectPosition: [number, number];
 	ratio: number;
 	visibility: boolean;
+	skip: boolean;
 };
 
 export type TreeRepresentation = (TreeElement | TreeRepresentation)[];
@@ -192,4 +179,21 @@ export type ImageDetails = {
 export type Reactivity = {
 	observe(callback: VoidFunction): void;
 	disconnect(): void;
+};
+
+export type Bewegung = {
+	play(): Promise<void>;
+	pause(): void;
+	seek(scrollAmount: number, done?: boolean): Promise<void>;
+	cancel(): void;
+	finish(): void;
+	finished: Promise<Animation>;
+	playState: AnimationPlayState;
+};
+
+export type BewegungsArgs = {
+	(props: BewegungsCallback): Bewegung;
+	(props: BewegungsCallback, options: number): Bewegung;
+	(props: BewegungsCallback, options: BewegungsOption): Bewegung;
+	(props: FullBewegungsOption): Bewegung;
 };

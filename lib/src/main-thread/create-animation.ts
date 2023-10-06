@@ -65,8 +65,8 @@ const setAnimations = (results: ResultTransferable, options: KeyframeEffectOptio
 
 		if (results.has(`${key}-wrapper`)) {
 			const [wrapperKeyframes, wrapperOverrides] = results.get(`${key}-wrapper`)!;
-			const wrapperElement = createImageWrapper(element, wrapperOverrides!);
 			createImagePlaceholder(element);
+			const wrapperElement = createImageWrapper(element, wrapperOverrides!);
 			animations.set(
 				`${key}-wrapper`,
 				new Animation(new KeyframeEffect(wrapperElement, wrapperKeyframes, options))

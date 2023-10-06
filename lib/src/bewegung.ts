@@ -1,7 +1,9 @@
 import { normalizeOptions, toBewegungsEntry } from "./main-thread/normalize-props";
-import { readDom } from "./main-thread/observe-dom";
+import { observeDom } from "./main-thread/observe-dom";
 import { deriveState } from "./main-thread/state";
 import {
+	Bewegung,
+	BewegungsArgs,
 	BewegungsCallback,
 	BewegungsOption,
 	FullBewegungsOption,
@@ -10,23 +12,6 @@ import {
 } from "./types";
 import { getDebounce, nextRaf } from "./utils/helper";
 import { getWorker, useWorker } from "./utils/use-worker";
-
-export type Bewegung = {
-	play(): Promise<void>;
-	pause(): void;
-	seek(scrollAmount: number, done?: boolean): Promise<void>;
-	cancel(): void;
-	finish(): void;
-	finished: Promise<Animation>;
-	playState: AnimationPlayState;
-};
-
-export type BewegungsArgs = {
-	(props: BewegungsCallback): Bewegung;
-	(props: BewegungsCallback, options: number): Bewegung;
-	(props: BewegungsCallback, options: BewegungsOption): Bewegung;
-	(props: FullBewegungsOption): Bewegung;
-};
 
 const workerManager = getWorker();
 
@@ -58,12 +43,17 @@ export const bewegung: BewegungsArgs = (
 			await callback();
 			return;
 		}
-		console.time("calculation");
-		state.inProgress = true;
-		readDom(options, worker);
-		state.animations = await state.caluclations;
-		state.inProgress = false;
-		console.timeEnd("calculation");
+
+		try {
+			console.time("calculation");
+			state.inProgress = true;
+			observeDom(options, worker);
+			state.animations = await state.caluclations;
+			state.inProgress = false;
+			console.timeEnd("calculation");
+		} catch (error) {
+			options.timekeeper.cancel();
+		}
 	};
 
 	const api: Bewegung = {

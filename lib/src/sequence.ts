@@ -1,23 +1,13 @@
 import { calculateStartTime, normalizeOptions } from "./main-thread/normalize-props";
-import { BewegungsConfig, BewegungsInputs, MainMessages, WorkerMessages } from "./types";
+import { Bewegung, BewegungsConfig, BewegungsInputs, MainMessages, WorkerMessages } from "./types";
 import { getDebounce, nextRaf } from "./utils/helper";
 import { getWorker, useWorker } from "./utils/use-worker";
 import { deriveSequenceState } from "./main-thread/state";
-import { readDom } from "./main-thread/observe-dom";
+import { observeDom } from "./main-thread/observe-dom";
 
 const workerManager = getWorker();
 
-export type Bewegung = {
-	play(): Promise<void>;
-	pause(): void;
-	seek(scrollAmount: number, done?: boolean): Promise<void>;
-	cancel(): void;
-	finish(): void;
-	finished: Promise<Animation>;
-	playState: AnimationPlayState;
-};
-
-export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
+export const sequence = (props: BewegungsInputs, config?: BewegungsConfig): Bewegung => {
 	const worker = useWorker<MainMessages, WorkerMessages>(workerManager.current());
 	const debounce = getDebounce();
 
@@ -61,12 +51,16 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig) => {
 			await callback();
 			return;
 		}
-		console.time("calculation");
-		state.inProgress = true;
-		readDom(options[index], worker);
-		state.animations.set(index, await state.calculations[index]);
-		state.inProgress = false;
-		console.timeEnd("calculation");
+		try {
+			console.time("calculation");
+			state.inProgress = true;
+			observeDom(options[index], worker);
+			state.animations.set(index, await state.calculations[index]);
+			state.inProgress = false;
+			console.timeEnd("calculation");
+		} catch (error) {
+			state.globalTimekeeper.cancel();
+		}
 	};
 
 	const api: Bewegung = {

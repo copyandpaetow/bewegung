@@ -11,18 +11,10 @@ export const applyCSSStyles = (element: HTMLElement, style: Partial<CSSStyleDecl
 	Object.assign(element.style, style);
 };
 
-//TODO: a simple let would do the trick as well
-function* idGeneratorFunction() {
-	let index = 0;
-	while (true) {
-		yield (index += 1);
-	}
-}
-
-const idGenerator = idGeneratorFunction();
-
-export const uuid = (prefix: string = "bewegung"): string => {
-	return `_${prefix}-${idGenerator.next().value}`;
+let count = 0;
+export const uuid = (prefix: string): string => {
+	count += 1;
+	return `_${prefix}-${count}`;
 };
 
 export const nextRaf = () => new Promise((resolve) => requestAnimationFrame(resolve));

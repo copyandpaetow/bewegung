@@ -7,6 +7,7 @@ import {
 	TreeElement,
 	TreeRepresentation,
 } from "../types";
+import { isEntryVisible } from "../utils/predicates";
 
 const parseStringValues = (value: string, dimensions: [number, number]) =>
 	value.split(" ").map((value: string, index: number) => {
@@ -46,7 +47,9 @@ export const normalizeBorderRadius = (radius: string, [width, height]: [number, 
 	return `${widthEntries.join(" ")} / ${heightEntries.join(" ")}`;
 };
 
-const isElementVisible = (entry: DomElement) =>
+const filterSkipped = (dom: DomRepresentation) => !(dom[0] as DomElement).skip;
+
+const isElementInViewport = (entry: DomElement) =>
 	entry.currentTop + entry.currentHeight > 0 &&
 	entry.currentTop < entry.windowHeight &&
 	entry.currentLeft + entry.currentWidth > 0 &&
@@ -58,28 +61,32 @@ export const transformDomRepresentation = (dom: DomRepresentation): TreeRepresen
 
 	const dimensions: [number, number] = [current.currentWidth, current.currentHeight];
 
-	return [
-		{
-			currentHeight: current.currentHeight,
-			currentLeft: current.currentLeft,
-			currentTop: current.currentTop,
-			currentWidth: current.currentWidth,
-			key: current.key,
-			offset: current.offset,
-			unsaveHeight: current.currentHeight,
-			unsaveWidth: current.currentWidth,
-			windowHeight: current.windowHeight,
-			windowWidth: current.windowWidth,
-			borderRadius: current.borderRadius ?? "0px",
-			display: current.display ?? Display.visible,
-			objectFit: current.objectFit ?? ObjectFit.fill,
-			objectPosition: parseStringValues(current.objectPosition ?? "50% 50%", dimensions),
-			position: current.position ?? Position.static,
-			ratio: current.ratio ?? 0,
-			text: current.text ?? 0,
-			transformOrigin: parseStringValues(current.transformOrigin ?? "0px 0px", dimensions),
-			visibility: isElementVisible(current),
-		} as TreeElement,
-		children.map(transformDomRepresentation),
-	];
+	const result = {
+		currentHeight: current.currentHeight,
+		currentLeft: current.currentLeft,
+		currentTop: current.currentTop,
+		currentWidth: current.currentWidth,
+		key: current.key,
+		offset: current.offset,
+		unsaveHeight: current.currentHeight,
+		unsaveWidth: current.currentWidth,
+		windowHeight: current.windowHeight,
+		windowWidth: current.windowWidth,
+		borderRadius: current.borderRadius ?? "0px",
+		display: current.display ?? Display.visible,
+		objectFit: current.objectFit ?? ObjectFit.fill,
+		objectPosition: parseStringValues(current.objectPosition ?? "50% 50%", dimensions),
+		position: current.position ?? Position.static,
+		ratio: current.ratio ?? 0,
+		text: current.text ?? 0,
+		transformOrigin: parseStringValues(current.transformOrigin ?? "0px 0px", dimensions),
+		visibility: isElementInViewport(current),
+		skip: Boolean(current.skip),
+	} as TreeElement;
+
+	if (isEntryVisible(result)) {
+		return [result, children.filter(filterSkipped).map(transformDomRepresentation)];
+	}
+
+	return [result, []];
 };

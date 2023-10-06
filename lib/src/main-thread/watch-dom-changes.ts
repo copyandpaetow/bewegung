@@ -131,9 +131,9 @@ export const getReactivity = (options: NormalizedOptions[]): Reactivity => {
 			positionObserver = watchForPositionChanges(roots, animationElements, withDebounce);
 		},
 		disconnect() {
-			mutationObserver.disconnect();
-			resizeObserver.disconnect();
-			positionObserver.disconnect();
+			mutationObserver?.disconnect();
+			resizeObserver?.disconnect();
+			positionObserver?.disconnect();
 		},
 	};
 };

@@ -1,6 +1,5 @@
 import { Display, DomElement, DomRepresentation, ObjectFit, Position } from "../types";
 import { uuid } from "../utils/helper";
-import { isDomEntryVisible } from "../utils/predicates";
 
 const hasTextAttribute = (element: HTMLElement) => {
 	let hasText = false;
@@ -27,11 +26,10 @@ const getMediaRatio = (element: HTMLImageElement) => {
 const readElement = (element: HTMLElement, offset: number): DomElement => {
 	const dimensions = element.getBoundingClientRect();
 	const style = window.getComputedStyle(element);
-	const key = (element.dataset.bewegungsKey ??= uuid(element.tagName));
 
 	const result: DomElement = {
-		key,
 		offset,
+		key: (element.dataset.bewegungsKey ??= uuid(element.tagName)),
 		windowHeight: window.innerHeight,
 		windowWidth: window.innerWidth,
 		currentLeft: dimensions.left,
@@ -75,6 +73,10 @@ const readElement = (element: HTMLElement, offset: number): DomElement => {
 		result.ratio = getMediaRatio(element as HTMLImageElement);
 	}
 
+	if (element.dataset.bewegungsSkip) {
+		result.skip = true;
+	}
+
 	return result;
 };
 
@@ -83,25 +85,11 @@ export const recordElement = (element: HTMLElement, offset: number): DomRepresen
 	const representation: DomRepresentation = [];
 	const children = element.children;
 
-	if (isDomEntryVisible(entry)) {
-		for (let index = 0; index < children.length; index++) {
-			const child = children.item(index) as HTMLElement;
+	for (let index = 0; index < children.length; index++) {
+		const child = children.item(index) as HTMLElement;
 
-			representation.push(recordElement(child, offset));
-		}
+		representation.push(recordElement(child, offset));
 	}
 
 	return [entry, representation];
-};
-
-export const recordDomLabels = (element: HTMLElement) => {
-	if (element.dataset.bewegungsKey) {
-		return;
-	}
-	element.dataset.bewegungsKey = uuid(element.tagName);
-	const children = element.children;
-
-	for (let index = 0; index < children.length; index++) {
-		recordDomLabels(children.item(index) as HTMLElement);
-	}
 };

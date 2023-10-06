@@ -1,10 +1,7 @@
-import { DimensionalDifferences, Display, DomElement, TreeElement } from "../types";
+import { DimensionalDifferences, Display, TreeElement } from "../types";
 
 export const isEntryVisible = (entry: TreeElement) =>
 	entry.display !== Display.none && entry.unsaveWidth !== 0 && entry.unsaveHeight !== 0;
-
-export const isDomEntryVisible = (entry: DomElement) =>
-	entry.display !== Display.none && entry.currentHeight !== 0 && entry.currentWidth !== 0;
 
 export const isHTMLElement = (element: Node) => element.nodeType === Node.ELEMENT_NODE;
 

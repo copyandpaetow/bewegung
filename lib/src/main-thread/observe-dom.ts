@@ -1,7 +1,7 @@
 import { AtomicWorker, NormalizedOptions } from "../types";
 import { applyCSSStyles, nextRaf } from "../utils/helper";
 import { isHTMLElement } from "../utils/predicates";
-import { recordDomLabels, recordElement } from "./label-elements";
+import { recordElement } from "./label-elements";
 import {
 	iterateAddedElements,
 	iterateAttributesReversed,
@@ -41,7 +41,7 @@ export const readdRemovedNodes = (element: HTMLElement, entry: MutationRecord) =
 	entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 };
 
-const observeDom = async (options: NormalizedOptions, worker: AtomicWorker) => {
+export const observeDom = async (options: NormalizedOptions, worker: AtomicWorker) => {
 	const { reply } = worker("domChanges");
 	let index = -1;
 
@@ -69,17 +69,6 @@ const observeDom = async (options: NormalizedOptions, worker: AtomicWorker) => {
 		applyCSSStyles(options.root, { contain: "layout inline-size" });
 		domChangeFn();
 	}
-};
 
-export const readDom = async (options: NormalizedOptions, worker: AtomicWorker) => {
-	try {
-		recordDomLabels(options.root);
-		await nextRaf();
-		await observeDom(options, worker);
-		return getElementResets();
-	} catch (error) {
-		options.from?.();
-		options.to?.();
-		return new Map<HTMLElement, Map<string, string>>();
-	}
+	return getElementResets();
 };

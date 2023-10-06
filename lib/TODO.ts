@@ -13,6 +13,8 @@ TODOs
 
 - sequence playState and Finished-Promise are not updated on reactivity change
 
+- images in a sequence dont work currently. The wrapper stays there 
+
 - if the parent of an image is changed and changes in scale, the image doesnt change with. That is sometimes wanted and sometimes it isnt
 - image calculations are off again
 
@@ -21,6 +23,8 @@ TODOs
 
 - if the first element has a negativ at-value, it will become its delay => the animation starts not at 0
 ? the last element with a postive at value should it have become its endDelay?
+
+- counter-scaling needs easing adjustments 
 
 * adjacent tasks
 
