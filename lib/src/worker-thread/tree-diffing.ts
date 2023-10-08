@@ -1,5 +1,10 @@
 import { DimensionalDifferences, TreeElement, TreeRepresentation } from "../types";
-import { isElementUnchanged, isEntryVisible } from "../utils/predicates";
+import {
+	hasObjectFit,
+	isElementChanged,
+	isEntryVisible,
+	isNonReplacementInlineElement,
+} from "../utils/predicates";
 import { calculateDifferences } from "./keyframes";
 
 const saveTreeValue = (tree: TreeRepresentation) => {
@@ -47,9 +52,16 @@ export const diffDomTrees = (
 
 	//if the element doesnt really change in the animation, we just skip it and continue with the children
 	//we cant skip the whole tree because a decendent could still shrink
-	const elementIsUnchanged = differences.every(isElementUnchanged);
+	//also inline elements cant be transformed (except replaceable elements such as img, video, canvas)
 
-	if (!elementIsUnchanged) {
+	//unchanged, objectFit there, not inline
+
+	const isChangedElement =
+		hasObjectFit(dimensions) ||
+		(isElementChanged(differences) && !isNonReplacementInlineElement(dimensions));
+	const newParentDimension = isChangedElement ? dimensions : parentDimensions;
+
+	if (isChangedElement) {
 		callback(dimensions, differences, parentDimensions);
 	}
 
@@ -61,12 +73,7 @@ export const diffDomTrees = (
 					(child) => (child[0] as TreeElement).key === (oldChild[0] as TreeElement).key
 				) ?? saveTreeValue(oldChild);
 
-			diffDomTrees(
-				oldChild,
-				newChild,
-				callback,
-				elementIsUnchanged ? parentDimensions : dimensions
-			);
+			diffDomTrees(oldChild, newChild, callback, newParentDimension);
 		}
 		return;
 	}
@@ -78,6 +85,6 @@ export const diffDomTrees = (
 				(child) => (child[0] as TreeElement).key === (newChild[0] as TreeElement).key
 			) ?? saveTreeValue(newChild);
 
-		diffDomTrees(oldChild, newChild, callback, elementIsUnchanged ? parentDimensions : dimensions);
+		diffDomTrees(oldChild, newChild, callback, newParentDimension);
 	}
 };

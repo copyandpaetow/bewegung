@@ -13,18 +13,15 @@ TODOs
 
 - sequence playState and Finished-Promise are not updated on reactivity change
 
-- images in a sequence dont work currently. The wrapper stays there 
-
-- if the parent of an image is changed and changes in scale, the image doesnt change with. That is sometimes wanted and sometimes it isnt
-- image calculations are off again
-
-- it looks like if the image becomes bigger than the parent via implicit overflow, that the image calculations are off
-? maybe the wrapper style is missing something good to compare to?
-
 - if the first element has a negativ at-value, it will become its delay => the animation starts not at 0
 ? the last element with a postive at value should it have become its endDelay?
 
 - counter-scaling needs easing adjustments 
+
+- display: inline might need some adjustments
+
+* checks
+- what happens when 2 options run at the same time (via overlap)?
 
 * adjacent tasks
 

@@ -1,6 +1,6 @@
 import { calculateStartTime, normalizeOptions } from "./main-thread/normalize-props";
 import { Bewegung, BewegungsConfig, BewegungsInputs, MainMessages, WorkerMessages } from "./types";
-import { getDebounce, nextRaf } from "./utils/helper";
+import { getDebounce, nextRaf, saveSeek } from "./utils/helper";
 import { getWorker, useWorker } from "./utils/use-worker";
 import { deriveSequenceState } from "./main-thread/state";
 import { observeDom } from "./main-thread/observe-dom";
@@ -66,6 +66,7 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig): Bewe
 	const api: Bewegung = {
 		async play() {
 			state.startTime = Date.now() - state.currentTime;
+			state.reactivity.disconnect();
 			options.forEach((entry, index) => {
 				if (state.currentTime > entry.startTime) {
 					return;
@@ -98,6 +99,8 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig): Bewe
 			enableReactivity();
 		},
 		async seek(progress, done) {
+			state.reactivity.disconnect();
+
 			if (done) {
 				state.globalTimekeeper.finish();
 				return;
@@ -114,10 +117,10 @@ export const sequence = (props: BewegungsInputs, config?: BewegungsConfig): Bewe
 				await getState(index, () => api.seek(progress, done));
 
 				state.animations.get(index)?.forEach((animation) => {
-					animation.currentTime = localProgress * activeTime;
+					animation.currentTime = saveSeek(localProgress) * activeTime;
 				});
 			});
-			state.globalTimekeeper.currentTime = progress * state.totalRuntime;
+			state.globalTimekeeper.currentTime = saveSeek(progress) * state.totalRuntime;
 			debounce(enableReactivity);
 		},
 		cancel() {

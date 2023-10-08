@@ -8,7 +8,6 @@ import {
 	iterateRemovedElements,
 	observe,
 } from "./observer-helper";
-import { getElementResets } from "./resets";
 
 const resetNodeStyle = (entry: MutationRecord): void => {
 	const element = entry.target as HTMLElement;
@@ -69,6 +68,4 @@ export const observeDom = async (options: NormalizedOptions, worker: AtomicWorke
 		applyCSSStyles(options.root, { contain: "layout inline-size" });
 		domChangeFn();
 	}
-
-	return getElementResets();
 };

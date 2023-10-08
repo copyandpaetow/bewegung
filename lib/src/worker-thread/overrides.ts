@@ -1,13 +1,20 @@
 import { Position, Result, TreeElement } from "../types";
 
+export const getFromResults = (
+	key: string | undefined,
+	results: {
+		immediate: Map<string, Result>;
+		delayed: Map<string, Result>;
+	}
+) => (key ? results.immediate.get(key) ?? results.delayed.get(key) : undefined);
+
 export const setParentToRelative = (
 	parentReadout: TreeElement | undefined,
-	results: Map<string, Result>
+	parentResult: Result | undefined
 ) => {
-	if (!parentReadout || !results.has(parentReadout.key)) {
+	if (!parentReadout || !parentResult) {
 		return;
 	}
-	const parentResult = results.get(parentReadout.key)!;
 	const override: Partial<CSSStyleDeclaration> = (parentResult[1] ??= {});
 
 	if (parentReadout?.position !== Position.static || override.position) {
@@ -16,7 +23,7 @@ export const setParentToRelative = (
 	override.position = "relative";
 };
 
-export const setOverrides = (
+export const setHiddenElementOverrides = (
 	lastReadout: TreeElement,
 	lastParentReadout: TreeElement | undefined,
 	result: Result
@@ -29,4 +36,24 @@ export const setOverrides = (
 	override.top = lastReadout.currentTop - (lastParentReadout?.currentTop ?? 0) + "px";
 	override.width = lastReadout.currentWidth + "px";
 	override.height = lastReadout.currentHeight + "px";
+};
+
+export const updateOverrideStore = (
+	dimensions: [TreeElement, TreeElement],
+	keyframes: [Keyframe[], Partial<CSSStyleDeclaration>] | [Keyframe[]],
+	overrideStore: Map<string, Partial<CSSStyleDeclaration>>
+) => {
+	const overrides = keyframes[1];
+	if (!overrides) {
+		return;
+	}
+
+	const key = dimensions[0].key;
+	const previousOverrides = overrideStore.get(key) ?? {};
+
+	Object.keys(overrides).forEach((property) => {
+		previousOverrides[property] = dimensions[1][property];
+	});
+
+	overrideStore.set(key, previousOverrides);
 };

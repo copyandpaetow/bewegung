@@ -1,51 +1,9 @@
 import { AtomicWorker, NormalizedOptions, ResultTransferable } from "../types";
-import { Attributes, emptyImageSrc } from "../utils/constants";
+import { Attributes } from "../utils/constants";
 import { applyCSSStyles, nextRaf } from "../utils/helper";
 import { extractAnimationOptions } from "./normalize-props";
 import { addKeyToNewlyAddedElement, readdRemovedNodes } from "./observe-dom";
 import { iterateAddedElements, iterateRemovedElements, observe } from "./observer-helper";
-
-const createWrapperElement = (style: Partial<CSSStyleDeclaration>) => {
-	const wrapperElement = document.createElement("div");
-	applyCSSStyles(wrapperElement, style);
-	wrapperElement.dataset.bewegungsRemovable = "";
-
-	return wrapperElement;
-};
-
-const createImageWrapper = (element: HTMLElement, overrides: Partial<CSSStyleDeclaration>) => {
-	const wrapperElement = createWrapperElement(overrides);
-	const parentElement = element.parentElement!;
-	const nextSibling = element.nextElementSibling;
-
-	wrapperElement.appendChild(element);
-
-	if (nextSibling) {
-		parentElement.insertBefore(wrapperElement, nextSibling);
-		return wrapperElement;
-	}
-	parentElement.appendChild(wrapperElement);
-
-	return wrapperElement;
-};
-
-const createImagePlaceholder = (element: HTMLElement) => {
-	const parentElement = element.parentElement!;
-	const nextSibling = element.nextElementSibling;
-	const key = element.dataset.bewegungsKey!;
-
-	const placeholderElement = document.createElement("img");
-	element.getAttributeNames().forEach((attribute) => {
-		placeholderElement.setAttribute(attribute, element.getAttribute(attribute)!);
-	});
-	placeholderElement.src = emptyImageSrc;
-	placeholderElement.dataset.bewegungsReplace = key;
-	placeholderElement.dataset.bewegungsRemovable = "";
-
-	nextSibling
-		? parentElement.insertBefore(placeholderElement, nextSibling)
-		: parentElement.appendChild(placeholderElement);
-};
 
 const setAnimations = (results: ResultTransferable, options: KeyframeEffectOptions) => {
 	const animations = new Map<string, Animation>();
@@ -61,16 +19,6 @@ const setAnimations = (results: ResultTransferable, options: KeyframeEffectOptio
 		if (overrides) {
 			element.dataset.bewegungsCssReset = element.style.cssText ?? " ";
 			applyCSSStyles(element, overrides);
-		}
-
-		if (results.has(`${key}-wrapper`)) {
-			const [wrapperKeyframes, wrapperOverrides] = results.get(`${key}-wrapper`)!;
-			createImagePlaceholder(element);
-			const wrapperElement = createImageWrapper(element, wrapperOverrides!);
-			animations.set(
-				`${key}-wrapper`,
-				new Animation(new KeyframeEffect(wrapperElement, wrapperKeyframes, options))
-			);
 		}
 	});
 

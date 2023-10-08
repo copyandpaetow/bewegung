@@ -10,7 +10,7 @@ import {
 	MainMessages,
 	WorkerMessages,
 } from "./types";
-import { getDebounce, nextRaf } from "./utils/helper";
+import { getDebounce, nextRaf, saveSeek } from "./utils/helper";
 import { getWorker, useWorker } from "./utils/use-worker";
 
 const workerManager = getWorker();
@@ -34,7 +34,7 @@ export const bewegung: BewegungsArgs = (
 	};
 
 	const getState = async (callback: () => Promise<void>) => {
-		if (state.animations.size) {
+		if (state.animations.size > 1) {
 			return;
 		}
 
@@ -74,7 +74,9 @@ export const bewegung: BewegungsArgs = (
 			}
 
 			await getState(() => api.seek(progress, done));
-			state.animations.forEach((animation) => (animation.currentTime = progress));
+			state.animations.forEach(
+				(animation) => (animation.currentTime = saveSeek(progress) * state.totalRuntime)
+			);
 
 			debounce(enableReactivity);
 		},
@@ -85,7 +87,7 @@ export const bewegung: BewegungsArgs = (
 		finish() {
 			state.animations.forEach((animation) => animation.finish());
 
-			if (state.animations.size === 0) {
+			if (state.animations.size <= 1) {
 				options.from?.();
 				options.to?.();
 			}

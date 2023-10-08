@@ -38,3 +38,5 @@ export const getDebounce = (duration = 200) => {
 		}, duration);
 	};
 };
+
+export const saveSeek = (amount: number) => Math.max(0.0001, Math.min(0.9999, amount));

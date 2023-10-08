@@ -43,6 +43,10 @@ const readElement = (element: HTMLElement, offset: number): DomElement => {
 		return result;
 	}
 
+	if (style.getPropertyValue("display") === "inline") {
+		result.display = Display.inline;
+	}
+
 	if (style.getPropertyValue("position") !== "static") {
 		result.position = Position.relative;
 	}
@@ -53,6 +57,10 @@ const readElement = (element: HTMLElement, offset: number): DomElement => {
 
 	if (style.getPropertyValue("object-fit") === "cover") {
 		result.objectFit = ObjectFit.cover;
+	}
+
+	if (style.getPropertyValue("object-fit") === "none") {
+		result.objectFit = ObjectFit.none;
 	}
 
 	if (style.getPropertyValue("object-position") !== "50% 50%") {
@@ -71,10 +79,6 @@ const readElement = (element: HTMLElement, offset: number): DomElement => {
 		Boolean((element as HTMLImageElement)?.naturalHeight)
 	) {
 		result.ratio = getMediaRatio(element as HTMLImageElement);
-	}
-
-	if (element.dataset.bewegungsSkip) {
-		result.skip = true;
 	}
 
 	return result;

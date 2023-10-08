@@ -58,6 +58,7 @@ export type NormalizedOptions = {
 };
 
 export const enum Display {
+	inline = 2,
 	none = 1,
 	visible = 0,
 }
@@ -68,6 +69,7 @@ export const enum Position {
 }
 
 export const enum ObjectFit {
+	none = 2,
 	cover = 1,
 	fill = 0,
 }
@@ -89,7 +91,6 @@ export type DomElement = {
 	objectFit?: ObjectFit;
 	objectPosition?: string;
 	ratio?: number;
-	skip?: boolean;
 };
 
 export type DomRepresentation = (DomElement | DomRepresentation)[];
@@ -114,7 +115,6 @@ export type TreeElement = {
 	objectPosition: [number, number];
 	ratio: number;
 	visibility: boolean;
-	skip: boolean;
 };
 
 export type TreeRepresentation = (TreeElement | TreeRepresentation)[];

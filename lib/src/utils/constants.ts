@@ -14,9 +14,6 @@ export const defaultOptions: Required<BewegungsOption> & {
 	at: 0,
 };
 
-export const emptyImageSrc =
-	"data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
-
 //TODO: do we use all of these
 export const enum Attributes {
 	key = "data-bewegungs-key",

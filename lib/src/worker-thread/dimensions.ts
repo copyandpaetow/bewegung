@@ -57,14 +57,3 @@ export const getParentDimensions = (
 
 	return [dimensionStore.get(parentKey)!, parentNode[0] as TreeElement];
 };
-
-export const setDelayedStatus = (
-	dimensions: [TreeElement, TreeElement],
-	delayedStore: Set<string>
-) => {
-	if (dimensions.every((entry) => entry.visibility)) {
-		return;
-	}
-
-	delayedStore.add(dimensions[0].key);
-};

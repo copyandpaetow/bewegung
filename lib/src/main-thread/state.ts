@@ -1,15 +1,8 @@
 import { AtomicWorker, NormalizedOptions } from "../types";
 import { createAnimations } from "./create-animation";
 import { getTotalRuntime } from "./normalize-props";
-import { removeDataAttributes, removeElements, replaceImagePlaceholders } from "./resets";
+import { cleanup } from "./resets";
 import { getReactivity } from "./watch-dom-changes";
-
-const cleanup = () =>
-	requestAnimationFrame(() => {
-		replaceImagePlaceholders();
-		removeElements();
-		removeDataAttributes();
-	});
 
 export const deriveSequenceState = (options: NormalizedOptions[], worker: AtomicWorker) => {
 	const totalRuntime = getTotalRuntime(options);
@@ -46,7 +39,8 @@ export const deriveState = (options: NormalizedOptions, worker: AtomicWorker) =>
 	return {
 		reactivity,
 		caluclations: createAnimations(options, worker),
-		animations: new Map<string, Animation>(),
+		animations: new Map([["timekeeper", options.timekeeper]]),
 		inProgress: false,
+		totalRuntime: getTotalRuntime([options]),
 	};
 };

@@ -1,97 +1,59 @@
-import { ImageDetails, ObjectFit, TreeElement } from "../types";
+import { DimensionalDifferences, ImageDetails, TreeElement } from "../types";
 import { save } from "../utils/helper";
-import { getScales, getTranslates } from "./differences";
-import { getImageData } from "./image-keyframes";
+import { getScales } from "./differences";
 import { normalizeBorderRadius } from "./transforms";
 
-//TODO: this was written when there where more than 2 readouts, maybe it can be reduced / simplified?
-export const calculateImageDifferences = (readouts: TreeElement[]): Keyframe[] => {
-	const { maxHeight, maxWidth } = getImageData(readouts);
+/*
+*steps
+? maybe the natural ratio restauration also needs to be in the override, since we wouldnt need to change that in overlaps
+=> by either scaling the height or width by the ratio (or the fraction of it)
+=> and another scale to fit the smaller value of the inital height/width
 
-	return readouts.map((readout) => {
-		let scaleWidth: number = readout.unsaveWidth / maxWidth;
-		let scaleHeight: number = readout.unsaveHeight / maxHeight;
+- then we need to cut the overlapping sides with clipPath 
 
-		// if (readout.objectFit !== ObjectFit.cover) {
-		// 	const alternateScaleWidth = (readout.ratio * maxHeight) / maxWidth;
-		// 	const alternateScaleHeight = maxWidth / readout.ratio / maxHeight;
-		// 	const currentRatio = readout.unsaveWidth / readout.unsaveHeight;
 
-		// 	if (currentRatio < readout.ratio) {
-		// 		scaleWidth = alternateScaleWidth * scaleHeight;
-		// 	} else {
-		// 		scaleHeight = alternateScaleHeight * scaleWidth;
-		// 	}
-		// }
-		//TODO: this needs to be re-checked
-		//! doesnt work anymore
-		const [xAchis, yAchis] = readout.objectPosition;
 
-		const translateX =
-			0 ?? save((maxWidth * scaleWidth - readout.currentWidth) / 2, 0) * xAchis * -1;
-		const translateY =
-			0 ?? save((maxHeight * scaleHeight - readout.currentHeight) / 2, 0) * yAchis * -1;
-
-		return {
-			transform: `translate(${save(translateX, 0)}px, ${save(translateY, 0)}px) scale(${save(
-				scaleWidth,
-				1
-			)}, ${save(scaleHeight, 1)})`,
-			offset: readout.offset,
-		};
-	});
-};
+*/
 
 //TODO: this was written when there where more than 2 readouts, maybe it can be reduced / simplified?
-export const getWrapperKeyframes = (
-	readouts: TreeElement[],
-	parentReadouts: TreeElement[] | undefined,
-	imageData: ImageDetails
-): Keyframe[] => {
-	const { maxHeight, maxWidth } = imageData;
-	const reference = readouts.at(-1)!;
-	const parentReference = parentReadouts?.at(-1)! ?? reference;
+export const setImageKeyframes = (
+	differences: DimensionalDifferences[],
+	readouts: TreeElement[]
+): [Keyframe[], Partial<CSSStyleDeclaration>] => {
+	return [
+		readouts.map((readout, index) => {
+			const xScale = Math.max(1, (readout.currentHeight * readout.ratio) / readout.currentWidth);
+			const yScale = Math.max(1, readout.currentWidth / (readout.currentHeight * readout.ratio));
 
-	return readouts.map((readout, index) => {
-		const dimensions = {
-			current: readout,
-			reference,
-			parent: parentReadouts?.at(index) ?? readout,
-			parentReference,
-		};
+			const resultingWidth = readout.currentWidth * xScale;
+			const resultingHeight = readout.currentHeight * yScale;
 
-		const {
-			currentLeftDifference,
-			referenceLeftDifference,
-			currentTopDifference,
-			referenceTopDifference,
-		} = getTranslates(dimensions);
+			const clipWidthDifference = Math.max(
+				0,
+				(resultingWidth - readout.currentWidth) / (2 * xScale)
+			);
+			const clipHeightDifference = Math.max(
+				0,
+				(resultingHeight - readout.currentHeight) / (2 * yScale)
+			);
+			const normalizedBorderRadius = normalizeBorderRadius(readout.borderRadius, [
+				resultingWidth,
+				resultingHeight,
+			]);
 
-		const { parentHeightDifference, parentWidthDifference } = getScales(dimensions);
+			const withBorderRadius = normalizedBorderRadius ? `round ${normalizedBorderRadius}` : "";
 
-		const horizontalInset = (maxWidth - readout.currentWidth) / 2;
-		const verticalInset = (maxHeight - readout.currentHeight) / 2;
-
-		const referenceHorizontalInset = (maxWidth - readouts.at(-1)!.currentWidth) / 2;
-		const referenceVerticalInset = (maxHeight - readouts.at(-1)!.currentHeight) / 2;
-
-		const translateX =
-			(currentLeftDifference - referenceLeftDifference) / parentWidthDifference -
-			referenceHorizontalInset;
-		const translateY =
-			(currentTopDifference - referenceTopDifference) / parentHeightDifference -
-			referenceVerticalInset;
-
-		const borderRadius = normalizeBorderRadius(readout.borderRadius, [maxWidth, maxHeight]);
-
-		return {
-			offset: readout.offset,
-			clipPath: `inset(${verticalInset}px ${horizontalInset}px ${
-				borderRadius && `round ${borderRadius}`
-			})`,
-			transform: `translate(${translateX}px, ${translateY}px) scale(${1 / parentWidthDifference}, ${
-				1 / parentHeightDifference
-			})`,
-		};
-	});
+			return {
+				clipPath: `inset(${clipHeightDifference}px ${clipWidthDifference}px ${withBorderRadius})`,
+				transform: `translate(${differences[index].leftDifference}px, ${
+					differences[index].topDifference
+				}px) scale(${save(xScale * differences[index].widthDifference, 1)}, ${save(
+					yScale * differences[index].heightDifference,
+					1
+				)})`,
+				offset: readout.offset,
+			};
+		}),
+		{ objectFit: "unset", borderRadius: "0" },
+	];
 };
