@@ -33,10 +33,9 @@ const getKeyframes = (oldDom: TreeRepresentation, newDom: TreeRepresentation) =>
 	diffDomTrees(oldDom, newDom, (dimensions, differences, parentDimensions) => {
 		const key = dimensions[0].key;
 		const isChangingInScale = changesInScale(differences);
-		const keyframes =
-			isChangingInScale && hasObjectFit(dimensions)
-				? setImageKeyframes(differences, dimensions)
-				: setDefaultKeyframes(differences, dimensions, isChangingInScale);
+		const keyframes = hasObjectFit(dimensions)
+			? setImageKeyframes(differences, dimensions)
+			: setDefaultKeyframes(differences, dimensions, isChangingInScale);
 
 		isCurrentlyInViewport(dimensions)
 			? results.immediate.set(key, keyframes)

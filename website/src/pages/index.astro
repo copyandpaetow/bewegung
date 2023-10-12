@@ -1,7 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Card from "../components/Card.astro";
-import Nav from "../components/Nav.astro";
 ---
 
 <script>
@@ -10,14 +9,14 @@ import Nav from "../components/Nav.astro";
 	import { sleep } from "../../../lib/src/utils/constants";
 
 	const list = document.getElementById("js-list") as HTMLElement;
-	const main = document.querySelector("main") as HTMLElement;
-	const h1 = document.querySelector("h1") as HTMLElement;
-	const article = document.querySelector("article") as HTMLElement;
-	const sibling = document.querySelector(".sibling") as HTMLElement;
+	const buttonGridColum = document.getElementById("js-grid-colums") as HTMLElement;
+	const buttonGridToFlex = document.getElementById("js-grid-to-flex") as HTMLElement;
+	const buttonDisplayNone = document.getElementById("js-display-none") as HTMLElement;
+	const buttonRemoveElement = document.getElementById("js-remove-element") as HTMLElement;
+	const buttonAddElement = document.getElementById("js-add-element") as HTMLElement;
+	const buttonClear = document.getElementById("js-clear") as HTMLElement;
 
-	const removeSibling = () => {
-		sibling.remove();
-	};
+	let animationPromise = Promise.resolve();
 
 	const removeGridArea = () => {
 		list.style.gridTemplateColumns = "1fr 1fr";
@@ -26,140 +25,118 @@ import Nav from "../components/Nav.astro";
 		});
 	};
 
-	const expandArea = () => {
-		main.style.gridTemplateColumns = "2fr 1fr";
+	buttonGridColum.onclick = () => {
+		animationPromise = animationPromise.then(() => {
+			const anim = bewegung(removeGridArea, { duration: 400 });
+			return anim.play();
+		});
 	};
 
-	const expandArticlePadding = () => {
-		article.style.padding = "0 5%";
+	buttonGridToFlex.onclick = () => {
+		animationPromise = animationPromise.then(() => {
+			const anim = bewegung(() => {
+				list.style.display = "flex";
+				list.style.flexDirection = "column";
+			}, 400);
+			return anim.play();
+		});
 	};
 
-	const increaseH1Spacing = () => {
-		h1.style.marginBlockEnd = "2rem";
+	buttonDisplayNone.onclick = () => {
+		animationPromise = animationPromise.then(() => {
+			const anim = bewegung(() => {
+				(list.querySelector("li:first-of-type") as HTMLElement).style.display = "none";
+			}, 400);
+			return anim.play();
+		});
 	};
 
-	const changeFirstImage = () => {
-		(list.querySelector("li:last-of-type") as HTMLElement).style.aspectRatio = "0.5";
-		//(list.querySelector("li:last-of-type") as HTMLElement).style.width = "200px";
+	buttonRemoveElement.onclick = () => {
+		animationPromise = animationPromise.then(() => {
+			const anim = bewegung(() => {
+				(list.querySelector("li:first-of-type") as HTMLElement).remove();
+			}, 400);
+			return anim.play();
+		});
 	};
 
-	setTimeout(() => {
-		const anim = sequence([
-			{ duration: 4000, to: expandArea },
-			[expandArticlePadding, { duration: 2000, at: -2000 }],
-		]);
-		// const anim = sequence([
-		// 	removeGridArea,
-		// 	[expandArticlePadding, { duration: 1000, root: article }],
-		// 	[increaseH1Spacing, { root: "article section", duration: 1000, at: -500 }],
-		// 	{ duration: 1000, at: -500, root: main, to: expandArea },
-		// 	[removeSibling, 2000],
-		// ]);
-		// const anim = bewegung(removeSibling, { duration: 1000 });
-		anim.play();
-	}, 2000);
+	buttonAddElement.onclick = () => {
+		animationPromise = animationPromise.then(() => {
+			const anim = bewegung(() => {
+				const lastCard = list.querySelector("li:last-of-type") as HTMLElement;
+				const newElement = lastCard.cloneNode(true);
+				list.prepend(newElement);
+			}, 400);
+			return anim.play();
+		});
+	};
 
-	// setTimeout(() => {
-	// 	const anim = sequence([
-	// 		[removeGridArea, { root: "aside", duration: 1000 }],
-	// 		[expandArticlePadding, { duration: 2000, root: article }],
-	// 		[increaseH1Spacing, { root: "article section", duration: 1000, at: -500 }],
-	// 		[expandArea, { duration: 2000, at: -500, root: main }],
-	// 		[removeSibling, { duration: 2000 }],
-	// 	]);
-
-	// 	let time = performance.now();
-	// 	let direction = "forward";
-
-	// 	let raf = () =>
-	// 		requestAnimationFrame((now) => {
-	// 			let current =
-	// 				direction === "forward"
-	// 					? Math.min(1, (now - time) / 7000)
-	// 					: 1 - Math.min(1, (now - time) / 7000);
-
-	// 			anim.seek(current);
-
-	// 			if (current === 1) {
-	// 				time = now;
-	// 				direction = "backward";
-	// 				requestAnimationFrame(raf);
-	// 				return;
-	// 			}
-
-	// 			if (current < 1 && direction === "forward") {
-	// 				requestAnimationFrame(raf);
-	// 				return;
-	// 			}
-
-	// 			if (current > 0 && direction === "backward") {
-	// 				requestAnimationFrame(raf);
-	// 			}
-	// 		});
-
-	// 	requestAnimationFrame(raf);
-	// }, 2000);
+	buttonClear.onclick = () => {
+		window.location.reload();
+	};
 </script>
 
 <Layout title="Bewegung">
-	<div class="sibling"></div>
-	<main>
-		<article>
-			<Nav pages={[]} active="home" />
-			<section>
-				<h1>bewegung.</h1>
-				<h2>Unleash the Power of Speed - High Performance</h2>
-				<p>
-					High Performance Experience lightning-fast animations like never before. Our library
-					capitalizes on the efficiency of the FLIP technique to deliver buttery smooth and highly
-					performant animations. This ensures a seamless user experience even on less powerful
-					devices, making your application truly shine.
-				</p>
-			</section>
-			<section>
-				<h2>Animate Your Way - Scrollable Animations</h2>
-				<p>
-					Set your creativity free with scrollable animations. Our library provides the tools you
-					need to animate based on the user's scroll position. Now, you can easily design dynamic,
-					interactive animations that engage users and create a truly immersive browsing experience.
-				</p>
-			</section>
-			<section>
-				<h2>Break the Boundaries - Animate Unanimatable Properties</h2>
-				<p>
-					Defy the limitations of traditional CSS. With our library, even properties like display:
-					none can be animated, opening up a new world of possibilities. This means you can animate
-					just about any CSS property to achieve the effect you're envisioning.
-				</p>
-			</section>
-			<section>
-				<h2>Bring Elements to Life - Animate Addition and Removal of Elements</h2>
-				<p>
-					Breathe life into your web pages. Our library lets you animate the adding or removing of
-					elements, making transitions more fluid and visually appealing. Your users will appreciate
-					the added detail and the polished look it gives your application.
-				</p>
-			</section>
-			<section>
-				<h2>Take Control - Low-Level API</h2>
-				<p>
-					Dive deep into the nuts and bolts of your animations. Our library's low-level API allows
-					for a high degree of control, so you can fine-tune your animations to the last detail.
-					It's ideal for developers who want to get their hands dirty and truly customize their
-					animations.
-				</p>
-			</section>
-			<section>
-				<h2>Lightweight & Independent - Small Size, Zero Dependencies</h2>
-				<p>
-					Keep things light and simple. Our library stands on its own, without relying on other
-					libraries, and it's compact in size. This means it won't bloat your application or
-					complicate your project with unnecessary dependencies, making your development process
-					smoother and more efficient.
-				</p>
-			</section>
-		</article>
-		<aside>
+	<section id="examples" class="split-screen">
+		<div class="flow right">
+			<h1>bewegung.</h1>
+			<p>
+				<strong>[bəˈveːɡʊŋ - the german word for motion]</strong>. This 6KB library uses the FLIP
+				animation technique, which can smoothly animate layout changes. It makes the browser work
+				less compared to other css and js animation approaches.
+				<br />
+				<br />
+				Bewegung can even animate currently unanimatable properties like display: none or element addition/removal
+			</p>
+			<ul>
+				<li>
+					<a href="http://github.com">github</a>
+				</li>
+				<li>
+					<a href="#documentation">documentation</a>
+				</li>
+				<li>
+					<a href="#caveats">caveats</a>
+				</li>
+			</ul>
+
+			<h2>Examples</h2>
+			<h3>single</h3>
+			<ul class="list">
+				<li>
+					<button id="js-grid-colums">grid-columns</button>
+				</li>
+				<li>
+					<button id="js-grid-to-flex">grid to flexbox</button>
+				</li>
+				<li>
+					<button id="js-display-none">display: none</button>
+				</li>
+				<li>
+					<button id="js-remove-element">element removal</button>
+				</li>
+				<li>
+					<button id="js-add-element">element addition</button>
+				</li>
+				<li>
+					<button id="js-clear">clear changes</button>
+				</li>
+			</ul>
+			<h3>other</h3>
+			<ul class="list">
+				<li>
+					<button>scroll</button>
+				</li>
+				<li>
+					<button>sequence</button>
+				</li>
+				<li>
+					<button>reverse</button>
+				</li>
+			</ul>
+		</div>
+
+		<aside class="sticky left">
 			<ul id="js-list">
 				<Card
 					headline="red"
@@ -191,69 +168,61 @@ import Nav from "../components/Nav.astro";
 				/>
 			</ul>
 		</aside>
-	</main>
+	</section>
+	<section id="documentation">
+		<h2>Documentation</h2>
+		<p>todo</p>
+	</section>
+	<section id="caveats">
+		<h2>Caveats</h2>
+		<p>todo</p>
+	</section>
 </Layout>
 
 <style lang="scss">
-	.sibling {
-		width: 100%;
-		height: 100px;
-		background-color: gray;
-	}
-
-	main {
-		min-height: 100vh;
-		display: grid;
-		grid-auto-rows: max-content;
-		grid-template-columns: 1fr;
-
-		@media (min-width: 40rem) {
-			grid-template-columns: 1fr 1fr;
-		}
-	}
-
-	article {
-		grid-row: 2/3;
-		background-color: var(--grey-95);
-		min-height: 100vh;
-
-		@media (min-width: 40rem) {
-			grid-row: 1/2;
-			grid-column: 2/3;
-		}
-	}
-
 	section {
-		background: linear-gradient(to bottom, var(--grey-95) 0%, var(--grey-60) 100%);
-		min-height: 100vh;
-		display: grid;
-		grid-auto-rows: max-content;
-		place-content: center;
-		padding: 0 clamp(var(--space-400), 10vw, var(--space-700));
+		min-height: 50vh;
 	}
 
-	section:first-of-type {
-		min-height: calc(50vh - var(--space-400));
+	.sticky {
+		position: sticky;
+		top: 0;
+	}
+
+	.split-screen {
+		display: grid;
+
+		grid-template-columns: [content-start] 1fr [content-end];
+		row-gap: 1rem;
+		grid-auto-rows: max-content;
 
 		@media (min-width: 40rem) {
-			min-height: calc(100vh - var(--space-400));
+			min-height: 150vh;
+			grid-template-columns: [sticky-start] 1fr [sticky-end content-start] 1fr [content-end];
 		}
-	}
 
-	section > *:not(:first-child) {
-		margin-block-start: 1.25em;
+		.right {
+			grid-column: content;
+			width: clamp(18rem, 80%, 40rem);
+			place-self: center;
+		}
+
+		.left {
+			grid-column: content;
+			grid-row: 1/2;
+
+			@media (min-width: 40rem) {
+				grid-column: sticky;
+			}
+		}
 	}
 
 	aside {
-		grid-column: 1/2;
-		grid-row: 1/2;
-		height: 50vh;
-		position: sticky;
-		top: 0;
 		background-color: var(--grey-90);
 		display: grid;
 		place-content: center;
 
+		height: 50vh;
 		@media (min-width: 40rem) {
 			height: 100vh;
 		}

@@ -21,13 +21,18 @@ const { title } = Astro.props;
 		<title>{title}</title>
 	</head>
 	<body>
-		<slot />
+		<main>
+			<slot />
+		</main>
 	</body>
 </html>
 
-<style is:global>
+<style is:global lang="scss">
 	body {
 		color: var(--grey-20);
+		background-color: var(--grey-90);
+		max-width: 90rem;
+		margin-inline: auto;
 	}
 
 	h1 {
@@ -43,5 +48,16 @@ const { title } = Astro.props;
 	h3 {
 		line-height: 1.1;
 		font-size: var(--space-200);
+	}
+
+	.flow > * + * {
+		margin-top: var(--flow-space, 1em);
+	}
+
+	.list {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: 1rem;
 	}
 </style>

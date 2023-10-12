@@ -2,7 +2,7 @@ import { WorkerContext } from "./utils/use-worker";
 
 export type ElementOrSelector = HTMLElement | Element | string;
 
-export type Easing =
+type Easing =
 	| "ease"
 	| "ease-in"
 	| "ease-out"
@@ -123,7 +123,7 @@ export type Result = [Keyframe[], Partial<CSSStyleDeclaration>?];
 
 export type ResultTransferable = Map<string, Result>;
 
-export type DomLabel = (string | DomLabel)[];
+type DomLabel = (string | DomLabel)[];
 
 export type WorkerMessages = {
 	sendDOMRepresentation: { key: string; dom: DomRepresentation };

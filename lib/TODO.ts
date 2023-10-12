@@ -9,8 +9,6 @@ TODOs
 
 * bugs
 
-- we only need the main library ts values, not the internal stuff
-
 - sequence playState and Finished-Promise are not updated on reactivity change
 
 - if the first element has a negativ at-value, it will become its delay => the animation starts not at 0
@@ -20,8 +18,13 @@ TODOs
 
 - display: inline might need some adjustments
 
+- in a sequence, scrolling from the bottom (after a refresh) to the top breaks the layouting => is this the weird browser bug again?
+
+
+
 * checks
 - what happens when 2 options run at the same time (via overlap)?
+- does it work in all browsers?
 
 * adjacent tasks
 
@@ -30,6 +33,7 @@ TODOs
 
 * future improvements 
 
+- we only need the main library ts values, not the internal stuff
 - animation options in the overall options / config file
 => iterations? callback after each?
 => direction?

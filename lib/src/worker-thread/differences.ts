@@ -6,7 +6,7 @@ import {
 } from "../types";
 import { save } from "../utils/helper";
 
-export const getTranslates = (dimensions: ChildParentDimensions) => {
+const getTranslates = (dimensions: ChildParentDimensions) => {
 	const { current, parent, parentReference, reference } = dimensions;
 
 	const [originReferenceLeft, originReferenceTop] = reference.transformOrigin;

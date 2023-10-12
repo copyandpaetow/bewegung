@@ -26,8 +26,6 @@ export const querySelectorAll = (
 	return Array.from(element.querySelectorAll(selector)) as HTMLElement[];
 };
 
-export const execute = (callback: VoidFunction) => callback();
-
 export const getDebounce = (duration = 200) => {
 	let resizeIdleCallback = 0;
 
