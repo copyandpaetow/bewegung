@@ -1,5 +1,5 @@
 import {
-	BewegungsCallback,
+	BewegungsConfig,
 	BewegungsEntry,
 	BewegungsOption,
 	ElementOrSelector,
@@ -19,10 +19,10 @@ const normalizeStructure = (props: BewegungsEntry): Partial<FullBewegungsOption>
 	}
 
 	if (typeof props[1] === "number") {
-		return { to: props[0] as BewegungsCallback, duration: props[1] };
+		return { to: props[0] as VoidFunction, duration: props[1] };
 	}
 
-	return { to: props[0] as BewegungsCallback, ...(props[1] as BewegungsOption) };
+	return { to: props[0] as VoidFunction, ...(props[1] as BewegungsOption) };
 };
 
 const getElement = (element: ElementOrSelector) => {
@@ -42,68 +42,66 @@ const getElement = (element: ElementOrSelector) => {
 	return resultingElement;
 };
 
-// export const filterProps = (normalizedProps: BewegungsOption[]): BewegungsOption[] => {
-// 	return normalizedProps.filter((entry) => entry.root.isConnected);
-// };
-
-export const toBewegungsEntry = (
-	props: BewegungsCallback | FullBewegungsOption,
-	config: BewegungsOption | number | undefined
-): BewegungsEntry =>
-	config
-		? ([props as BewegungsCallback, config] as
-				| [BewegungsCallback, BewegungsOption]
-				| [BewegungsCallback, number])
-		: props;
-
-export const normalizeOptions = (
-	props: BewegungsEntry,
+export const addMissingDefaults = (
+	props: Partial<FullBewegungsOption>,
 	defaultConfig?: Partial<BewegungsOption>
 ): NormalizedOptions => {
 	const options = {
 		...defaultOptions,
 		...(defaultConfig ?? {}),
-		...normalizeStructure(props),
+		...props,
 		key: uuid("option"),
 		startTime: 0,
+		endTime: 0,
+		totalRuntime: 0,
 	} as NormalizedOptions;
 
 	options.root = getElement(options.root);
-	options.timekeeper = new Animation(
-		new KeyframeEffect(null, null, extractAnimationOptions(options))
-	);
 
 	return options;
 };
 
-export const extractAnimationOptions = (options: NormalizedOptions): KeyframeEffectOptions => {
-	return {
-		duration: options.duration,
-		delay: options.delay,
-		endDelay: options.endDelay,
-		easing: options.easing,
-		composite: "add",
-	};
-};
 
-export const getTotalRuntime = (props: NormalizedOptions[]) =>
-	props.reduce((accumulator, current) => {
-		return accumulator + current.duration + current.delay + current.endDelay + current.at;
-	}, 0);
 
-export const calculateStartTime = (
-	entry: NormalizedOptions,
-	index: number,
-	array: NormalizedOptions[]
-) => {
-	entry.startTime =
-		array
-			.slice(0, index)
-			.reduce(
-				(accumulatedTime, current) =>
-					accumulatedTime + current.duration + current.delay + current.endDelay + current.at,
-				0
-			) + entry.at;
+export const calculateStartTime = (entry: NormalizedOptions, tempTime: { now: number }) => {
+	const start = tempTime.now + entry.delay + entry.at;
+	const end = start + entry.duration + entry.endDelay;
+
+	entry.startTime = start;
+	entry.endTime = end;
+	tempTime.now = end;
 
 	return entry;
+};
+
+export const normalizeArguments = (
+	props: VoidFunction | FullBewegungsOption | BewegungsEntry[],
+	config?: number | BewegungsOption | BewegungsConfig
+) => {
+	let propsWithDefaults: NormalizedOptions[] = [];
+	let tempTime = { now: 0 };
+
+	if (Array.isArray(props)) {
+		propsWithDefaults = props
+			.map(normalizeStructure)
+			.map((entry) =>
+				addMissingDefaults(entry, (config as BewegungsConfig | undefined)?.defaultOptions)
+			);
+	} else {
+		const entry: BewegungsEntry = config
+			? ([props as VoidFunction, config] as
+					| [VoidFunction, BewegungsOption]
+					| [VoidFunction, number])
+			: props;
+
+		propsWithDefaults = [addMissingDefaults(normalizeStructure(entry))];
+	}
+
+	return propsWithDefaults
+		.map((entry) => calculateStartTime(entry, tempTime))
+		.map((entry) => {
+			entry.totalRuntime = tempTime.now;
+			return entry;
+		})
+		.sort((a, b) => a.startTime - b.startTime);
 };

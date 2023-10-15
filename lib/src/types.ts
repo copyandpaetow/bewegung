@@ -10,8 +10,6 @@ type Easing =
 	| "linear"
 	| `cubic-bezier(${number},${number},${number},${number})`;
 
-export type BewegungsCallback = VoidFunction;
-
 export type BewegungsOption = {
 	duration: number;
 	root?: ElementOrSelector;
@@ -32,15 +30,26 @@ export type FullBewegungsOption = BewegungsOption &
 		  }
 	);
 
+export type BewegungsCallback = VoidFunction;
+export type BewegungsCallbackWithNumber = [VoidFunction, number];
+export type BewegungsCallbackWithOptions = [VoidFunction, BewegungsOption];
+
 export type BewegungsEntry =
 	| BewegungsCallback
-	| [BewegungsCallback, BewegungsOption]
-	| [BewegungsCallback, number]
+	| BewegungsCallbackWithNumber
+	| BewegungsCallbackWithOptions
 	| FullBewegungsOption;
 
-export type BewegungsInputs = BewegungsEntry[];
 export type BewegungsConfig = {
 	defaultOptions?: Partial<BewegungsOption>;
+};
+
+export type BewegungsArgs = {
+	(props: VoidFunction): Bewegung;
+	(props: VoidFunction, options: number): Bewegung;
+	(props: VoidFunction, options: BewegungsOption): Bewegung;
+	(props: FullBewegungsOption): Bewegung;
+	(props: BewegungsEntry[], options?: BewegungsConfig): Bewegung;
 };
 
 export type NormalizedOptions = {
@@ -53,8 +62,9 @@ export type NormalizedOptions = {
 	endDelay: number;
 	at: number;
 	key: string;
-	timekeeper: Animation;
 	startTime: number;
+	endTime: number;
+	totalRuntime: number;
 };
 
 export const enum Display {
@@ -187,13 +197,11 @@ export type Bewegung = {
 	seek(scrollAmount: number, done?: boolean): Promise<void>;
 	cancel(): void;
 	finish(): void;
+	_forceUpdate(index?: number | number[]): void;
 	finished: Promise<Animation>;
 	playState: AnimationPlayState;
 };
 
-export type BewegungsArgs = {
-	(props: BewegungsCallback): Bewegung;
-	(props: BewegungsCallback, options: number): Bewegung;
-	(props: BewegungsCallback, options: BewegungsOption): Bewegung;
-	(props: FullBewegungsOption): Bewegung;
+export type Direction = {
+	current: "forward" | "backward";
 };

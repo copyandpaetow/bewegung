@@ -1,104 +1,82 @@
-import { normalizeOptions, toBewegungsEntry } from "./main-thread/normalize-props";
-import { observeDom } from "./main-thread/observe-dom";
-import { deriveState } from "./main-thread/state";
+import { animationsController } from "./main-thread/create-animation";
+import { normalizeArguments } from "./main-thread/normalize-props";
+import { cleanup } from "./main-thread/resets";
 import {
 	Bewegung,
 	BewegungsArgs,
-	BewegungsCallback,
+	BewegungsConfig,
+	BewegungsEntry,
 	BewegungsOption,
+	Direction,
 	FullBewegungsOption,
 	MainMessages,
 	WorkerMessages,
 } from "./types";
-import { getDebounce, nextRaf, saveSeek } from "./utils/helper";
-import { getWorker, useWorker } from "./utils/use-worker";
+import { saveSeek } from "./utils/helper";
+import { DelayedWorker, useWorker } from "./utils/use-worker";
 
-const workerManager = getWorker();
+const webworker = new DelayedWorker();
 
 export const bewegung: BewegungsArgs = (
-	props: BewegungsCallback | FullBewegungsOption,
-	config?: BewegungsOption | number
+	props: VoidFunction | FullBewegungsOption | BewegungsEntry[],
+	config?: number | BewegungsOption | BewegungsConfig
 ): Bewegung => {
-	const worker = useWorker<MainMessages, WorkerMessages>(workerManager.current());
-	const debounce = getDebounce();
-	const options = normalizeOptions(toBewegungsEntry(props, config));
+	const worker = useWorker<MainMessages, WorkerMessages>(webworker.worker);
 
-	let state = deriveState(options, worker);
+	const options = normalizeArguments(props, config);
+	const totalRuntime = options[0].totalRuntime;
+	const timekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
 
-	const enableReactivity = () => {
-		state.reactivity.observe(() => {
-			state.reactivity.disconnect();
-			state = deriveState(options, worker);
-			getState(api.play);
-		});
-	};
+	timekeeper.onfinish = timekeeper.oncancel = cleanup;
 
-	const getState = async (callback: () => Promise<void>) => {
-		if (state.animations.size > 1) {
-			return;
-		}
+	const direction: Direction = { current: "forward" };
 
-		if (state.inProgress) {
-			await nextRaf();
-			await callback();
-			return;
-		}
+	const allAnimations = options.map((entry) =>
+		animationsController(entry, worker, timekeeper, direction)
+	);
 
-		try {
-			console.time("calculation");
-			state.inProgress = true;
-			observeDom(options, worker);
-			state.animations = await state.caluclations;
-			state.inProgress = false;
-			console.timeEnd("calculation");
-		} catch (error) {
-			options.timekeeper.cancel();
-		}
-	};
-
-	const api: Bewegung = {
+	return {
 		async play() {
-			await getState(api.play);
-			state.animations.forEach((animation) => {
-				animation.play();
-			});
+			timekeeper.play();
+			direction.current = "forward";
+			allAnimations.forEach((animations) => animations.forEach((entry) => entry.play()));
+			console.log({ allAnimations });
 		},
-		pause() {
-			state.animations.forEach((animation) => animation.pause());
-			enableReactivity();
+		async pause() {
+			timekeeper.pause();
+			allAnimations.forEach((animations) => animations.forEach((entry) => entry.pause()));
 		},
 		async seek(progress, done) {
 			if (done) {
-				api.finish();
-				state.reactivity.disconnect();
+				timekeeper.finish();
+				return;
 			}
+			const currentTime = timekeeper.currentTime as number;
+			const seekTo = saveSeek(progress) * totalRuntime;
+			direction.current = seekTo >= currentTime ? "forward" : "backward";
+			timekeeper.currentTime = seekTo;
 
-			await getState(() => api.seek(progress, done));
-			state.animations.forEach(
-				(animation) => (animation.currentTime = saveSeek(progress) * state.totalRuntime)
+			allAnimations.forEach((animations) =>
+				animations.forEach((entry) => (entry.currentTime = seekTo))
 			);
-
-			debounce(enableReactivity);
 		},
-		cancel() {
-			state.animations.forEach((animation) => animation.cancel());
-			worker("terminate").terminate();
-		},
-		finish() {
-			state.animations.forEach((animation) => animation.finish());
+		cancel() {},
+		finish() {},
+		_forceUpdate(index?: number | number[]) {
+			const indices = index ? index : options.map((_, index) => index);
+			const asArray = Array.isArray(indices) ? indices : [indices];
 
-			if (state.animations.size <= 1) {
-				options.from?.();
-				options.to?.();
-			}
+			asArray.forEach((index) => {
+				allAnimations[index].forEach((anim) => anim.cancel());
+
+				allAnimations[index] = animationsController(options[index], worker, timekeeper, direction);
+			});
 		},
 		get finished() {
-			return options.timekeeper.finished;
+			return timekeeper.finished;
 		},
 		get playState() {
-			return options.timekeeper.playState;
+			return timekeeper.playState;
 		},
 	};
-
-	return api;
 };

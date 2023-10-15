@@ -1,11 +1,20 @@
-import { AtomicWorker, NormalizedOptions, ResultTransferable } from "../types";
+import { AtomicWorker, Direction, NormalizedOptions, ResultTransferable } from "../types";
 import { Attributes } from "../utils/constants";
 import { applyCSSStyles, nextRaf } from "../utils/helper";
-import { extractAnimationOptions } from "./normalize-props";
-import { addKeyToNewlyAddedElement, readdRemovedNodes } from "./observe-dom";
+import { addKeyToNewlyAddedElement, observeDom, readdRemovedNodes } from "./observe-dom";
 import { iterateAddedElements, iterateRemovedElements, observe } from "./observer-helper";
 
-const setAnimations = (results: ResultTransferable, options: KeyframeEffectOptions) => {
+export const extractAnimationOptions = (options: NormalizedOptions): KeyframeEffectOptions => {
+	return {
+		duration: options.duration,
+		delay: options.startTime,
+		endDelay: options.totalRuntime - options.endTime,
+		easing: options.easing,
+		composite: "add",
+	};
+};
+
+export const setAnimations = (results: ResultTransferable, options: KeyframeEffectOptions) => {
 	const animations = new Map<string, Animation>();
 
 	results.forEach(([keyframes, overrides], key) => {
@@ -25,60 +34,122 @@ const setAnimations = (results: ResultTransferable, options: KeyframeEffectOptio
 	return animations;
 };
 
-const alignAnimations = (animation: Animation, timekeeper: Animation) => {
-	animation.currentTime = timekeeper.currentTime;
+const createAnimationsWithCheckpoints = (
+	options: NormalizedOptions,
+	worker: AtomicWorker,
+	direction: Direction
+) => {
+	const animations = new Map<string, Animation>();
+	const forwardCheckpoint = new Animation(
+		new KeyframeEffect(null, null, {
+			delay: options.startTime,
+			duration: 0,
+		})
+	);
 
-	switch (timekeeper.playState) {
-		case "running":
-			animation.play();
-			break;
-		case "paused":
-			animation.pause();
-			break;
-		case "finished":
-			animation.finish();
-			break;
+	const backwardCheckpoint = new Animation(
+		new KeyframeEffect(null, null, {
+			endDelay: options.totalRuntime - options.endTime,
+			duration: 0,
+		})
+	);
 
-		default:
-			break;
-	}
+	const callback = [
+		() => {
+			observeDom(options, worker);
+			forwardCheckpoint.cancel();
+			backwardCheckpoint.cancel();
+			animations.clear();
+		},
+	];
+
+	forwardCheckpoint.addEventListener("finish", () => {
+		if (direction.current === "backward") {
+			return;
+		}
+
+		callback.pop()?.();
+	});
+
+	backwardCheckpoint.addEventListener("finish", () => {
+		if (direction.current === "forward") {
+			return;
+		}
+		callback.pop()?.();
+	});
+
+	animations.set("forward", forwardCheckpoint);
+	animations.set("backward", backwardCheckpoint);
+
+	return animations;
 };
 
-export const createAnimations = (options: NormalizedOptions, worker: AtomicWorker) => {
-	const animations = new Map([["timekeeper", options.timekeeper]]);
-	const resultWorker = worker(`animationData-${options.key}`);
-	const delayedWorker = worker(`delayedAnimationData-${options.key}`);
+const alignAnimationWithTimekeeper = (
+	from: Map<string, Animation>,
+	to: Map<string, Animation>,
+	timekeeper: Animation
+) => {
+	from.forEach((anim, key) => {
+		anim.startTime = timekeeper.startTime;
+		anim.currentTime = timekeeper.currentTime;
+		anim.playbackRate = timekeeper.playbackRate;
+		to.set(key, anim);
+	});
+};
+
+//we would need to cancel remaining
+
+export const animationsController = (
+	options: NormalizedOptions,
+	worker: AtomicWorker,
+	timekeeper: Animation,
+	direction: Direction
+) => {
+	const animations = new Map<string, Animation>();
 	const animationOptions = extractAnimationOptions(options);
 
-	const receiveAnimation = new Promise<Map<string, Animation>>((resolve) => {
-		resultWorker.onMessage(async (results) => {
-			const observerCallback: MutationCallback = (entries, observer) => {
-				observer.disconnect();
+	alignAnimationWithTimekeeper(
+		createAnimationsWithCheckpoints(options, worker, direction),
+		animations,
+		timekeeper
+	);
 
-				iterateRemovedElements(entries, readdRemovedNodes);
-				iterateAddedElements(entries, addKeyToNewlyAddedElement);
+	worker(`animationData-${options.key}`).onMessage(async (results) => {
+		const observerCallback: MutationCallback = (entries, observer) => {
+			observer.disconnect();
 
-				setAnimations(results, animationOptions).forEach((anim, key) => {
-					alignAnimations(anim, options.timekeeper);
-					animations.set(key, anim);
-				});
+			iterateRemovedElements(entries, readdRemovedNodes);
+			iterateAddedElements(entries, addKeyToNewlyAddedElement);
 
-				worker(`startDelayed-${options.key}`).reply(`receiveDelayed-${options.key}`);
-				resolve(animations);
-			};
+			alignAnimationWithTimekeeper(
+				setAnimations(results, animationOptions),
+				animations,
+				timekeeper
+			);
 
-			await nextRaf();
-			observe(new MutationObserver(observerCallback));
-			options.from?.();
-			options.to?.();
-		});
-	});
-	delayedWorker.onMessage((results) => {
-		setAnimations(results, animationOptions).forEach((anim, key) => {
-			alignAnimations(anim, options.timekeeper);
-			animations.set(key, anim);
-		});
+			worker(`startDelayed-${options.key}`).reply(`receiveDelayed-${options.key}`);
+		};
+
+		await nextRaf();
+		observe(new MutationObserver(observerCallback));
+		options.from?.();
+		options.to?.();
 	});
 
-	return receiveAnimation;
+	worker(`delayedAnimationData-${options.key}`).onMessage((results) => {
+		alignAnimationWithTimekeeper(setAnimations(results, animationOptions), animations, timekeeper);
+	});
+
+	// onReactivityChange(() => {
+	// 	animations.forEach((anim) => anim.cancel());
+	// 	animations.clear();
+
+	// 	alignAnimationWithTimekeeper(
+	// 		animations,
+	// 		createAnimationsWithCheckpoints2(options, worker, timekeeper, currentTime),
+	// 		timekeeper
+	// 	);
+	// });
+
+	return animations;
 };

@@ -63,6 +63,7 @@ const getKeyframes = (oldDom: TreeRepresentation, newDom: TreeRepresentation) =>
 	return results;
 };
 
+//TODO: this could be keyed as well or we de-key the other and have them send a key with them
 workerAtom("sendDOMRepresentation").onMessage((domRepresentations) => {
 	const key = domRepresentations.key;
 	const dom = transformDomRepresentation(domRepresentations.dom, overrideStore);

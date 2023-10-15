@@ -28,29 +28,16 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 
 const workerURL = new URL("../worker-thread/worker.ts", import.meta.url);
 
-const spawnWorker = () =>
-	new Worker(workerURL, {
-		type: "module",
-	});
-
-export const getWorker = () => {
-	const allWorker: Worker[] = [];
-
-	const api = {
-		current() {
-			return allWorker.pop() || spawnWorker();
-		},
-		addWorker() {
-			requestAnimationFrame(() => {
-				allWorker.push(spawnWorker());
+export class DelayedWorker {
+	worker: Worker;
+	constructor() {
+		requestAnimationFrame(() => {
+			this.worker = new Worker(workerURL, {
+				type: "module",
 			});
-		},
-	};
-
-	api.addWorker();
-
-	return api;
-};
+		});
+	}
+}
 
 export const useWorker =
 	<Self extends Record<string, any>, Target extends Record<string, any>>(worker: Worker) =>

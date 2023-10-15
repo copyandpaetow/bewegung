@@ -4,7 +4,6 @@ import Card from "../components/Card.astro";
 ---
 
 <script>
-	import { sequence } from "../../../lib/src/sequence";
 	import { bewegung } from "../../../lib/src/bewegung";
 	import { sleep } from "../../../lib/src/utils/constants";
 
@@ -15,6 +14,7 @@ import Card from "../components/Card.astro";
 	const buttonRemoveElement = document.getElementById("js-remove-element") as HTMLElement;
 	const buttonAddElement = document.getElementById("js-add-element") as HTMLElement;
 	const buttonClear = document.getElementById("js-clear") as HTMLElement;
+	const buttonScroll = document.getElementById("js-sequence") as HTMLElement;
 
 	let animationPromise = Promise.resolve();
 
@@ -25,19 +25,21 @@ import Card from "../components/Card.astro";
 		});
 	};
 
+	const toFlex = () => {
+		list.style.display = "flex";
+		list.style.flexDirection = "column";
+	};
+
 	buttonGridColum.onclick = () => {
 		animationPromise = animationPromise.then(() => {
-			const anim = bewegung(removeGridArea, { duration: 400 });
+			const anim = bewegung(removeGridArea, { duration: 4000, delay: 2000 });
 			return anim.play();
 		});
 	};
 
 	buttonGridToFlex.onclick = () => {
 		animationPromise = animationPromise.then(() => {
-			const anim = bewegung(() => {
-				list.style.display = "flex";
-				list.style.flexDirection = "column";
-			}, 400);
+			const anim = bewegung(toFlex, 400);
 			return anim.play();
 		});
 	};
@@ -67,6 +69,13 @@ import Card from "../components/Card.astro";
 				const newElement = lastCard.cloneNode(true);
 				list.prepend(newElement);
 			}, 400);
+			return anim.play();
+		});
+	};
+
+	buttonScroll.onclick = () => {
+		animationPromise = animationPromise.then(() => {
+			const anim = bewegung([removeGridArea, toFlex]);
 			return anim.play();
 		});
 	};
@@ -125,10 +134,10 @@ import Card from "../components/Card.astro";
 			<h3>other</h3>
 			<ul class="list">
 				<li>
-					<button>scroll</button>
+					<button id="js-scroll">scroll</button>
 				</li>
 				<li>
-					<button>sequence</button>
+					<button id="js-sequence">sequence</button>
 				</li>
 				<li>
 					<button>reverse</button>
