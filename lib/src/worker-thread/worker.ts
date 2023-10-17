@@ -1,6 +1,6 @@
 import { MainMessages, Result, TreeElement, TreeRepresentation, WorkerMessages } from "../types";
 import {
-	changesInScale,
+	changesAspectRatio,
 	hasObjectFit,
 	isCurrentlyInViewport,
 	isEntryVisible,
@@ -32,10 +32,11 @@ const getKeyframes = (oldDom: TreeRepresentation, newDom: TreeRepresentation) =>
 
 	diffDomTrees(oldDom, newDom, (dimensions, differences, parentDimensions) => {
 		const key = dimensions[0].key;
-		const isChangingInScale = changesInScale(differences);
-		const keyframes = hasObjectFit(dimensions)
-			? setImageKeyframes(differences, dimensions)
-			: setDefaultKeyframes(differences, dimensions, isChangingInScale);
+		const hasChangedAspectRatio = changesAspectRatio(differences);
+		const keyframes =
+			hasObjectFit(dimensions) && hasChangedAspectRatio
+				? setImageKeyframes(differences, dimensions)
+				: setDefaultKeyframes(differences, dimensions, hasChangedAspectRatio);
 
 		isCurrentlyInViewport(dimensions)
 			? results.immediate.set(key, keyframes)

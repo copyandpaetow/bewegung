@@ -1,6 +1,6 @@
-import { animationsController } from "./main-thread/create-animation";
-import { normalizeArguments } from "./main-thread/normalize-props";
-import { cleanup } from "./main-thread/resets";
+import { animationsController } from "./main-thread/animations";
+import { normalizeArguments } from "./main-thread/props";
+import { createTimekeeper } from "./main-thread/timekeeper";
 import {
 	Bewegung,
 	BewegungsArgs,
@@ -22,12 +22,8 @@ export const bewegung: BewegungsArgs = (
 	config?: number | BewegungsOption | BewegungsConfig
 ): Bewegung => {
 	const worker = useWorker<MainMessages, WorkerMessages>(webworker.worker);
-
 	const options = normalizeArguments(props, config);
-	const totalRuntime = options[0].totalRuntime;
-	const timekeeper = new Animation(new KeyframeEffect(null, null, totalRuntime));
-
-	timekeeper.onfinish = timekeeper.oncancel = cleanup;
+	const timekeeper = createTimekeeper(options);
 
 	const direction: Direction = { current: "forward" };
 
@@ -40,7 +36,6 @@ export const bewegung: BewegungsArgs = (
 			timekeeper.play();
 			direction.current = "forward";
 			allAnimations.forEach((animations) => animations.forEach((entry) => entry.play()));
-			console.log({ allAnimations });
 		},
 		async pause() {
 			timekeeper.pause();
@@ -52,7 +47,7 @@ export const bewegung: BewegungsArgs = (
 				return;
 			}
 			const currentTime = timekeeper.currentTime as number;
-			const seekTo = saveSeek(progress) * totalRuntime;
+			const seekTo = saveSeek(progress) * options[0].totalRuntime;
 			direction.current = seekTo >= currentTime ? "forward" : "backward";
 			timekeeper.currentTime = seekTo;
 
@@ -62,7 +57,7 @@ export const bewegung: BewegungsArgs = (
 		},
 		cancel() {},
 		finish() {},
-		_forceUpdate(index?: number | number[]) {
+		forceUpdate(index?: number | number[]) {
 			const indices = index ? index : options.map((_, index) => index);
 			const asArray = Array.isArray(indices) ? indices : [indices];
 

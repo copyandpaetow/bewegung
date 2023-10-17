@@ -4,7 +4,7 @@ import { applyCSSStyles, nextRaf } from "../utils/helper";
 import { addKeyToNewlyAddedElement, observeDom, readdRemovedNodes } from "./observe-dom";
 import { iterateAddedElements, iterateRemovedElements, observe } from "./observer-helper";
 
-export const extractAnimationOptions = (options: NormalizedOptions): KeyframeEffectOptions => {
+const extractAnimationOptions = (options: NormalizedOptions): KeyframeEffectOptions => {
 	return {
 		duration: options.duration,
 		delay: options.startTime,
@@ -14,7 +14,7 @@ export const extractAnimationOptions = (options: NormalizedOptions): KeyframeEff
 	};
 };
 
-export const setAnimations = (results: ResultTransferable, options: KeyframeEffectOptions) => {
+const setAnimations = (results: ResultTransferable, options: KeyframeEffectOptions) => {
 	const animations = new Map<string, Animation>();
 
 	results.forEach(([keyframes, overrides], key) => {
@@ -57,8 +57,7 @@ const createAnimationsWithCheckpoints = (
 	const callback = [
 		() => {
 			observeDom(options, worker);
-			forwardCheckpoint.cancel();
-			backwardCheckpoint.cancel();
+			animations.forEach((anim) => anim.cancel());
 			animations.clear();
 		},
 	];
@@ -97,8 +96,6 @@ const alignAnimationWithTimekeeper = (
 	});
 };
 
-//we would need to cancel remaining
-
 export const animationsController = (
 	options: NormalizedOptions,
 	worker: AtomicWorker,
@@ -113,7 +110,6 @@ export const animationsController = (
 		animations,
 		timekeeper
 	);
-
 	worker(`animationData-${options.key}`).onMessage(async (results) => {
 		const observerCallback: MutationCallback = (entries, observer) => {
 			observer.disconnect();
@@ -139,17 +135,6 @@ export const animationsController = (
 	worker(`delayedAnimationData-${options.key}`).onMessage((results) => {
 		alignAnimationWithTimekeeper(setAnimations(results, animationOptions), animations, timekeeper);
 	});
-
-	// onReactivityChange(() => {
-	// 	animations.forEach((anim) => anim.cancel());
-	// 	animations.clear();
-
-	// 	alignAnimationWithTimekeeper(
-	// 		animations,
-	// 		createAnimationsWithCheckpoints2(options, worker, timekeeper, currentTime),
-	// 		timekeeper
-	// 	);
-	// });
 
 	return animations;
 };

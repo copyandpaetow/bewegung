@@ -1,6 +1,5 @@
-import { DimensionalDifferences, ImageDetails, TreeElement } from "../types";
+import { DimensionalDifferences, TreeElement } from "../types";
 import { save } from "../utils/helper";
-import { getScales } from "./differences";
 import { normalizeBorderRadius } from "./transforms";
 
 /*

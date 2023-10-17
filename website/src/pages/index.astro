@@ -75,7 +75,7 @@ import Card from "../components/Card.astro";
 
 	buttonScroll.onclick = () => {
 		animationPromise = animationPromise.then(() => {
-			const anim = bewegung([removeGridArea, toFlex]);
+			const anim = bewegung([removeGridArea, toFlex], { defaultOptions: { duration: 1000 } });
 			return anim.play();
 		});
 	};

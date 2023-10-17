@@ -1,7 +1,7 @@
 import { AtomicWorker, NormalizedOptions } from "../types";
 import { applyCSSStyles, nextRaf } from "../utils/helper";
 import { isHTMLElement } from "../utils/predicates";
-import { recordElement } from "./label-elements";
+import { recordElement } from "./elements";
 import {
 	iterateAddedElements,
 	iterateAttributesReversed,
@@ -27,7 +27,7 @@ export const addKeyToNewlyAddedElement = (element: HTMLElement, index: number) =
 	element.dataset.bewegungsKey = `key-added-${(element as HTMLElement).tagName}-${index}`;
 };
 
-export const getNextElementSibling = (node: Node | null): HTMLElement | null => {
+const getNextElementSibling = (node: Node | null): HTMLElement | null => {
 	if (node === null || isHTMLElement(node)) {
 		return node as HTMLElement | null;
 	}

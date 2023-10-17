@@ -30,9 +30,9 @@ export type FullBewegungsOption = BewegungsOption &
 		  }
 	);
 
-export type BewegungsCallback = VoidFunction;
-export type BewegungsCallbackWithNumber = [VoidFunction, number];
-export type BewegungsCallbackWithOptions = [VoidFunction, BewegungsOption];
+type BewegungsCallback = VoidFunction;
+type BewegungsCallbackWithNumber = [VoidFunction, number];
+type BewegungsCallbackWithOptions = [VoidFunction, BewegungsOption];
 
 export type BewegungsEntry =
 	| BewegungsCallback
@@ -181,23 +181,13 @@ export interface DimensionalDifferences {
 	offset: number;
 }
 
-export type ImageDetails = {
-	maxWidth: number;
-	maxHeight: number;
-};
-
-export type Reactivity = {
-	observe(callback: VoidFunction): void;
-	disconnect(): void;
-};
-
 export type Bewegung = {
 	play(): Promise<void>;
 	pause(): void;
 	seek(scrollAmount: number, done?: boolean): Promise<void>;
 	cancel(): void;
 	finish(): void;
-	_forceUpdate(index?: number | number[]): void;
+	forceUpdate(index?: number | number[]): void;
 	finished: Promise<Animation>;
 	playState: AnimationPlayState;
 };

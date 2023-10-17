@@ -14,12 +14,8 @@ export const isElementChanged = (differences: DimensionalDifferences[]) =>
 			entry.heightDifference !== 1
 	);
 
-export const changesInScale = (differences: DimensionalDifferences[]) =>
-	differences.some(
-		(entry) =>
-			entry.heightDifference !== entry.widthDifference &&
-			(entry.heightDifference !== 1 || entry.widthDifference !== 1)
-	);
+export const changesAspectRatio = (differences: DimensionalDifferences[]) =>
+	differences.some((entry) => entry.heightDifference !== entry.widthDifference);
 
 export const hasObjectFit = (dimensions: [TreeElement, TreeElement]) =>
 	dimensions.some((entry) => entry.objectFit !== ObjectFit.fill);

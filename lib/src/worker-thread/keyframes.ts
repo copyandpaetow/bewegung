@@ -5,7 +5,7 @@ import { normalizeBorderRadius } from "./transforms";
 export const setDefaultKeyframes = (
 	differences: DimensionalDifferences[],
 	readouts: TreeElement[],
-	isChangingInScale: boolean
+	hasChangedAspectRatio: boolean
 ): [Keyframe[]] => {
 	//TODO: if border radius is needed, it should go into the overrides
 	//TODO: if an element animates from display inline to something else, we would need to override the inline with inline-block
@@ -17,7 +17,7 @@ export const setDefaultKeyframes = (
 					currentWidth,
 					currentHeight,
 				]);
-				const hasCurrentOffset = isChangingInScale && normalizedBorderRadius;
+				const hasCurrentOffset = hasChangedAspectRatio && normalizedBorderRadius;
 
 				return {
 					offset,

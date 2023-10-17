@@ -42,7 +42,7 @@ const getElement = (element: ElementOrSelector) => {
 	return resultingElement;
 };
 
-export const addMissingDefaults = (
+const addMissingDefaults = (
 	props: Partial<FullBewegungsOption>,
 	defaultConfig?: Partial<BewegungsOption>
 ): NormalizedOptions => {
@@ -61,9 +61,7 @@ export const addMissingDefaults = (
 	return options;
 };
 
-
-
-export const calculateStartTime = (entry: NormalizedOptions, tempTime: { now: number }) => {
+const calculateStartTime = (entry: NormalizedOptions, tempTime: { now: number }) => {
 	const start = tempTime.now + entry.delay + entry.at;
 	const end = start + entry.duration + entry.endDelay;
 
