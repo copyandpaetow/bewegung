@@ -12,6 +12,10 @@ TODOs
 - in a sequence, scrolling from the bottom (after a reload for example) to the top breaks the layouting => is this the weird browser bug again?
 - elements that animate overlap unanimated elements
 
+- if the animation gets started with "reverse" and the entries had the same root / area of change, the calculations are of
+=> domState a => b => c means at c two dom state changes are applied. If the the animation starts at reverse only the last dom change will be applied and one is  missing
+=> seeking has the same issue
+
 * checks
 - what happens when 2 options run at the same time (via overlap)?
 - does it work in all browsers?
