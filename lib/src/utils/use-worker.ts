@@ -23,7 +23,6 @@ export type WorkerContext<Current extends keyof Self, Self, Target> = {
 	cleanup(): void;
 	onMessage(callback: WorkerCallback<Current, Self, Target>): Promise<unknown>;
 	onError(errorCallback: WorkerError): void;
-	terminate(): void;
 };
 
 const workerURL = new URL("../worker-thread/worker.ts", import.meta.url);
@@ -39,16 +38,17 @@ export class DelayedWorker {
 	}
 }
 
-export const useWorker =
-	<Self extends Record<string, any>, Target extends Record<string, any>>(worker: Worker) =>
-	<Current extends keyof Self>(eventName: Current) => {
+export const useWorker = <Self extends Record<string, any>, Target extends Record<string, any>>(
+	worker: Worker
+) => {
+	const controller = new AbortController();
+	const { signal } = controller;
+
+	return <Current extends keyof Self>(eventName: Current) => {
 		const callbacks: WorkerCallbackTypes<Current, Self, Target> = {
 			onMessage: () => {},
 			onError: () => {},
 		};
-
-		const controller = new AbortController();
-		const { signal } = controller;
 
 		const handleMessage = (event: MessageEvent<WorkerMessageEvent<Current, Self>>) => {
 			const { replyMethod, replyMethodArguments } = event.data;
@@ -87,11 +87,8 @@ export const useWorker =
 			onError(errorCallback: WorkerError) {
 				callbacks.onError = errorCallback;
 			},
-			terminate() {
-				context.cleanup();
-				worker.terminate();
-			},
 		};
 
 		return context;
 	};
+};

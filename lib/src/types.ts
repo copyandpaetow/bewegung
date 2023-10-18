@@ -182,16 +182,13 @@ export interface DimensionalDifferences {
 }
 
 export type Bewegung = {
-	play(): Promise<void>;
+	play(): void;
 	pause(): void;
-	seek(scrollAmount: number, done?: boolean): Promise<void>;
+	reverse(): void;
+	seek(scrollAmount: number, done?: boolean): void;
 	cancel(): void;
 	finish(): void;
 	forceUpdate(index?: number | number[]): void;
 	finished: Promise<Animation>;
 	playState: AnimationPlayState;
-};
-
-export type Direction = {
-	current: "forward" | "backward";
 };

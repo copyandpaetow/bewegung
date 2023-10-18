@@ -18,7 +18,6 @@ const parseStringValues = (value: string, dimensions: [number, number]) =>
 		return (parseFloat(value) / 100) * dimensions[index];
 	});
 
-//TODO: this is not being used here but elsewhere, should it be here then?
 export const normalizeBorderRadius = (radius: string, [width, height]: [number, number]) => {
 	if (radius === "0px" || radius.includes("/")) {
 		//TODO: handle complex border-radius

@@ -60,7 +60,7 @@ This argument is an optional configuration object.
 **scroll(scrollAmount: number, done?: boolean)**: This method handles scrolling, where scrollAmount indicates how much to scroll and done is an optional boolean that indicates whether the scrolling action is finished.
 **cancel()**: This method cancels the animation.
 **finish()**: This method finishes the animation.
-**prefetch()**: This method reads the dom only, which is half of the calculation time needed. If you know, your dom wont change anytime soon and performance is an issue, use this.
+**forceUpdate(index?: number | number[])**: If you know the dom changed from another source (like a browser resize) this function will update either specific entries based on the index. If you dont provide an index, all entries will be recalculated
 
 ### Properties
 

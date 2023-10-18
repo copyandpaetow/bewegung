@@ -31,8 +31,6 @@ export const diffDomTrees = (
 	) => void,
 	parentDimensions?: [TreeElement, TreeElement]
 ) => {
-	const oldChildren = oldDom[1] as TreeRepresentation[];
-	const newChildren = newDom[1] as TreeRepresentation[];
 	const dimensions: [TreeElement, TreeElement] = [
 		oldDom[0] as TreeElement,
 		newDom[0] as TreeElement,
@@ -65,26 +63,33 @@ export const diffDomTrees = (
 		callback(dimensions, differences, parentDimensions);
 	}
 
-	if (oldChildren.length > newChildren.length) {
-		for (let i = 0; i < oldChildren.length; i++) {
-			const oldChild = oldChildren[i];
-			const newChild =
-				newChildren.find(
-					(child) => (child[0] as TreeElement).key === (oldChild[0] as TreeElement).key
-				) ?? saveTreeValue(oldChild);
-
-			diffDomTrees(oldChild, newChild, callback, newParentDimension);
-		}
+	if (dimensions.some((entry) => !isEntryVisible(entry))) {
 		return;
 	}
 
-	for (let i = 0; i < newChildren.length; i++) {
-		const newChild = newChildren[i];
-		const oldChild =
-			oldChildren.find(
-				(child) => (child[0] as TreeElement).key === (newChild[0] as TreeElement).key
-			) ?? saveTreeValue(newChild);
+	const oldChildren = oldDom[1] as TreeRepresentation[];
+	const newChildren = newDom[1] as TreeRepresentation[];
+	const oldChildrenStore = new Map<string, TreeRepresentation>();
+	const newChildrenStore = new Map<string, TreeRepresentation>();
 
-		diffDomTrees(oldChild, newChild, callback, newParentDimension);
-	}
+	oldChildren.forEach((oldChild) => {
+		oldChildrenStore.set((oldChild[0] as TreeElement).key, oldChild);
+	});
+
+	newChildren.forEach((newChild) => {
+		newChildrenStore.set((newChild[0] as TreeElement).key, newChild);
+	});
+
+	oldChildrenStore.forEach((oldChild, key) => {
+		if (newChildrenStore.has(key)) {
+			diffDomTrees(oldChild, newChildrenStore.get(key)!, callback, newParentDimension);
+			newChildrenStore.delete(key);
+			return;
+		}
+		diffDomTrees(oldChild, saveTreeValue(oldChild), callback, newParentDimension);
+	});
+
+	newChildrenStore.forEach((newChild) => {
+		diffDomTrees(saveTreeValue(newChild), newChild, callback, newParentDimension);
+	});
 };

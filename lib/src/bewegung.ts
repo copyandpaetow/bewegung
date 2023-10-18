@@ -7,7 +7,6 @@ import {
 	BewegungsConfig,
 	BewegungsEntry,
 	BewegungsOption,
-	Direction,
 	FullBewegungsOption,
 	MainMessages,
 	WorkerMessages,
@@ -23,48 +22,56 @@ export const bewegung: BewegungsArgs = (
 ): Bewegung => {
 	const worker = useWorker<MainMessages, WorkerMessages>(webworker.worker);
 	const options = normalizeArguments(props, config);
-	const timekeeper = createTimekeeper(options);
+	const timekeeper = createTimekeeper(options, worker);
 
-	const direction: Direction = { current: "forward" };
-
-	const allAnimations = options.map((entry) =>
-		animationsController(entry, worker, timekeeper, direction)
-	);
+	const allAnimations = options.map((entry) => animationsController(entry, worker, timekeeper));
 
 	return {
-		async play() {
+		play() {
 			timekeeper.play();
-			direction.current = "forward";
 			allAnimations.forEach((animations) => animations.forEach((entry) => entry.play()));
 		},
-		async pause() {
+		pause() {
 			timekeeper.pause();
 			allAnimations.forEach((animations) => animations.forEach((entry) => entry.pause()));
 		},
-		async seek(progress, done) {
+		seek(progress, done) {
 			if (done) {
-				timekeeper.finish();
+				this.finish();
 				return;
 			}
-			const currentTime = timekeeper.currentTime as number;
+
 			const seekTo = saveSeek(progress) * options[0].totalRuntime;
-			direction.current = seekTo >= currentTime ? "forward" : "backward";
 			timekeeper.currentTime = seekTo;
 
-			allAnimations.forEach((animations) =>
-				animations.forEach((entry) => (entry.currentTime = seekTo))
-			);
+			allAnimations.forEach((animations) => {
+				animations.forEach((entry) => {
+					entry.currentTime = seekTo;
+				});
+			});
 		},
-		cancel() {},
-		finish() {},
+		reverse() {
+			timekeeper.reverse();
+			allAnimations.forEach((animations) => animations.forEach((entry) => entry.reverse()));
+		},
+		cancel() {
+			timekeeper.cancel();
+			allAnimations.forEach((animations) => {
+				animations.forEach((entry) => entry.cancel());
+				animations.clear();
+			});
+		},
+		finish() {
+			timekeeper.finish();
+			allAnimations.forEach((animations) => animations.forEach((entry) => entry.finish()));
+		},
 		forceUpdate(index?: number | number[]) {
 			const indices = index ? index : options.map((_, index) => index);
 			const asArray = Array.isArray(indices) ? indices : [indices];
 
 			asArray.forEach((index) => {
 				allAnimations[index].forEach((anim) => anim.cancel());
-
-				allAnimations[index] = animationsController(options[index], worker, timekeeper, direction);
+				allAnimations[index] = animationsController(options[index], worker, timekeeper);
 			});
 		},
 		get finished() {

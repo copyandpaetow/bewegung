@@ -14,11 +14,9 @@ export const defaultOptions: Required<BewegungsOption> & {
 	at: 0,
 };
 
-//TODO: do we use all of these
 export const enum Attributes {
 	key = "data-bewegungs-key",
 	reset = "data-bewegungs-reset",
 	removable = "data-bewegungs-removable",
 	cssReset = "data-bewegungs-css-reset",
-	replace = "data-bewegungs-replace",
 }

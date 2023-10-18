@@ -24,15 +24,37 @@ const { title } = Astro.props;
 		<main>
 			<slot />
 		</main>
+		<footer><p>2023</p></footer>
 	</body>
 </html>
 
 <style is:global lang="scss">
 	body {
 		color: var(--grey-20);
-		background-color: var(--grey-90);
-		max-width: 90rem;
-		margin-inline: auto;
+		background-color: var(--grey-95);
+	}
+
+	main,
+	footer {
+		display: grid;
+		grid-template-columns:
+			[full-start] minmax(1rem, 1fr) [content-start] minmax(auto, 70rem) [content-end] minmax(
+				1rem,
+				1fr
+			)
+			[full-end];
+		grid-auto-columns: max-content;
+		row-gap: clamp(2rem, 5vh, 5rem);
+
+		& > * {
+			grid-column: content;
+		}
+	}
+
+	footer {
+		height: 20vh;
+		align-items: end;
+		justify-items: center;
 	}
 
 	h1 {

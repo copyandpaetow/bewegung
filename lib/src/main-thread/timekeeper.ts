@@ -1,4 +1,4 @@
-import { NormalizedOptions } from "../types";
+import { AtomicWorker, NormalizedOptions } from "../types";
 import { Attributes } from "../utils/constants";
 import { nextRaf, querySelectorAll } from "../utils/helper";
 
@@ -24,15 +24,16 @@ const restoreOverridenElements = () => {
 	});
 };
 
-const cleanup = async () => {
-	await nextRaf();
-	restoreOverridenElements();
-	removeElements();
-	removeDataAttributes();
-};
-
-export const createTimekeeper = (options: NormalizedOptions[]): Animation => {
+export const createTimekeeper = (options: NormalizedOptions[], worker: AtomicWorker): Animation => {
 	const timekeeper = new Animation(new KeyframeEffect(null, null, options[0].totalRuntime));
+
+	const cleanup = async () => {
+		worker("terminate").cleanup();
+		await nextRaf();
+		restoreOverridenElements();
+		removeElements();
+		removeDataAttributes();
+	};
 
 	timekeeper.addEventListener("cancel", cleanup);
 	timekeeper.addEventListener("finish", cleanup);

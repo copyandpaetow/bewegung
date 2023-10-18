@@ -3,6 +3,7 @@ import {
 	changesAspectRatio,
 	hasObjectFit,
 	isCurrentlyInViewport,
+	isElementUnanimated,
 	isEntryVisible,
 } from "../utils/predicates";
 import { useWorker } from "../utils/use-worker";
@@ -32,11 +33,15 @@ const getKeyframes = (oldDom: TreeRepresentation, newDom: TreeRepresentation) =>
 
 	diffDomTrees(oldDom, newDom, (dimensions, differences, parentDimensions) => {
 		const key = dimensions[0].key;
-		const hasChangedAspectRatio = changesAspectRatio(differences);
+		const hasChangedAspectRatio = changesAspectRatio(dimensions, differences);
 		const keyframes =
 			hasObjectFit(dimensions) && hasChangedAspectRatio
 				? setImageKeyframes(differences, dimensions)
 				: setDefaultKeyframes(differences, dimensions, hasChangedAspectRatio);
+
+		if (isElementUnanimated(keyframes[0])) {
+			return;
+		}
 
 		isCurrentlyInViewport(dimensions)
 			? results.immediate.set(key, keyframes)

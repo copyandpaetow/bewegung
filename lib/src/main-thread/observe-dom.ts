@@ -1,5 +1,5 @@
 import { AtomicWorker, NormalizedOptions } from "../types";
-import { applyCSSStyles, nextRaf } from "../utils/helper";
+import { applyCSSStyles, nextRaf, querySelectorAll } from "../utils/helper";
 import { isHTMLElement } from "../utils/predicates";
 import { recordElement } from "./elements";
 import {
@@ -24,7 +24,13 @@ const resetNodeStyle = (entry: MutationRecord): void => {
 };
 
 export const addKeyToNewlyAddedElement = (element: HTMLElement, index: number) => {
-	element.dataset.bewegungsKey = `key-added-${(element as HTMLElement).tagName}-${index}`;
+	element.dataset.bewegungsKey = `_added-${(element as HTMLElement).tagName}-${index}`;
+
+	querySelectorAll("*", element).forEach((child, nestedIndex) => {
+		child.dataset.bewegungsKey = `_added-${
+			(element as HTMLElement).tagName
+		}-${index}-${nestedIndex}`;
+	});
 };
 
 const getNextElementSibling = (node: Node | null): HTMLElement | null => {
@@ -51,6 +57,7 @@ export const observeDom = async (options: NormalizedOptions, worker: AtomicWorke
 		reply("sendDOMRepresentation", { key: options.key, dom: recordElement(options.root, index) });
 
 		iterateRemovedElements(entries, readdRemovedNodes);
+		iterateAddedElements(entries, (element) => element.remove());
 		iterateAttributesReversed(entries, resetNodeStyle);
 	};
 

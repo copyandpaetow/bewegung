@@ -2,19 +2,6 @@ import { DimensionalDifferences, TreeElement } from "../types";
 import { save } from "../utils/helper";
 import { normalizeBorderRadius } from "./transforms";
 
-/*
-*steps
-? maybe the natural ratio restauration also needs to be in the override, since we wouldnt need to change that in overlaps
-=> by either scaling the height or width by the ratio (or the fraction of it)
-=> and another scale to fit the smaller value of the inital height/width
-
-- then we need to cut the overlapping sides with clipPath 
-
-
-
-*/
-
-//TODO: this was written when there where more than 2 readouts, maybe it can be reduced / simplified?
 export const setImageKeyframes = (
 	differences: DimensionalDifferences[],
 	readouts: TreeElement[]
