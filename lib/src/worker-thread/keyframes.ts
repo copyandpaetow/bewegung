@@ -1,8 +1,8 @@
 import { DimensionalDifferences, TreeElement } from "../types";
-import { calculateDimensionDifferences, calculateRootDifferences } from "./differences";
-import { normalizeBorderRadius } from "./transforms";
+import { save } from "../utils/helper";
+import { normalizeBorderRadius } from "./keyframes-helper";
 
-export const setDefaultKeyframes = (
+export const setKeyframes = (
 	differences: DimensionalDifferences[],
 	readouts: TreeElement[],
 	hasChangedAspectRatio: boolean
@@ -32,22 +32,44 @@ export const setDefaultKeyframes = (
 	];
 };
 
-export const calculateDifferences = (current: TreeElement[], parent: TreeElement[] | undefined) => {
-	if (!parent) {
-		return current.map((entry) =>
-			calculateRootDifferences({
-				current: entry,
-				reference: current.at(-1)!,
-			})
-		);
-	}
+export const setImageKeyframes = (
+	differences: DimensionalDifferences[],
+	readouts: TreeElement[]
+): [Keyframe[], Partial<CSSStyleDeclaration>] => {
+	return [
+		readouts.map((readout, index) => {
+			const xScale = Math.max(1, (readout.currentHeight * readout.ratio) / readout.currentWidth);
+			const yScale = Math.max(1, readout.currentWidth / (readout.currentHeight * readout.ratio));
 
-	return current.map((entry, index) =>
-		calculateDimensionDifferences({
-			current: entry,
-			reference: current.at(-1)!,
-			parent: parent![index],
-			parentReference: parent!.at(-1)!,
-		})
-	);
+			const resultingWidth = readout.currentWidth * xScale;
+			const resultingHeight = readout.currentHeight * yScale;
+
+			const clipWidthDifference = Math.max(
+				0,
+				(resultingWidth - readout.currentWidth) / (2 * xScale)
+			);
+			const clipHeightDifference = Math.max(
+				0,
+				(resultingHeight - readout.currentHeight) / (2 * yScale)
+			);
+			const normalizedBorderRadius = normalizeBorderRadius(readout.borderRadius, [
+				resultingWidth,
+				resultingHeight,
+			]);
+
+			const withBorderRadius = normalizedBorderRadius ? `round ${normalizedBorderRadius}` : "";
+
+			return {
+				clipPath: `inset(${clipHeightDifference}px ${clipWidthDifference}px ${withBorderRadius})`,
+				transform: `translate(${differences[index].leftDifference}px, ${
+					differences[index].topDifference
+				}px) scale(${save(xScale * differences[index].widthDifference, 1)}, ${save(
+					yScale * differences[index].heightDifference,
+					1
+				)})`,
+				offset: readout.offset,
+			};
+		}),
+		{ objectFit: "unset", borderRadius: "0" },
+	];
 };

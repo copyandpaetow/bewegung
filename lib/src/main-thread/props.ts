@@ -6,8 +6,21 @@ import {
 	FullBewegungsOption,
 	NormalizedOptions,
 } from "../types";
-import { defaultOptions } from "../utils/constants";
 import { uuid } from "../utils/helper";
+
+export const defaultOptions: Required<BewegungsOption> & {
+	from: VoidFunction | undefined;
+	to: VoidFunction | undefined;
+} = {
+	duration: 400,
+	easing: "ease",
+	root: document.body,
+	delay: 0,
+	endDelay: 0,
+	from: undefined,
+	to: undefined,
+	at: 0,
+};
 
 const normalizeStructure = (props: BewegungsEntry): Partial<FullBewegungsOption> => {
 	if (typeof props === "function") {

@@ -1,8 +1,8 @@
 import { AtomicWorker, NormalizedOptions } from "../types";
 import { applyCSSStyles, nextRaf, querySelectorAll } from "../utils/helper";
-import { isHTMLElement } from "../utils/predicates";
 import { recordElement } from "./elements";
 import {
+	isHTMLElement,
 	iterateAddedElements,
 	iterateAttributesReversed,
 	iterateRemovedElements,

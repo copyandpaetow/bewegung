@@ -1,5 +1,4 @@
-import { AtomicWorker, NormalizedOptions } from "../types";
-import { Attributes } from "../utils/constants";
+import { AtomicWorker, NormalizedOptions, Attributes } from "../types";
 import { nextRaf, querySelectorAll } from "../utils/helper";
 
 const removeElements = () => {

@@ -64,7 +64,7 @@ export const getScales = (dimensions: ChildParentDimensions) => {
 	};
 };
 
-export const calculateDimensionDifferences = (
+export const calculateDifferencesWithParentCorrection = (
 	dimensions: ChildParentDimensions
 ): DimensionalDifferences => {
 	const { current } = dimensions;
@@ -110,7 +110,7 @@ export const calculateDimensionDifferences = (
 	return differences;
 };
 
-export const calculateRootDifferences = ({
+export const calculateDifferences = ({
 	current,
 	reference,
 }: RootDimensions): DimensionalDifferences => {

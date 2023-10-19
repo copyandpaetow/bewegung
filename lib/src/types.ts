@@ -84,6 +84,13 @@ export const enum ObjectFit {
 	fill = 0,
 }
 
+export const enum Attributes {
+	key = "data-bewegungs-key",
+	reset = "data-bewegungs-reset",
+	removable = "data-bewegungs-removable",
+	cssReset = "data-bewegungs-css-reset",
+}
+
 export type DomElement = {
 	currentHeight: number;
 	currentLeft: number;
@@ -192,3 +199,9 @@ export type Bewegung = {
 	finished: Promise<Animation>;
 	playState: AnimationPlayState;
 };
+
+export type DomDiffCallback = (
+	dimensions: [TreeElement, TreeElement],
+	differences: DimensionalDifferences[],
+	parentDimensions: [TreeElement, TreeElement] | undefined
+) => void;

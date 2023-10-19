@@ -1,14 +1,8 @@
 import { MainMessages, Result, TreeElement, TreeRepresentation, WorkerMessages } from "../types";
-import {
-	changesAspectRatio,
-	hasObjectFit,
-	isCurrentlyInViewport,
-	isElementUnanimated,
-	isEntryVisible,
-} from "../utils/predicates";
+import { isEntryVisible } from "../utils/helper";
+
 import { useWorker } from "../utils/use-worker";
-import { setImageKeyframes } from "./image-differences";
-import { setDefaultKeyframes } from "./keyframes";
+import { setImageKeyframes, setKeyframes } from "./keyframes";
 import {
 	getFromResults,
 	setHiddenElementOverrides,
@@ -17,6 +11,7 @@ import {
 } from "./overrides";
 import { transformDomRepresentation } from "./transforms";
 import { diffDomTrees } from "./tree-diffing";
+import { changesAspectRatio, hasObjectFit, isCurrentlyInViewport } from "./worker-helper";
 
 //@ts-expect-error typescript doesnt
 const worker = self as Worker;
@@ -37,11 +32,7 @@ const getKeyframes = (oldDom: TreeRepresentation, newDom: TreeRepresentation) =>
 		const keyframes =
 			hasObjectFit(dimensions) && hasChangedAspectRatio
 				? setImageKeyframes(differences, dimensions)
-				: setDefaultKeyframes(differences, dimensions, hasChangedAspectRatio);
-
-		if (isElementUnanimated(keyframes[0])) {
-			return;
-		}
+				: setKeyframes(differences, dimensions, hasChangedAspectRatio);
 
 		isCurrentlyInViewport(dimensions)
 			? results.immediate.set(key, keyframes)

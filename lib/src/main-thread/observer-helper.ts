@@ -1,5 +1,3 @@
-import { isHTMLElement } from "../utils/predicates";
-
 export const iterateAttributesReversed = (
 	entries: MutationRecord[],
 	callback: (entry: MutationRecord) => void
@@ -48,3 +46,5 @@ export const observe = (observer: MutationObserver) =>
 		attributes: true,
 		attributeOldValue: true,
 	});
+
+export const isHTMLElement = (element: Node) => element.nodeType === Node.ELEMENT_NODE;

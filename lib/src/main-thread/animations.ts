@@ -1,5 +1,4 @@
-import { AtomicWorker, NormalizedOptions, ResultTransferable } from "../types";
-import { Attributes } from "../utils/constants";
+import { AtomicWorker, Attributes, NormalizedOptions, ResultTransferable } from "../types";
 import { applyCSSStyles, nextRaf } from "../utils/helper";
 import { addKeyToNewlyAddedElement, observeDom, readdRemovedNodes } from "./observe-dom";
 import { iterateAddedElements, iterateRemovedElements, observe } from "./observer-helper";
