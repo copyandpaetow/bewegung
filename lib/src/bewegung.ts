@@ -1,92 +1,82 @@
-import { fetchAnimationData } from "./main-thread/animation-calculator";
-import { filterProps, normalize } from "./main-thread/normalize-props";
-import { getReactivity } from "./main-thread/watch-dom-changes";
-import { BewegungsConfig, BewegungsInputs } from "./types";
-import { resolvable } from "./utils/helper";
+import { animationsController } from "./main-thread/animations";
+import { normalizeArguments } from "./main-thread/props";
+import { createTimekeeper } from "./main-thread/timekeeper";
+import {
+	Bewegung,
+	BewegungsArgs,
+	BewegungsConfig,
+	BewegungsEntry,
+	BewegungsOption,
+	FullBewegungsOption,
+} from "./types";
+import { saveSeek } from "./utils/helper";
+import { WorkerMessanger, DelayedWorker } from "./utils/worker-messanger";
 
-export type Bewegung = {
-	play(): void;
-	pause(): void;
-	seek(scrollAmount: number, done?: boolean): void;
-	cancel(): void;
-	finish(): void;
-	finished: Promise<Map<string, Animation>>;
-	playState: AnimationPlayState;
-};
+export const Webworker = new DelayedWorker();
 
-const preferesReducedMotion =
-	window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
+export const bewegung: BewegungsArgs = (
+	props: VoidFunction | FullBewegungsOption | BewegungsEntry[],
+	config?: number | BewegungsOption | BewegungsConfig
+): Bewegung => {
+	const worker = new WorkerMessanger(Webworker.worker);
+	const options = normalizeArguments(props, config);
+	const timekeeper = createTimekeeper(options, Webworker);
 
-const getMotionPreference = (config?: BewegungsConfig) =>
-	config?.reduceMotion ?? preferesReducedMotion;
+	const allAnimations = options.map((entry) => animationsController(entry, worker, timekeeper));
 
-export const bewegung = (props: BewegungsInputs, config?: BewegungsConfig): Bewegung => {
-	const finishedResolvable = resolvable<Map<string, Animation>>();
-	const reactivity = getReactivity();
-	const reduceMotion = getMotionPreference(config);
-
-	let normalizedProps = normalize(props, config);
-	let state: Map<string, Animation> | null = null;
-	let playState: AnimationPlayState = "idle";
-
-	const enableReactivity = () => {
-		reactivity.observe(() => {
-			reactivity.disconnect();
-			normalizedProps = filterProps(normalize(props, config));
-			state = null;
-		});
-	};
-
-	const getState = async () => {
-		if (reduceMotion && !state) {
-			//todo: set another state
-		}
-
-		state ??= await fetchAnimationData(normalizedProps, finishedResolvable);
-	};
-
-	const api: Bewegung = {
-		async play() {
-			console.time("play");
-			await getState();
-			console.timeEnd("play");
-			state!.forEach((animation) => animation.play());
-			playState = "running";
+	return {
+		play() {
+			timekeeper.play();
+			allAnimations.forEach((animations) => animations.forEach((entry) => entry.play()));
 		},
-		async pause() {
-			await getState();
-			state!.forEach((animation) => animation.pause());
-			playState = "paused";
-			enableReactivity();
+		pause() {
+			timekeeper.pause();
+			allAnimations.forEach((animations) => animations.forEach((entry) => entry.pause()));
 		},
-		async seek(progress, done) {
-			await getState();
-			state!.forEach((animation) => (animation.currentTime = progress));
-
-			//todo: reactivity should be enabled after some time if seeking is used
+		seek(progress, done) {
 			if (done) {
-				api.finish();
+				this.finish();
+				return;
 			}
+
+			const seekTo = saveSeek(progress) * options[0].totalRuntime;
+			timekeeper.currentTime = seekTo;
+
+			allAnimations.forEach((animations) => {
+				animations.forEach((entry) => {
+					entry.currentTime = seekTo;
+				});
+			});
+		},
+		reverse() {
+			timekeeper.reverse();
+			allAnimations.forEach((animations) => animations.forEach((entry) => entry.reverse()));
 		},
 		cancel() {
-			if (state) {
-				state.forEach((animation) => animation.cancel());
-				playState = "finished";
-			}
+			timekeeper.cancel();
+			allAnimations.forEach((animations) => {
+				animations.forEach((entry) => entry.cancel());
+				animations.clear();
+			});
 		},
 		finish() {
-			if (state) {
-				state.forEach((animation) => animation.finish());
-				playState = "finished";
-			}
+			timekeeper.finish();
+			allAnimations.forEach((animations) => animations.forEach((entry) => entry.finish()));
+		},
+		forceUpdate(index?: number | number[]) {
+			const indices = index ? index : options.map((_, index) => index);
+			const asArray = Array.isArray(indices) ? indices : [indices];
+
+			asArray.forEach((index) => {
+				allAnimations[index].forEach((anim) => anim.cancel());
+				allAnimations[index] = animationsController(options[index], worker, timekeeper);
+			});
 		},
 		get finished() {
-			return finishedResolvable.promise;
+			return timekeeper.finished;
 		},
 		get playState() {
-			return playState ?? "idle";
+			return timekeeper.playState;
 		},
 	};
-
-	return api;
 };

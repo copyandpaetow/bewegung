@@ -1,34 +1,19 @@
-import { ChildParentDimensions, DimensionalDifferences, TreeElement, TreeEntry } from "../types";
+import {
+	ChildParentDimensions,
+	DimensionalDifferences,
+	RootDimensions,
+	TreeElement,
+} from "../types";
 import { save } from "../utils/helper";
 
-export const parseTransformOrigin = (entry: TreeEntry) => {
-	if (!entry) {
-		return [0, 0];
-	}
-
-	const transformOriginString = entry.transformOrigin!;
-
-	const calculated = transformOriginString.split(" ").map((value: string, index: number) => {
-		if (value.includes("px")) {
-			return parseFloat(value);
-		}
-		const heightOrWidth = index ? entry.currentHeight : entry.currentWidth;
-
-		return (parseFloat(value) / 100) * heightOrWidth;
-	});
-
-	return calculated;
-};
-
-export const getTranslates = (dimensions: ChildParentDimensions) => {
+const getTranslates = (dimensions: ChildParentDimensions) => {
 	const { current, parent, parentReference, reference } = dimensions;
 
-	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(reference);
-	const [originParentReferenceLeft, originParentReferenceTop] =
-		parseTransformOrigin(parentReference);
+	const [originReferenceLeft, originReferenceTop] = reference.transformOrigin;
+	const [originParentReferenceLeft, originParentReferenceTop] = parentReference.transformOrigin;
 
-	const [originCurrentLeft, originCurrentTop] = parseTransformOrigin(current);
-	const [originParentCurrentLeft, originParentCurrentTop] = parseTransformOrigin(parent);
+	const [originCurrentLeft, originCurrentTop] = current.transformOrigin;
+	const [originParentCurrentLeft, originParentCurrentTop] = parent.transformOrigin;
 
 	const currentLeftDifference =
 		current.currentLeft + originCurrentLeft - (parent.currentLeft + originParentCurrentLeft);
@@ -79,7 +64,7 @@ export const getScales = (dimensions: ChildParentDimensions) => {
 	};
 };
 
-export const calculateDimensionDifferences = (
+export const calculateDifferencesWithParentCorrection = (
 	dimensions: ChildParentDimensions
 ): DimensionalDifferences => {
 	const { current } = dimensions;
@@ -110,7 +95,6 @@ export const calculateDimensionDifferences = (
 		leftDifference: save(leftDifference, 0),
 		topDifference: save(topDifference, 0),
 		offset: current.offset,
-		id: current.key,
 	};
 
 	if (isTextElement) {
@@ -120,22 +104,18 @@ export const calculateDimensionDifferences = (
 			leftDifference: save(leftDifference - textWidthCorrection, 0),
 			topDifference: save(topDifference - textHeightCorrection, 0),
 			offset: current.offset,
-			id: current.key,
 		};
 	}
 
 	return differences;
 };
 
-export const calculateRootDifferences = ({
+export const calculateDifferences = ({
 	current,
 	reference,
-}: {
-	current: TreeEntry;
-	reference: TreeEntry;
-}): DimensionalDifferences => {
-	const [originReferenceLeft, originReferenceTop] = parseTransformOrigin(reference);
-	const [originCurrentLeft, originCurrentTop] = parseTransformOrigin(current);
+}: RootDimensions): DimensionalDifferences => {
+	const [originReferenceLeft, originReferenceTop] = reference.transformOrigin;
+	const [originCurrentLeft, originCurrentTop] = current.transformOrigin;
 
 	const currentLeftDifference = current.currentLeft + originCurrentLeft;
 	const referenceLeftDifference = reference.currentLeft + originReferenceLeft;
@@ -146,24 +126,22 @@ export const calculateRootDifferences = ({
 	const heightDifference = current.unsaveHeight / reference.currentHeight;
 
 	/*
-		Apparently, the browser will keep the viewport from jumping when the size of an element is changed,
+		Apparently, chrome will keep the viewport from jumping when the size of an element is changed,
 		depending on where the element-to-be-changed is, this will move either everything below the element but keep it in view or move everything above 
 		(by jumping down in the page) and lead to weird behaviour
 		The first condition can be true if the element shrinks, so therefore we also need to check if the element needs to be scaled down
 
-		=> is is dependent on the viewport height and occures only if the animation happens above the current viewport + 100% viewport height. 
-
-		*/
-
-	const weirdBrowserBehaviorCorrectionLeft =
-		currentLeftDifference > referenceLeftDifference && widthDifference < 1 ? -1 : 1;
-	const weirdBrowserBehaviorCorrectionTop =
-		currentTopDifference > referenceTopDifference && heightDifference < 1 ? -1 : 1;
+	const weirdBrowserBehaviorCorrectionLeft = reference.currentLeft < 0 ? -1 : 1;
+	const weirdBrowserBehaviorCorrectionTop = reference.currentTop < 0 ? -1 : 1;
 
 	const leftDifference =
 		(currentLeftDifference - referenceLeftDifference) * weirdBrowserBehaviorCorrectionLeft;
 	const topDifference =
 		(currentTopDifference - referenceTopDifference) * weirdBrowserBehaviorCorrectionTop;
+		*/
+
+	const leftDifference = currentLeftDifference - referenceLeftDifference;
+	const topDifference = currentTopDifference - referenceTopDifference;
 
 	return {
 		heightDifference: save(heightDifference, 1),
@@ -171,6 +149,5 @@ export const calculateRootDifferences = ({
 		leftDifference: save(leftDifference, 0),
 		topDifference: save(topDifference, 0),
 		offset: current.offset,
-		id: current.key,
 	};
 };

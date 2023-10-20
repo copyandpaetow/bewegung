@@ -10,63 +10,6 @@ export interface Props {
 const { copy, headline, imgSrc, imgAlt, class: className = "" } = Astro.props;
 ---
 
-<script>
-	import { bewegung } from "../../../lib/src/bewegung";
-
-	const list = document.querySelector(".js-list")!.parentElement as HTMLElement;
-	let modalOpen = false;
-
-	list.addEventListener("click", async (event) => {
-		if (modalOpen) {
-			return;
-		}
-		modalOpen = true;
-		const listElement = (event.target as HTMLElement).closest("li") as HTMLElement;
-		const dialog = listElement.querySelector("dialog") as HTMLDialogElement;
-		const dimensions = listElement.getBoundingClientRect();
-
-		dialog.show();
-		dialog.style.height = dimensions.height + "px";
-		dialog.style.width = dimensions.width + "px";
-		dialog.style.left = dimensions.left + "px";
-		dialog.style.top = dimensions.top + "px";
-
-		bewegung([
-			[
-				() => {
-					dialog.style.cssText = "";
-				},
-				{ duration: 1000, root: "aside" },
-			],
-		]).play();
-
-		dialog.querySelector("button")?.addEventListener(
-			"click",
-			(event) => {
-				event.stopPropagation();
-				const animation = bewegung([
-					[
-						() => {
-							dialog.style.height = dimensions.height + "px";
-							dialog.style.width = dimensions.width + "px";
-							dialog.style.left = dimensions.left + "px";
-							dialog.style.top = dimensions.top + "px";
-						},
-						{ duration: 1000, root: "aside" },
-					],
-				]);
-
-				animation.play();
-				animation.finished.then(() => {
-					dialog.close();
-					modalOpen = false;
-				});
-			},
-			{ once: true }
-		);
-	});
-</script>
-
 <li class={`${className} js-list`}>
 	<img src={imgSrc} alt={imgAlt} />
 
@@ -76,11 +19,6 @@ const { copy, headline, imgSrc, imgAlt, class: className = "" } = Astro.props;
 	<p>
 		{copy}
 	</p>
-
-	<dialog id="js-dialog">
-		<button>close</button>
-		<img src={imgSrc} alt={imgAlt} />
-	</dialog>
 </li>
 
 <style lang="scss">
@@ -91,7 +29,7 @@ const { copy, headline, imgSrc, imgAlt, class: className = "" } = Astro.props;
 		grid-template-rows: 1fr max-content max-content;
 		overflow: hidden;
 		aspect-ratio: 1;
-		width: clamp(var(--space-400), 20vw, var(--space-700));
+		width: clamp(var(--space-600), 20vw, var(--space-700));
 	}
 
 	li > *:not(img, dialog) {

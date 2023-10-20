@@ -1,5 +1,3 @@
-import { WorkerContext } from "./utils/use-worker";
-
 export type ElementOrSelector = HTMLElement | Element | string;
 
 type Easing =
@@ -10,125 +8,146 @@ type Easing =
 	| "linear"
 	| `cubic-bezier(${number},${number},${number},${number})`;
 
-export type BewegungsCallback = VoidFunction;
 export type BewegungsOption = {
 	duration: number;
 	root?: ElementOrSelector;
 	easing?: Easing;
+	delay?: number;
+	endDelay?: number;
 	at?: number;
 };
 
-export type BewegungsEntry = [BewegungsCallback, BewegungsOption?];
+//requires at least "from" or "to" to be set
+export type FullBewegungsOption = BewegungsOption &
+	(
+		| {
+				from: VoidFunction;
+		  }
+		| {
+				to: VoidFunction;
+		  }
+	);
 
-export type PossibleBewegungsInputs = BewegungsCallback | BewegungsEntry;
-export type BewegungsInputs = PossibleBewegungsInputs | PossibleBewegungsInputs[];
+type BewegungsCallback = VoidFunction;
+type BewegungsCallbackWithNumber = [VoidFunction, number];
+type BewegungsCallbackWithOptions = [VoidFunction, BewegungsOption];
+
+export type BewegungsEntry =
+	| BewegungsCallback
+	| BewegungsCallbackWithNumber
+	| BewegungsCallbackWithOptions
+	| FullBewegungsOption;
+
 export type BewegungsConfig = {
 	defaultOptions?: Partial<BewegungsOption>;
-	reduceMotion?: boolean;
 };
 
-export type NormalizedProps = Required<BewegungsOption> & {
-	callback: VoidFunction;
-	root: HTMLElement;
+export type BewegungsArgs = {
+	(props: VoidFunction): Bewegung;
+	(props: VoidFunction, options: number): Bewegung;
+	(props: VoidFunction, options: BewegungsOption): Bewegung;
+	(props: FullBewegungsOption): Bewegung;
+	(props: BewegungsEntry[], options?: BewegungsConfig): Bewegung;
 };
 
-export type PropsWithRelativeTiming = {
-	start: number;
-	end: number;
+export type NormalizedOptions = {
+	from: VoidFunction | undefined;
+	to: VoidFunction | undefined;
 	root: HTMLElement;
-	easing:
-		| "ease"
-		| "ease-in"
-		| "ease-out"
-		| "ease-in-out"
-		| "linear"
-		| `cubic-bezier(${number},${number},${number},${number})`;
-	callback: VoidFunction;
+	duration: number;
+	easing: Easing;
+	delay: number;
+	endDelay: number;
+	at: number;
+	key: string;
+	startTime: number;
+	endTime: number;
+	totalRuntime: number;
 };
 
-export type PropsWithRelativeTiming2 = {
-	start: number;
-	end: number;
-	root: HTMLElement;
-	easing:
-		| "ease"
-		| "ease-in"
-		| "ease-out"
-		| "ease-in-out"
-		| "linear"
-		| `cubic-bezier(${number},${number},${number},${number})`;
-	callback: Set<VoidFunction>;
+export const enum Display {
+	inline = 2,
+	none = 1,
+	visible = 0,
+}
+
+export const enum Position {
+	static = 0,
+	relative = 1,
+}
+
+export const enum ObjectFit {
+	none = 2,
+	cover = 1,
+	fill = 0,
+}
+
+export const enum Attributes {
+	key = "data-bewegungs-key",
+	reset = "data-bewegungs-reset",
+	removable = "data-bewegungs-removable",
+	cssReset = "data-bewegungs-css-reset",
+}
+
+export type DomElement = {
+	currentHeight: number;
+	currentLeft: number;
+	currentTop: number;
+	currentWidth: number;
+	key: string;
+	offset: number;
+	windowHeight: number;
+	windowWidth: number;
+	borderRadius?: string;
+	display?: Display;
+	position?: Position;
+	text?: number;
+	transformOrigin?: string;
+	objectFit?: ObjectFit;
+	objectPosition?: string;
+	ratio?: number;
 };
+
+export type DomRepresentation = (DomElement | DomRepresentation)[];
 
 export type TreeElement = {
+	borderRadius: string;
+	currentHeight: number;
+	currentLeft: number;
+	currentTop: number;
+	currentWidth: number;
+	display: Display;
+	position: Position;
 	key: string;
+	offset: number;
 	text: number;
-	currentTop: number;
-	currentLeft: number;
-	currentHeight: number;
-	currentWidth: number;
+	transformOrigin: [number, number];
 	unsaveHeight: number;
 	unsaveWidth: number;
-	position: string;
-	transform: string;
-	transformOrigin: string;
-	display: string;
-	borderRadius: string;
-	offset: number;
-};
-
-export type TreeMedia = {
+	windowHeight: number;
+	windowWidth: number;
+	objectFit: ObjectFit;
+	objectPosition: [number, number];
 	ratio: number;
-	key: string;
-	currentTop: number;
-	currentLeft: number;
-	currentHeight: number;
-	currentWidth: number;
-	unsaveHeight: number;
-	unsaveWidth: number;
-	position: string;
-	transform: string;
-	transformOrigin: string;
-	objectFit: string;
-	objectPosition: string;
-	display: string;
-	borderRadius: string;
-	offset: number;
+	visibility: boolean;
 };
 
-export type TreeEntry = TreeElement | TreeMedia;
+export type TreeRepresentation = (TreeElement | TreeRepresentation)[];
 
-export type DomRepresentation = (TreeEntry | DomRepresentation)[];
+export type Result = [Keyframe[], Partial<CSSStyleDeclaration>?];
 
-export type ResultTransferable = {
-	keyframeStore: Map<string, Keyframe[]>;
-	overrideStore: Map<string, Partial<CSSStyleDeclaration>>;
-};
-
-export type DomLabel = (string | DomLabel)[];
-
-export type WorkerMessages = {
-	sendDOMRepresentation: DomRepresentation[];
-	sendInitialDOMRepresentation: DomLabel[];
-	sendAnimationData: ResultTransferable;
-	sendTreeUpdate: Map<string, DomLabel>;
-};
-
-export type MainMessages = {
-	domChanges: Map<string, DomLabel>;
-	animationData: ResultTransferable;
-	treeUpdate: Map<string, DomLabel>;
-};
-
-export type AtomicWorker = <Current extends keyof MainMessages>(
-	eventName: Current
-) => WorkerContext<Current, MainMessages, WorkerMessages>;
+export type ResultTransferable = Map<string, Result>;
 
 export type ChildParentDimensions = {
-	current: TreeEntry;
-	reference: TreeEntry;
-	parent: TreeEntry;
-	parentReference: TreeEntry;
+	current: TreeElement;
+	reference: TreeElement;
+	parent: TreeElement;
+	parentReference: TreeElement;
+};
+
+export type RootDimensions = {
+	current: TreeElement;
+	reference: TreeElement;
 };
 
 export interface DimensionalDifferences {
@@ -137,26 +156,58 @@ export interface DimensionalDifferences {
 	leftDifference: number;
 	topDifference: number;
 	offset: number;
-	id: string;
 }
 
-export type ImageDetails = {
-	maxWidth: number;
-	maxHeight: number;
+export type Bewegung = {
+	play(): void;
+	pause(): void;
+	reverse(): void;
+	seek(scrollAmount: number, done?: boolean): void;
+	cancel(): void;
+	finish(): void;
+	forceUpdate(index?: number | number[]): void;
+	finished: Promise<Animation>;
+	playState: AnimationPlayState;
 };
 
-export type Reactivity = {
-	observe(callback: VoidFunction): void;
-	disconnect(): void;
+export type DomDiffCallback = (
+	dimensions: [TreeElement, TreeElement],
+	differences: DimensionalDifferences[],
+	parentDimensions: [TreeElement, TreeElement] | undefined
+) => void;
+
+export type Results = {
+	immediate: Map<string, Result>;
+	delayed: Map<string, Result>;
 };
 
-export type Resolvable<Value> = {
-	resolve: (value: Value | PromiseLike<Value>) => void;
-	reject: (reason?: any) => void;
-	promise: Promise<Value>;
+export type WorkerPayloadMap = {
+	[key in `animationData-${string}`]: ResultTransferable;
+} & { [key in `delayedAnimationData-${string}`]: ResultTransferable } & {
+	domChanges: [string, DomRepresentation];
+	startDelayed: string;
 };
 
-export type RootData = {
-	offset: number;
-	easing: Easing;
-};
+export type WorkerPayload<Payload> =
+	| {
+			error: string;
+			data: undefined;
+	  }
+	| {
+			error: undefined;
+			data: Payload;
+	  };
+
+export type WorkerCallback<Payload> = (payload: WorkerPayload<Payload>) => void;
+
+export interface Messenger {
+	on<Key extends keyof WorkerPayloadMap>(
+		key: Key,
+		callback: WorkerCallback<WorkerPayloadMap[Key]>
+	): void;
+	off<Key extends keyof WorkerPayloadMap>(
+		key: Key,
+		callback: WorkerCallback<WorkerPayloadMap[Key]>
+	): void;
+	send<Key extends keyof WorkerPayloadMap>(key: Key, payload: WorkerPayloadMap[Key]): void;
+}
