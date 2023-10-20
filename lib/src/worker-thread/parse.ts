@@ -24,7 +24,7 @@ const isElementInViewport = (entry: DomElement) =>
 	entry.currentLeft + entry.currentWidth > 0 &&
 	entry.currentLeft < entry.windowWidth;
 
-export const transformDomRepresentation = (
+export const parseDomRepresentation = (
 	dom: DomRepresentation,
 	overrideStore: Map<string, Partial<CSSStyleDeclaration>>
 ): TreeRepresentation => {
@@ -62,7 +62,7 @@ export const transformDomRepresentation = (
 	}
 
 	if (isEntryVisible(result)) {
-		return [result, children.map((dom) => transformDomRepresentation(dom, overrideStore))];
+		return [result, children.map((dom) => parseDomRepresentation(dom, overrideStore))];
 	}
 
 	return [result, []];

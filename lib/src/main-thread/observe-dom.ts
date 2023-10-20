@@ -1,4 +1,4 @@
-import { AtomicWorker, NormalizedOptions } from "../types";
+import { NormalizedOptions, Messenger } from "../types";
 import { applyCSSStyles, nextRaf, querySelectorAll } from "../utils/helper";
 import { recordElement } from "./elements";
 import {
@@ -46,15 +46,14 @@ export const readdRemovedNodes = (element: HTMLElement, entry: MutationRecord) =
 	entry.target.insertBefore(element, getNextElementSibling(entry.nextSibling));
 };
 
-export const observeDom = async (options: NormalizedOptions, worker: AtomicWorker) => {
-	const { reply } = worker("domChanges");
+export const observeDom = async (options: NormalizedOptions, worker: Messenger) => {
 	let index = -1;
 
 	const observerCallback: MutationCallback = (entries, observer) => {
 		observer.disconnect();
 		iterateAddedElements(entries, addKeyToNewlyAddedElement);
 
-		reply("sendDOMRepresentation", { key: options.key, dom: recordElement(options.root, index) });
+		worker.send("domChanges", [options.key, recordElement(options.root, index)]);
 
 		iterateRemovedElements(entries, readdRemovedNodes);
 		iterateAddedElements(entries, (element) => element.remove());

@@ -8,21 +8,17 @@ import {
 	BewegungsEntry,
 	BewegungsOption,
 	FullBewegungsOption,
-	MainMessages,
-	WorkerMessages,
 } from "./types";
 import { saveSeek } from "./utils/helper";
-import { DelayedWorker, useWorker } from "./utils/use-worker";
-
-const webworker = new DelayedWorker();
+import { WorkerMessanger, Webworker } from "./utils/worker-messanger";
 
 export const bewegung: BewegungsArgs = (
 	props: VoidFunction | FullBewegungsOption | BewegungsEntry[],
 	config?: number | BewegungsOption | BewegungsConfig
 ): Bewegung => {
-	const worker = useWorker<MainMessages, WorkerMessages>(webworker.worker);
+	const worker = new WorkerMessanger(Webworker.worker);
 	const options = normalizeArguments(props, config);
-	const timekeeper = createTimekeeper(options, worker);
+	const timekeeper = createTimekeeper(options, Webworker);
 
 	const allAnimations = options.map((entry) => animationsController(entry, worker, timekeeper));
 

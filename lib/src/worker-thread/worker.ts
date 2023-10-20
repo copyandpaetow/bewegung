@@ -1,7 +1,6 @@
-import { MainMessages, Result, TreeElement, TreeRepresentation, WorkerMessages } from "../types";
+import { Result, TreeElement, TreeRepresentation } from "../types";
 import { isEntryVisible } from "../utils/helper";
-
-import { useWorker } from "../utils/use-worker";
+import { WorkerMessanger } from "../utils/worker-messanger";
 import { setImageKeyframes, setKeyframes } from "./keyframes";
 import {
 	getFromResults,
@@ -9,18 +8,24 @@ import {
 	setParentToRelative,
 	updateOverrideStore,
 } from "./overrides";
-import { transformDomRepresentation } from "./transforms";
+import { parseDomRepresentation } from "./parse";
 import { diffDomTrees } from "./tree-diffing";
-import { changesAspectRatio, hasObjectFit, isCurrentlyInViewport } from "./worker-helper";
+import {
+	changesAspectRatio,
+	containRootChanges,
+	hasObjectFit,
+	isCurrentlyInViewport,
+} from "./worker-helper";
 
-//@ts-expect-error typescript doesnt
-const worker = self as Worker;
-const workerAtom = useWorker<WorkerMessages, MainMessages>(worker);
+//@ts-expect-error
+const itself = self as Worker;
+const messanger = new WorkerMessanger(itself);
 
 const domStore = new Map<string, TreeRepresentation>();
 const overrideStore = new Map<string, Partial<CSSStyleDeclaration>>();
+const delayedResultStore = new Map<string, Map<string, Result>>();
 
-const getKeyframes = (oldDom: TreeRepresentation, newDom: TreeRepresentation) => {
+const getKeyframeResults = (oldDom: TreeRepresentation, newDom: TreeRepresentation) => {
 	const results = {
 		immediate: new Map<string, Result>(),
 		delayed: new Map<string, Result>(),
@@ -50,36 +55,37 @@ const getKeyframes = (oldDom: TreeRepresentation, newDom: TreeRepresentation) =>
 		updateOverrideStore(dimensions, keyframes, overrideStore);
 	});
 
-	const rootKey = (newDom[0] as TreeElement).key;
-	const rootResult = getFromResults(rootKey, results);
-	if (rootResult) {
-		const overrides = (rootResult[1] ??= {});
-		overrides.contain = "layout inline-size";
-	}
+	containRootChanges(getFromResults((newDom[0] as TreeElement).key, results));
 
 	return results;
 };
 
-//TODO: this could be keyed as well or we de-key the other and have them send a key with them
-workerAtom("sendDOMRepresentation").onMessage((domRepresentations) => {
-	const key = domRepresentations.key;
-	const dom = transformDomRepresentation(domRepresentations.dom, overrideStore);
+messanger.on("domChanges", ({ data, error }) => {
+	if (error) {
+		console.error(error);
+		return;
+	}
+	const [key, dom] = data!;
+	const paresdDom = parseDomRepresentation(dom!, overrideStore);
 
 	if (!domStore.has(key)) {
-		domStore.set(key, dom);
+		domStore.set(key, paresdDom);
 		return;
 	}
 
-	const result = getKeyframes(domStore.get(key)!, dom);
-	const delayedWorker = workerAtom(`sendDelayedAnimationData-${key}`);
+	const { delayed, immediate } = getKeyframeResults(domStore.get(key)!, paresdDom);
 
-	console.log(result, overrideStore);
+	messanger.send(`animationData-${key}`, immediate);
+	delayedResultStore.set(key, delayed);
+});
 
-	workerAtom(`sendAnimationData-${key}`).reply(`animationData-${key}`, result.immediate);
+messanger.on("startDelayed", ({ data: key }) => {
+	if (!key || !delayedResultStore.has(key)) {
+		return;
+	}
 
-	workerAtom(`receiveDelayed-${key}`).onMessage(() => {
-		result.delayed.forEach((result, resultKey) => {
-			delayedWorker.reply(`delayedAnimationData-${key}`, new Map([[resultKey, result]]));
-		});
+	delayedResultStore.get(key)!.forEach((result, resultKey) => {
+		messanger.send(`delayedAnimationData-${key}`, new Map([[resultKey, result]]));
 	});
+	delayedResultStore.delete(key);
 });

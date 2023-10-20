@@ -1,4 +1,4 @@
-import { AtomicWorker, Attributes, NormalizedOptions, ResultTransferable } from "../types";
+import { Attributes, Messenger, NormalizedOptions, ResultTransferable } from "../types";
 import { applyCSSStyles, nextRaf } from "../utils/helper";
 import { addKeyToNewlyAddedElement, observeDom, readdRemovedNodes } from "./observe-dom";
 import { iterateAddedElements, iterateRemovedElements, observe } from "./observer-helper";
@@ -75,7 +75,7 @@ const alignWithTimekeeper = (current: Animation, timekeeper: Animation) => {
 
 export const animationsController = (
 	options: NormalizedOptions,
-	worker: AtomicWorker,
+	worker: Messenger,
 	timekeeper: Animation
 ) => {
 	const animations = new Map<string, Animation>();
@@ -94,18 +94,24 @@ export const animationsController = (
 
 	animations.set("checkpoint", alignWithTimekeeper(checkpoint, timekeeper));
 
-	worker(`animationData-${options.key}`).onMessage(async (results) => {
+	worker.on(`animationData-${options.key}`, async ({ data, error }) => {
+		if (error) {
+			timekeeper.cancel();
+			console.error(error);
+			return;
+		}
+
 		const observerCallback: MutationCallback = (entries, observer) => {
 			observer.disconnect();
 
 			iterateRemovedElements(entries, readdRemovedNodes);
 			iterateAddedElements(entries, addKeyToNewlyAddedElement);
 
-			setAnimations(results, animationOptions).forEach((anim, key) => {
+			setAnimations(data as ResultTransferable, animationOptions).forEach((anim, key) => {
 				animations.set(key, alignWithTimekeeper(anim, timekeeper));
 			});
 
-			worker(`startDelayed-${options.key}`).reply(`receiveDelayed-${options.key}`);
+			worker.send("startDelayed", options.key);
 		};
 
 		await nextRaf();
@@ -114,8 +120,14 @@ export const animationsController = (
 		options.to?.();
 	});
 
-	worker(`delayedAnimationData-${options.key}`).onMessage((results) => {
-		setAnimations(results, animationOptions).forEach((anim, key) => {
+	worker.on(`delayedAnimationData-${options.key}`, ({ data, error }) => {
+		if (error) {
+			timekeeper.cancel();
+			console.error(error);
+			return;
+		}
+
+		setAnimations(data as ResultTransferable, animationOptions).forEach((anim, key) => {
 			animations.set(key, alignWithTimekeeper(anim, timekeeper));
 		});
 	});

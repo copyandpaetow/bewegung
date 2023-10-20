@@ -1,5 +1,3 @@
-import { WorkerContext } from "./utils/use-worker";
-
 export type ElementOrSelector = HTMLElement | Element | string;
 
 type Easing =
@@ -140,34 +138,6 @@ export type Result = [Keyframe[], Partial<CSSStyleDeclaration>?];
 
 export type ResultTransferable = Map<string, Result>;
 
-type DomLabel = (string | DomLabel)[];
-
-export type WorkerMessages = {
-	sendDOMRepresentation: { key: string; dom: DomRepresentation };
-} & {
-	[key in `sendAnimationData-${string}`]: ResultTransferable;
-} & {
-	[key in `sendDelayedAnimationData-${string}`]: ResultTransferable;
-} & {
-	[key in `receiveDelayed-${string}`]: undefined;
-};
-
-export type MainMessages = {
-	domChanges: Map<string, DomLabel>;
-	treeUpdate: Map<string, DomLabel>;
-	terminate: undefined;
-} & {
-	[key in `animationData-${string}`]: ResultTransferable;
-} & {
-	[key in `delayedAnimationData-${string}`]: ResultTransferable;
-} & {
-	[key in `startDelayed-${string}`]: undefined;
-};
-
-export type AtomicWorker = <Current extends keyof MainMessages>(
-	eventName: Current
-) => WorkerContext<Current, MainMessages, WorkerMessages>;
-
 export type ChildParentDimensions = {
 	current: TreeElement;
 	reference: TreeElement;
@@ -205,3 +175,39 @@ export type DomDiffCallback = (
 	differences: DimensionalDifferences[],
 	parentDimensions: [TreeElement, TreeElement] | undefined
 ) => void;
+
+export type Results = {
+	immediate: Map<string, Result>;
+	delayed: Map<string, Result>;
+};
+
+export type WorkerPayloadMap = {
+	[key in `animationData-${string}`]: ResultTransferable;
+} & { [key in `delayedAnimationData-${string}`]: ResultTransferable } & {
+	domChanges: [string, DomRepresentation];
+	startDelayed: string;
+};
+
+export type WorkerPayload<Payload> =
+	| {
+			error: string;
+			data: undefined;
+	  }
+	| {
+			error: undefined;
+			data: Payload;
+	  };
+
+export type WorkerCallback<Payload> = (payload: WorkerPayload<Payload>) => void;
+
+export interface Messenger {
+	on<Key extends keyof WorkerPayloadMap>(
+		key: Key,
+		callback: WorkerCallback<WorkerPayloadMap[Key]>
+	): void;
+	off<Key extends keyof WorkerPayloadMap>(
+		key: Key,
+		callback: WorkerCallback<WorkerPayloadMap[Key]>
+	): void;
+	send<Key extends keyof WorkerPayloadMap>(key: Key, payload: WorkerPayloadMap[Key]): void;
+}

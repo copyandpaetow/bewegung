@@ -1,5 +1,6 @@
-import { AtomicWorker, NormalizedOptions, Attributes } from "../types";
+import { Attributes, NormalizedOptions } from "../types";
 import { nextRaf, querySelectorAll } from "../utils/helper";
+import { DelayedWorker } from "../utils/worker-messanger";
 
 const removeElements = () => {
 	querySelectorAll(`[${Attributes.removable}]`).forEach((element) => {
@@ -23,15 +24,18 @@ const restoreOverridenElements = () => {
 	});
 };
 
-export const createTimekeeper = (options: NormalizedOptions[], worker: AtomicWorker): Animation => {
+export const createTimekeeper = (
+	options: NormalizedOptions[],
+	Webworker: DelayedWorker
+): Animation => {
 	const timekeeper = new Animation(new KeyframeEffect(null, null, options[0].totalRuntime));
 
 	const cleanup = async () => {
-		worker("terminate").cleanup();
 		await nextRaf();
 		restoreOverridenElements();
 		removeElements();
 		removeDataAttributes();
+		Webworker.refresh();
 	};
 
 	timekeeper.addEventListener("cancel", cleanup);

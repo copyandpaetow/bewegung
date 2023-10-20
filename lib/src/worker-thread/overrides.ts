@@ -1,12 +1,7 @@
-import { Position, Result, TreeElement } from "../types";
+import { Position, Result, Results, TreeElement } from "../types";
 
-export const getFromResults = (
-	key: string | undefined,
-	results: {
-		immediate: Map<string, Result>;
-		delayed: Map<string, Result>;
-	}
-) => (key ? results.immediate.get(key) ?? results.delayed.get(key) : undefined);
+export const getFromResults = (key: string | undefined, results: Results) =>
+	key ? results.immediate.get(key) ?? results.delayed.get(key) : undefined;
 
 export const setParentToRelative = (
 	parentReadout: TreeElement | undefined,
