@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="description" content="Astro description">
+		<meta name="viewport" content="width=device-width">
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+		<meta name="generator" content="Astro v2.10.15">
+		<title>Bewegung</title>
+	<link rel="stylesheet" href="/bewegung/_astro/index.56f289b5.css" /><script type="module" src="/bewegung/_astro/hoisted.a6ae3a62.js"></script></head>
+	<body>
+		<main>
+			
+	<section id="examples" class="split-screen astro-J7PV25F6">
+		<div class="flow start astro-J7PV25F6">
+			<h1 class="astro-J7PV25F6">bewegung.</h1>
+			<p class="astro-J7PV25F6">
+				<strong class="astro-J7PV25F6">[bəˈveːɡʊŋ - the german word for motion]</strong>. This 5KB, 0-dependency library
+				uses the FLIP animation technique, which can smoothly animate layout changes. It makes the
+				browser work less compared to other css and js animation approaches.
+				<br class="astro-J7PV25F6">
+				<br class="astro-J7PV25F6">
+				Bewegung can even animate currently unanimatable properties like display: none or element addition/removal
+			</p>
+			<ul class="astro-J7PV25F6">
+				<li class="astro-J7PV25F6">
+					<a href="https://github.com/copyandpaetow/bewegung" class="astro-J7PV25F6">github</a>
+				</li>
+				<li class="astro-J7PV25F6">
+					<a href="#documentation" class="astro-J7PV25F6">documentation</a>
+				</li>
+				<li class="astro-J7PV25F6">
+					<a href="#caveats" class="astro-J7PV25F6">caveats</a>
+				</li>
+			</ul>
+
+			<h2 class="astro-J7PV25F6">Examples</h2>
+			<h3 class="astro-J7PV25F6">single</h3>
+			<ul class="list astro-J7PV25F6">
+				<li class="astro-J7PV25F6">
+					<button id="js-grid-colums" class="astro-J7PV25F6">grid-columns</button>
+				</li>
+				<li class="astro-J7PV25F6">
+					<button id="js-grid-to-flex" class="astro-J7PV25F6">grid to flexbox</button>
+				</li>
+				<li class="astro-J7PV25F6">
+					<button id="js-display-none" class="astro-J7PV25F6">display: none</button>
+				</li>
+				<li class="astro-J7PV25F6">
+					<button id="js-remove-element" class="astro-J7PV25F6">element removal</button>
+				</li>
+				<li class="astro-J7PV25F6">
+					<button id="js-add-element" class="astro-J7PV25F6">element addition</button>
+				</li>
+				<li class="astro-J7PV25F6">
+					<button id="js-clear" class="astro-J7PV25F6">clear changes</button>
+				</li>
+			</ul>
+			<h3 class="astro-J7PV25F6">other</h3>
+			<ul class="list astro-J7PV25F6">
+				<li class="astro-J7PV25F6">
+					<button id="js-scroll" class="astro-J7PV25F6">scroll</button>
+				</li>
+				<li class="astro-J7PV25F6">
+					<button id="js-sequence" class="astro-J7PV25F6">sequence</button>
+				</li>
+			</ul>
+		</div>
+		<aside class="sticky end astro-J7PV25F6">
+			<ul id="js-list" class="astro-J7PV25F6">
+				<li class="position astro-J7PV25F6 js-list astro-DOHJNAO5">
+	<img src="red.jpeg" alt="coffee and flowers on a table" class="astro-DOHJNAO5">
+
+	<h3 class="astro-DOHJNAO5">
+		red
+	</h3>
+	<p class="astro-DOHJNAO5">
+		from 1992
+	</p>
+</li>
+				<li class="position astro-J7PV25F6 js-list astro-DOHJNAO5">
+	<img src="blue.jpeg" alt="distant hills" class="astro-DOHJNAO5">
+
+	<h3 class="astro-DOHJNAO5">
+		blue
+	</h3>
+	<p class="astro-DOHJNAO5">
+		out of the
+	</p>
+</li>
+				<li class="position astro-J7PV25F6 js-list astro-DOHJNAO5">
+	<img src="green.jpeg" alt="wigs and leafes in front of a wall" class="astro-DOHJNAO5">
+
+	<h3 class="astro-DOHJNAO5">
+		green
+	</h3>
+	<p class="astro-DOHJNAO5">
+		calming and nice
+	</p>
+</li>
+				<li class="position astro-J7PV25F6 js-list astro-DOHJNAO5">
+	<img src="yellow.jpeg" alt="flowers in front of a wall" class="astro-DOHJNAO5">
+
+	<h3 class="astro-DOHJNAO5">
+		yellow
+	</h3>
+	<p class="astro-DOHJNAO5">
+		inperfectly perfect
+	</p>
+</li>
+			</ul>
+		</aside>
+	</section>
+	<section id="documentation" class="flow astro-J7PV25F6">
+		<h2 class="astro-J7PV25F6">Documentation</h2>
+		<h3 class="astro-J7PV25F6">Installation</h3>
+		<p class="astro-J7PV25F6">install via npm/yarn/pnpm etc</p>
+		<pre class="astro-JGRC2LFE">	<code class="astro-JGRC2LFE">npm install bewegung</code>
+</pre>
+
+		<h3 class="astro-J7PV25F6">The simple things: play, pause, reverse</h3>
+		<pre class="astro-JGRC2LFE">	<code class="astro-JGRC2LFE">
+			<br class="astro-J7PV25F6">import &#123; bewegung &#125; from "bewegung";
+			<br class="astro-J7PV25F6">const animation = bewegung(yourCustomDomChangeFunction, 400) &#125;);
+			<br class="astro-J7PV25F6">bewegung.play();
+			<br class="astro-J7PV25F6">bewegung.pause();
+			<br class="astro-J7PV25F6">bewegung.resume();
+		</code>
+</pre>
+
+		<h3 class="astro-J7PV25F6">bring your own progress: seek</h3>
+		<p class="astro-J7PV25F6">
+			you can precisely controll the animation via seek. This can be use to make the animation based
+			on scroll or a load progress for example.
+		</p>
+		<pre class="astro-JGRC2LFE">	<code class="astro-JGRC2LFE">
+			<br class="astro-J7PV25F6">import &#123; bewegung &#125; from "bewegung";
+			<br class="astro-J7PV25F6">const animation = bewegung(yourCustomDomChangeFunction, 400) &#125;);
+			<br class="astro-J7PV25F6">yourOnScrollListener((progress)=&#62; &#123;
+			<br class="astro-J7PV25F6"> if(progress &#62= 1) animation.seek(progress, true)
+			<br class="astro-J7PV25F6">animation.seek(progress)
+			<br class="astro-J7PV25F6">&#125;)
+		</code>
+</pre>
+		<p class="astro-J7PV25F6">
+			there is the option to pass in a second parameter to indicate that the animation is finish and
+			can be clean up
+		</p>
+
+		<h3 class="astro-J7PV25F6">enough of this: cancel, finish</h3>
+		<p class="astro-J7PV25F6">
+			these to behave very similar, both clean up the animation remains. finish will reapply the dom
+			change though
+		</p>
+		<h3 class="astro-J7PV25F6">reactivity escape hatch: forceUpdate</h3>
+		<p class="astro-J7PV25F6">
+			Reacting to dom changes is difficult while animating. Most animations dont need this but if
+			your animation is not like other animations, you can create a custom solution for this your
+			self for now.
+		</p>
+	</section>
+	<section id="caveats" class="flow astro-J7PV25F6">
+		<h2 class="astro-J7PV25F6">Caveats</h2>
+		<p class="astro-J7PV25F6">
+			this is not a production ready piece of software and still in early alpha stage. The API might
+			still be subject to change. I am still not sure if this will ever reach anything further
+			because there are currently some bigger issues to tackle (and a myriad of bugs):
+		</p>
+		<br class="astro-J7PV25F6">
+		<ul class="list astro-J7PV25F6">
+			<li class="astro-J7PV25F6">
+				<strong class="astro-J7PV25F6">counter-scaling:</strong>When scaling an element, its children get counter-scaled to
+				look like they remain unchanged. Depending on the scale-amount the size change every frame
+				for the parent and children might not be the same and the animation looks off even if the
+				start and end are correct. Adjusting the childrens easing can fix this, but calculating an
+				inverse easing curve is difficult.
+			</li>
+			<li class="astro-J7PV25F6">
+				<strong class="astro-J7PV25F6">reactivity:</strong>We are calculating pixel-perfect start and end points for a
+				given DOM. If there are changes to the DOM, the calculations are wrong again and need to be
+				recalculated. It is hard to detect changes while animating part of it. With the resize- and
+				mutation observer, we can get some of the direct changes but no indirect changes. There is
+				the possibility to use an intersection observer with a precise root margin to see if an
+				element changes position but that can only work if the animations are paused.
+			</li>
+			<li class="astro-J7PV25F6">
+				<strong class="astro-J7PV25F6">Weird browser behaviors:</strong>Chromium-based browsers can throw off the
+				calculations in certain situations. If the calculation happen out of the viewport and the
+				animation is happening above it, the calculations are off again. This is likely due to a
+				mechanism to prevent page jumps from lazy loaded elements but hard to predict.
+			</li>
+		</ul>
+	</section>
+
+		</main>
+		<footer><p>2023</p></footer>
+	</body></html>
