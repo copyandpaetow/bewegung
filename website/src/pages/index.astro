@@ -302,9 +302,9 @@ import CodeBlock from "../components/CodeBlock.astro";
 		row-gap: 1rem;
 		grid-auto-rows: max-content;
 
-		@media (min-width: 40rem) {
+		@media (min-width: 50rem) {
 			min-height: 150vh;
-			grid-template-columns: [current-start] 0.61fr [current-end sticky-start] 1fr [sticky-end];
+			grid-template-columns: [current-start] 1fr [current-end sticky-start] 1.5fr [sticky-end];
 		}
 
 		.start {
@@ -316,7 +316,7 @@ import CodeBlock from "../components/CodeBlock.astro";
 			grid-column: current;
 			grid-row: 1/2;
 
-			@media (min-width: 40rem) {
+			@media (min-width: 50rem) {
 				grid-column: sticky;
 			}
 		}
@@ -325,9 +325,10 @@ import CodeBlock from "../components/CodeBlock.astro";
 	aside {
 		display: grid;
 		place-content: center;
+		background-color: var(--color-background);
 
-		height: 50vh;
-		@media (min-width: 40rem) {
+		min-height: 50vh;
+		@media (min-width: 50rem) {
 			height: 100vh;
 		}
 	}

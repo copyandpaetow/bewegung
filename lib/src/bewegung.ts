@@ -10,7 +10,9 @@ import {
 	FullBewegungsOption,
 } from "./types";
 import { saveSeek } from "./utils/helper";
-import { WorkerMessanger, Webworker } from "./utils/worker-messanger";
+import { WorkerMessanger, DelayedWorker } from "./utils/worker-messanger";
+
+export const Webworker = new DelayedWorker();
 
 export const bewegung: BewegungsArgs = (
 	props: VoidFunction | FullBewegungsOption | BewegungsEntry[],

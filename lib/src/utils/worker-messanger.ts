@@ -18,8 +18,6 @@ export class DelayedWorker {
 	}
 }
 
-export const Webworker = new DelayedWorker();
-
 export class WorkerMessanger implements Messenger {
 	#listeners: Record<string, Set<any>>;
 	#worker: Worker;

@@ -1,7 +1,6 @@
 ---
 import "../styles/resets.css";
 import "../styles/vars.css";
-import "../styles/utility.css";
 
 export interface Props {
 	title: string;
@@ -30,8 +29,8 @@ const { title } = Astro.props;
 
 <style is:global lang="scss">
 	body {
-		color: var(--grey-20);
-		background-color: var(--grey-95);
+		color: var(--color-main);
+		background-color: var(--color-background);
 	}
 
 	main,
@@ -57,19 +56,29 @@ const { title } = Astro.props;
 		justify-items: center;
 	}
 
+	p,
+	a,
+	li,
+	button {
+		font-size: clamp(1rem, 2vw, 1.125rem);
+	}
+
 	h1 {
-		font-size: var(--space-400);
+		--flow-space: 2em;
+		margin-top: var(--flow-space, 1em);
+		font-size: clamp(var(--space-300), 4vw, var(--space-400));
 		line-height: 1.1;
 	}
 
 	h2 {
-		font-size: var(--space-300);
+		--flow-space: 1.5em;
+		font-size: clamp(var(--space-200), 3vw, var(--space-300));
 		line-height: 1.1;
 	}
 
 	h3 {
 		line-height: 1.1;
-		font-size: var(--space-200);
+		font-size: clamp(var(--space-100), 2.5vw, var(--space-200));
 	}
 
 	.flow > * + * {
