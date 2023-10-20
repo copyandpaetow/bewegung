@@ -8,27 +8,19 @@
     "animation"
   ],
   "scripts": {
-    "dev": "vite --host",
-    "build": "tsc && vite build --config vite.config.ts --emptyOutDir",
-    "build:lib": "vite build --config vite-lib.config.ts && tsc",
-    "preview": "vite preview",
-    "deploy": "sh deploy.sh"
+    "dev": "astro dev --config website/astro.config.ts",
+    "build": "astro build  --config website/astro.config.ts",
+    "build:lib": "vite build --config lib/vite.config.ts && tsc --project lib/tsconfig.json",
+    "preview": "astro preview --config website/astro.config.ts",
+    "astro": "astro --config website/astro.config.ts"
+  },
+  "dependencies": {
+    "astro": "^2.5.1",
+    "sass": "^1.62.1",
+    "typescript": "^5.0.4",
+    "vite": "^4.3.9"
   },
   "devDependencies": {
-    "@types/node": "^18.8.0",
-    "typescript": "^5.0.0",
-    "vite": "^4.3.0"
-  },
-  "files": [
-    "dist"
-  ],
-  "main": "./dist/bewegung.umd.js",
-  "module": "./dist/bewegung.es.js",
-  "types": "./dist/bewegung.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/bewegung.es.js",
-      "require": "./dist/bewegung.umd.js"
-    }
+    "@types/node": "^20.2.4"
   }
 }

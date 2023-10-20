@@ -1,0 +1,94 @@
+---
+import "../styles/resets.css";
+import "../styles/vars.css";
+
+export interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="Astro description" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+	</head>
+	<body>
+		<main>
+			<slot />
+		</main>
+		<footer><p>2023</p></footer>
+	</body>
+</html>
+
+<style is:global lang="scss">
+	body {
+		color: var(--color-main);
+		background-color: var(--color-background);
+	}
+
+	main,
+	footer {
+		display: grid;
+		grid-template-columns:
+			[full-start] minmax(1rem, 1fr) [content-start] minmax(auto, 70rem) [content-end] minmax(
+				1rem,
+				1fr
+			)
+			[full-end];
+		grid-auto-columns: max-content;
+		row-gap: clamp(2rem, 5vh, 5rem);
+
+		& > * {
+			grid-column: content;
+		}
+	}
+
+	footer {
+		height: 20vh;
+		align-items: end;
+		justify-items: center;
+	}
+
+	p,
+	a,
+	li,
+	button {
+		font-size: clamp(1rem, 2vw, 1.125rem);
+	}
+
+	h1 {
+		--flow-space: 2em;
+		margin-top: var(--flow-space, 1em);
+		font-size: clamp(var(--space-300), 4vw, var(--space-400));
+		line-height: 1.1;
+	}
+
+	h2 {
+		--flow-space: 1.5em;
+		font-size: clamp(var(--space-200), 3vw, var(--space-300));
+		line-height: 1.1;
+	}
+
+	h3 {
+		line-height: 1.1;
+		font-size: clamp(var(--space-100), 2.5vw, var(--space-200));
+	}
+
+	.flow > * + * {
+		margin-top: var(--flow-space, 1em);
+	}
+
+	.list {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: 1rem;
+	}
+</style>
