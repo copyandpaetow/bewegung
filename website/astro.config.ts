@@ -7,4 +7,5 @@ export default defineConfig({
 	outDir: "./website/dist",
 	base: "/bewegung/",
 	server: { port: 8000 },
+	site: "https://copyandpaetow.github.io",
 });
