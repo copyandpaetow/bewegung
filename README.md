@@ -60,17 +60,17 @@ This argument is an optional configuration object.
 
 ### Methods
 
-**play()**: Starts the animation.
-**pause()**: Pauses the animation.
-**seek(progress: number, done?: boolean)**: This method moves the animation to a specific point, which needs to be a number between 0-1. With the optional done boolean one can indicate whether the seeking action is finished. Can be used to make an animation scrollable
-**cancel()**: This method cancels the animation.
-**finish()**: This method finishes the animation.
-**forceUpdate(index?: number | number[])**: If you know the dom changed from another source (like a browser resize) this function will update either specific entries based on the index. If you dont provide an index, all entries will be recalculated
+- **play()**: Starts the animation.
+- **pause()**: Pauses the animation.
+- **seek(progress: number, done?: boolean)**: This method moves the animation to a specific point, which needs to be a number between 0-1. With the optional done boolean one can indicate whether the seeking action is finished. Can be used to make an animation scrollable
+- **cancel()**: This method cancels the animation.
+- **finish()**: This method finishes the animation.
+- **forceUpdate(index?: number | number[])**: If you know the dom changed from another source (like a browser resize) this function will update either specific entries based on the index. If you dont provide an index, all entries will be recalculated
 
 ### Properties
 
-**finished**: This is a promise that resolves when the animation has finished playing.
-**playState**: This is the current play state of the animation.
+- **finished**: This is a promise that resolves when the animation has finished playing.
+- **playState**: This is the current play state of the animation.
 
 ## License
 
