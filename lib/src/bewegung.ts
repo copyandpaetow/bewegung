@@ -1,6 +1,6 @@
-import { animationsController } from "./main-thread/animations";
-import { normalizeArguments } from "./main-thread/props";
-import { createTimekeeper } from "./main-thread/timekeeper";
+import { animationsController } from "./client/animations";
+import { normalizeArguments } from "./client/props";
+import { createTimekeeper } from "./client/timekeeper";
 import {
 	Bewegung,
 	BewegungsArgs,
@@ -9,8 +9,23 @@ import {
 	BewegungsOption,
 	FullBewegungsOption,
 } from "./types";
-import { saveSeek } from "./utils/helper";
-import { WorkerMessanger, DelayedWorker } from "./utils/worker-messanger";
+import { WorkerMessanger } from "./worker/worker-messanger";
+
+export class DelayedWorker {
+	worker: Worker;
+	constructor() {
+		this.refresh();
+	}
+
+	refresh() {
+		this.worker?.terminate();
+		requestAnimationFrame(() => {
+			this.worker = new Worker(new URL("./worker/worker.ts", import.meta.url), {
+				type: "module",
+			});
+		});
+	}
+}
 
 export const Webworker = new DelayedWorker();
 
@@ -38,8 +53,8 @@ export const bewegung: BewegungsArgs = (
 				this.finish();
 				return;
 			}
-
-			const seekTo = saveSeek(progress) * options[0].totalRuntime;
+			const guardedProgress = Math.max(0.0001, Math.min(0.9999, progress));
+			const seekTo = guardedProgress * options[0].totalRuntime;
 			timekeeper.currentTime = seekTo;
 
 			allAnimations.forEach((animations) => {

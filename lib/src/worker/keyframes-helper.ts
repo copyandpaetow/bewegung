@@ -25,3 +25,12 @@ export const normalizeBorderRadius = (radius: string, [width, height]: [number, 
 
 	return `${widthEntries.join(" ")} / ${heightEntries.join(" ")}`;
 };
+
+const ROUNDING_FACTOR = 10000;
+
+export const round = (number: number): number =>
+	Math.round((number + Number.EPSILON) * ROUNDING_FACTOR) / ROUNDING_FACTOR;
+
+export const save = (value: number, alternative: number): number => {
+	return value === Infinity || value === -Infinity || isNaN(value) ? alternative : round(value);
+};

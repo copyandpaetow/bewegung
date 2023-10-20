@@ -1,5 +1,5 @@
 import { Attributes, Messenger, NormalizedOptions, ResultTransferable } from "../types";
-import { applyCSSStyles, nextRaf } from "../utils/helper";
+import { applyCSSStyles, nextRaf } from "./client-helper";
 import { addKeyToNewlyAddedElement, observeDom, readdRemovedNodes } from "./observe-dom";
 import { iterateAddedElements, iterateRemovedElements, observe } from "./observer-helper";
 

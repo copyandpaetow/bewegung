@@ -188,7 +188,7 @@ export type WorkerPayloadMap = {
 	startDelayed: string;
 };
 
-export type WorkerPayload<Payload> =
+type WorkerPayload<Payload> =
 	| {
 			error: string;
 			data: undefined;

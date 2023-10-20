@@ -4,7 +4,7 @@ import {
 	RootDimensions,
 	TreeElement,
 } from "../types";
-import { save } from "../utils/helper";
+import { save } from "./keyframes-helper";
 
 const getTranslates = (dimensions: ChildParentDimensions) => {
 	const { current, parent, parentReference, reference } = dimensions;
@@ -37,7 +37,7 @@ const getTranslates = (dimensions: ChildParentDimensions) => {
 	};
 };
 
-export const getScales = (dimensions: ChildParentDimensions) => {
+const getScales = (dimensions: ChildParentDimensions) => {
 	const { current, parent, parentReference, reference } = dimensions;
 
 	const parentWidthDifference = parent.currentWidth / parentReference.currentWidth;

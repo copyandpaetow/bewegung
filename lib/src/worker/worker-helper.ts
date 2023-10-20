@@ -1,4 +1,4 @@
-import { DimensionalDifferences, ObjectFit, Result, TreeElement } from "../types";
+import { DimensionalDifferences, Display, ObjectFit, Result, TreeElement } from "../types";
 
 export const changesAspectRatio = (
 	dimensions: [TreeElement, TreeElement],
@@ -28,3 +28,6 @@ export const containRootChanges = (rootResult: Result | undefined) => {
 	const overrides = (rootResult[1] ??= {});
 	overrides.contain = "layout inline-size";
 };
+
+export const isEntryVisible = (entry: TreeElement) =>
+	entry.display !== Display.none && entry.unsaveWidth !== 0 && entry.unsaveHeight !== 0;

@@ -43,7 +43,7 @@ import CodeBlock from "../components/CodeBlock.astro";
 
 	buttonGridColum.onclick = () => {
 		animationPromise = animationPromise.then(() => {
-			const anim = bewegung(removeGridArea, 1000);
+			const anim = bewegung(removeGridArea, 400);
 			return anim.play();
 		});
 	};
@@ -73,7 +73,7 @@ import CodeBlock from "../components/CodeBlock.astro";
 
 	buttonAddElement.onclick = () => {
 		animationPromise = animationPromise.then(() => {
-			const anim = bewegung(cloneElement, 1000);
+			const anim = bewegung(cloneElement, 400);
 			return anim.play();
 		});
 	};

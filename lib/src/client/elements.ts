@@ -1,5 +1,5 @@
 import { Display, DomElement, DomRepresentation, ObjectFit, Position } from "../types";
-import { uuid } from "../utils/helper";
+import { uuid } from "./client-helper";
 
 const hasTextAttribute = (element: HTMLElement) => {
 	let hasText = false;

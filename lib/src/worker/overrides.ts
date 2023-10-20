@@ -47,6 +47,7 @@ export const updateOverrideStore = (
 	const previousOverrides = overrideStore.get(key) ?? {};
 
 	Object.keys(overrides).forEach((property) => {
+		//@ts-expect-error
 		previousOverrides[property] = dimensions[1][property];
 	});
 

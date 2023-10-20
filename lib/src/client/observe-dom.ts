@@ -1,5 +1,5 @@
 import { NormalizedOptions, Messenger } from "../types";
-import { applyCSSStyles, nextRaf, querySelectorAll } from "../utils/helper";
+import { applyCSSStyles, nextRaf, querySelectorAll } from "./client-helper";
 import { recordElement } from "./elements";
 import {
 	isHTMLElement,

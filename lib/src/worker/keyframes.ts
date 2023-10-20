@@ -1,6 +1,5 @@
 import { DimensionalDifferences, TreeElement } from "../types";
-import { save } from "../utils/helper";
-import { normalizeBorderRadius } from "./keyframes-helper";
+import { normalizeBorderRadius, save } from "./keyframes-helper";
 
 export const setKeyframes = (
 	differences: DimensionalDifferences[],

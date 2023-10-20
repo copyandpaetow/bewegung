@@ -7,7 +7,7 @@ import {
 	TreeElement,
 	TreeRepresentation,
 } from "../types";
-import { isEntryVisible } from "../utils/helper";
+import { isEntryVisible } from "./worker-helper";
 
 const parseStringValues = (value: string, dimensions: [number, number]) =>
 	value.split(" ").map((value: string, index: number) => {
@@ -57,6 +57,7 @@ export const parseDomRepresentation = (
 
 	if (overrideStore.has(current.key)) {
 		Object.entries(overrideStore.get(current.key)!).forEach(([key, value]) => {
+			//@ts-expect-error
 			result[key] = value;
 		});
 	}

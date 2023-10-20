@@ -6,9 +6,9 @@ import {
 	FullBewegungsOption,
 	NormalizedOptions,
 } from "../types";
-import { uuid } from "../utils/helper";
+import { uuid } from "./client-helper";
 
-export const defaultOptions: Required<BewegungsOption> & {
+const defaultOptions: Required<BewegungsOption> & {
 	from: VoidFunction | undefined;
 	to: VoidFunction | undefined;
 } = {

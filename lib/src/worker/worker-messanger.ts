@@ -1,23 +1,5 @@
 import { Messenger, WorkerCallback, WorkerPayloadMap } from "../types";
 
-const workerURL = new URL("../worker-thread/worker.ts", import.meta.url);
-
-export class DelayedWorker {
-	worker: Worker;
-	constructor() {
-		this.refresh();
-	}
-
-	refresh() {
-		this.worker?.terminate();
-		requestAnimationFrame(() => {
-			this.worker = new Worker(workerURL, {
-				type: "module",
-			});
-		});
-	}
-}
-
 export class WorkerMessanger implements Messenger {
 	#listeners: Record<string, Set<any>>;
 	#worker: Worker;

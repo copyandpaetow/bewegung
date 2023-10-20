@@ -1,6 +1,6 @@
+import { DelayedWorker } from "../bewegung";
 import { Attributes, NormalizedOptions } from "../types";
-import { nextRaf, querySelectorAll } from "../utils/helper";
-import { DelayedWorker } from "../utils/worker-messanger";
+import { nextRaf, querySelectorAll } from "./client-helper";
 
 const removeElements = () => {
 	querySelectorAll(`[${Attributes.removable}]`).forEach((element) => {

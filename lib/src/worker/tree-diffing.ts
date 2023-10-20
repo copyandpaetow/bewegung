@@ -1,5 +1,4 @@
 import { DomDiffCallback, TreeElement, TreeRepresentation } from "../types";
-import { isEntryVisible } from "../utils/helper";
 import {
 	getChildrenStores,
 	getDifferences,
@@ -8,6 +7,7 @@ import {
 	isSpecialImageElement,
 	saveTreeValue,
 } from "./tree-diffing-helper";
+import { isEntryVisible } from "./worker-helper";
 
 export const diffDomTrees = (
 	oldDom: TreeRepresentation,

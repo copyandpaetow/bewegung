@@ -1,12 +1,22 @@
 {
   "name": "bewegung",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "FLIP animation library",
   "license": "MIT",
   "keywords": [
     "FLIP",
     "animation"
   ],
+  "type": "module",
+  "files": ["lib/dist"],
+  "main": "./lib/dist/bewegung.umd.cjs",
+  "module": "./lib/dist/bewegung.js",
+  "exports": {
+    ".": {
+      "import": "./lib/dist/bewegung.js",
+      "require": "./lib/dist/bewegung.umd.cjs"
+    }
+  },
   "scripts": {
     "dev": "astro dev --config website/astro.config.ts",
     "build": "astro build  --config website/astro.config.ts",

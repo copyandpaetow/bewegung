@@ -1,6 +1,4 @@
 import { Result, TreeElement, TreeRepresentation } from "../types";
-import { isEntryVisible } from "../utils/helper";
-import { WorkerMessanger } from "../utils/worker-messanger";
 import { setImageKeyframes, setKeyframes } from "./keyframes";
 import {
 	getFromResults,
@@ -15,7 +13,9 @@ import {
 	containRootChanges,
 	hasObjectFit,
 	isCurrentlyInViewport,
+	isEntryVisible,
 } from "./worker-helper";
+import { WorkerMessanger } from "./worker-messanger";
 
 //@ts-expect-error
 const itself = self as Worker;
