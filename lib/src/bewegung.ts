@@ -20,7 +20,7 @@ const createWorker = () => {
 	return bewegungsWorker;
 };
 
-window?.requestIdleCallback(createWorker, { timeout: 2000 }) ?? setTimeout(createWorker, 2000);
+window.requestIdleCallback?.(createWorker, { timeout: 2000 }) ?? setTimeout(createWorker, 2000);
 
 export const bewegung: BewegungsArgs = (
 	props: VoidFunction | FullBewegungsOption | BewegungsEntry[],
