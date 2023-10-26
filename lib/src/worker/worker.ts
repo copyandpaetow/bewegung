@@ -15,11 +15,10 @@ import {
 	isCurrentlyInViewport,
 	isEntryVisible,
 } from "./worker-helper";
-import { WorkerMessanger } from "./worker-messanger";
+import { workerMessenger } from "./worker-messanger";
 
 //@ts-expect-error
-const itself = self as Worker;
-const messanger = new WorkerMessanger(itself);
+const messanger = workerMessenger(self as Worker);
 
 const domStore = new Map<string, TreeRepresentation>();
 const overrideStore = new Map<string, Partial<CSSStyleDeclaration>>();
@@ -60,7 +59,7 @@ const getKeyframeResults = (oldDom: TreeRepresentation, newDom: TreeRepresentati
 	return results;
 };
 
-messanger.on("domChanges", ({ data, error }) => {
+messanger.addListener("domChanges", ({ data, error }) => {
 	if (error) {
 		console.error(error);
 		return;
@@ -75,17 +74,17 @@ messanger.on("domChanges", ({ data, error }) => {
 
 	const { delayed, immediate } = getKeyframeResults(domStore.get(key)!, paresdDom);
 
-	messanger.send(`animationData-${key}`, immediate);
+	messanger.postMessage(`animationData-${key}`, immediate);
 	delayedResultStore.set(key, delayed);
 });
 
-messanger.on("startDelayed", ({ data: key }) => {
+messanger.addListener("startDelayed", ({ data: key }) => {
 	if (!key || !delayedResultStore.has(key)) {
 		return;
 	}
 
 	delayedResultStore.get(key)!.forEach((result, resultKey) => {
-		messanger.send(`delayedAnimationData-${key}`, new Map([[resultKey, result]]));
+		messanger.postMessage(`delayedAnimationData-${key}`, new Map([[resultKey, result]]));
 	});
 	delayedResultStore.delete(key);
 });

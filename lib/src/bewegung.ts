@@ -9,33 +9,26 @@ import {
 	BewegungsOption,
 	FullBewegungsOption,
 } from "./types";
-import { WorkerMessanger } from "./worker/worker-messanger";
+import { workerMessenger } from "./worker/worker-messanger";
 
-export class DelayedWorker {
-	worker: Worker;
-	constructor() {
-		this.refresh();
-	}
+let bewegungsWorker: Worker | null = null;
 
-	refresh() {
-		this.worker?.terminate();
-		requestAnimationFrame(() => {
-			this.worker = new Worker(new URL("./worker/worker.ts", import.meta.url), {
-				type: "module",
-			});
-		});
-	}
-}
+const createWorker = () => {
+	bewegungsWorker ??= new Worker(new URL("./worker/worker.ts", import.meta.url), {
+		type: "module",
+	});
+	return bewegungsWorker;
+};
 
-export const Webworker = new DelayedWorker();
+window.requestIdleCallback?.(createWorker, { timeout: 2000 }) ?? setTimeout(createWorker, 2000);
 
 export const bewegung: BewegungsArgs = (
 	props: VoidFunction | FullBewegungsOption | BewegungsEntry[],
 	config?: number | BewegungsOption | BewegungsConfig
 ): Bewegung => {
-	const worker = new WorkerMessanger(Webworker.worker);
+	const worker = workerMessenger(bewegungsWorker ?? createWorker());
 	const options = normalizeArguments(props, config);
-	const timekeeper = createTimekeeper(options, Webworker);
+	const timekeeper = createTimekeeper(options, worker);
 
 	const allAnimations = options.map((entry) => animationsController(entry, worker, timekeeper));
 

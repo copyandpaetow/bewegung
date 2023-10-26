@@ -1,5 +1,4 @@
-import { DelayedWorker } from "../bewegung";
-import { Attributes, NormalizedOptions } from "../types";
+import { Attributes, NormalizedOptions, WorkerMessenger } from "../types";
 import { nextRaf, querySelectorAll } from "./client-helper";
 
 const removeElements = () => {
@@ -26,7 +25,7 @@ const restoreOverridenElements = () => {
 
 export const createTimekeeper = (
 	options: NormalizedOptions[],
-	Webworker: DelayedWorker
+	worker: WorkerMessenger
 ): Animation => {
 	const timekeeper = new Animation(new KeyframeEffect(null, null, options[0].totalRuntime));
 
@@ -35,7 +34,7 @@ export const createTimekeeper = (
 		restoreOverridenElements();
 		removeElements();
 		removeDataAttributes();
-		Webworker.refresh();
+		worker.cleanup();
 	};
 
 	timekeeper.addEventListener("cancel", cleanup);
