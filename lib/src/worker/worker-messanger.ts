@@ -1,46 +1,30 @@
-import { Messenger, WorkerCallback, WorkerPayloadMap } from "../types";
+import { MessageResult, WorkerPayloadMap, WorkerMessenger } from "../types";
 
-export class WorkerMessanger implements Messenger {
-	#listeners: Record<string, Set<any>>;
-	#worker: Worker;
+export const workerMessenger = (worker: Worker): WorkerMessenger => {
+	const controller = new AbortController();
 
-	constructor(worker: Worker) {
-		this.#listeners = {};
-		this.#worker = worker;
-		this.#worker.addEventListener("message", this.handleMessage.bind(this));
-	}
+	return {
+		addListener<Key extends keyof WorkerPayloadMap>(
+			name: Key,
+			callback: (result: MessageResult<Key>) => void,
+			_options: AddEventListenerOptions = {}
+		) {
+			const options: AddEventListenerOptions = { ..._options, signal: controller.signal };
+			const handleMessage = (message: MessageEvent<MessageResult<Key>>) => {
+				if (message.data.key !== name) {
+					return;
+				}
 
-	handleMessage<Key extends keyof WorkerPayloadMap>(
-		event: MessageEvent<{ key: Key; payload: WorkerPayloadMap[Key] }>
-	) {
-		this.#listeners[event.data.key]?.forEach((callback) => {
-			try {
-				callback({ data: event.data.payload, error: undefined });
-			} catch (error) {
-				callback({ data: undefined, error: `${error}` });
-			}
-		});
-	}
+				callback(message.data);
+			};
 
-	on<Key extends keyof WorkerPayloadMap>(
-		key: Key,
-		callback: WorkerCallback<WorkerPayloadMap[Key]>
-	) {
-		this.#listeners[key] ??= new Set<WorkerCallback<WorkerPayloadMap[Key]>>();
-		this.#listeners[key].add(callback);
-	}
-
-	off<Key extends keyof WorkerPayloadMap>(
-		key: Key,
-		callback: WorkerCallback<WorkerPayloadMap[Key]>
-	) {
-		this.#listeners[key]?.delete(callback);
-	}
-
-	send<Key extends keyof WorkerPayloadMap>(key: Key, payload: WorkerPayloadMap[Key]) {
-		this.#worker.postMessage({
-			key,
-			payload,
-		});
-	}
-}
+			worker.addEventListener("message", handleMessage, options);
+		},
+		postMessage<Key extends keyof WorkerPayloadMap>(name: Key, data: WorkerPayloadMap[Key]) {
+			worker.postMessage({ key: name, data, error: null } as MessageResult<Key>);
+		},
+		cleanup() {
+			controller.abort();
+		},
+	};
+};

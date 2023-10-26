@@ -188,26 +188,24 @@ export type WorkerPayloadMap = {
 	startDelayed: string;
 };
 
-type WorkerPayload<Payload> =
+export type MessageResult<Key extends keyof WorkerPayloadMap> =
 	| {
-			error: string;
-			data: undefined;
+			key: Key;
+			data: WorkerPayloadMap[Key];
+			error: null;
 	  }
 	| {
-			error: undefined;
-			data: Payload;
+			key: Key;
+			data: null;
+			error: string;
 	  };
 
-export type WorkerCallback<Payload> = (payload: WorkerPayload<Payload>) => void;
-
-export interface Messenger {
-	on<Key extends keyof WorkerPayloadMap>(
-		key: Key,
-		callback: WorkerCallback<WorkerPayloadMap[Key]>
+export type WorkerMessenger = {
+	addListener<Key extends keyof WorkerPayloadMap>(
+		name: Key,
+		callback: (result: MessageResult<Key>) => void,
+		options?: AddEventListenerOptions
 	): void;
-	off<Key extends keyof WorkerPayloadMap>(
-		key: Key,
-		callback: WorkerCallback<WorkerPayloadMap[Key]>
-	): void;
-	send<Key extends keyof WorkerPayloadMap>(key: Key, payload: WorkerPayloadMap[Key]): void;
-}
+	postMessage<Key extends keyof WorkerPayloadMap>(name: Key, data: WorkerPayloadMap[Key]): void;
+	cleanup: VoidFunction;
+};

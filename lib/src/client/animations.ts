@@ -1,4 +1,5 @@
-import { Attributes, Messenger, NormalizedOptions, ResultTransferable } from "../types";
+import { Attributes, WorkerMessenger, NormalizedOptions, ResultTransferable } from "../types";
+import { createCheckPointAnimation } from "./checkpoint";
 import { applyCSSStyles, nextRaf } from "./client-helper";
 import { addKeyToNewlyAddedElement, observeDom, readdRemovedNodes } from "./observe-dom";
 import { iterateAddedElements, iterateRemovedElements, observe } from "./observer-helper";
@@ -31,40 +32,6 @@ const setAnimations = (results: ResultTransferable, options: KeyframeEffectOptio
 	return animations;
 };
 
-class CheckPointAnimation extends Animation {
-	#endTime = 0;
-	#startTime = 0;
-
-	constructor(effect?: AnimationEffect | null, timeline?: AnimationTimeline | null) {
-		super(effect, timeline);
-		if (!effect) {
-			return;
-		}
-
-		const computedTiming = effect.getTiming();
-
-		this.#startTime = computedTiming.delay as number;
-		this.#endTime = this.#startTime + (computedTiming.duration as number);
-	}
-
-	play() {
-		super.effect?.updateTiming({ duration: 0, delay: this.#startTime, endDelay: 0 });
-		super.play();
-	}
-	reverse() {
-		super.effect?.updateTiming({ duration: 0, delay: 0, endDelay: this.#endTime });
-		super.reverse();
-	}
-
-	set currentTime(time: number) {
-		super.currentTime = time;
-
-		if (time >= this.#startTime && time <= this.#endTime) {
-			this.finish();
-		}
-	}
-}
-
 const alignWithTimekeeper = (current: Animation, timekeeper: Animation) => {
 	current.startTime = timekeeper.startTime;
 	current.currentTime = timekeeper.currentTime ?? 0;
@@ -75,12 +42,12 @@ const alignWithTimekeeper = (current: Animation, timekeeper: Animation) => {
 
 export const animationsController = (
 	options: NormalizedOptions,
-	worker: Messenger,
+	worker: WorkerMessenger,
 	timekeeper: Animation
 ) => {
 	const animations = new Map<string, Animation>();
 	const animationOptions = extractAnimationOptions(options);
-	const checkpoint = new CheckPointAnimation(new KeyframeEffect(null, null, animationOptions));
+	const checkpoint = createCheckPointAnimation(new KeyframeEffect(null, null, animationOptions));
 	animations.set("checkpoint", checkpoint);
 
 	checkpoint.addEventListener(
@@ -94,7 +61,7 @@ export const animationsController = (
 
 	animations.set("checkpoint", alignWithTimekeeper(checkpoint, timekeeper));
 
-	worker.on(`animationData-${options.key}`, async ({ data, error }) => {
+	worker.addListener(`animationData-${options.key}`, async ({ data, error }) => {
 		if (error) {
 			timekeeper.cancel();
 			console.error(error);
@@ -111,7 +78,7 @@ export const animationsController = (
 				animations.set(key, alignWithTimekeeper(anim, timekeeper));
 			});
 
-			worker.send("startDelayed", options.key);
+			worker.postMessage("startDelayed", options.key);
 		};
 
 		await nextRaf();
@@ -120,7 +87,7 @@ export const animationsController = (
 		options.to?.();
 	});
 
-	worker.on(`delayedAnimationData-${options.key}`, ({ data, error }) => {
+	worker.addListener(`delayedAnimationData-${options.key}`, ({ data, error }) => {
 		if (error) {
 			timekeeper.cancel();
 			console.error(error);
