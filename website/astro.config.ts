@@ -12,4 +12,5 @@ export default defineConfig({
 		},
 	},
 	site: "https://copyandpaetow.github.io",
+	scopedStyleStrategy: "where",
 });

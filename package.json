@@ -7,6 +7,10 @@
     "FLIP",
     "animation"
   ],
+  "scripts": {
+    "build": "cd && cd bewegung/website && astro build",
+    "preview": "cd && cd bewegung/website && astro build && astro preview"
+  },
   "workspaces": ["/lib", "/website"],
   "devDependencies": {
     "prettier": "3.0.3",
