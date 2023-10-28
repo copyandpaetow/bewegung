@@ -19,8 +19,5 @@
   },
   "scripts": {
     "build": "vite build"
-  },
-  "devDependencies": {
-
   }
 }
