@@ -29,6 +29,7 @@ export const bewegung: BewegungsArgs = (
 	const worker = workerMessenger(bewegungsWorker ?? createWorker());
 	const options = normalizeArguments(props, config);
 	const timekeeper = createTimekeeper(options, worker);
+
 	const allAnimations = options.map((entry) => animationsController(entry, worker, timekeeper));
 
 	return {
