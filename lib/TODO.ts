@@ -18,7 +18,7 @@ TODOs
 
 * checks
 - what happens when 2 options run at the same time (via overlap)?
-- does it work in all browsers?
+- does it help performance when the objects have the same shape?
 
 * adjacent tasks
 

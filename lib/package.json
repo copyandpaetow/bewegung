@@ -1,0 +1,23 @@
+{
+  "name": "bewegung",
+  "version": "0.2.0",
+  "description": "FLIP animation library",
+  "license": "MIT",
+  "keywords": [
+    "FLIP",
+    "animation"
+  ],
+  "type": "module",
+  "files": ["dist"],
+  "main": "./dist/bewegung.umd.cjs",
+  "module": "./dist/bewegung.js",
+  "exports": {
+    ".": {
+      "import": "./dist/bewegung.js",
+      "require": "./dist/bewegung.umd.cjs"
+    }
+  },
+  "scripts": {
+    "build": "vite build && tsc"
+  }
+}

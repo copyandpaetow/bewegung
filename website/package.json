@@ -1,0 +1,24 @@
+{
+  "name": "bewegungs-website",
+  "version": "0.2.0",
+  "description": "FLIP animation library",
+  "license": "MIT",
+  "keywords": [
+    "FLIP",
+    "animation"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build ",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^3.4.0",
+    "sass": "^1.62.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.2.4"
+  }
+}

@@ -1,11 +1,15 @@
 import { defineConfig } from "astro/config";
+import { searchForWorkspaceRoot } from "vite";
 
 export default defineConfig({
-	root: "./website",
-	srcDir: "./website/src",
-	publicDir: "./website/public",
-	outDir: "./website/dist",
 	base: "/bewegung/",
-	server: { port: 8000 },
+	server: { port: 8001, host: true },
+	vite: {
+		server: {
+			fs: {
+				allow: [searchForWorkspaceRoot(process.cwd())],
+			},
+		},
+	},
 	site: "https://copyandpaetow.github.io",
 });
