@@ -1,6 +1,6 @@
 {
   "name": "bewegung",
-  "version": "0.2",
+  "version": "0.2.0",
   "description": "FLIP animation library",
   "license": "MIT",
   "keywords": [
@@ -18,6 +18,6 @@
     }
   },
   "scripts": {
-    "build": "vite build"
+    "build": "vite build && tsc"
   }
 }
