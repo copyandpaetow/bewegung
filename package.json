@@ -8,8 +8,8 @@
     "animation"
   ],
   "scripts": {
-    "build": "cd && cd bewegung/website && astro build",
-    "preview": "cd && cd bewegung/website && astro build && astro preview"
+    "build": "cd website && astro build",
+    "preview": "cd website && astro build && astro preview"
   },
   "workspaces": ["/lib", "/website"],
   "devDependencies": {
