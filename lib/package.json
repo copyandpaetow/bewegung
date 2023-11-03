@@ -1,6 +1,6 @@
 {
   "name": "bewegung",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "FLIP animation library",
   "license": "MIT",
   "keywords": [
@@ -8,7 +8,8 @@
     "animation"
   ],
   "type": "module",
-  "files": ["dist"],
+  "types": "dist/bewegung.d.ts",
+  "files": ["dist", "dist/assets/"],
   "main": "./dist/bewegung.umd.cjs",
   "module": "./dist/bewegung.js",
   "exports": {

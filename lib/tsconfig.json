@@ -10,8 +10,9 @@
 		"moduleResolution": "bundler",
 		"allowImportingTsExtensions": true,
 		"resolveJsonModule": true,
-		"isolatedModules": true,
-		"noEmit": true,
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"outFile": "dist/bewegung",
 
 		/* Linting */
 		"strict": true,
