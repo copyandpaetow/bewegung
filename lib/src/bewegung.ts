@@ -10,13 +10,13 @@ import {
 	FullBewegungsOption,
 } from "./types";
 import { workerMessenger } from "./worker/worker-messanger";
+//@ts-expect-error
+import Worker from "./worker?worker&inline";
 
 let bewegungsWorker: Worker | null = null;
 
 const createWorker = () => {
-	bewegungsWorker ??= new Worker(new URL("./worker/worker.ts", import.meta.url), {
-		type: "module",
-	});
+	bewegungsWorker ??= new Worker();
 	return bewegungsWorker;
 };
 

@@ -1,21 +1,21 @@
-import { Result, TreeElement, TreeRepresentation } from "../types";
-import { setImageKeyframes, setKeyframes } from "./keyframes";
+import { Result, TreeElement, TreeRepresentation } from "./types";
+import { setImageKeyframes, setKeyframes } from "./worker/keyframes";
 import {
 	getFromResults,
 	setHiddenElementOverrides,
 	setParentToRelative,
 	updateOverrideStore,
-} from "./overrides";
-import { parseDomRepresentation } from "./parse";
-import { diffDomTrees } from "./tree-diffing";
+} from "./worker/overrides";
+import { parseDomRepresentation } from "./worker/parse";
+import { diffDomTrees } from "./worker/tree-diffing";
 import {
 	changesAspectRatio,
 	containRootChanges,
 	hasObjectFit,
 	isCurrentlyInViewport,
 	isEntryVisible,
-} from "./worker-helper";
-import { workerMessenger } from "./worker-messanger";
+} from "./worker/worker-helper";
+import { workerMessenger } from "./worker/worker-messanger";
 
 //@ts-expect-error
 const messanger = workerMessenger(self as Worker);

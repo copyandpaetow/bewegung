@@ -16,6 +16,9 @@ TODOs
 => domState a => b => c means at c two dom state changes are applied. If the the animation starts at reverse only the last dom change will be applied and one is  missing
 => seeking has the same issue
 
+- chrome-based browser calculate dimensions differently when the animation happens above the viewport 
+=> If this is related to overflow-anchor, we need to turn that off while calculating
+
 * checks
 - what happens when 2 options run at the same time (via overlap)?
 - does it help performance when the objects have the same shape?
@@ -36,5 +39,11 @@ TODOs
 
 - "at" needs some improvements / aditions
 => how are easings when there is an overlap?
+
+- We could add web-component wrappers with only a light dom, that could be the root boundary
+=> in there we could have a custom eventlistener to trigger animations somewhat programatically
+=> we could also use something like the popover where there is a targetelement and a targetaction
+
+maybe we could have triggers like there are for the popover
 
 */
