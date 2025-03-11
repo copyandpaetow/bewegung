@@ -1,27 +1,28 @@
 ---
+
 ---
 
 <pre>
 	<code><slot /></code>
 </pre>
 
-<style lang="scss">
-	pre,
-	code {
-		overflow-x: scroll;
-		scrollbar-width: none;
-		max-width: calc(100vw - 2 * var(--space-100) - 1vw);
-		white-space: pre;
-	}
+<style>
+  pre,
+  code {
+    overflow-x: scroll;
+    scrollbar-width: none;
+    max-width: calc(100vw - 2 * var(--space-100) - 1vw);
+    white-space: pre;
+  }
 
-	pre {
-		padding: 0 var(--space-100);
-		display: inline flex;
-		backdrop-filter: blur(10px) saturate(200%);
-	}
+  pre {
+    padding: 0 var(--space-100);
+    display: inline flex;
+    backdrop-filter: blur(10px) saturate(200%);
+  }
 
-	pre::-webkit-scrollbar,
-	code::-webkit-scrollbar {
-		display: none;
-	}
+  pre::-webkit-scrollbar,
+  code::-webkit-scrollbar {
+    display: none;
+  }
 </style>

@@ -1,103 +1,140 @@
-import { Attributes, WorkerMessenger, NormalizedOptions, ResultTransferable } from "../types";
+import {
+  Attributes,
+  WorkerMessenger,
+  NormalizedOptions,
+  ResultTransferable,
+} from "../types";
 import { createCheckPointAnimation } from "./checkpoint";
 import { applyCSSStyles, nextRaf } from "./client-helper";
-import { addKeyToNewlyAddedElement, observeDom, readdRemovedNodes } from "./observe-dom";
-import { iterateAddedElements, iterateRemovedElements, observe } from "./observer-helper";
+import {
+  addKeyToNewlyAddedElement,
+  observeDom,
+  readdRemovedNodes,
+} from "./observe-dom";
+import {
+  iterateAddedElements,
+  iterateRemovedElements,
+  observe,
+} from "./observer-helper";
 
-const extractAnimationOptions = (options: NormalizedOptions): KeyframeEffectOptions => ({
-	duration: options.duration,
-	delay: options.startTime,
-	endDelay: options.totalRuntime - options.endTime,
-	easing: options.easing,
-	composite: "add",
+const extractAnimationOptions = (
+  options: NormalizedOptions
+): KeyframeEffectOptions => ({
+  duration: options.duration,
+  delay: options.startTime,
+  endDelay: options.totalRuntime - options.endTime,
+  easing: options.easing,
+  composite: "replace",
 });
 
-const setAnimations = (results: ResultTransferable, options: KeyframeEffectOptions) => {
-	const animations = new Map<string, Animation>();
+const setAnimations = (
+  results: ResultTransferable,
+  options: KeyframeEffectOptions
+) => {
+  const animations = new Map<string, Animation>();
 
-	results.forEach(([keyframes, overrides], key) => {
-		const element = document.querySelector(`[${Attributes.key}=${key}]`) as HTMLElement;
-		if (!element) {
-			return;
-		}
+  console.log(results);
 
-		animations.set(key, new Animation(new KeyframeEffect(element, keyframes, options)));
+  results.forEach(([keyframes, overrides], key) => {
+    const element = document.querySelector(
+      `[${Attributes.key}=${key}]`
+    ) as HTMLElement;
+    if (!element) {
+      return;
+    }
 
-		if (overrides) {
-			element.dataset.bewegungsCssReset = element.style.cssText ?? " ";
-			applyCSSStyles(element, overrides);
-		}
-	});
+    animations.set(
+      key,
+      new Animation(new KeyframeEffect(element, keyframes, options))
+    );
 
-	return animations;
+    if (overrides) {
+      element.dataset.bewegungsCssReset = element.style.cssText ?? " ";
+      applyCSSStyles(element, overrides);
+    }
+  });
+
+  return animations;
 };
 
 const alignWithTimekeeper = (current: Animation, timekeeper: Animation) => {
-	current.startTime = timekeeper.startTime;
-	current.currentTime = timekeeper.currentTime ?? 0;
-	current.playbackRate = timekeeper.playbackRate;
+  current.startTime = timekeeper.startTime;
+  current.currentTime = timekeeper.currentTime ?? 0;
+  current.playbackRate = timekeeper.playbackRate;
 
-	return current;
+  return current;
 };
 
 export const animationsController = (
-	options: NormalizedOptions,
-	worker: WorkerMessenger,
-	timekeeper: Animation
+  options: NormalizedOptions,
+  worker: WorkerMessenger,
+  timekeeper: Animation
 ) => {
-	const animations = new Map<string, Animation>();
-	const animationOptions = extractAnimationOptions(options);
-	const checkpoint = createCheckPointAnimation(new KeyframeEffect(null, null, animationOptions));
-	animations.set("checkpoint", checkpoint);
+  const animations = new Map<string, Animation>();
+  const animationOptions = extractAnimationOptions(options);
+  const checkpoint = createCheckPointAnimation(
+    new KeyframeEffect(null, null, animationOptions)
+  );
+  animations.set("checkpoint", checkpoint);
 
-	checkpoint.addEventListener(
-		"finish",
-		() => {
-			animations.delete("checkpoint");
-			observeDom(options, worker);
-		},
-		{ once: true }
-	);
+  checkpoint.addEventListener(
+    "finish",
+    () => {
+      animations.delete("checkpoint");
+      observeDom(options, worker);
+    },
+    { once: true }
+  );
 
-	animations.set("checkpoint", alignWithTimekeeper(checkpoint, timekeeper));
+  animations.set("checkpoint", alignWithTimekeeper(checkpoint, timekeeper));
 
-	worker.addListener(`animationData-${options.key}`, async ({ data, error }) => {
-		if (error) {
-			timekeeper.cancel();
-			console.error(error);
-			return;
-		}
+  worker.addListener(
+    `animationData-${options.key}`,
+    async ({ data, error }) => {
+      if (error) {
+        timekeeper.cancel();
+        console.error(error);
+        return;
+      }
 
-		const observerCallback: MutationCallback = (entries, observer) => {
-			observer.disconnect();
+      const observerCallback: MutationCallback = (entries, observer) => {
+        observer.disconnect();
 
-			iterateRemovedElements(entries, readdRemovedNodes);
-			iterateAddedElements(entries, addKeyToNewlyAddedElement);
+        iterateRemovedElements(entries, readdRemovedNodes);
+        iterateAddedElements(entries, addKeyToNewlyAddedElement);
 
-			setAnimations(data as ResultTransferable, animationOptions).forEach((anim, key) => {
-				animations.set(key, alignWithTimekeeper(anim, timekeeper));
-			});
+        setAnimations(data as ResultTransferable, animationOptions).forEach(
+          (anim, key) => {
+            animations.set(key, alignWithTimekeeper(anim, timekeeper));
+          }
+        );
 
-			worker.postMessage("startDelayed", options.key);
-		};
+        worker.postMessage("startDelayed", options.key);
+      };
 
-		await nextRaf();
-		observe(new MutationObserver(observerCallback));
-		options.from?.();
-		options.to?.();
-	});
+      await nextRaf();
+      observe(new MutationObserver(observerCallback));
+      options.from?.();
+      options.to?.();
+    }
+  );
 
-	worker.addListener(`delayedAnimationData-${options.key}`, ({ data, error }) => {
-		if (error) {
-			timekeeper.cancel();
-			console.error(error);
-			return;
-		}
+  worker.addListener(
+    `delayedAnimationData-${options.key}`,
+    ({ data, error }) => {
+      if (error) {
+        timekeeper.cancel();
+        console.error(error);
+        return;
+      }
 
-		setAnimations(data as ResultTransferable, animationOptions).forEach((anim, key) => {
-			animations.set(key, alignWithTimekeeper(anim, timekeeper));
-		});
-	});
+      setAnimations(data as ResultTransferable, animationOptions).forEach(
+        (anim, key) => {
+          animations.set(key, alignWithTimekeeper(anim, timekeeper));
+        }
+      );
+    }
+  );
 
-	return animations;
+  return animations;
 };

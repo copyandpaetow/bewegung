@@ -8,13 +8,9 @@
     "animation"
   ],
   "scripts": {
+    "dev": "cd website && astro dev",
     "build": "cd website && astro build",
     "preview": "cd website && astro build && astro preview"
   },
-  "workspaces": ["/lib", "/website"],
-  "devDependencies": {
-    "prettier": "^3.0.3",
-    "typescript": "^5.0.4",
-    "vite": "^5.0.0"
-  }
+  "workspaces": ["/lib", "/website"]
 }
