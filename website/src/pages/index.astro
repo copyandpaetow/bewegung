@@ -5,344 +5,406 @@ import CodeBlock from "../components/CodeBlock.astro";
 ---
 
 <script>
-	import { bewegung } from "../../../lib/src/bewegung";
+  import { bewegung } from "../../../lib/src/bewegung";
+  import "../lib2/web-component";
 
-	const list = document.getElementById("js-list") as HTMLElement;
-	const buttonGridColum = document.getElementById("js-grid-colums") as HTMLElement;
-	const buttonGridToFlex = document.getElementById("js-grid-to-flex") as HTMLElement;
-	const buttonDisplayNone = document.getElementById("js-display-none") as HTMLElement;
-	const buttonRemoveElement = document.getElementById("js-remove-element") as HTMLElement;
-	const buttonAddElement = document.getElementById("js-add-element") as HTMLElement;
-	const buttonClear = document.getElementById("js-clear") as HTMLElement;
-	const buttonSequence = document.getElementById("js-sequence") as HTMLElement;
-	const buttonScroll = document.getElementById("js-scroll") as HTMLElement;
+  const list = document.getElementById("js-list") as HTMLElement;
+  const buttonGridColum = document.getElementById(
+    "js-grid-colums"
+  ) as HTMLElement;
+  const buttonGridToFlex = document.getElementById(
+    "js-grid-to-flex"
+  ) as HTMLElement;
+  const buttonDisplayNone = document.getElementById(
+    "js-display-none"
+  ) as HTMLElement;
+  const buttonRemoveElement = document.getElementById(
+    "js-remove-element"
+  ) as HTMLElement;
+  const buttonAddElement = document.getElementById(
+    "js-add-element"
+  ) as HTMLElement;
+  const buttonClear = document.getElementById("js-clear") as HTMLElement;
+  const buttonSequence = document.getElementById("js-sequence") as HTMLElement;
+  const buttonScroll = document.getElementById("js-scroll") as HTMLElement;
+  const buttonTest = document.getElementById("js-test") as HTMLElement;
 
-	let animationPromise = Promise.resolve();
+  let animationPromise = Promise.resolve();
 
-	const removeGridArea = () => {
-		list.style.gridTemplateColumns = "1fr 1fr";
-		list.querySelectorAll("li").forEach((element) => {
-			element.style.gridArea = "unset";
-		});
-	};
+  const removeGridArea = () => {
+    list.style.display = "grid";
+    list.style.gridTemplateColumns = "1fr 1fr";
+    list.querySelectorAll("li").forEach((element) => {
+      element.style.gridArea = "unset";
+    });
+  };
 
-	const toFlex = () => {
-		list.style.display = "flex";
-		list.style.flexDirection = "column";
-	};
+  const toFlex = () => {
+    list.style.display = "flex";
+    list.style.flexDirection = "column";
+  };
 
-	const removeFirstImage = () => {
-		(list.querySelector("li:first-of-type") as HTMLElement).remove();
-	};
+  const removeFirstImage = () => {
+    (list.querySelector("li:first-of-type") as HTMLElement).remove();
+  };
 
-	const cloneElement = () => {
-		const lastCard = list.querySelector("li:first-of-type") as HTMLElement;
-		const newElement = lastCard.cloneNode(true);
-		list.append(newElement);
-	};
+  const cloneElement = () => {
+    const lastCard = list.querySelector("li:first-of-type") as HTMLElement;
+    const newElement = lastCard.cloneNode(true);
+    list.append(newElement);
+  };
 
-	buttonGridColum.onclick = () => {
-		animationPromise = animationPromise.then(() => {
-			const anim = bewegung(removeGridArea, 400);
-			return anim.play();
-		});
-	};
+  buttonTest.onclick = () => {
+    list.children[3].style.aspectRatio = "2";
+    // animationPromise = animationPromise.then(() => {
+    //   const anim = bewegung(() => (list.children[3].style.aspectRatio = "2"), {
+    //     duration: 400,
+    //     root: "bewegung-boundary",
+    //   });
+    //   return anim.play();
+    // });
+  };
 
-	buttonGridToFlex.onclick = () => {
-		animationPromise = animationPromise.then(() => {
-			const anim = bewegung(toFlex, 400);
-			return anim.play();
-		});
-	};
+  buttonGridColum.onclick = () => {
+    // animationPromise = animationPromise.then(() => {
+    //   const anim = bewegung(removeGridArea, 400);
+    //   return anim.play();
+    // });
+    removeGridArea();
+  };
 
-	buttonDisplayNone.onclick = () => {
-		animationPromise = animationPromise.then(() => {
-			const anim = bewegung(() => {
-				(list.querySelector("li:first-of-type") as HTMLElement).style.display = "none";
-			}, 400);
-			return anim.play();
-		});
-	};
+  buttonGridToFlex.onclick = () => {
+    // animationPromise = animationPromise.then(() => {
+    //   const anim = bewegung(toFlex, 400);
+    //   return anim.play();
+    // });
+    toFlex();
+  };
 
-	buttonRemoveElement.onclick = () => {
-		animationPromise = animationPromise.then(() => {
-			const anim = bewegung(removeFirstImage, 400);
-			return anim.play();
-		});
-	};
+  buttonDisplayNone.onclick = () => {
+    (list.querySelector("li:first-of-type") as HTMLElement).style.display =
+      "none";
+    // animationPromise = animationPromise.then(() => {
+    //   const anim = bewegung(() => {
+    //     (list.querySelector("li:first-of-type") as HTMLElement).style.display =
+    //       "none";
+    //   }, 400);
+    //   return anim.play();
+    // });
+  };
 
-	buttonAddElement.onclick = () => {
-		animationPromise = animationPromise.then(() => {
-			const anim = bewegung(cloneElement, 400);
-			return anim.play();
-		});
-	};
+  buttonRemoveElement.onclick = () => {
+    // animationPromise = animationPromise.then(() => {
+    //   const anim = bewegung(removeFirstImage, 400);
+    //   return anim.play();
+    // });
+    removeFirstImage();
+  };
 
-	buttonSequence.onclick = () => {
-		animationPromise = animationPromise.then(() => {
-			const anim = bewegung([removeGridArea, toFlex], { defaultOptions: { duration: 1000 } });
-			return anim.play();
-		});
-	};
+  buttonAddElement.onclick = () => {
+    // animationPromise = animationPromise.then(() => {
+    //   const anim = bewegung(cloneElement, 400);
+    //   return anim.play();
+    // });
+    cloneElement();
+  };
 
-	buttonScroll.onclick = () => {
-		animationPromise = animationPromise.then(() => {
-			buttonScroll.closest("section")!.style.minHeight = "250vh";
-			const anim = bewegung([removeGridArea, cloneElement], {
-				defaultOptions: { duration: 1000 },
-			});
-			const offset = window.innerHeight / 2;
-			const scrollHeight = document.querySelector("aside")!.parentElement!.scrollHeight - offset;
+  buttonSequence.onclick = () => {
+    // animationPromise = animationPromise.then(() => {
+    //   const anim = bewegung([removeGridArea, toFlex], {
+    //     defaultOptions: { duration: 1000 },
+    //   });
+    //   return anim.play();
+    // });
+    removeGridArea();
+  };
 
-			const scrollFn = () => {
-				const scroll = document.documentElement.scrollTop / scrollHeight;
-				if (scroll >= 1) {
-					anim.seek(scroll, true);
-					document.removeEventListener("scroll", scrollFn);
-					return;
-				}
+  buttonScroll.onclick = () => {
+    animationPromise = animationPromise.then(() => {
+      buttonScroll.closest("section")!.style.minHeight = "250vh";
+      const anim = bewegung([removeGridArea, cloneElement], {
+        defaultOptions: { duration: 1000 },
+      });
+      const offset = window.innerHeight / 2;
+      const scrollHeight =
+        document.querySelector("aside")!.parentElement!.scrollHeight - offset;
 
-				anim.seek(scroll);
-			};
-			document.addEventListener("scroll", scrollFn, { passive: true });
-		});
-	};
+      const scrollFn = () => {
+        const scroll = document.documentElement.scrollTop / scrollHeight;
+        if (scroll >= 1) {
+          anim.seek(scroll, true);
+          document.removeEventListener("scroll", scrollFn);
+          return;
+        }
 
-	buttonClear.onclick = () => {
-		window.location.reload();
-	};
+        anim.seek(scroll);
+      };
+      document.addEventListener("scroll", scrollFn, { passive: true });
+    });
+  };
+
+  buttonClear.onclick = () => {
+    window.location.reload();
+  };
 </script>
 
 <Layout title="Bewegung">
-	<section id="examples" class="split-screen">
-		<div class="flow start">
-			<h1>bewegung.</h1>
-			<p>
-				<strong>[bəˈveːɡʊŋ - the german word for motion]</strong>. This 8KB, 0-dependency library
-				uses the FLIP animation technique, which can smoothly animate layout changes. It makes the
-				browser work less compared to other css and js animation approaches.
-				<br />
-				<br />
-				 Bewegung can even animate currently unanimatable properties like display: none or element
-				addition/removal
-			</p>
-			<ul>
-				<li>
-					<a href="https://github.com/copyandpaetow/bewegung">github</a>
-				</li>
-				<li>
-					<a href="#documentation">documentation</a>
-				</li>
-				<li>
-					<a href="#caveats">caveats</a>
-				</li>
-			</ul>
+  <section id="examples" class="split-screen">
+    <div class="flow start">
+      <h1>bewegung.</h1>
+      <p>
+        <strong>[bəˈveːɡʊŋ - the german word for motion]</strong>. This 8KB,
+        0-dependency library uses the FLIP animation technique, which can
+        smoothly animate layout changes. It makes the browser work less compared
+        to other css and js animation approaches.
+        <br />
+        <br />
+        Bewegung can even animate currently unanimatable properties like display:
+        none or element addition/removal
+      </p>
+      <ul>
+        <li>
+          <a href="https://github.com/copyandpaetow/bewegung">github</a>
+        </li>
+        <li>
+          <a href="#documentation">documentation</a>
+        </li>
+        <li>
+          <a href="#caveats">caveats</a>
+        </li>
+      </ul>
 
-			<h2>Examples</h2>
-			<h3>single</h3>
-			<ul class="list">
-				<li>
-					<button id="js-grid-colums">grid-columns</button>
-				</li>
-				<li>
-					<button id="js-grid-to-flex">grid to flexbox</button>
-				</li>
-				<li>
-					<button id="js-display-none">display: none</button>
-				</li>
-				<li>
-					<button id="js-remove-element">element removal</button>
-				</li>
-				<li>
-					<button id="js-add-element">element addition</button>
-				</li>
-				<li>
-					<button id="js-clear">clear changes</button>
-				</li>
-			</ul>
-			<h3>other</h3>
-			<ul class="list">
-				<li>
-					<button id="js-scroll">scroll</button>
-				</li>
-				<li>
-					<button id="js-sequence">sequence</button>
-				</li>
-			</ul>
-		</div>
-		<aside class="sticky end">
-			<ul id="js-list">
-				<Card
-					headline="red"
-					copy="from 1992"
-					imgSrc="red.jpeg"
-					imgAlt="coffee and flowers on a table"
-					class="position"
-				/>
-				<Card
-					headline="blue"
-					copy="out of the"
-					imgSrc="blue.jpeg"
-					imgAlt="distant hills"
-					class="position"
-				/>
-				<Card
-					headline="green"
-					copy="calming and nice"
-					imgSrc="green.jpeg"
-					imgAlt="wigs and leafes in front of a wall"
-					class="position"
-				/>
-				<Card
-					headline="yellow"
-					copy="inperfectly perfect"
-					imgSrc="yellow.jpeg"
-					imgAlt="flowers in front of a wall"
-					class="position"
-				/>
-			</ul>
-		</aside>
-	</section>
-	<section id="documentation" class="flow">
-		<h2>Documentation</h2>
-		<h3>Installation</h3>
-		<p>install via npm/yarn/pnpm etc</p>
-		<CodeBlock>npm install bewegung</CodeBlock>
+      <h2>Examples</h2>
+      <h3>single</h3>
+      <ul class="list">
+        <li>
+          <button id="js-test">test</button>
+        </li>
+        <li>
+          <button id="js-grid-colums">grid-columns</button>
+        </li>
+        <li>
+          <button id="js-grid-to-flex">grid to flexbox</button>
+        </li>
+        <li>
+          <button id="js-display-none">display: none</button>
+        </li>
+        <li>
+          <button id="js-remove-element">element removal</button>
+        </li>
+        <li>
+          <button id="js-add-element">element addition</button>
+        </li>
+        <li>
+          <button id="js-clear">clear changes</button>
+        </li>
+      </ul>
+      <h3>other</h3>
+      <ul class="list">
+        <li>
+          <button id="js-scroll">scroll</button>
+        </li>
+        <li>
+          <button id="js-sequence">sequence</button>
+        </li>
+      </ul>
+    </div>
+    <bewegung-boundary class="presentation sticky end">
+      <details>
+        <summary>hello</summary><div>
+          content that could be very long and expand quite a bit. you never know
+          whats happening
+        </div>
+      </details>
+      <ul id="js-list">
+        <Card
+          headline="red"
+          copy="from 1992"
+          imgSrc="red.jpeg"
+          imgAlt="coffee and flowers on a table"
+          class="position"
+        />
+        <Card
+          headline="blue"
+          copy="out of the"
+          imgSrc="blue.jpeg"
+          imgAlt="distant hills"
+          class="position"
+        />
+        <Card
+          headline="green"
+          copy="calming and nice"
+          imgSrc="green.jpeg"
+          imgAlt="wigs and leafes in front of a wall"
+          class="position"
+        />
+        <Card
+          headline="yellow"
+          copy="inperfectly perfect"
+          imgSrc="yellow.jpeg"
+          imgAlt="flowers in front of a wall"
+          class="position"
+        />
+      </ul>
+    </bewegung-boundary>
+  </section>
+  <section id="documentation" class="flow">
+    <h2>Documentation</h2>
+    <h3>Installation</h3>
+    <p>install via npm/yarn/pnpm etc</p>
+    <CodeBlock>npm install bewegung</CodeBlock>
 
-		<h3>The simple things: play, pause, reverse</h3>
-		<CodeBlock>
-			<br />import &#123; bewegung &#125; from "bewegung";
-			<br />const animation = bewegung(yourCustomDomChangeFunction, 400) &#125;);
-			<br />bewegung.play();
-			<br />bewegung.pause();
-			<br />bewegung.resume();
-		</CodeBlock>
+    <h3>The simple things: play, pause, reverse</h3>
+    <CodeBlock>
+      <br />import &#123; bewegung &#125; from "bewegung";
+      <br />const animation = bewegung(yourCustomDomChangeFunction, 400)
+      &#125;);
+      <br />bewegung.play();
+      <br />bewegung.pause();
+      <br />bewegung.resume();
+    </CodeBlock>
 
-		<h3>bring your own progress: seek</h3>
-		<p>
-			you can precisely controll the animation via seek. This can be use to make the animation based
-			on scroll or a load progress for example.
-		</p>
-		<CodeBlock>
-			<br />import &#123; bewegung &#125; from "bewegung";
-			<br />const animation = bewegung(yourCustomDomChangeFunction, 400) &#125;);
-			<br />yourOnScrollListener((progress)=&#62; &#123;
-			<br /> if(progress &#62= 1) animation.seek(progress, true)
-			<br />animation.seek(progress)
-			<br />&#125;)
-		</CodeBlock>
-		<p>
-			there is the option to pass in a second parameter to indicate that the animation is finish and
-			can be clean up
-		</p>
+    <h3>bring your own progress: seek</h3>
+    <p>
+      you can precisely controll the animation via seek. This can be use to make
+      the animation based on scroll or a load progress for example.
+    </p>
+    <CodeBlock>
+      <br />import &#123; bewegung &#125; from "bewegung";
+      <br />const animation = bewegung(yourCustomDomChangeFunction, 400)
+      &#125;);
+      <br />yourOnScrollListener((progress)=&#62; &#123;
+      <br /> if(progress &#62= 1) animation.seek(progress, true)
+      <br />animation.seek(progress)
+      <br />&#125;)
+    </CodeBlock>
+    <p>
+      there is the option to pass in a second parameter to indicate that the
+      animation is finish and can be clean up
+    </p>
 
-		<h3>enough of this: cancel, finish</h3>
-		<p>
-			these to behave very similar, both clean up the animation remains. finish will reapply the dom
-			change though
-		</p>
-		<h3>reactivity escape hatch: forceUpdate</h3>
-		<p>
-			Reacting to dom changes is difficult while animating. Most animations dont need this but if
-			your animation is not like other animations, you can create a custom solution for this your
-			self for now.
-		</p>
-	</section>
-	<section id="caveats" class="flow">
-		<h2>Caveats</h2>
-		<p>
-			this is not a production ready piece of software and still in early alpha stage. The API might
-			still be subject to change. I am still not sure if this will ever reach anything further
-			because there are currently some bigger issues to tackle (and a myriad of bugs):
-		</p>
-		<br />
-		<ul class="list">
-			<li>
-				<strong>counter-scaling:</strong>When scaling an element, its children get counter-scaled to
-				look like they remain unchanged. Depending on the scale-amount the size change every frame
-				for the parent and children might not be the same and the animation looks off even if the
-				start and end are correct. Adjusting the childrens easing can fix this, but calculating an
-				inverse easing curve is difficult.
-			</li>
-			<li>
-				<strong>reactivity:</strong>We are calculating pixel-perfect start and end points for a
-				given DOM. If there are changes to the DOM, the calculations are wrong again and need to be
-				recalculated. It is hard to detect changes while animating part of it. With the resize- and
-				mutation observer, we can get some of the direct changes but no indirect changes. There is
-				the possibility to use an intersection observer with a precise root margin to see if an
-				element changes position but that can only work if the animations are paused.
-			</li>
-			<li>
-				<strong>Weird browser behaviors:</strong>Chromium-based browsers can throw off the
-				calculations in certain situations. If the calculation happen out of the viewport and the
-				animation is happening above it, the calculations are off again. This is likely due to a
-				mechanism to prevent page jumps from lazy loaded elements but hard to predict.
-			</li>
-		</ul>
-	</section>
+    <h3>enough of this: cancel, finish</h3>
+    <p>
+      these to behave very similar, both clean up the animation remains. finish
+      will reapply the dom change though
+    </p>
+    <h3>reactivity escape hatch: forceUpdate</h3>
+    <p>
+      Reacting to dom changes is difficult while animating. Most animations dont
+      need this but if your animation is not like other animations, you can
+      create a custom solution for this your self for now.
+    </p>
+  </section>
+  <section id="caveats" class="flow">
+    <h2>Caveats</h2>
+    <p>
+      this is not a production ready piece of software and still in early alpha
+      stage. The API might still be subject to change. I am still not sure if
+      this will ever reach anything further because there are currently some
+      bigger issues to tackle (and a myriad of bugs):
+    </p>
+    <br />
+    <ul class="list">
+      <li>
+        <strong>counter-scaling:</strong>When scaling an element, its children
+        get counter-scaled to look like they remain unchanged. Depending on the
+        scale-amount the size change every frame for the parent and children
+        might not be the same and the animation looks off even if the start and
+        end are correct. Adjusting the childrens easing can fix this, but
+        calculating an inverse easing curve is difficult.
+      </li>
+      <li>
+        <strong>reactivity:</strong>We are calculating pixel-perfect start and
+        end points for a given DOM. If there are changes to the DOM, the
+        calculations are wrong again and need to be recalculated. It is hard to
+        detect changes while animating part of it. With the resize- and mutation
+        observer, we can get some of the direct changes but no indirect changes.
+        There is the possibility to use an intersection observer with a precise
+        root margin to see if an element changes position but that can only work
+        if the animations are paused.
+      </li>
+      <li>
+        <strong>Weird browser behaviors:</strong>Chromium-based browsers can
+        throw off the calculations in certain situations. If the calculation
+        happen out of the viewport and the animation is happening above it, the
+        calculations are off again. This is likely due to a mechanism to prevent
+        page jumps from lazy loaded elements but hard to predict.
+      </li>
+    </ul>
+  </section>
 </Layout>
 
-<style lang="scss">
-	section {
-		min-height: 50vh;
+<style>
+  section {
+    min-height: 50vh;
 
-		&:last-child {
-			padding-bottom: 10vh;
-		}
-	}
+    &:last-child {
+      padding-bottom: 10vh;
+    }
+  }
 
-	.sticky {
-		position: sticky;
-		top: 0;
-	}
+  details {
+    max-inline-size: 20ch;
+  }
 
-	.split-screen {
-		display: grid;
+  .sticky {
+    position: sticky;
+    top: 0;
+  }
 
-		grid-template-columns: [current-start] 1fr [current-end];
-		row-gap: 1rem;
-		grid-auto-rows: max-content;
+  .split-screen {
+    display: grid;
 
-		@media (min-width: 50rem) {
-			min-height: 150vh;
-			grid-template-columns: [current-start] 1fr [current-end sticky-start] 1.5fr [sticky-end];
-		}
+    grid-template-columns: [current-start] 1fr [current-end];
+    row-gap: 1rem;
+    grid-auto-rows: max-content;
 
-		.start {
-			grid-column: current;
-			place-self: center;
-		}
+    @media (min-width: 50rem) {
+      min-height: 150vh;
+      grid-template-columns: [current-start] 1fr [current-end sticky-start] 1.5fr [sticky-end];
+    }
 
-		.end {
-			grid-column: current;
-			grid-row: 1/2;
+    .start {
+      grid-column: current;
+      place-self: center;
+    }
 
-			@media (min-width: 50rem) {
-				grid-column: sticky;
-			}
-		}
-	}
+    .end {
+      grid-column: current;
+      grid-row: 1/2;
 
-	aside {
-		display: grid;
-		place-content: center;
-		background-color: var(--color-background);
+      @media (min-width: 50rem) {
+        grid-column: sticky;
+      }
+    }
+  }
 
-		min-height: 50vh;
-		@media (min-width: 50rem) {
-			height: 100vh;
-		}
-	}
+  .split-screen:has(> .flow :focus-within) #js-list {
+    transform: translateX(-50%);
+    transition: ease 2s;
+    /* width: 15rem; */
+  }
 
-	aside > ul {
-		border: 2px solid var(--grey-85);
-		border-radius: var(--space-100);
-		padding: var(--space-100);
-		display: grid;
-		gap: var(--space-100);
-	}
+  .presentation {
+    display: grid;
+    place-content: center;
+    background-color: var(--color-background);
 
-	.position {
-		grid-area: 1 / 1 / 2 / 2;
-	}
+    min-height: 50vh;
+    @media (min-width: 50rem) {
+      height: 100vh;
+    }
+  }
+
+  .presentation > ul {
+    border: 2px solid var(--grey-85);
+    border-radius: var(--space-100);
+    padding: var(--space-100);
+    display: grid;
+    gap: var(--space-100);
+  }
+
+  .position {
+    grid-area: 1 / 1 / 2 / 2;
+  }
 </style>

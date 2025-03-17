@@ -24,7 +24,7 @@ const extractAnimationOptions = (
   delay: options.startTime,
   endDelay: options.totalRuntime - options.endTime,
   easing: options.easing,
-  composite: "replace",
+  composite: "replace", //TODO: this fails in chrome currently
 });
 
 const setAnimations = (
@@ -32,8 +32,6 @@ const setAnimations = (
   options: KeyframeEffectOptions
 ) => {
   const animations = new Map<string, Animation>();
-
-  console.log(results);
 
   results.forEach(([keyframes, overrides], key) => {
     const element = document.querySelector(
