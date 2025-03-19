@@ -1,11 +1,35 @@
-import type { Readout } from "./element-helper";
+import type { Readout } from "./helper/element";
+
+export const getAppearingKeyframes = (readout: Readout) => {
+  const to = readout.transform.toString();
+  const from = new DOMMatrix(to);
+  from.scaleSelf(0.001, 0.001);
+
+  return [{ transform: from.toString() }, { transform: to }];
+};
+
+export const getDisappearingKeyframes = (readout: Readout) => {
+  const from = readout.transform.toString();
+  const to = new DOMMatrix(from);
+  to.scaleSelf(0.001, 0.001);
+
+  return [{ transform: from }, { transform: to.toString() }];
+};
 
 export const getKeyframes = (
-  toDimensions: { current: Readout; parent: Readout },
-  fromDimensions: { current: Readout; parent: Readout }
+  toDimensions: { current: Readout | null; parent: Readout },
+  fromDimensions: { current: Readout | null; parent: Readout }
 ) => {
   const { current: to, parent: toParent } = toDimensions;
   const { current: from, parent: fromParent } = fromDimensions;
+
+  if (!to) {
+    return getDisappearingKeyframes(from!);
+  }
+
+  if (!from) {
+    return getAppearingKeyframes(to!);
+  }
 
   const [toLeft, toTop, toWidth, toHeight] = to.dimensions;
   const [toParentLeft, toParentTop, toParentWidth, toParentHeight] =
@@ -53,20 +77,4 @@ export const getKeyframes = (
     { transform: combinedMatrix.toString() },
     { transform: to.transform.toString() },
   ];
-};
-
-export const getAppearingKeyframes = (readout: Readout) => {
-  const to = readout.transform.toString();
-  const from = new DOMMatrix(to);
-  from.scaleSelf(0.001, 0.001);
-
-  return [{ transform: from.toString() }, { transform: to }];
-};
-
-export const getDisappearingKeyframes = (readout: Readout) => {
-  const from = readout.transform.toString();
-  const to = new DOMMatrix(from);
-  to.scaleSelf(0.001, 0.001);
-
-  return [{ transform: from }, { transform: to.toString() }];
 };

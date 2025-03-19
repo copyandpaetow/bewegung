@@ -1,27 +1,34 @@
-import { MO_OPTIONS } from "./observer-helper";
-import { TreeNode } from "./tree-node";
+import { filterElements } from "./helper/element";
+import { MO_OPTIONS } from "./helper/observer";
+import { TreeNode, TYPE } from "./tree-node";
 
-class Bewegung extends HTMLElement {
+export class Bewegung extends HTMLElement {
   MO: MutationObserver | null = null;
-  treeNodes = new WeakMap<Element, TreeNode>();
+  treeNodes = new Map<Element, TreeNode>();
   rootNode: TreeNode | null = null;
   updateCounter = -1;
   inprogress = false;
+  animationOptions: KeyframeEffectOptions;
+  //TODO: we could have one timekeeper animation here that we could use to scrub the other animations
 
   constructor() {
     super();
     this.style.contain = "layout";
+    this.animationOptions = {
+      duration: 1000,
+    };
   }
 
   async disconnectedCallback() {
     await Promise.resolve();
     if (!this.isConnected) {
+      this.treeNodes.clear();
     }
   }
 
   /*
   todo:
-  - adding/removing elements: we need to exclude their children
+
   - for display animations we need to overright styles 
   - we need to exclude nested web-components and their children
   - we are currently only reacting to elements, text nodes are something entirely different
@@ -33,19 +40,16 @@ class Bewegung extends HTMLElement {
  TODO: we need to cancel/pause other animations 
 
 
+
   */
 
   connectedCallback() {
-    const context = {
-      onMount: (node: TreeNode) => {
-        this.treeNodes.set(node.key, node);
-      },
-      animationOptions: {
-        duration: 2000,
-      },
-    };
+    this.rootNode = new TreeNode(this, this);
+    this.treeNodes.set(this, this.rootNode);
+    this.querySelectorAll("*").forEach((element) =>
+      this.treeNodes.set(element, new TreeNode(element, this))
+    );
 
-    this.rootNode = new TreeNode(this, null, context);
     this.setMO();
   }
 
@@ -62,38 +66,67 @@ class Bewegung extends HTMLElement {
     );
   }
 
+  propage(element: Element, depth = 0) {
+    const targetNode = this.treeNodes.get(element);
+    const isUpdated = targetNode?.update(this.updateCounter);
+
+    if (!isUpdated && depth === 0) {
+      return;
+    }
+
+    //TODO: if the change doesnt result in an update of the parent (mutation observer target) it will not update
+    //maybe we dont need to use the depth for all directions
+    const newDepth = Math.max(0, depth - 1);
+    element.parentElement && this.propage(element.parentElement, newDepth);
+    element.nextElementSibling &&
+      this.propage(element.nextElementSibling, newDepth);
+    element.previousElementSibling &&
+      this.propage(element.previousElementSibling, newDepth);
+
+    for (const child of element.children) {
+      this.propage(child, newDepth);
+    }
+  }
+
   setMO() {
-    //TODO: here wew could listen for resizes as well and mark the element as
+    //TODO: here we could listen for resizes as well and mark the element as disabled
+    //todo: with a disabled flag, we could stop nested trees from animating
     this.MO ??= new MutationObserver((entries) => {
       this.scheduleUpdate();
-
       this.MO?.disconnect();
       this.MO = null;
+
+      // requestAnimationFrame(() => {
       entries.forEach((entry) => {
-        const targetNode = this.treeNodes.get(entry.target as Element);
-        targetNode?.update(this.updateCounter);
+        this.propage(entry.target as Element, 1);
 
-        // [...entry.addedNodes]
-        //   .filter(filterElements)
-        //   .forEach((addedElement) => {
-        //     /*
-        //       - lookup previousSibling
-        //       - append after (and update the linked listed pointers)
-        //     */
-        //   });
+        [...entry.addedNodes].filter(filterElements).forEach((addedElement) => {
+          this.treeNodes.set(addedElement, new TreeNode(addedElement, this));
+          this.propage(addedElement);
 
-        // [...entry.removedNodes]
-        //   .filter(filterElements)
-        //   .forEach((removedElement) => {
-        //     /*
-        //       - lookup removedElement and call its delete method
-        //       => will the element be detached from pointers straight away or after the animation?
-        //       => if the dom changes while this animation happens, does it still need to be included in the readouts?
-        //     */
-        //     //entry.target.insertBefore(removedElement, entry.nextSibling);
-        //   });
+          this.querySelectorAll("*").forEach((child) =>
+            this.treeNodes.set(child, new TreeNode(child, this))
+          );
+        });
+
+        [...entry.removedNodes]
+          .filter(filterElements)
+          .forEach((removedElement) => {
+            const targetNode = this.treeNodes.get(removedElement);
+
+            //TODO: does this make sense?
+            if (!targetNode || targetNode.type === TYPE.DELETE) {
+              return;
+            }
+
+            targetNode.update(this.updateCounter);
+            targetNode.scheduleDelete();
+
+            entry.target.insertBefore(removedElement, entry.nextSibling);
+          });
       });
       this.setMO();
+      // });
     });
 
     this.MO.observe(this, MO_OPTIONS);

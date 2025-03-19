@@ -6,7 +6,7 @@ import CodeBlock from "../components/CodeBlock.astro";
 
 <script>
   import { bewegung } from "../../../lib/src/bewegung";
-  import "../lib2/web-component";
+  import "../../../lib2/src/web-component";
 
   const list = document.getElementById("js-list") as HTMLElement;
   const buttonGridColum = document.getElementById(
@@ -380,9 +380,10 @@ import CodeBlock from "../components/CodeBlock.astro";
   }
 
   .split-screen:has(> .flow :focus-within) #js-list {
-    transform: translateX(-50%);
+    /* width: 15rem; 
+        transform: translateX(-50%);
     transition: ease 2s;
-    /* width: 15rem; */
+    */
   }
 
   .presentation {
@@ -401,10 +402,11 @@ import CodeBlock from "../components/CodeBlock.astro";
     border-radius: var(--space-100);
     padding: var(--space-100);
     display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: var(--space-100);
   }
 
   .position {
-    grid-area: 1 / 1 / 2 / 2;
+    /* grid-area: 1 / 1 / 2 / 2; */
   }
 </style>

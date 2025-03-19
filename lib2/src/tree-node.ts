@@ -1,10 +1,12 @@
-import { getBorderRadius, type Readout } from "./element-helper";
+import { getBorderRadius, ValueOf, type Readout } from "./helper/element";
 import { getKeyframes } from "./keyframes";
+import { Bewegung } from "./web-component";
 
-type Context = {
-  onMount: (node: TreeNode) => void;
-  animationOptions: Partial<KeyframeEffectOptions>;
-};
+export const TYPE = {
+  DELETE: 0,
+  MOVE: 1,
+  ADD: 2,
+} as const;
 
 export class TreeNode {
   styles: Readout | null = null;
@@ -12,24 +14,26 @@ export class TreeNode {
 
   processed = true;
 
-  parent: TreeNode | null = null;
-  firstChild: TreeNode | null = null;
-  lastChild: TreeNode | null = null;
-  nextSibling: TreeNode | null = null;
-  prevSibling: TreeNode | null = null;
-
   intersectionObserver!: IntersectionObserver;
   resizeObserver!: ResizeObserver;
 
+  context: Bewegung;
   key!: Element;
   counter = -1;
 
+  type: ValueOf<typeof TYPE> = TYPE.MOVE;
+
   animation!: Animation;
 
-  constructor(element: Element, parent: TreeNode | null, context: Context) {
+  constructor(element: Element, context: Bewegung) {
     this.key = element;
-    this.styles = this.getElementValues();
-    context.onMount(this);
+    this.context = context;
+    this.counter = context.updateCounter;
+    this.styles = this.getElementValues(this.counter);
+    this.animation = new Animation(
+      new KeyframeEffect(this.key, [], context.animationOptions)
+    );
+
     // this.resizeObserver = new ResizeObserver(this.observerCallback.bind(this));
     // this.intersectionObserver = new IntersectionObserver(
     //   this.observerCallback.bind(this),
@@ -45,42 +49,14 @@ export class TreeNode {
     // this.resizeObserver.observe(element);
     // this.intersectionObserver.observe(element);
 
-    this.parent = parent;
-    this.counter = parent?.counter ?? -1;
-
-    let index = 0;
-    let current = element.firstElementChild
-      ? new TreeNode(element.firstElementChild!, this, context)
-      : null;
-    if (current) {
-      this.firstChild = current;
-    }
-
-    while (current) {
-      index++;
-      const child = element.children[index];
-      if (!child) {
-        break;
-      }
-      const node = new TreeNode(child, this, context);
-      current.nextSibling = node;
-      node.prevSibling = current;
-
-      current = node;
-    }
-
-    if (current) {
-      this.lastChild = current;
-    }
-
-    this.animation = new Animation(
-      new KeyframeEffect(this.key, null, context.animationOptions)
-    );
-
     this.processed = false;
   }
 
-  getElementValues(counter?: number): Readout {
+  getElementValues(counter: number): Readout | null {
+    if (!this.key.isConnected) {
+      return null;
+    }
+
     const { left, top, width, height } = this.key.getBoundingClientRect();
     const style = window.getComputedStyle(this.key);
 
@@ -92,7 +68,7 @@ export class TreeNode {
         number,
         number
       ],
-      version: counter ?? this.counter,
+      version: counter,
     };
   }
 
@@ -106,9 +82,20 @@ export class TreeNode {
     console.log({ entries });
   }
 
+  scheduleDelete() {
+    this.type = TYPE.DELETE;
+    this.key.style.position = "absolute";
+  }
+
+  cleanup() {
+    this.key.remove();
+    this.context.treeNodes.delete(this.key);
+    this.key
+      .querySelectorAll("*")
+      .forEach((child) => this.context.treeNodes.delete(child));
+  }
+
   requestUpdatedValues(counter: number) {
-    //TODO: this could lead to a problem as updates while animating would disrupt this
-    //* maybe an array of styles would be better here?
     if (counter !== this.styles?.version) {
       this.prevStyles = this.styles;
       this.styles = this.getElementValues(counter);
@@ -117,51 +104,46 @@ export class TreeNode {
     return [this.styles, this.prevStyles];
   }
 
-  //? do we reach in an element or the TreeNode? What about the context
-  //? should we save it in here or pass it in again for registration?
-  append(child: Element, anchorNode: TreeNode | null, context: Context) {
-    const childNode = new TreeNode(child, this, context);
-
-    if (!anchorNode) {
-      this.firstChild = this.lastChild = childNode;
-      return;
+  needsUpdate(counter: number) {
+    if (this.key.tagName === "BEWEGUNG-BOUNDARY") {
+      return false;
     }
-
-    const prevAnchorNode = anchorNode.prevSibling;
-
-    childNode.prevSibling = prevAnchorNode;
-    childNode.nextSibling = anchorNode;
-    prevAnchorNode?.nextSibling && (prevAnchorNode.nextSibling = childNode);
-    anchorNode.prevSibling = childNode;
+    return !this.styles || !this.prevStyles || this.counter !== counter;
   }
 
   update(counter: number) {
-    if (counter === this.counter || this.key.tagName === "BEWEGUNG-BOUNDARY") {
-      return;
+    if (!this.needsUpdate(counter)) {
+      return false;
     }
     this.counter = counter;
+    const parent = this.context.treeNodes.get(
+      this.key.parentElement ?? this.context
+    )!;
 
     const [currentStyle, prevStyle] = this.requestUpdatedValues(counter);
     const [currentParentStyle, prevParentStyle] =
-      this.parent!.requestUpdatedValues(counter);
+      parent!.requestUpdatedValues(counter);
 
-    //TODO: if we allow either both parents or one of these arguments to be null, we could use it to indicate addition/removal
     const keyframes = getKeyframes(
-      { current: currentStyle, parent: currentParentStyle },
-      { current: prevStyle, parent: prevParentStyle }
+      { current: currentStyle, parent: currentParentStyle! },
+      { current: prevStyle, parent: prevParentStyle! }
     );
 
     if (keyframes[0].transform === keyframes[1].transform) {
-      return;
+      return false;
     }
 
-    this.parent?.update(counter);
-    this.prevSibling?.update(counter);
-    this.nextSibling?.update(counter);
-    this.firstChild?.update(counter);
-    this.lastChild?.update(counter);
-
     this.animation.effect?.setKeyframes(keyframes);
-    this.animation.play();
+    this.animation.onfinish = () => {
+      if (this.type === TYPE.DELETE) {
+        this.cleanup();
+      }
+    };
+
+    queueMicrotask(() => {
+      this.animation.play();
+    });
+
+    return true;
   }
 }
