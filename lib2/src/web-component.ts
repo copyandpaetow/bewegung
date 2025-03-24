@@ -1,12 +1,23 @@
-import { filterElements } from "./helper/element";
+import {
+  getElementReadouts,
+  onlyElements,
+  Readout,
+  resetHiddenElement,
+} from "./helper/element";
 import { MO_OPTIONS } from "./helper/observer";
-import { TreeNode, TYPE } from "./tree-node";
+import { getKeyframes } from "./keyframes";
 
 export class Bewegung extends HTMLElement {
   MO: MutationObserver | null = null;
-  treeNodes = new Map<Element, TreeNode>();
-  rootNode: TreeNode | null = null;
-  updateCounter = -1;
+
+  currentStyles = new Map<HTMLElement, Readout>();
+  previousStyles = new Map<HTMLElement, Readout>();
+
+  animations = new Map<HTMLElement, Animation>();
+  activeAnimations = new Map<HTMLElement, Animation>();
+
+  styleOverride = new Map<HTMLElement, string>();
+
   inprogress = false;
   animationOptions: KeyframeEffectOptions;
   //TODO: we could have one timekeeper animation here that we could use to scrub the other animations
@@ -22,35 +33,37 @@ export class Bewegung extends HTMLElement {
   async disconnectedCallback() {
     await Promise.resolve();
     if (!this.isConnected) {
-      this.treeNodes.clear();
     }
   }
 
   /*
   todo:
 
-  - for display animations we need to overright styles 
   - we need to exclude nested web-components and their children
   - we are currently only reacting to elements, text nodes are something entirely different
   => maybe we can get a range for dimensions? 
 
-  - read element animation value and pass them down
 
  TODO: when we resize the RO and IO call for animations, but that is likely not wanted
  TODO: we need to cancel/pause other animations 
 
-
-
   */
 
   connectedCallback() {
-    this.rootNode = new TreeNode(this, this);
-    this.treeNodes.set(this, this.rootNode);
+    this.setReadout(this);
     this.querySelectorAll("*").forEach((element) =>
-      this.treeNodes.set(element, new TreeNode(element, this))
+      this.setReadout(element as HTMLElement)
     );
 
     this.setMO();
+  }
+
+  setReadout(element: HTMLElement) {
+    const readout = getElementReadouts(element);
+    if (!readout) {
+      return;
+    }
+    this.currentStyles.set(element, readout);
   }
 
   scheduleUpdate() {
@@ -58,7 +71,7 @@ export class Bewegung extends HTMLElement {
       return;
     }
     this.inprogress = true;
-    this.updateCounter++;
+
     requestAnimationFrame(() =>
       queueMicrotask(() => {
         this.inprogress = false;
@@ -66,25 +79,117 @@ export class Bewegung extends HTMLElement {
     );
   }
 
-  propage(element: Element, depth = 0) {
-    const targetNode = this.treeNodes.get(element);
-    const isUpdated = targetNode?.update(this.updateCounter);
+  transferStylesToPrevious() {
+    this.currentStyles.forEach((style, key) => {
+      this.previousStyles.set(key, style);
+    });
+    this.currentStyles.clear();
+  }
 
-    if (!isUpdated && depth === 0) {
-      return;
+  getParentElement(element: HTMLElement): HTMLElement {
+    const parent = element.parentElement;
+    if (!parent || parent.tagName === "BEWEGUNG-BOUNDARY") {
+      return element;
+    }
+    return parent;
+  }
+
+  deleteElement(element: HTMLElement) {
+    this.previousStyles.delete(element);
+    this.currentStyles.delete(element);
+    this.activeAnimations.delete(element);
+    this.animations.delete(element);
+    this.styleOverride.delete(element);
+
+    element
+      .querySelectorAll("*")
+      .forEach((child) => this.deleteElement(child as HTMLElement));
+  }
+
+  setAnimation(element: HTMLElement, keyframes: Keyframe[]) {
+    let anim = this.animations.get(element);
+
+    if (!anim) {
+      anim = new Animation(
+        new KeyframeEffect(element, keyframes, this.animationOptions)
+      );
+      this.animations.set(element, anim);
+    } else {
+      (anim.effect as KeyframeEffect).setKeyframes(keyframes);
     }
 
-    //TODO: if the change doesnt result in an update of the parent (mutation observer target) it will not update
-    //maybe we dont need to use the depth for all directions
-    const newDepth = Math.max(0, depth - 1);
-    element.parentElement && this.propage(element.parentElement, newDepth);
-    element.nextElementSibling &&
-      this.propage(element.nextElementSibling, newDepth);
-    element.previousElementSibling &&
-      this.propage(element.previousElementSibling, newDepth);
+    this.activeAnimations.set(element, anim);
+    anim.onfinish = () => {
+      const style = this.currentStyles.get(element);
+      const override = this.styleOverride.get(element);
 
-    for (const child of element.children) {
-      this.propage(child, newDepth);
+      if (style) {
+        this.previousStyles.set(element, style);
+        this.currentStyles.delete(element);
+      }
+      if (override) {
+        element.style.cssText = override;
+        this.styleOverride.delete(element);
+      }
+
+      if (element.hasAttribute("data-bewegung-delete")) {
+        this.deleteElement(element);
+      }
+    };
+  }
+
+  //TODO: this is not right yet, we might need to allow for null as a value
+  getOrSetStyle(element: HTMLElement) {
+    const style =
+      this.currentStyles.get(element) ?? getElementReadouts(element);
+    style && this.currentStyles.set(element, style);
+
+    return style;
+  }
+
+  updateElements(elements: Set<HTMLElement>) {
+    for (const element of elements) {
+      const parent = this.getParentElement(element);
+
+      const parentStyle = this.getOrSetStyle(parent);
+      const style = this.getOrSetStyle(element);
+
+      const prevStyle = this.previousStyles.get(element);
+      const parentPrevStyle = this.previousStyles.get(parent);
+
+      if (!style) {
+        this.styleOverride.set(element, element.style.cssText);
+
+        Object.assign(
+          element.style,
+          resetHiddenElement(prevStyle, this.previousStyles.get(this)!)
+        );
+      }
+
+      const keyframes = getKeyframes(
+        { current: style, parent: parentStyle },
+        { current: prevStyle, parent: parentPrevStyle }
+      );
+
+      if (keyframes[0].transform === keyframes[1].transform) {
+        continue;
+      }
+
+      this.setAnimation(element, keyframes);
+
+      elements.add(parent);
+      element.previousElementSibling &&
+        elements.add(element.previousElementSibling as HTMLElement);
+      element.nextElementSibling &&
+        elements.add(element.nextElementSibling as HTMLElement);
+
+      const isDefault = Boolean(style && prevStyle);
+
+      for (const child of element.children) {
+        isDefault
+          ? elements.add(child as HTMLElement)
+          : elements.delete(child as HTMLElement);
+      }
     }
   }
 
@@ -93,40 +198,50 @@ export class Bewegung extends HTMLElement {
     //todo: with a disabled flag, we could stop nested trees from animating
     this.MO ??= new MutationObserver((entries) => {
       this.scheduleUpdate();
+      this.transferStylesToPrevious();
       this.MO?.disconnect();
       this.MO = null;
 
-      // requestAnimationFrame(() => {
+      const dirtyElements = new Set<HTMLElement>();
+
       entries.forEach((entry) => {
-        this.propage(entry.target as Element, 1);
+        const target = entry.target as HTMLElement;
+        const parent = this.getParentElement(target);
 
-        [...entry.addedNodes].filter(filterElements).forEach((addedElement) => {
-          this.treeNodes.set(addedElement, new TreeNode(addedElement, this));
-          this.propage(addedElement);
+        dirtyElements.add(target);
+        dirtyElements.add(parent);
+        target.previousElementSibling &&
+          dirtyElements.add(target.previousElementSibling as HTMLElement);
+        target.nextElementSibling &&
+          dirtyElements.add(target.nextElementSibling as HTMLElement);
+        for (const child of target.children) {
+          dirtyElements.add(child as HTMLElement);
+        }
 
-          this.querySelectorAll("*").forEach((child) =>
-            this.treeNodes.set(child, new TreeNode(child, this))
-          );
+        [...entry.addedNodes].filter(onlyElements).forEach((addedElement) => {
+          dirtyElements.add(addedElement);
+          this.setReadout(addedElement);
         });
 
         [...entry.removedNodes]
-          .filter(filterElements)
+          .filter(onlyElements)
           .forEach((removedElement) => {
-            const targetNode = this.treeNodes.get(removedElement);
-
-            //TODO: does this make sense?
-            if (!targetNode || targetNode.type === TYPE.DELETE) {
-              return;
-            }
-
-            targetNode.update(this.updateCounter);
-            targetNode.scheduleDelete();
-
-            entry.target.insertBefore(removedElement, entry.nextSibling);
+            dirtyElements.add(removedElement);
+            queueMicrotask(() => {
+              removedElement.setAttribute("data-bewegung-delete", "");
+              entry.target.insertBefore(removedElement, entry.nextSibling);
+            });
           });
       });
-      this.setMO();
-      // });
+
+      this.updateElements(dirtyElements);
+
+      console.log(this.activeAnimations);
+
+      this.activeAnimations.forEach((anim) => {
+        anim.play();
+        // anim.pause();
+      });
     });
 
     this.MO.observe(this, MO_OPTIONS);

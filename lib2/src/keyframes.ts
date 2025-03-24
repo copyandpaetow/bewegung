@@ -17,8 +17,8 @@ export const getDisappearingKeyframes = (readout: Readout) => {
 };
 
 export const getKeyframes = (
-  toDimensions: { current: Readout | null; parent: Readout },
-  fromDimensions: { current: Readout | null; parent: Readout }
+  toDimensions: { current: Readout | undefined; parent: Readout },
+  fromDimensions: { current: Readout | undefined; parent: Readout }
 ) => {
   const { current: to, parent: toParent } = toDimensions;
   const { current: from, parent: fromParent } = fromDimensions;

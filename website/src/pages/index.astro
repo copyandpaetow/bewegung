@@ -55,7 +55,12 @@ import CodeBlock from "../components/CodeBlock.astro";
   };
 
   buttonTest.onclick = () => {
-    list.children[3].style.aspectRatio = "2";
+    // list.children[3].style.aspectRatio = "2";
+
+    for (const element of list.children) {
+      element.style.cssText = "";
+    }
+
     // animationPromise = animationPromise.then(() => {
     //   const anim = bewegung(() => (list.children[3].style.aspectRatio = "2"), {
     //     duration: 400,
@@ -82,8 +87,10 @@ import CodeBlock from "../components/CodeBlock.astro";
   };
 
   buttonDisplayNone.onclick = () => {
-    (list.querySelector("li:first-of-type") as HTMLElement).style.display =
-      "none";
+    // (
+    //   list.children[Math.floor(Math.random() * 3)] as HTMLElement
+    // ).style.display = "none";
+    (list.children[0] as HTMLElement).style.display = "none";
     // animationPromise = animationPromise.then(() => {
     //   const anim = bewegung(() => {
     //     (list.querySelector("li:first-of-type") as HTMLElement).style.display =
