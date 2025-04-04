@@ -18,6 +18,9 @@ import CodeBlock from "../components/CodeBlock.astro";
   const buttonDisplayNone = document.getElementById(
     "js-display-none"
   ) as HTMLElement;
+  const buttonDisplayRestore = document.getElementById(
+    "js-display-restore"
+  ) as HTMLElement;
   const buttonRemoveElement = document.getElementById(
     "js-remove-element"
   ) as HTMLElement;
@@ -30,6 +33,12 @@ import CodeBlock from "../components/CodeBlock.astro";
   const buttonTest = document.getElementById("js-test") as HTMLElement;
 
   let animationPromise = Promise.resolve();
+
+  const getRandomChild = () => {
+    return list.children[
+      Math.floor(Math.random() * list.children.length)
+    ] as HTMLElement;
+  };
 
   const removeGridArea = () => {
     list.style.display = "grid";
@@ -45,21 +54,20 @@ import CodeBlock from "../components/CodeBlock.astro";
   };
 
   const removeFirstImage = () => {
-    (list.querySelector("li:first-of-type") as HTMLElement).remove();
+    getRandomChild().remove();
   };
 
   const cloneElement = () => {
-    const lastCard = list.querySelector("li:first-of-type") as HTMLElement;
-    const newElement = lastCard.cloneNode(true);
+    const newElement = getRandomChild().cloneNode(true);
     list.append(newElement);
   };
 
   buttonTest.onclick = () => {
-    // list.children[3].style.aspectRatio = "2";
+    getRandomChild().style.aspectRatio = "0.5";
 
-    for (const element of list.children) {
-      element.style.cssText = "";
-    }
+    // for (const element of list.children) {
+    //   element.style.cssText = "";
+    // }
 
     // animationPromise = animationPromise.then(() => {
     //   const anim = bewegung(() => (list.children[3].style.aspectRatio = "2"), {
@@ -75,7 +83,10 @@ import CodeBlock from "../components/CodeBlock.astro";
     //   const anim = bewegung(removeGridArea, 400);
     //   return anim.play();
     // });
-    removeGridArea();
+
+    list.children[0].before(list.children[list.children.length - 1]);
+
+    //removeGridArea();
   };
 
   buttonGridToFlex.onclick = () => {
@@ -90,7 +101,7 @@ import CodeBlock from "../components/CodeBlock.astro";
     // (
     //   list.children[Math.floor(Math.random() * 3)] as HTMLElement
     // ).style.display = "none";
-    (list.children[0] as HTMLElement).style.display = "none";
+    getRandomChild().style.display = "none";
     // animationPromise = animationPromise.then(() => {
     //   const anim = bewegung(() => {
     //     (list.querySelector("li:first-of-type") as HTMLElement).style.display =
@@ -98,6 +109,14 @@ import CodeBlock from "../components/CodeBlock.astro";
     //   }, 400);
     //   return anim.play();
     // });
+  };
+
+  buttonDisplayRestore.onclick = () => {
+    for (const child of list.children) {
+      if ((child as HTMLElement).style.cssText) {
+        (child as HTMLElement).style.cssText = "";
+      }
+    }
   };
 
   buttonRemoveElement.onclick = () => {
@@ -194,7 +213,10 @@ import CodeBlock from "../components/CodeBlock.astro";
           <button id="js-grid-to-flex">grid to flexbox</button>
         </li>
         <li>
-          <button id="js-display-none">display: none</button>
+          <button id="js-display-none">hide</button>
+        </li>
+        <li>
+          <button id="js-display-restore">show</button>
         </li>
         <li>
           <button id="js-remove-element">element removal</button>
@@ -223,36 +245,58 @@ import CodeBlock from "../components/CodeBlock.astro";
           whats happening
         </div>
       </details>
-      <ul id="js-list">
-        <Card
-          headline="red"
-          copy="from 1992"
-          imgSrc="red.jpeg"
-          imgAlt="coffee and flowers on a table"
-          class="position"
-        />
-        <Card
-          headline="blue"
-          copy="out of the"
-          imgSrc="blue.jpeg"
-          imgAlt="distant hills"
-          class="position"
-        />
-        <Card
-          headline="green"
-          copy="calming and nice"
-          imgSrc="green.jpeg"
-          imgAlt="wigs and leafes in front of a wall"
-          class="position"
-        />
-        <Card
-          headline="yellow"
-          copy="inperfectly perfect"
-          imgSrc="yellow.jpeg"
-          imgAlt="flowers in front of a wall"
-          class="position"
-        />
-      </ul>
+
+      <div id="1">
+        <div id="2">
+          <div id="3">
+            <div id="4">
+              <div id="5">
+                <div id="6">
+                  <div id="7">
+                    <div id="8">
+                      <div class="wrapper">
+                        <ul id="js-list">
+                          <Card
+                            headline="red"
+                            copy="from 1992"
+                            imgSrc="red.jpeg"
+                            imgAlt="coffee and flowers on a table"
+                            class="position"
+                          />
+
+                          <Card
+                            headline="blue"
+                            copy="out of the"
+                            imgSrc="blue.jpeg"
+                            imgAlt="distant hills"
+                            class="position"
+                          />
+
+                          <Card
+                            headline="green"
+                            copy="calming and nice"
+                            imgSrc="green.jpeg"
+                            imgAlt="wigs and leafes in front of a wall"
+                            class="position"
+                          />
+
+                          <Card
+                            headline="yellow"
+                            copy="inperfectly perfect"
+                            imgSrc="yellow.jpeg"
+                            imgAlt="flowers in front of a wall"
+                            class="position"
+                          />
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </bewegung-boundary>
   </section>
   <section id="documentation" class="flow">
@@ -404,13 +448,17 @@ import CodeBlock from "../components/CodeBlock.astro";
     }
   }
 
-  .presentation > ul {
+  .presentation ul {
     border: 2px solid var(--grey-85);
     border-radius: var(--space-100);
     padding: var(--space-100);
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--space-100);
+  }
+
+  .wrapper {
+    display: contents;
   }
 
   .position {

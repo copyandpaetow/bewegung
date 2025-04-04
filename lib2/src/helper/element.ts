@@ -5,6 +5,7 @@ export type Readout = {
   borderRadius: [number, number, number, number];
   dimensions: [number, number, number, number];
   display: CSSStyleDeclaration["display"];
+  isVisible: boolean;
   position: CSSStyleDeclaration["position"];
   transform: DOMMatrixReadOnly;
   transformOrigin: [number, number];
@@ -14,44 +15,42 @@ export const getBorderRadius = (
   style: CSSStyleDeclaration
 ): Readout["borderRadius"] => {
   return [
-    parseFloat(style.borderTopLeftRadius),
-    parseFloat(style.borderTopRightRadius),
-    parseFloat(style.borderBottomRightRadius),
-    parseFloat(style.borderBottomLeftRadius),
+    parseFloat(style.borderTopLeftRadius || "0"),
+    parseFloat(style.borderTopRightRadius || "0"),
+    parseFloat(style.borderBottomRightRadius || "0"),
+    parseFloat(style.borderBottomLeftRadius || "0"),
   ];
 };
 
-export const onlyElements = (node: Node): node is HTMLElement =>
-  node.nodeType === Node.ELEMENT_NODE;
+export const VISIBILITY_OPTIONS = {
+  contentVisibilityAuto: true,
+  opacityProperty: true,
+  visibilityProperty: true,
+};
 
-export const getElementReadouts = (
-  element: HTMLElement
-): Readout | undefined => {
-  if (!element.isConnected) {
-    return;
-  }
+export const onlyElements = (
+  node: Node | Element | HTMLElement | null
+): node is HTMLElement => node?.nodeType === Node.ELEMENT_NODE;
 
+//TODO: we likely need a more dedicated isVisible approach
+export const getElementReadouts = (element: HTMLElement): Readout => {
   const { left, top, width, height } = element.getBoundingClientRect();
   const style = window.getComputedStyle(element);
 
-  if (style.display === "none") {
-    return;
-  }
-
   return {
     borderWidth: [
-      parseFloat(style.borderLeftWidth),
-      parseFloat(style.borderTopWidth),
+      parseFloat(style.borderLeftWidth || "0"),
+      parseFloat(style.borderTopWidth || "0"),
     ],
     borderRadius: getBorderRadius(style),
     dimensions: [left, top, width, height],
-    display: style.display,
-    position: style.position,
+    display: style.display || "block",
+    isVisible: element.checkVisibility(VISIBILITY_OPTIONS),
+    position: style.position || "static",
     transform: new DOMMatrixReadOnly(style.transform),
-    transformOrigin: style.transformOrigin.split(" ").map(parseFloat) as [
-      number,
-      number
-    ],
+    transformOrigin: (style.transformOrigin || "0 0")
+      .split(" ")
+      .map(parseFloat) as [number, number],
   };
 };
 
