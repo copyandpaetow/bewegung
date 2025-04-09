@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="Bewegungs Animation Library" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Hello</title>
+  </head>
+  <body>
+    <div style="height: 30vh;"></div>
+    <main>
+      <section>
+        <p>test1</p>
+        <div>test2</div>
+        <div style="position: absolute; top: 0; left: 0;">test3</div>
+        <div>test4</div>
+      </section>
+    </main></body
+  >
+</html>
+
+<style>
+  main {
+    height: 100vh;
+    outline: 1px solid blue;
+    /* padding: 3rem; */
+    /* contain: layout; */
+  }
+
+  section {
+    outline: 1px solid green;
+    padding: 3rem;
+    position: relative;
+    /* contain: layout; */
+    scale: 1 1.5;
+
+    & > * {
+      scale: 1 calc(1 / 1.5);
+    }
+  }
+
+  main div {
+    padding: 1rem;
+    outline: 1px solid red;
+  }
+</style>

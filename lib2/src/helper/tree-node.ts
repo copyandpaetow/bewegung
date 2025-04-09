@@ -1,4 +1,10 @@
-import { getElementReadouts, Readout } from "./element";
+import { getElementReadouts, Readout, ValueOf } from "./element";
+
+export const TREENODE_STATE = {
+  SKIP: 0,
+  CLEAN: 1,
+  DIRTY: 2,
+} as const;
 
 export type TreeNode = {
   element: HTMLElement;
@@ -7,34 +13,40 @@ export type TreeNode = {
   lastChild: TreeNode | null;
   nextSibling: TreeNode | null;
   prevSibling: TreeNode | null;
-  currentReadout: Readout | null;
-  newReadout: Readout | null;
-  updateVersion: number;
-  readoutVersion: number;
-  animation: Animation | null;
+  readout: Readout | null;
+  pendingReadout: Readout | null;
+  state: ValueOf<typeof TREENODE_STATE>;
+  generation: number;
+  animation: Animation;
   cssText: string;
 };
 
 export const createNode = (
   element: HTMLElement,
   nodeMap: WeakMap<HTMLElement, TreeNode>,
-  version: number
+  animationOptions: KeyframeEffectOptions,
+  generation: number
 ) => {
   const readout = getElementReadouts(element);
 
   const node: TreeNode = {
     element,
-    currentReadout: readout,
-    newReadout: null,
+    readout: readout,
+    pendingReadout: null,
     parent: null,
     nextSibling: null,
     prevSibling: null,
     firstChild: null,
     lastChild: null,
-    animation: null,
-    updateVersion: version,
-    readoutVersion: version,
+    animation: new Animation(
+      new KeyframeEffect(element, null, animationOptions)
+    ),
+    state:
+      readout.display !== "contents"
+        ? TREENODE_STATE.DIRTY
+        : TREENODE_STATE.SKIP,
     cssText: "",
+    generation,
   };
 
   nodeMap.set(element, node);
@@ -44,16 +56,27 @@ export const createNode = (
 export const createTree = (
   rootElement: HTMLElement,
   nodeMap: WeakMap<HTMLElement, TreeNode>,
-  version: number
+  animationOptions: KeyframeEffectOptions,
+  generation: number
 ) => {
-  const rootNode = createNode(rootElement, nodeMap, version);
+  const rootNode = createNode(
+    rootElement,
+    nodeMap,
+    animationOptions,
+    generation
+  );
 
   for (
     let child = rootElement.firstElementChild;
     child;
     child = child.nextElementSibling
   ) {
-    const childNode = createTree(child as HTMLElement, nodeMap, version);
+    const childNode = createTree(
+      child as HTMLElement,
+      nodeMap,
+      animationOptions,
+      generation
+    );
     appendNode(rootNode, childNode);
   }
 

@@ -1,5 +1,5 @@
 import { type Readout } from "./helper/element";
-import { TreeNode } from "./helper/tree-node";
+import { TreeNode, TREENODE_STATE } from "./helper/tree-node";
 import { Bewegung } from "./web-component";
 
 export const getAppearingKeyframes = (readout: Readout) => {
@@ -10,16 +10,78 @@ export const getAppearingKeyframes = (readout: Readout) => {
   return [{ transform: from.toString() }, { transform: to }];
 };
 
-export const getDisappearingKeyframes = (readout: Readout) => {
-  const from = readout.transform.toString();
-  const to = new DOMMatrix(from);
+export const getDisappearingKeyframes = (node: TreeNode): Keyframe[] => {
+  const delta = getDifferences(
+    node.readout!,
+    node.readout!,
+    node.parent?.pendingReadout!,
+    node.parent?.readout!
+  );
+
+  const from = new DOMMatrix(node.readout!.transform.toString());
+
+  from.scaleSelf(
+    1 / delta.parentWidthDifference,
+    1 / delta.parentHeightDifference
+  );
+
+  const to = new DOMMatrix(from.toString());
   to.scaleSelf(0.001, 0.001);
 
-  return [{ transform: from }, { transform: to.toString() }];
+  return [{ transform: from.toString() }, { transform: to.toString() }];
 };
 
-const DEFAULT_DIMENSIONS = [0, 0, 1, 1];
-const DEFAULT_ORIGINS = [0, 0];
+export const getDifferences = (
+  readout: Readout,
+  previousReadout: Readout,
+  parentReadout: Readout,
+  previousParentReadout: Readout
+) => {
+  const [toLeft, toTop, toWidth, toHeight] = readout.dimensions;
+  const [toParentLeft, toParentTop, toParentWidth, toParentHeight] =
+    parentReadout.dimensions;
+  const [originToLeft, originToTop] = readout.transformOrigin;
+  const [originToParentLeft, originToParentTop] = parentReadout.transformOrigin;
+
+  const [fromLeft, fromTop, fromWidth, fromHeight] = previousReadout.dimensions;
+  const [fromParentLeft, fromParentTop, fromParentWidth, fromParentHeight] =
+    previousParentReadout.dimensions;
+  const [originFromLeft, originFromTop] = previousReadout.transformOrigin;
+  const [originFromParentLeft, originFromParentTop] =
+    previousParentReadout.transformOrigin;
+
+  const parentWidthDifference = fromParentWidth / toParentWidth;
+  const parentHeightDifference = fromParentHeight / toParentHeight;
+  const childWidthDifference = fromWidth / toWidth;
+  const childHeightDifference = fromHeight / toHeight;
+
+  const heightDifference = childHeightDifference / parentHeightDifference;
+  const widthDifference = childWidthDifference / parentWidthDifference;
+
+  const currentLeftDifference =
+    fromLeft + originFromLeft - (fromParentLeft + originFromParentLeft);
+  const referenceLeftDifference =
+    toLeft + originToLeft - (toParentLeft + originToParentLeft);
+
+  const currentTopDifference =
+    fromTop + originFromTop - (fromParentTop + originFromParentTop);
+  const referenceTopDifference =
+    toTop + originToTop - (toParentTop + originToParentTop);
+
+  const leftDifference =
+    currentLeftDifference / parentWidthDifference - referenceLeftDifference;
+  const topDifference =
+    currentTopDifference / parentHeightDifference - referenceTopDifference;
+
+  return {
+    parentWidthDifference,
+    parentHeightDifference,
+    heightDifference,
+    widthDifference,
+    leftDifference,
+    topDifference,
+  };
+};
 
 export const calculateKeyframes = (
   readout: Readout,
@@ -29,17 +91,16 @@ export const calculateKeyframes = (
 ): Keyframe[] => {
   const [toLeft, toTop, toWidth, toHeight] = readout.dimensions;
   const [toParentLeft, toParentTop, toParentWidth, toParentHeight] =
-    parentReadout?.dimensions ?? DEFAULT_DIMENSIONS;
+    parentReadout.dimensions;
   const [originToLeft, originToTop] = readout.transformOrigin;
-  const [originToParentLeft, originToParentTop] =
-    parentReadout?.transformOrigin ?? DEFAULT_ORIGINS;
+  const [originToParentLeft, originToParentTop] = parentReadout.transformOrigin;
 
   const [fromLeft, fromTop, fromWidth, fromHeight] = previousReadout.dimensions;
   const [fromParentLeft, fromParentTop, fromParentWidth, fromParentHeight] =
-    previousParentReadout?.dimensions ?? DEFAULT_DIMENSIONS;
+    previousParentReadout.dimensions;
   const [originFromLeft, originFromTop] = previousReadout.transformOrigin;
   const [originFromParentLeft, originFromParentTop] =
-    previousParentReadout?.transformOrigin ?? DEFAULT_ORIGINS;
+    previousParentReadout.transformOrigin;
 
   const parentWidthDifference = fromParentWidth / toParentWidth;
   const parentHeightDifference = fromParentHeight / toParentHeight;
@@ -68,22 +129,25 @@ export const calculateKeyframes = (
   flipMatrix.translateSelf(leftDifference, topDifference);
   flipMatrix.scaleSelf(widthDifference, heightDifference);
 
-  const combinedMatrix = readout.transform.multiply(flipMatrix);
+  const currentMatrix = readout!.transform;
+
+  const combinedMatrix = currentMatrix.multiply(flipMatrix);
+
   return [
     { transform: combinedMatrix.toString() },
-    { transform: readout.transform.toString() },
+    { transform: currentMatrix.toString() },
   ];
 };
 
 export const isUnanimatable = (node: TreeNode) => {
   return (
-    node.currentReadout?.display === "contents" ||
-    node.newReadout?.display === "contents"
+    node.readout?.display === "contents" ||
+    node.pendingReadout?.display === "contents"
   );
 };
 
 export const isInvisible = (node: TreeNode) => {
-  return !node.currentReadout?.isVisible && !node.newReadout?.isVisible;
+  return !node.readout?.isVisible && !node.pendingReadout?.isVisible;
 };
 
 export const EMPTY_KEYFRAMES = [];
@@ -93,12 +157,18 @@ export const getKeyframes = (
   parentNode: TreeNode,
   context: Bewegung
 ): Keyframe[] => {
-  if (isInvisible(currentNode) || isUnanimatable(currentNode)) {
+  if (isInvisible(currentNode)) {
+    return EMPTY_KEYFRAMES;
+  }
+
+  if (isUnanimatable(currentNode)) {
+    currentNode.state = TREENODE_STATE.SKIP;
     return EMPTY_KEYFRAMES;
   }
 
   if (isUnanimatable(parentNode)) {
-    context.updateNode(parentNode.parent!);
+    parentNode.state = TREENODE_STATE.SKIP;
+    context.updateSurrounding(parentNode.parent!);
     return getKeyframes(
       currentNode,
       context.updateReadouts(parentNode.parent!),
@@ -106,24 +176,22 @@ export const getKeyframes = (
     );
   }
 
-  if (currentNode.currentReadout?.display === "none") {
-    for (let child = currentNode.firstChild; child; child = child.nextSibling) {
-      child.updateVersion = currentNode.updateVersion;
-    }
+  if (currentNode.readout?.display === "none") {
+    context.markChildrenAsUpdated(currentNode);
 
-    return getAppearingKeyframes(currentNode.newReadout!);
+    return getAppearingKeyframes(currentNode.pendingReadout!);
   }
 
-  if (currentNode.newReadout?.display === "none") {
+  if (currentNode.pendingReadout?.display === "none") {
     context.hideNode(currentNode);
     return EMPTY_KEYFRAMES;
   }
 
   const keyframes = calculateKeyframes(
-    currentNode.newReadout!,
-    currentNode.currentReadout!,
-    parentNode.newReadout!,
-    parentNode.currentReadout!
+    currentNode.pendingReadout!,
+    currentNode.readout!,
+    parentNode.pendingReadout!,
+    parentNode.readout!
   );
 
   if (keyframes.at(0)?.transform !== keyframes.at(-1)?.transform) {
@@ -131,12 +199,12 @@ export const getKeyframes = (
   }
 
   if (
-    parentNode.currentReadout?.dimensions[2] !==
-      parentNode.newReadout?.dimensions[2] ||
-    parentNode.currentReadout?.dimensions[3] !==
-      parentNode.newReadout?.dimensions[3]
+    parentNode.readout?.dimensions[2] !==
+      parentNode.pendingReadout?.dimensions[2] ||
+    parentNode.readout?.dimensions[3] !==
+      parentNode.pendingReadout?.dimensions[3]
   ) {
-    context.updateNode(parentNode);
+    context.updateSurrounding(parentNode);
   }
   return EMPTY_KEYFRAMES;
 };

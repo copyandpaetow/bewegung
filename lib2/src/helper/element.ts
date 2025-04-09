@@ -1,3 +1,5 @@
+import { getDifferences } from "../keyframes";
+
 export type ValueOf<T> = T[keyof T];
 
 export type Readout = {
@@ -56,17 +58,36 @@ export const getElementReadouts = (element: HTMLElement): Readout => {
 
 export const resetHiddenElement = (
   readout: Readout,
-  parentReadout: Readout
+  parentReadout: Readout,
+  previousParentReadout: Readout
 ) => {
   const [left, top, width, height] = readout.dimensions;
   const [parentLeft, parentTop] = parentReadout.dimensions;
   const [borderLeftWidth, borderTopWidth] = parentReadout.borderWidth;
 
+  const delta = getDifferences(
+    readout,
+    readout,
+    parentReadout,
+    previousParentReadout
+  );
+
   return {
     position: "fixed",
+    zIndex: 0,
     display: readout.display,
-    left: left - (parentLeft ?? 0) - (borderLeftWidth ?? 0) + "px",
-    top: top - (parentTop ?? 0) - (borderTopWidth ?? 0) + "px",
+    left:
+      left -
+      (parentLeft ?? 0) -
+      (borderLeftWidth ?? 0) +
+      delta.leftDifference +
+      "px",
+    top:
+      top -
+      (parentTop ?? 0) -
+      (borderTopWidth ?? 0) +
+      delta.topDifference +
+      "px",
     width: width + "px",
     height: height + "px",
   };
