@@ -1,38 +1,33 @@
-import {
-  getElementReadouts,
-  onlyElements,
-  resetHiddenElement,
-} from "./helper/element";
+import { getElementReadouts, onlyElements, ValueOf } from "./helper/element";
 import { MO_OPTIONS } from "./helper/observer";
-import {
-  createTree,
-  insertAfterNode,
-  removeNode,
-  TreeNode,
-  TREENODE_STATE,
-} from "./helper/tree-node";
-import {
-  getAppearingKeyframes,
-  getDisappearingKeyframes,
-  getKeyframes,
-} from "./keyframes";
+import { Context, createNodeLoop, TreeNode } from "./helper/tree-node";
+import { calculateKeyframes, isInvisible, isUnanimatable } from "./keyframes";
+
+export const CHANGE_TYPES = {
+  UNCHANGED: 1,
+  RELATIVE_UNCHANGED: 2,
+  CHANGED: 3,
+  HIDDEN: 4,
+  UNANIMATABLE: 5,
+} as const;
 
 export class Bewegung extends HTMLElement {
   MO: MutationObserver | null = null;
 
-  treeNodes = new WeakMap<HTMLElement, TreeNode>();
-  generation = 1;
-  animationOptions: KeyframeEffectOptions;
   options = {
     disabled: false,
+  };
+  context: Context = {
+    treeNodes: new WeakMap<HTMLElement, TreeNode>(),
+    generation: 10,
+    animationOptions: {
+      duration: 400,
+    },
   };
 
   constructor() {
     super();
     this.style.contain = "layout";
-    this.animationOptions = {
-      duration: 200,
-    };
     if (this.hasAttribute("disabled")) {
       this.options.disabled = true;
     }
@@ -70,165 +65,131 @@ export class Bewegung extends HTMLElement {
 
   connectedCallback() {
     requestAnimationFrame(() => {
-      createTree(this, this.treeNodes, this.animationOptions, this.generation);
+      //console.log(createNodeLoop(this, this.context));
+      createNodeLoop(this, this.context);
       this.setMO();
     });
   }
 
-  updateReadouts(node: TreeNode) {
-    if (!node.pendingReadout) {
+  hasChanged(node: TreeNode): ValueOf<typeof CHANGE_TYPES> {
+    node.changeGeneration = this.context.generation;
+
+    if (node.readoutGeneration !== this.context.generation) {
+      node.readoutGeneration = this.context.generation;
+      node.readout = node.pendingReadout;
       node.pendingReadout = getElementReadouts(node.element);
+    }
+
+    if (isUnanimatable(node)) {
+      node.changeGeneration += CHANGE_TYPES.UNANIMATABLE;
+      return CHANGE_TYPES.UNANIMATABLE;
+    }
+
+    if (isInvisible(node)) {
+      node.changeGeneration += CHANGE_TYPES.HIDDEN;
+      return CHANGE_TYPES.HIDDEN;
+    }
+
+    let nextParent = node.parent;
+
+    while (nextParent) {
+      if (nextParent.readoutGeneration !== this.context.generation) {
+        nextParent.readoutGeneration = this.context.generation;
+        nextParent.readout = nextParent.pendingReadout;
+        nextParent.pendingReadout = getElementReadouts(nextParent.element);
+      }
+
+      if (isUnanimatable(nextParent)) {
+        nextParent = nextParent.parent;
+        continue;
+      }
+      break;
+    }
+
+    const keyframes = calculateKeyframes(
+      node.pendingReadout!,
+      node.readout!,
+      nextParent.pendingReadout!,
+      nextParent.readout!
+    );
+
+    if (keyframes.at(0)?.transform !== keyframes.at(-1)?.transform) {
+      (node.animation.effect as KeyframeEffect).setKeyframes(keyframes);
+      //console.log("animated", node);
+
       queueMicrotask(() => {
-        node.readout = node.pendingReadout;
-        node.pendingReadout = null;
+        node.animation.play();
+        //node.animation.pause();
       });
+      node.changeGeneration += CHANGE_TYPES.CHANGED;
+      return CHANGE_TYPES.CHANGED;
     }
-    return node;
-  }
 
-  updateSurrounding(node: TreeNode) {
-    if (node && node.generation !== this.generation) this.updateNode(node);
     if (
-      node.parent &&
-      node.parent.element !== this &&
-      node.parent.generation !== this.generation
+      nextParent.readout?.dimensions[2] !==
+        nextParent.pendingReadout?.dimensions[2] ||
+      nextParent.readout?.dimensions[3] !==
+        nextParent.pendingReadout?.dimensions[3]
     ) {
-      this.updateNode(node.parent);
+      node.changeGeneration += CHANGE_TYPES.RELATIVE_UNCHANGED;
+      return CHANGE_TYPES.RELATIVE_UNCHANGED;
     }
 
-    for (
-      let child = node.parent!.firstChild;
-      child;
-      child = child.nextSibling
-    ) {
-      if (child.generation !== this.generation) this.updateNode(child);
+    node.changeGeneration += CHANGE_TYPES.UNCHANGED;
+    return CHANGE_TYPES.UNCHANGED;
+  }
+
+  walkNodeLoop(element: HTMLElement) {
+    const node = this.context.treeNodes.get(element)!;
+
+    let firstUnchangedParent = node;
+
+    while (firstUnchangedParent.changeGeneration < this.context.generation) {
+      const changeType = this.hasChanged(firstUnchangedParent);
+      if (changeType === CHANGE_TYPES.UNCHANGED) {
+        break;
+      }
+
+      // firstUnchangedParent.shortcut = firstUnchangedParent.nextIfChanged;
+      firstUnchangedParent = firstUnchangedParent.parent;
     }
 
-    for (let child = node.firstChild; child; child = child.nextSibling) {
-      if (child.generation !== this.generation) this.updateNode(child);
-    }
-  }
-
-  markChildrenAsUpdated(node: TreeNode) {
-    for (let child = node.firstChild; child; child = child.nextSibling) {
-      this.markElementAsUpdated(child);
-    }
-  }
-
-  markElementAsUpdated(node: TreeNode) {
-    if (node.state === TREENODE_STATE.SKIP) {
-      return;
-    }
-    node.generation = this.generation;
-  }
-
-  setAnimation(node: TreeNode, keyframes: Keyframe[]) {
-    (node.animation.effect as KeyframeEffect).setKeyframes(keyframes);
-
-    queueMicrotask(() => {
-      node.animation.play();
-    });
-
-    return node.animation;
-  }
-
-  updateNode(node: TreeNode) {
-    this.markElementAsUpdated(node);
-
-    const keyframes = getKeyframes(
-      this.updateReadouts(node),
-      this.updateReadouts(node.parent!),
-      this
-    );
-
-    if (keyframes.length === 0) {
-      return;
+    if (firstUnchangedParent.element !== this) {
+      //we set its next sibling as a shortcut to shorten the circuit
+      firstUnchangedParent.nextIfUnchanged.shortcut = firstUnchangedParent;
     }
 
-    this.setAnimation(node, keyframes);
-    this.updateSurrounding(node);
-  }
+    let nextNode = firstUnchangedParent.nextIfChanged;
+    //console.log("firstUnchangedParent", firstUnchangedParent, node);
 
-  hideNode(node: TreeNode) {
-    node.cssText = node.element.style.cssText;
+    while (nextNode !== firstUnchangedParent) {
+      if (nextNode.shortcut) {
+        const shortcut = nextNode.shortcut;
+        nextNode.shortcut = null;
+        nextNode = shortcut;
+        //?if we are done with one change, we could shortcut the start and end together, so it will not get read for the
+        //we could also leave them but check if their generation is behind this one. If so, it was an old shortcut
+        continue;
+      }
 
-    this.markChildrenAsUpdated(node);
-    this.updateSurrounding(node);
+      const changeType =
+        nextNode.changeGeneration < this.context.generation
+          ? this.hasChanged(nextNode)
+          : ((nextNode.changeGeneration % this.context.generation) as ValueOf<
+              typeof CHANGE_TYPES
+            >);
 
-    Object.assign(
-      node.element.style,
-      resetHiddenElement(
-        node.readout!,
-        node.parent!.pendingReadout!,
-        node.parent?.readout!
-      )
-    );
-    node.parent!.element.style.willChange = "transform";
+      switch (changeType) {
+        case CHANGE_TYPES.CHANGED:
+        case CHANGE_TYPES.RELATIVE_UNCHANGED:
+        case CHANGE_TYPES.UNANIMATABLE:
+          nextNode.nextIfChanged;
+          break;
 
-    const animation = this.setAnimation(node, getDisappearingKeyframes(node));
-
-    animation.addEventListener(
-      "finish",
-      () => {
-        this.stopMO();
-        node.element.style = node.cssText;
-        node.parent!.element.style.willChange = "";
-        this.setMO();
-      },
-      { once: true }
-    );
-  }
-
-  deleteNode(node: TreeNode) {
-    const anchor = node.nextSibling?.element ?? (null as HTMLElement | null);
-
-    Object.assign(
-      node.element.style,
-      resetHiddenElement(
-        node.readout!,
-        node.parent!.pendingReadout!,
-        node.parent?.readout!
-      )
-    );
-    node.parent?.element.insertBefore(node.element, anchor);
-    const keyframes = getDisappearingKeyframes(node);
-
-    const animation = this.setAnimation(node, keyframes);
-
-    animation.addEventListener(
-      "finish",
-      () => {
-        this.stopMO();
-        node.element.remove();
-        this.setMO();
-      },
-      { once: true }
-    );
-    this.markElementAsUpdated(node);
-    this.markChildrenAsUpdated(node);
-    removeNode(node);
-  }
-
-  addNode(element: HTMLElement) {
-    const newNode = createTree(
-      element,
-      this.treeNodes,
-      this.animationOptions,
-      this.generation
-    );
-    const parentNode = this.treeNodes.get(element.parentElement!)!;
-    const anchorNode = element.previousElementSibling
-      ? this.treeNodes.get(element.previousElementSibling as HTMLElement)!
-      : null;
-    insertAfterNode(parentNode, newNode, anchorNode);
-
-    this.setAnimation(newNode, getAppearingKeyframes(newNode.readout!));
-  }
-
-  moveNode(node: TreeNode, oldParent: TreeNode) {
-    if (node.parent === oldParent) {
-      //if the move was with the same parent, we dont need to do anything
-      return;
+        default:
+          nextNode.nextIfUnchanged;
+          break;
+      }
     }
   }
 
@@ -243,7 +204,7 @@ export class Bewegung extends HTMLElement {
     }
     this.MO ??= new MutationObserver((entries) => {
       this.stopMO();
-      this.generation++;
+      this.context.generation += 10;
 
       //we mark added elements first
       const addedElements = new Set<HTMLElement>();
@@ -257,32 +218,31 @@ export class Bewegung extends HTMLElement {
 
       entries.forEach((entry) => {
         const target = entry.target as HTMLElement;
-        const treeNode = this.treeNodes.get(target)!;
 
         entry.removedNodes.forEach((removedNode) => {
           if (!onlyElements(removedNode)) {
             return;
           }
-          const removedTreeNode = this.treeNodes.get(removedNode)!;
+          const removedTreeNode = this.context.treeNodes.get(removedNode)!;
 
           //if the element to be removed is also present in the added elements set, its actually a move
           //and we use the dedicated method
           if (addedElements.has(removedNode)) {
             addedElements.delete(removedNode);
-            this.moveNode(removedTreeNode, treeNode);
+            //this.moveNode(removedTreeNode, treeNode);
             return;
           }
 
           //otherwise we remove it
-          this.deleteNode(removedTreeNode);
+          //this.deleteNode(removedTreeNode);
         });
 
         //we mark the parent node as updated regardless of type
-        this.updateSurrounding(treeNode);
+        this.walkNodeLoop(target);
       });
 
       //the remaining elements are actually added
-      addedElements.forEach(this.addNode.bind(this));
+      //addedElements.forEach(this.walkNodeLoop.bind(this));
 
       //we wait until the next rendering frame to listen again, this way the IO and RO will also not trigger it
       //if something happens before, nothing happens when the observer is recalled

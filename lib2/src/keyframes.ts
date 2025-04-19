@@ -1,6 +1,5 @@
 import { type Readout } from "./helper/element";
-import { TreeNode, TREENODE_STATE } from "./helper/tree-node";
-import { Bewegung } from "./web-component";
+import { TreeNode } from "./helper/tree-node";
 
 export const getAppearingKeyframes = (readout: Readout) => {
   const to = readout.transform.toString();
@@ -148,63 +147,4 @@ export const isUnanimatable = (node: TreeNode) => {
 
 export const isInvisible = (node: TreeNode) => {
   return !node.readout?.isVisible && !node.pendingReadout?.isVisible;
-};
-
-export const EMPTY_KEYFRAMES = [];
-
-export const getKeyframes = (
-  currentNode: TreeNode,
-  parentNode: TreeNode,
-  context: Bewegung
-): Keyframe[] => {
-  if (isInvisible(currentNode)) {
-    return EMPTY_KEYFRAMES;
-  }
-
-  if (isUnanimatable(currentNode)) {
-    currentNode.state = TREENODE_STATE.SKIP;
-    return EMPTY_KEYFRAMES;
-  }
-
-  if (isUnanimatable(parentNode)) {
-    parentNode.state = TREENODE_STATE.SKIP;
-    context.updateSurrounding(parentNode.parent!);
-    return getKeyframes(
-      currentNode,
-      context.updateReadouts(parentNode.parent!),
-      context
-    );
-  }
-
-  if (currentNode.readout?.display === "none") {
-    context.markChildrenAsUpdated(currentNode);
-
-    return getAppearingKeyframes(currentNode.pendingReadout!);
-  }
-
-  if (currentNode.pendingReadout?.display === "none") {
-    context.hideNode(currentNode);
-    return EMPTY_KEYFRAMES;
-  }
-
-  const keyframes = calculateKeyframes(
-    currentNode.pendingReadout!,
-    currentNode.readout!,
-    parentNode.pendingReadout!,
-    parentNode.readout!
-  );
-
-  if (keyframes.at(0)?.transform !== keyframes.at(-1)?.transform) {
-    return keyframes;
-  }
-
-  if (
-    parentNode.readout?.dimensions[2] !==
-      parentNode.pendingReadout?.dimensions[2] ||
-    parentNode.readout?.dimensions[3] !==
-      parentNode.pendingReadout?.dimensions[3]
-  ) {
-    context.updateSurrounding(parentNode);
-  }
-  return EMPTY_KEYFRAMES;
 };

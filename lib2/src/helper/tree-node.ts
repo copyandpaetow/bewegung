@@ -1,169 +1,146 @@
-import { getElementReadouts, Readout, ValueOf } from "./element";
-
-export const TREENODE_STATE = {
-  SKIP: 0,
-  CLEAN: 1,
-  DIRTY: 2,
-} as const;
+import { getElementReadouts, Readout } from "./element";
 
 export type TreeNode = {
   element: HTMLElement;
-  parent: TreeNode | null;
-  firstChild: TreeNode | null;
-  lastChild: TreeNode | null;
-  nextSibling: TreeNode | null;
-  prevSibling: TreeNode | null;
+  parent: TreeNode;
+  nextIfChanged: TreeNode;
+  nextIfUnchanged: TreeNode;
+  shortcut: TreeNode | null;
   readout: Readout | null;
   pendingReadout: Readout | null;
-  state: ValueOf<typeof TREENODE_STATE>;
-  generation: number;
+  changeGeneration: number;
+  readoutGeneration: number;
   animation: Animation;
   cssText: string;
 };
 
-export const createNode = (
-  element: HTMLElement,
-  nodeMap: WeakMap<HTMLElement, TreeNode>,
-  animationOptions: KeyframeEffectOptions,
-  generation: number
-) => {
+export type Context = {
+  generation: number;
+  treeNodes: WeakMap<HTMLElement, TreeNode>;
+  animationOptions: KeyframeEffectOptions;
+};
+
+export const SKIP_MARKER = 0;
+
+export const fake = {} as TreeNode;
+
+export const createNode = (element: HTMLElement, context: Context) => {
   const readout = getElementReadouts(element);
 
   const node: TreeNode = {
     element,
     readout: readout,
-    pendingReadout: null,
-    parent: null,
-    nextSibling: null,
-    prevSibling: null,
-    firstChild: null,
-    lastChild: null,
+    pendingReadout: readout,
+    parent: context.treeNodes.get(element?.parentElement ?? element) ?? fake,
+    nextIfChanged: fake,
+    nextIfUnchanged: fake,
+    shortcut: null,
     animation: new Animation(
-      new KeyframeEffect(element, null, animationOptions)
+      new KeyframeEffect(element, null, context.animationOptions)
     ),
-    state:
-      readout.display !== "contents"
-        ? TREENODE_STATE.DIRTY
-        : TREENODE_STATE.SKIP,
+    changeGeneration:
+      readout.display !== "contents" ? context.generation : SKIP_MARKER,
+    readoutGeneration: context.generation,
     cssText: "",
-    generation,
   };
 
-  nodeMap.set(element, node);
+  context.treeNodes.set(element, node);
   return node;
 };
 
-export const createTree = (
-  rootElement: HTMLElement,
-  nodeMap: WeakMap<HTMLElement, TreeNode>,
-  animationOptions: KeyframeEffectOptions,
-  generation: number
-) => {
-  const rootNode = createNode(
-    rootElement,
-    nodeMap,
-    animationOptions,
-    generation
-  );
+export const createNodeLoop = (root: HTMLElement, context: Context) => {
+  const rootNode = createNode(root, context);
+  rootNode.parent = rootNode;
+  rootNode.nextIfUnchanged = rootNode;
 
-  for (
-    let child = rootElement.firstElementChild;
-    child;
-    child = child.nextElementSibling
-  ) {
-    const childNode = createTree(
-      child as HTMLElement,
-      nodeMap,
-      animationOptions,
-      generation
-    );
-    appendNode(rootNode, childNode);
-  }
+  let previous = rootNode;
 
-  return rootNode;
+  //TODO: initially this doesnt need to be fast, we could schedule it, maybe with a nodeIterator instead?
+
+  root.querySelectorAll("*").forEach((child) => {
+    const currentNode = createNode(child as HTMLElement, context);
+    previous.nextIfChanged = currentNode;
+
+    queueMicrotask(() => {
+      currentNode.nextIfUnchanged =
+        context.treeNodes.get(child.nextElementSibling as HTMLElement) ??
+        currentNode.parent.nextIfUnchanged;
+    });
+
+    previous = currentNode;
+  });
+
+  queueMicrotask(() => {
+    rootNode.nextIfUnchanged = rootNode.nextIfChanged;
+  });
+
+  previous.nextIfUnchanged = rootNode;
+  previous.nextIfChanged = rootNode;
+  previous.parent.nextIfUnchanged = rootNode;
+
+  return { start: rootNode, end: previous };
 };
 
-const appendNode = (parentNode: TreeNode, newNode: TreeNode) => {
-  newNode.parent = parentNode;
+export const addNodeToLoop = (element: HTMLElement, context: Context) => {
+  //we get the start and end of the new sub loop
+  const { start, end } = createNodeLoop(element, context);
 
-  if (!parentNode.firstChild) {
-    parentNode.firstChild = newNode;
-    parentNode.lastChild = newNode;
-  } else {
-    const lastChild = parentNode.lastChild!;
-    lastChild.nextSibling = newNode;
-    newNode.prevSibling = lastChild;
-    parentNode.lastChild = newNode;
+  //we get the previous node that would point to this element if unchanged which is either the previous sibling or the parent
+  let previousLoopPoint = context.treeNodes.get(
+    (element.parentElement?.firstElementChild ??
+      element.parentElement) as HTMLElement
+  )!;
+
+  //we place the new node start between the previous and next node (if unchanged)
+  const savedNextNode = previousLoopPoint.nextIfUnchanged;
+  start.nextIfUnchanged = savedNextNode;
+  previousLoopPoint.nextIfUnchanged = start;
+  //we also set the end of the sub loop to the next node
+  end.nextIfChanged = savedNextNode;
+  end.nextIfUnchanged = savedNextNode;
+
+  //the previous node could have children, where the last of them points to the next node
+  //we need to replace that next node with the start of our sub loop
+  while (previousLoopPoint.nextIfChanged !== savedNextNode) {
+    previousLoopPoint = previousLoopPoint.nextIfChanged;
   }
-
-  return newNode;
+  previousLoopPoint.nextIfChanged = start;
 };
 
-export const insertAfterNode = (
-  parentNode: TreeNode,
-  newNode: TreeNode,
-  anchorNode: TreeNode | null
-) => {
-  newNode.parent = parentNode;
+export const removeFromLoop = (node: TreeNode, context: Context) => {
+  //we get the previous node that points to the removed node (if unchanged)
+  let previousLoopPoint = context.treeNodes.get(
+    (node.parent.element.firstElementChild as HTMLElement) ??
+      node.parent.element
+  )!;
+  //we will connect it to the next node
+  previousLoopPoint.nextIfUnchanged = node.nextIfUnchanged;
 
-  if (!anchorNode || anchorNode === parentNode.lastChild) {
-    return appendNode(parentNode, newNode);
+  //the previous node could have children, where the last of them points to the node we want to remove
+  //we need to replace that last node with the start of the next node
+  while (previousLoopPoint.nextIfChanged !== node) {
+    previousLoopPoint = previousLoopPoint.nextIfChanged;
   }
+  previousLoopPoint.nextIfChanged = node.nextIfUnchanged;
+  previousLoopPoint.nextIfUnchanged = node.nextIfUnchanged;
 
-  const nextSibling = anchorNode.nextSibling;
+  // to help the GC we cut the connection to the loop as the end of this sup loop still points to next node
+  // we delete it from the nodeMap and point all references to itself
+  let lastRemovedChildNode = node;
 
-  anchorNode.nextSibling = newNode;
-  newNode.prevSibling = anchorNode;
-
-  newNode.nextSibling = nextSibling;
-  if (nextSibling) {
-    nextSibling.prevSibling = newNode;
-  }
-};
-
-export const moveNode = (
-  newNode: TreeNode,
-  nodeMap: WeakMap<HTMLElement, TreeNode>
-) => {
-  const removedNode = removeNode(newNode);
-  const newParentNode = newNode.element.parentElement
-    ? nodeMap.get(newNode.element.parentElement)!
-    : null;
-  const anchorNode = newNode.element.nextElementSibling
-    ? nodeMap.get(newNode.element.nextElementSibling as HTMLElement)!
-    : null;
-
-  if (!newParentNode) {
-    //TODO: this would mean the element animates out of the web-component
-    //=> we could read the new parent once for a simple animation and remove the node completely
-    return;
-  }
-
-  insertAfterNode(newParentNode, removedNode, anchorNode);
-};
-
-export const removeNode = (node: TreeNode) => {
-  if (node.prevSibling) {
-    node.prevSibling.nextSibling = node.nextSibling;
-  }
-
-  if (node.nextSibling) {
-    node.nextSibling.prevSibling = node.prevSibling;
-  }
-
-  if (node.parent) {
-    if (node.parent.firstChild === node) {
-      node.parent.firstChild = node.nextSibling;
+  while (true) {
+    if (!node.element.contains(lastRemovedChildNode.element)) {
+      break;
     }
-
-    if (node.parent.lastChild === node) {
-      node.parent.lastChild = node.prevSibling;
-    }
+    context.treeNodes.delete(lastRemovedChildNode.element);
+    const nextNode = node.nextIfChanged;
+    lastRemovedChildNode.parent = lastRemovedChildNode;
+    lastRemovedChildNode.nextIfUnchanged = lastRemovedChildNode;
+    lastRemovedChildNode.nextIfChanged = lastRemovedChildNode;
+    lastRemovedChildNode = nextNode;
   }
-
-  node.parent = null;
-  node.nextSibling = null;
-  node.prevSibling = null;
-
-  return node;
 };
+
+// export const moveNodeWithinLoop = (node: TreeNode, context: Context) => {
+//   //todo: animation outside of the loop is an edge case as well as move inside of the loop
+// };
