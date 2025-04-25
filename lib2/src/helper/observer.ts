@@ -1,4 +1,4 @@
-import type { Readout } from "./element";
+import { type Readout } from "./element";
 
 const getMargins = (readout: Readout, parentReadout: Readout) => {
   const [left, top, width, height] = readout.dimensions;
@@ -39,5 +39,3 @@ export const MO_OPTIONS = {
   childList: true,
   subtree: true,
 };
-
-export const reAddRemovedNodes = () => {};

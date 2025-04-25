@@ -9,6 +9,7 @@ export const getAppearingKeyframes = (readout: Readout) => {
   return [{ transform: from.toString() }, { transform: to }];
 };
 
+//TODO: this sadly is not perfectly extendable to the appearing
 export const getDisappearingKeyframes = (node: TreeNode): Keyframe[] => {
   const delta = getDifferences(
     node.readout!,
@@ -136,15 +137,4 @@ export const calculateKeyframes = (
     { transform: combinedMatrix.toString() },
     { transform: currentMatrix.toString() },
   ];
-};
-
-export const isUnanimatable = (node: TreeNode) => {
-  return (
-    node.readout?.display === "contents" ||
-    node.pendingReadout?.display === "contents"
-  );
-};
-
-export const isInvisible = (node: TreeNode) => {
-  return !node.readout?.isVisible && !node.pendingReadout?.isVisible;
 };

@@ -7,7 +7,7 @@ export type Readout = {
   borderRadius: [number, number, number, number];
   dimensions: [number, number, number, number];
   display: CSSStyleDeclaration["display"];
-  isVisible: boolean;
+  visibility: ValueOf<typeof VISIBILITY>;
   position: CSSStyleDeclaration["position"];
   transform: DOMMatrixReadOnly;
   transformOrigin: [number, number];
@@ -25,10 +25,15 @@ export const getBorderRadius = (
 };
 
 export const VISIBILITY_OPTIONS = {
-  contentVisibilityAuto: true,
   opacityProperty: true,
   visibilityProperty: true,
 };
+
+export const VISIBILITY = {
+  TRANSPARENT: -1,
+  HIDDEN: 0,
+  VISIBLE: 1,
+} as const;
 
 export const onlyElements = (
   node: Node | Element | HTMLElement | null
@@ -39,7 +44,7 @@ export const getElementReadouts = (element: HTMLElement): Readout => {
   const { left, top, width, height } = element.getBoundingClientRect();
   const style = window.getComputedStyle(element);
 
-  return {
+  const readout: Readout = {
     borderWidth: [
       parseFloat(style.borderLeftWidth || "0"),
       parseFloat(style.borderTopWidth || "0"),
@@ -47,13 +52,15 @@ export const getElementReadouts = (element: HTMLElement): Readout => {
     borderRadius: getBorderRadius(style),
     dimensions: [left, top, width, height],
     display: style.display || "block",
-    isVisible: element.checkVisibility(VISIBILITY_OPTIONS),
+    visibility: VISIBILITY.VISIBLE,
     position: style.position || "static",
     transform: new DOMMatrixReadOnly(style.transform),
     transformOrigin: (style.transformOrigin || "0 0")
       .split(" ")
       .map(parseFloat) as [number, number],
   };
+
+  return readout;
 };
 
 export const resetHiddenElement = (

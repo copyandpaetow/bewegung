@@ -1,15 +1,15 @@
-import { getElementReadouts, onlyElements, ValueOf } from "./helper/element";
+import {
+  getElementReadouts,
+  onlyElements,
+  resetHiddenElement,
+} from "./helper/element";
 import { MO_OPTIONS } from "./helper/observer";
 import { Context, createNodeLoop, TreeNode } from "./helper/tree-node";
-import { calculateKeyframes, isInvisible, isUnanimatable } from "./keyframes";
-
-export const CHANGE_TYPES = {
-  UNCHANGED: 1,
-  RELATIVE_UNCHANGED: 2,
-  CHANGED: 3,
-  HIDDEN: 4,
-  UNANIMATABLE: 5,
-} as const;
+import {
+  calculateKeyframes,
+  getAppearingKeyframes,
+  getDisappearingKeyframes,
+} from "./keyframes";
 
 export class Bewegung extends HTMLElement {
   MO: MutationObserver | null = null;
@@ -18,7 +18,7 @@ export class Bewegung extends HTMLElement {
     disabled: false,
   };
   context: Context = {
-    treeNodes: new WeakMap<HTMLElement, TreeNode>(),
+    treeNodes: new Map<HTMLElement, TreeNode>(),
     generation: 10,
     animationOptions: {
       duration: 400,
@@ -52,145 +52,154 @@ export class Bewegung extends HTMLElement {
   => disconnect all observers
   => after the resizing is done, we treat it as like with additional animations. We calculate the previous position from the animation, re-read all elements and create new animatiosn
 
-  - we might need to hold onto the previous calculations
+  - we need to double check the z-index and maybe put it into animations as it otherwise lead to visual order glitches
+
 
   !bugs
+  - in the hasChange function we check the parent for change after calculating the keyframes. Shouldnt that be the element?
 
-   ?improvements
-   
+  ?improvements
+  - we could test, if use different animations for performant animations (layout) and another animation for the clip-path animations (border and image sizing) 
+  => this would add complexity when pausing/stoping animations
 
+  - if an element became visible from transparent, we could reuse the parents dimensions for the calculation
 
-  
    */
 
   connectedCallback() {
     requestAnimationFrame(() => {
       //console.log(createNodeLoop(this, this.context));
-      createNodeLoop(this, this.context);
+      const newNodes = createNodeLoop(this, this.context);
+      this.context.treeNodes = newNodes.treeNodes;
+
+      this.context.generation += 10;
+      this.updateLoop(newNodes.startNode);
+
       this.setMO();
     });
   }
 
-  hasChanged(node: TreeNode): ValueOf<typeof CHANGE_TYPES> {
-    node.changeGeneration = this.context.generation;
+  updateLoop(rootNode: TreeNode) {
+    let current = rootNode;
 
+    while (current !== rootNode.subloopEnd) {
+      this.updateReadout(current);
+      current = current.next;
+    }
+    this.updateReadout(rootNode.subloopEnd);
+  }
+
+  updateReadout(node: TreeNode) {
     if (node.readoutGeneration !== this.context.generation) {
       node.readoutGeneration = this.context.generation;
       node.readout = node.pendingReadout;
       node.pendingReadout = getElementReadouts(node.element);
     }
+  }
 
-    if (isUnanimatable(node)) {
-      node.changeGeneration += CHANGE_TYPES.UNANIMATABLE;
-      return CHANGE_TYPES.UNANIMATABLE;
-    }
+  setAnimation(node: TreeNode, keyframes: Keyframe[]) {
+    (node.animation.effect as KeyframeEffect).setKeyframes(keyframes);
+    queueMicrotask(() => {
+      node.animation.play();
+      //node.animation.pause();
+    });
+  }
 
-    if (isInvisible(node)) {
-      node.changeGeneration += CHANGE_TYPES.HIDDEN;
-      return CHANGE_TYPES.HIDDEN;
-    }
+  hasChanged(node: TreeNode): Boolean {
+    node.changeGeneration = this.context.generation;
 
-    let nextParent = node.parent;
+    this.updateReadout(node);
+    this.updateReadout(node.parent);
 
-    while (nextParent) {
-      if (nextParent.readoutGeneration !== this.context.generation) {
-        nextParent.readoutGeneration = this.context.generation;
-        nextParent.readout = nextParent.pendingReadout;
-        nextParent.pendingReadout = getElementReadouts(nextParent.element);
-      }
+    if (!node.readout) {
+      this.setAnimation(node, getAppearingKeyframes(node.pendingReadout!));
 
-      if (isUnanimatable(nextParent)) {
-        nextParent = nextParent.parent;
-        continue;
-      }
-      break;
+      return false;
     }
 
     const keyframes = calculateKeyframes(
       node.pendingReadout!,
       node.readout!,
-      nextParent.pendingReadout!,
-      nextParent.readout!
+      node.parent.pendingReadout!,
+      node.parent.readout!
     );
 
     if (keyframes.at(0)?.transform !== keyframes.at(-1)?.transform) {
-      (node.animation.effect as KeyframeEffect).setKeyframes(keyframes);
-      //console.log("animated", node);
+      this.setAnimation(node, keyframes);
 
-      queueMicrotask(() => {
-        node.animation.play();
-        //node.animation.pause();
-      });
-      node.changeGeneration += CHANGE_TYPES.CHANGED;
-      return CHANGE_TYPES.CHANGED;
+      return true;
     }
 
     if (
-      nextParent.readout?.dimensions[2] !==
-        nextParent.pendingReadout?.dimensions[2] ||
-      nextParent.readout?.dimensions[3] !==
-        nextParent.pendingReadout?.dimensions[3]
+      node.parent.readout?.dimensions[2] !==
+        node.parent.pendingReadout?.dimensions[2] ||
+      node.parent.readout?.dimensions[3] !==
+        node.parent.pendingReadout?.dimensions[3]
     ) {
-      node.changeGeneration += CHANGE_TYPES.RELATIVE_UNCHANGED;
-      return CHANGE_TYPES.RELATIVE_UNCHANGED;
+      return true;
     }
 
-    node.changeGeneration += CHANGE_TYPES.UNCHANGED;
-    return CHANGE_TYPES.UNCHANGED;
+    return false;
   }
 
-  walkNodeLoop(element: HTMLElement) {
-    const node = this.context.treeNodes.get(element)!;
-
+  walkNodeLoop(node: TreeNode) {
     let firstUnchangedParent = node;
 
     while (firstUnchangedParent.changeGeneration < this.context.generation) {
-      const changeType = this.hasChanged(firstUnchangedParent);
-      if (changeType === CHANGE_TYPES.UNCHANGED) {
+      if (!this.hasChanged(firstUnchangedParent)) {
         break;
       }
 
-      // firstUnchangedParent.shortcut = firstUnchangedParent.nextIfChanged;
       firstUnchangedParent = firstUnchangedParent.parent;
     }
 
-    if (firstUnchangedParent.element !== this) {
-      //we set its next sibling as a shortcut to shorten the circuit
-      firstUnchangedParent.nextIfUnchanged.shortcut = firstUnchangedParent;
+    const loopStop =
+      firstUnchangedParent === firstUnchangedParent.subloopEnd
+        ? firstUnchangedParent
+        : firstUnchangedParent.subloopEnd.next;
+
+    let nextNode = firstUnchangedParent.next;
+
+    while (nextNode !== loopStop) {
+      nextNode = this.hasChanged(nextNode)
+        ? nextNode.next
+        : nextNode.subloopEnd.next;
     }
+  }
 
-    let nextNode = firstUnchangedParent.nextIfChanged;
-    //console.log("firstUnchangedParent", firstUnchangedParent, node);
+  handleRemove(
+    removedTreeNode: TreeNode,
+    beforeAnimation: VoidFunction,
+    afterAnimation: VoidFunction
+  ) {
+    Object.assign(
+      removedTreeNode.element.style,
+      resetHiddenElement(
+        removedTreeNode.readout!,
+        removedTreeNode.parent.pendingReadout!,
+        removedTreeNode.parent.readout!
+      )
+    );
+    removedTreeNode.parent.element.style.willChange = "transform";
+    beforeAnimation();
 
-    while (nextNode !== firstUnchangedParent) {
-      if (nextNode.shortcut) {
-        const shortcut = nextNode.shortcut;
-        nextNode.shortcut = null;
-        nextNode = shortcut;
-        //?if we are done with one change, we could shortcut the start and end together, so it will not get read for the
-        //we could also leave them but check if their generation is behind this one. If so, it was an old shortcut
-        continue;
-      }
-
-      const changeType =
-        nextNode.changeGeneration < this.context.generation
-          ? this.hasChanged(nextNode)
-          : ((nextNode.changeGeneration % this.context.generation) as ValueOf<
-              typeof CHANGE_TYPES
-            >);
-
-      switch (changeType) {
-        case CHANGE_TYPES.CHANGED:
-        case CHANGE_TYPES.RELATIVE_UNCHANGED:
-        case CHANGE_TYPES.UNANIMATABLE:
-          nextNode.nextIfChanged;
-          break;
-
-        default:
-          nextNode.nextIfUnchanged;
-          break;
-      }
-    }
+    (removedTreeNode.animation.effect as KeyframeEffect).setKeyframes(
+      getDisappearingKeyframes(removedTreeNode)
+    );
+    queueMicrotask(() => {
+      removedTreeNode.animation.play();
+      //node.animation.pause();
+    });
+    removedTreeNode.animation.addEventListener(
+      "finish",
+      () => {
+        this.stopMO();
+        afterAnimation();
+        removedTreeNode.parent.element.style.willChange = "";
+        this.setMO();
+      },
+      { once: true }
+    );
   }
 
   stopMO() {
@@ -206,43 +215,69 @@ export class Bewegung extends HTMLElement {
       this.stopMO();
       this.context.generation += 10;
 
-      //we mark added elements first
-      const addedElements = new Set<HTMLElement>();
+      const newNodes = createNodeLoop(this, this.context);
+      this.context.treeNodes = newNodes.treeNodes;
+
       entries.forEach((entry) => {
-        entry.addedNodes.forEach((addedNode) => {
-          if (onlyElements(addedNode)) {
-            addedElements.add(addedNode);
-          }
-        });
+        if (newNodes.treeNodes.has(entry.target as HTMLElement)) {
+          this.walkNodeLoop(
+            newNodes.treeNodes.get(entry.target as HTMLElement)!
+          );
+        }
       });
 
       entries.forEach((entry) => {
-        const target = entry.target as HTMLElement;
-
-        entry.removedNodes.forEach((removedNode) => {
-          if (!onlyElements(removedNode)) {
+        entry.removedNodes.forEach((node) => {
+          if (!onlyElements(node) || !newNodes.removedNodes.has(node)) {
             return;
           }
-          const removedTreeNode = this.context.treeNodes.get(removedNode)!;
-
-          //if the element to be removed is also present in the added elements set, its actually a move
-          //and we use the dedicated method
-          if (addedElements.has(removedNode)) {
-            addedElements.delete(removedNode);
-            //this.moveNode(removedTreeNode, treeNode);
-            return;
+          const removedNode = newNodes.removedNodes.get(node)!;
+          newNodes.removedNodes.delete(node);
+          removedNode.subloopEnd.next = removedNode;
+          let next = removedNode.next;
+          while (next !== removedNode) {
+            newNodes.removedNodes.delete(next.element);
+            next = next.next;
           }
-
-          //otherwise we remove it
-          //this.deleteNode(removedTreeNode);
+          this.handleRemove(
+            removedNode,
+            () => entry.target.insertBefore(node, entry.nextSibling),
+            () => removedNode.element.remove()
+          );
+          this.walkNodeLoop(removedNode.parent);
         });
-
-        //we mark the parent node as updated regardless of type
-        this.walkNodeLoop(target);
       });
 
-      //the remaining elements are actually added
-      //addedElements.forEach(this.walkNodeLoop.bind(this));
+      newNodes.removedNodes.forEach((removedNode, _, map) => {
+        let isFullyHidden = true;
+        let next = removedNode.next;
+        removedNode.subloopEnd.next = removedNode;
+
+        //if one of the nodes next pointers is not in here it is transparent
+        //we need to cleanup the element that points to a still valid node
+        while (next !== removedNode) {
+          map.delete(next.element);
+          if (!map.has(next.element)) {
+            isFullyHidden = false;
+            break;
+          }
+          next = next.next;
+        }
+        //at this point we reduced the map to sub loops
+        //every sub loop could be a mix of hidden and transparent nodes
+        // very unlikely though
+        this.walkNodeLoop(removedNode.parent);
+        this.updateReadout(removedNode);
+        if (removedNode.readout?.display === "none") {
+          this.handleRemove(
+            removedNode,
+            () =>
+              (removedNode.element.style.display =
+                removedNode.readout!.display),
+            () => (removedNode.element.style.cssText = removedNode.cssText)
+          );
+        }
+      });
 
       //we wait until the next rendering frame to listen again, this way the IO and RO will also not trigger it
       //if something happens before, nothing happens when the observer is recalled

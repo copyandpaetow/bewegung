@@ -177,7 +177,7 @@ import CodeBlock from "../components/CodeBlock.astro";
 <Layout title="Bewegung">
   <section id="examples" class="split-screen">
     <div class="flow start">
-      <h1>bewegung.</h1>
+      <h1><span>bewegung.</span></h1>
       <p>
         <strong>[bəˈveːɡʊŋ - the german word for motion]</strong>. This 8KB,
         0-dependency library uses the FLIP animation technique, which can
@@ -238,7 +238,7 @@ import CodeBlock from "../components/CodeBlock.astro";
         </li>
       </ul>
     </div>
-    <bewegung-boundary class="presentation sticky end">
+    <bewegung-boundary class="presentation sticky end" id="test">
       <details>
         <summary>hello</summary><div>
           content that could be very long and expand quite a bit. you never know
@@ -254,7 +254,7 @@ import CodeBlock from "../components/CodeBlock.astro";
                 <div id="6">
                   <div id="7">
                     <div id="8">
-                      <div class="wrapper">
+                      <div class="contents">
                         <ul id="js-list">
                           <Card
                             headline="red"
@@ -462,8 +462,12 @@ import CodeBlock from "../components/CodeBlock.astro";
     gap: var(--space-100);
   }
 
-  .wrapper {
+  .contents {
     display: contents;
+  }
+
+  .hidden {
+    display: none;
   }
 
   .position {
