@@ -175,7 +175,7 @@ import CodeBlock from "../components/CodeBlock.astro";
 </script>
 
 <Layout title="Bewegung">
-  <section id="examples" class="split-screen">
+  <bewegung-boundary id="examples" class="split-screen">
     <div class="flow start">
       <h1><span>bewegung.</span></h1>
       <p>
@@ -238,7 +238,8 @@ import CodeBlock from "../components/CodeBlock.astro";
         </li>
       </ul>
     </div>
-    <bewegung-boundary class="presentation sticky end" id="test">
+
+    <section class="presentation sticky end">
       <details>
         <summary>hello</summary><div>
           content that could be very long and expand quite a bit. you never know
@@ -297,180 +298,180 @@ import CodeBlock from "../components/CodeBlock.astro";
           </div>
         </div>
       </div>
-    </bewegung-boundary>
-  </section>
-  <section id="documentation" class="flow">
-    <h2>Documentation</h2>
-    <h3>Installation</h3>
-    <p>install via npm/yarn/pnpm etc</p>
-    <CodeBlock>npm install bewegung</CodeBlock>
+    </section>
+    <section id="documentation" class="flow">
+      <h2>Documentation</h2>
+      <h3>Installation</h3>
+      <p>install via npm/yarn/pnpm etc</p>
+      <CodeBlock>npm install bewegung</CodeBlock>
 
-    <h3>The simple things: play, pause, reverse</h3>
-    <CodeBlock>
-      <br />import &#123; bewegung &#125; from "bewegung";
-      <br />const animation = bewegung(yourCustomDomChangeFunction, 400)
-      &#125;);
-      <br />bewegung.play();
-      <br />bewegung.pause();
-      <br />bewegung.resume();
-    </CodeBlock>
+      <h3>The simple things: play, pause, reverse</h3>
+      <CodeBlock>
+        <br />import &#123; bewegung &#125; from "bewegung";
+        <br />const animation = bewegung(yourCustomDomChangeFunction, 400)
+        &#125;);
+        <br />bewegung.play();
+        <br />bewegung.pause();
+        <br />bewegung.resume();
+      </CodeBlock>
 
-    <h3>bring your own progress: seek</h3>
-    <p>
-      you can precisely controll the animation via seek. This can be use to make
-      the animation based on scroll or a load progress for example.
-    </p>
-    <CodeBlock>
-      <br />import &#123; bewegung &#125; from "bewegung";
-      <br />const animation = bewegung(yourCustomDomChangeFunction, 400)
-      &#125;);
-      <br />yourOnScrollListener((progress)=&#62; &#123;
-      <br /> if(progress &#62= 1) animation.seek(progress, true)
-      <br />animation.seek(progress)
-      <br />&#125;)
-    </CodeBlock>
-    <p>
-      there is the option to pass in a second parameter to indicate that the
-      animation is finish and can be clean up
-    </p>
+      <h3>bring your own progress: seek</h3>
+      <p>
+        you can precisely controll the animation via seek. This can be use to
+        make the animation based on scroll or a load progress for example.
+      </p>
+      <CodeBlock>
+        <br />import &#123; bewegung &#125; from "bewegung";
+        <br />const animation = bewegung(yourCustomDomChangeFunction, 400)
+        &#125;);
+        <br />yourOnScrollListener((progress)=&#62; &#123;
+        <br /> if(progress &#62= 1) animation.seek(progress, true)
+        <br />animation.seek(progress)
+        <br />&#125;)
+      </CodeBlock>
+      <p>
+        there is the option to pass in a second parameter to indicate that the
+        animation is finish and can be clean up
+      </p>
 
-    <h3>enough of this: cancel, finish</h3>
-    <p>
-      these to behave very similar, both clean up the animation remains. finish
-      will reapply the dom change though
-    </p>
-    <h3>reactivity escape hatch: forceUpdate</h3>
-    <p>
-      Reacting to dom changes is difficult while animating. Most animations dont
-      need this but if your animation is not like other animations, you can
-      create a custom solution for this your self for now.
-    </p>
-  </section>
-  <section id="caveats" class="flow">
-    <h2>Caveats</h2>
-    <p>
-      this is not a production ready piece of software and still in early alpha
-      stage. The API might still be subject to change. I am still not sure if
-      this will ever reach anything further because there are currently some
-      bigger issues to tackle (and a myriad of bugs):
-    </p>
-    <br />
-    <ul class="list">
-      <li>
-        <strong>counter-scaling:</strong>When scaling an element, its children
-        get counter-scaled to look like they remain unchanged. Depending on the
-        scale-amount the size change every frame for the parent and children
-        might not be the same and the animation looks off even if the start and
-        end are correct. Adjusting the childrens easing can fix this, but
-        calculating an inverse easing curve is difficult.
-      </li>
-      <li>
-        <strong>reactivity:</strong>We are calculating pixel-perfect start and
-        end points for a given DOM. If there are changes to the DOM, the
-        calculations are wrong again and need to be recalculated. It is hard to
-        detect changes while animating part of it. With the resize- and mutation
-        observer, we can get some of the direct changes but no indirect changes.
-        There is the possibility to use an intersection observer with a precise
-        root margin to see if an element changes position but that can only work
-        if the animations are paused.
-      </li>
-      <li>
-        <strong>Weird browser behaviors:</strong>Chromium-based browsers can
-        throw off the calculations in certain situations. If the calculation
-        happen out of the viewport and the animation is happening above it, the
-        calculations are off again. This is likely due to a mechanism to prevent
-        page jumps from lazy loaded elements but hard to predict.
-      </li>
-    </ul>
-  </section>
-</Layout>
+      <h3>enough of this: cancel, finish</h3>
+      <p>
+        these to behave very similar, both clean up the animation remains.
+        finish will reapply the dom change though
+      </p>
+      <h3>reactivity escape hatch: forceUpdate</h3>
+      <p>
+        Reacting to dom changes is difficult while animating. Most animations
+        dont need this but if your animation is not like other animations, you
+        can create a custom solution for this your self for now.
+      </p>
+    </section>
+    <section id="caveats" class="flow">
+      <h2>Caveats</h2>
+      <p>
+        this is not a production ready piece of software and still in early
+        alpha stage. The API might still be subject to change. I am still not
+        sure if this will ever reach anything further because there are
+        currently some bigger issues to tackle (and a myriad of bugs):
+      </p>
+      <br />
+      <ul class="list">
+        <li>
+          <strong>counter-scaling:</strong>When scaling an element, its children
+          get counter-scaled to look like they remain unchanged. Depending on
+          the scale-amount the size change every frame for the parent and
+          children might not be the same and the animation looks off even if the
+          start and end are correct. Adjusting the childrens easing can fix
+          this, but calculating an inverse easing curve is difficult.
+        </li>
+        <li>
+          <strong>reactivity:</strong>We are calculating pixel-perfect start and
+          end points for a given DOM. If there are changes to the DOM, the
+          calculations are wrong again and need to be recalculated. It is hard
+          to detect changes while animating part of it. With the resize- and
+          mutation observer, we can get some of the direct changes but no
+          indirect changes. There is the possibility to use an intersection
+          observer with a precise root margin to see if an element changes
+          position but that can only work if the animations are paused.
+        </li>
+        <li>
+          <strong>Weird browser behaviors:</strong>Chromium-based browsers can
+          throw off the calculations in certain situations. If the calculation
+          happen out of the viewport and the animation is happening above it,
+          the calculations are off again. This is likely due to a mechanism to
+          prevent page jumps from lazy loaded elements but hard to predict.
+        </li>
+      </ul>
+    </section>
+  </bewegung-boundary>
 
-<style>
-  section {
-    min-height: 50vh;
+  <style>
+    section {
+      min-height: 50vh;
 
-    &:last-child {
-      padding-bottom: 10vh;
-    }
-  }
-
-  details {
-    max-inline-size: 20ch;
-  }
-
-  .sticky {
-    position: sticky;
-    top: 0;
-  }
-
-  .flex {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .split-screen {
-    display: grid;
-
-    grid-template-columns: [current-start] 1fr [current-end];
-    row-gap: 1rem;
-    grid-auto-rows: max-content;
-
-    @media (min-width: 50rem) {
-      min-height: 150vh;
-      grid-template-columns: [current-start] 1fr [current-end sticky-start] 1.5fr [sticky-end];
-    }
-
-    .start {
-      grid-column: current;
-      place-self: center;
-    }
-
-    .end {
-      grid-column: current;
-      grid-row: 1/2;
-
-      @media (min-width: 50rem) {
-        grid-column: sticky;
+      &:last-child {
+        padding-bottom: 10vh;
       }
     }
-  }
 
-  .split-screen:has(> .flow :focus-within) #js-list {
-    /* width: 15rem; 
+    details {
+      max-inline-size: 20ch;
+    }
+
+    .sticky {
+      position: sticky;
+      top: 0;
+    }
+
+    .flex {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .split-screen {
+      display: grid;
+
+      grid-template-columns: [current-start] 1fr [current-end];
+      row-gap: 1rem;
+      grid-auto-rows: max-content;
+
+      @media (min-width: 50rem) {
+        min-height: 150vh;
+        grid-template-columns: [current-start] 1fr [current-end sticky-start] 1.5fr [sticky-end];
+      }
+
+      .start {
+        grid-column: current;
+        place-self: center;
+      }
+
+      .end {
+        grid-column: current;
+        grid-row: 1/2;
+
+        @media (min-width: 50rem) {
+          grid-column: sticky;
+        }
+      }
+    }
+
+    .split-screen:has(> .flow :focus-within) #js-list {
+      /* width: 15rem; 
         transform: translateX(-50%);
     transition: ease 2s;
     */
-  }
-
-  .presentation {
-    display: grid;
-    place-content: center;
-    background-color: var(--color-background);
-
-    min-height: 50vh;
-    @media (min-width: 50rem) {
-      height: 100vh;
     }
-  }
 
-  .presentation ul {
-    border: 2px solid var(--grey-85);
-    border-radius: var(--space-100);
-    padding: var(--space-100);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-100);
-  }
+    .presentation {
+      display: grid;
+      place-content: center;
+      background-color: var(--color-background);
 
-  .contents {
-    display: contents;
-  }
+      min-height: 50vh;
+      @media (min-width: 50rem) {
+        height: 100vh;
+      }
+    }
 
-  .hidden {
-    display: none;
-  }
+    .presentation ul {
+      border: 2px solid var(--grey-85);
+      border-radius: var(--space-100);
+      padding: var(--space-100);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-100);
+    }
 
-  .position {
-    /* grid-area: 1 / 1 / 2 / 2; */
-  }
-</style>
+    .contents {
+      display: contents;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .position {
+      /* grid-area: 1 / 1 / 2 / 2; */
+    }
+  </style>
+</Layout>

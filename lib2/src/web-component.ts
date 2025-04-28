@@ -75,6 +75,7 @@ export class Bewegung extends HTMLElement {
       this.context.generation += 10;
       this.updateLoop(newNodes.startNode);
 
+      console.log(this.context);
       this.setMO();
     });
   }
@@ -107,11 +108,13 @@ export class Bewegung extends HTMLElement {
 
   hasChanged(node: TreeNode): Boolean {
     node.changeGeneration = this.context.generation;
+    const wasAdded = !node.readout && !node.pendingReadout;
 
     this.updateReadout(node);
     this.updateReadout(node.parent);
 
-    if (!node.readout) {
+    //TODO: this doesnt really work. We need different behaviour going up and down. Maybe we also need to handle them in a dedicated way
+    if (wasAdded) {
       this.setAnimation(node, getAppearingKeyframes(node.pendingReadout!));
 
       return false;
@@ -160,6 +163,7 @@ export class Bewegung extends HTMLElement {
 
     let nextNode = firstUnchangedParent.next;
 
+    console.log(firstUnchangedParent, loopStop);
     while (nextNode !== loopStop) {
       nextNode = this.hasChanged(nextNode)
         ? nextNode.next
@@ -172,10 +176,11 @@ export class Bewegung extends HTMLElement {
     beforeAnimation: VoidFunction,
     afterAnimation: VoidFunction
   ) {
+    this.updateReadout(removedTreeNode.parent);
     Object.assign(
       removedTreeNode.element.style,
       resetHiddenElement(
-        removedTreeNode.readout!,
+        removedTreeNode.pendingReadout!,
         removedTreeNode.parent.pendingReadout!,
         removedTreeNode.parent.readout!
       )
@@ -232,6 +237,7 @@ export class Bewegung extends HTMLElement {
             return;
           }
           const removedNode = newNodes.removedNodes.get(node)!;
+
           newNodes.removedNodes.delete(node);
           removedNode.subloopEnd.next = removedNode;
           let next = removedNode.next;
@@ -256,11 +262,11 @@ export class Bewegung extends HTMLElement {
         //if one of the nodes next pointers is not in here it is transparent
         //we need to cleanup the element that points to a still valid node
         while (next !== removedNode) {
-          map.delete(next.element);
           if (!map.has(next.element)) {
             isFullyHidden = false;
             break;
           }
+          map.delete(next.element);
           next = next.next;
         }
         //at this point we reduced the map to sub loops

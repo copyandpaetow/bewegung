@@ -12,13 +12,13 @@ export const getAppearingKeyframes = (readout: Readout) => {
 //TODO: this sadly is not perfectly extendable to the appearing
 export const getDisappearingKeyframes = (node: TreeNode): Keyframe[] => {
   const delta = getDifferences(
-    node.readout!,
-    node.readout!,
+    node.pendingReadout!,
+    node.pendingReadout!,
     node.parent?.pendingReadout!,
     node.parent?.readout!
   );
 
-  const from = new DOMMatrix(node.readout!.transform.toString());
+  const from = new DOMMatrix(node.pendingReadout!.transform.toString());
 
   from.scaleSelf(
     1 / delta.parentWidthDifference,
