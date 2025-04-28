@@ -11,6 +11,7 @@ export type Readout = {
   position: CSSStyleDeclaration["position"];
   transform: DOMMatrixReadOnly;
   transformOrigin: [number, number];
+  cssText: string;
 };
 
 export const getBorderRadius = (
@@ -39,7 +40,6 @@ export const onlyElements = (
   node: Node | Element | HTMLElement | null
 ): node is HTMLElement => node?.nodeType === Node.ELEMENT_NODE;
 
-//TODO: we likely need a more dedicated isVisible approach
 export const getElementReadouts = (element: HTMLElement): Readout => {
   const { left, top, width, height } = element.getBoundingClientRect();
   const style = window.getComputedStyle(element);
@@ -58,6 +58,7 @@ export const getElementReadouts = (element: HTMLElement): Readout => {
     transformOrigin: (style.transformOrigin || "0 0")
       .split(" ")
       .map(parseFloat) as [number, number],
+    cssText: element.style.cssText,
   };
 
   return readout;

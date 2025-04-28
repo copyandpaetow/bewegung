@@ -12,13 +12,13 @@ export const getAppearingKeyframes = (readout: Readout) => {
 //TODO: this sadly is not perfectly extendable to the appearing
 export const getDisappearingKeyframes = (node: TreeNode): Keyframe[] => {
   const delta = getDifferences(
-    node.pendingReadout!,
-    node.pendingReadout!,
+    node.readout!,
+    node.readout!,
     node.parent?.pendingReadout!,
     node.parent?.readout!
   );
 
-  const from = new DOMMatrix(node.pendingReadout!.transform.toString());
+  const from = new DOMMatrix(node.readout!.transform.toString());
 
   from.scaleSelf(
     1 / delta.parentWidthDifference,
@@ -83,53 +83,19 @@ export const getDifferences = (
   };
 };
 
-export const calculateKeyframes = (
-  readout: Readout,
-  previousReadout: Readout,
-  parentReadout: Readout,
-  previousParentReadout: Readout
-): Keyframe[] => {
-  const [toLeft, toTop, toWidth, toHeight] = readout.dimensions;
-  const [toParentLeft, toParentTop, toParentWidth, toParentHeight] =
-    parentReadout.dimensions;
-  const [originToLeft, originToTop] = readout.transformOrigin;
-  const [originToParentLeft, originToParentTop] = parentReadout.transformOrigin;
-
-  const [fromLeft, fromTop, fromWidth, fromHeight] = previousReadout.dimensions;
-  const [fromParentLeft, fromParentTop, fromParentWidth, fromParentHeight] =
-    previousParentReadout.dimensions;
-  const [originFromLeft, originFromTop] = previousReadout.transformOrigin;
-  const [originFromParentLeft, originFromParentTop] =
-    previousParentReadout.transformOrigin;
-
-  const parentWidthDifference = fromParentWidth / toParentWidth;
-  const parentHeightDifference = fromParentHeight / toParentHeight;
-  const childWidthDifference = fromWidth / toWidth;
-  const childHeightDifference = fromHeight / toHeight;
-
-  const heightDifference = childHeightDifference / parentHeightDifference;
-  const widthDifference = childWidthDifference / parentWidthDifference;
-
-  const currentLeftDifference =
-    fromLeft + originFromLeft - (fromParentLeft + originFromParentLeft);
-  const referenceLeftDifference =
-    toLeft + originToLeft - (toParentLeft + originToParentLeft);
-
-  const currentTopDifference =
-    fromTop + originFromTop - (fromParentTop + originFromParentTop);
-  const referenceTopDifference =
-    toTop + originToTop - (toParentTop + originToParentTop);
-
-  const leftDifference =
-    currentLeftDifference / parentWidthDifference - referenceLeftDifference;
-  const topDifference =
-    currentTopDifference / parentHeightDifference - referenceTopDifference;
+export const calculateKeyframes = (node: TreeNode): Keyframe[] => {
+  const delta = getDifferences(
+    node.pendingReadout!,
+    node.readout!,
+    node.parent?.pendingReadout!,
+    node.parent?.readout!
+  );
 
   const flipMatrix = new DOMMatrix();
-  flipMatrix.translateSelf(leftDifference, topDifference);
-  flipMatrix.scaleSelf(widthDifference, heightDifference);
+  flipMatrix.translateSelf(delta.leftDifference, delta.topDifference);
+  flipMatrix.scaleSelf(delta.widthDifference, delta.heightDifference);
 
-  const currentMatrix = readout!.transform;
+  const currentMatrix = node.readout!.transform;
 
   const combinedMatrix = currentMatrix.multiply(flipMatrix);
 

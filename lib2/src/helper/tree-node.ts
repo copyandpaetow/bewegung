@@ -1,7 +1,6 @@
 import { Readout, VISIBILITY_OPTIONS } from "./element";
 
 export type Context = {
-  generation: number;
   treeNodes: Map<HTMLElement, TreeNode>;
   animationOptions: KeyframeEffectOptions;
 };
@@ -15,10 +14,8 @@ export type TreeNode = {
   subloopEnd: TreeNode;
   readout: Readout | null;
   pendingReadout: Readout | null;
-  changeGeneration: number;
-  readoutGeneration: number;
+  hasChanged: boolean;
   animation: Animation;
-  cssText: string;
 };
 
 export type Result = {
@@ -45,16 +42,22 @@ export const createNode = (
     animation: new Animation(
       new KeyframeEffect(element, null, context.animationOptions)
     ),
-    changeGeneration: context.generation,
-    readoutGeneration: -1,
-    cssText: "",
+    hasChanged: false,
   };
+
+  //todo: in here we could alter the TreeNode or reset parts of it
 
   node.subloopEnd = node;
   node.parent = parent;
+  node.hasChanged = false;
+  node.readout = node.pendingReadout ?? node.readout;
+  node.pendingReadout = null;
 
   if (!wasAvailable) {
-    result.addedNodes.set(element, node);
+    node.hasChanged = true;
+    if (!result.addedNodes.has(parent.element)) {
+      result.addedNodes.set(element, node);
+    }
   } else {
     context.treeNodes.delete(element);
   }
@@ -145,6 +148,22 @@ export const createNodeLoop = (root: HTMLElement, context: Context) => {
   while (parentStack.length) {
     parentStack.pop()!.subloopEnd = previousNode!;
   }
+
+  let previous: TreeNode | null = null;
+  result.removedNodes.forEach((node, key, map) => {
+    node.readout = node.pendingReadout ?? node.readout;
+    node.pendingReadout = null;
+    node.hasChanged = true;
+
+    if (map.has(node.parent.element)) {
+      map.delete(key);
+    } else {
+      if (previous?.element.contains?.(node.element)) {
+        map.delete(previous.element);
+      }
+      previous = node;
+    }
+  });
 
   return result;
 };
