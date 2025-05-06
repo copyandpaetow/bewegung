@@ -5,7 +5,7 @@ import CodeBlock from "../components/CodeBlock.astro";
 ---
 
 <script>
-  import { bewegung } from "../../../lib/src/bewegung";
+  //import { bewegung } from "../../../lib/src/bewegung";
   import "../../../lib2/src/web-component";
 
   const list = document.getElementById("js-list") as HTMLElement;
@@ -146,27 +146,25 @@ import CodeBlock from "../components/CodeBlock.astro";
   };
 
   buttonScroll.onclick = () => {
-    animationPromise = animationPromise.then(() => {
-      buttonScroll.closest("section")!.style.minHeight = "250vh";
-      const anim = bewegung([removeGridArea, cloneElement], {
-        defaultOptions: { duration: 1000 },
-      });
-      const offset = window.innerHeight / 2;
-      const scrollHeight =
-        document.querySelector("aside")!.parentElement!.scrollHeight - offset;
-
-      const scrollFn = () => {
-        const scroll = document.documentElement.scrollTop / scrollHeight;
-        if (scroll >= 1) {
-          anim.seek(scroll, true);
-          document.removeEventListener("scroll", scrollFn);
-          return;
-        }
-
-        anim.seek(scroll);
-      };
-      document.addEventListener("scroll", scrollFn, { passive: true });
-    });
+    // animationPromise = animationPromise.then(() => {
+    //   buttonScroll.closest("section")!.style.minHeight = "250vh";
+    //   const anim = bewegung([removeGridArea, cloneElement], {
+    //     defaultOptions: { duration: 1000 },
+    //   });
+    //   const offset = window.innerHeight / 2;
+    //   const scrollHeight =
+    //     document.querySelector("aside")!.parentElement!.scrollHeight - offset;
+    //   const scrollFn = () => {
+    //     const scroll = document.documentElement.scrollTop / scrollHeight;
+    //     if (scroll >= 1) {
+    //       anim.seek(scroll, true);
+    //       document.removeEventListener("scroll", scrollFn);
+    //       return;
+    //     }
+    //     anim.seek(scroll);
+    //   };
+    //   document.addEventListener("scroll", scrollFn, { passive: true });
+    // });
   };
 
   buttonClear.onclick = () => {
@@ -207,7 +205,7 @@ import CodeBlock from "../components/CodeBlock.astro";
           <button id="js-test">test</button>
         </li>
         <li>
-          <button id="js-grid-colums">grid-columns</button>
+          <button id="js-grid-colums">switch elements</button>
         </li>
         <li>
           <button id="js-grid-to-flex">grid to flexbox</button>

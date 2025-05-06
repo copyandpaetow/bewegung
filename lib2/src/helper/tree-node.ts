@@ -1,6 +1,7 @@
-import { Readout, VISIBILITY_OPTIONS } from "./element";
+import { Readout, updateReadout, VISIBILITY_OPTIONS } from "./element";
 
 export type Context = {
+  head: TreeNode | null;
   treeNodes: Map<HTMLElement, TreeNode>;
   animationOptions: KeyframeEffectOptions;
 };
@@ -18,19 +19,18 @@ export type TreeNode = {
   animation: Animation;
 };
 
-export type Result = {
-  treeNodes: Map<HTMLElement, TreeNode>;
-  addedNodes: Map<HTMLElement, TreeNode>;
+export type NodeChanges = {
   removedNodes: Map<HTMLElement, TreeNode>;
+  addedNodes: Map<HTMLElement, TreeNode>;
 };
 
 export const createNode = (
   element: HTMLElement,
   parent: TreeNode,
   context: Context,
-  result: Result
+  nodeChanges: NodeChanges
 ) => {
-  const wasAvailable = context.treeNodes.get(element);
+  const wasAvailable = nodeChanges.removedNodes.get(element);
 
   const node: TreeNode = wasAvailable ?? {
     element,
@@ -45,8 +45,6 @@ export const createNode = (
     hasChanged: false,
   };
 
-  //todo: in here we could alter the TreeNode or reset parts of it
-
   node.subloopEnd = node;
   node.parent = parent;
   node.hasChanged = false;
@@ -55,13 +53,13 @@ export const createNode = (
 
   if (!wasAvailable) {
     node.hasChanged = true;
-    if (!result.addedNodes.has(parent.element)) {
-      result.addedNodes.set(element, node);
+    if (!nodeChanges.addedNodes.has(parent.element)) {
+      nodeChanges.addedNodes.set(element, node);
     }
   } else {
-    context.treeNodes.delete(element);
+    nodeChanges.removedNodes.delete(element);
   }
-  result.treeNodes.set(element, node);
+  context.treeNodes.set(element, node);
 
   return node;
 };
@@ -85,7 +83,14 @@ export const isVisible = (element: HTMLElement) => {
   return true;
 };
 
-export const createNodeLoop = (root: HTMLElement, context: Context) => {
+const nextRAF = () =>
+  new Promise<number>((resolve) => requestAnimationFrame(resolve));
+
+export const createNodeLoop = async (
+  root: HTMLElement,
+  context: Context,
+  timeChunkSize = 5
+) => {
   const nodeIterator = document.createNodeIterator(
     root,
     NodeFilter.SHOW_ELEMENT,
@@ -102,23 +107,23 @@ export const createNodeLoop = (root: HTMLElement, context: Context) => {
     throw Error("no visible element to record");
   }
 
-  const result = {
-    treeNodes: new Map<HTMLElement, TreeNode>(),
+  const nodeChanges = {
     addedNodes: new Map<HTMLElement, TreeNode>(),
-    removedNodes: context.treeNodes,
-    startNode: fake as TreeNode,
+    removedNodes: new Map(context.treeNodes),
   };
-  result.startNode = createNode(
+  context.treeNodes.clear();
+  context.head = createNode(
     nodeIterator.referenceNode as HTMLElement,
     fake,
     context,
-    result
+    nodeChanges
   );
 
-  result.startNode.parent = result.startNode;
+  context.head.parent = context.head;
 
-  const parentStack = [result.startNode];
-  let previousNode = result.startNode;
+  const parentStack = [context.head];
+  let previousNode = context.head;
+  let time = performance.now();
 
   while (nodeIterator.nextNode()) {
     const currentElement = nodeIterator.referenceNode as HTMLElement;
@@ -137,20 +142,28 @@ export const createNodeLoop = (root: HTMLElement, context: Context) => {
     }
 
     const parentNode = parentStack.at(-1)!;
-    const treeNode = createNode(currentElement, parentNode, context, result);
+    const treeNode = createNode(
+      currentElement,
+      parentNode,
+      context,
+      nodeChanges
+    );
 
     previousNode.next = treeNode;
     previousNode = treeNode;
+    if (performance.now() - time > timeChunkSize) {
+      time = await nextRAF();
+    }
   }
 
-  previousNode.next = result.startNode;
+  previousNode.next = context.head;
 
   while (parentStack.length) {
     parentStack.pop()!.subloopEnd = previousNode!;
   }
 
   let previous: TreeNode | null = null;
-  result.removedNodes.forEach((node, key, map) => {
+  nodeChanges.removedNodes.forEach((node, key, map) => {
     node.readout = node.pendingReadout ?? node.readout;
     node.pendingReadout = null;
     node.hasChanged = true;
@@ -165,5 +178,20 @@ export const createNodeLoop = (root: HTMLElement, context: Context) => {
     }
   });
 
-  return result;
+  return nodeChanges;
+};
+
+export const updateLoop = async (rootNode: TreeNode, timeChunkSize = 10) => {
+  let currentNode = rootNode;
+  let time = performance.now();
+
+  while (currentNode !== rootNode.subloopEnd) {
+    currentNode.pendingReadout ??= updateReadout(currentNode);
+    currentNode = currentNode.next;
+
+    if (performance.now() - time > timeChunkSize) {
+      time = await nextRAF();
+    }
+  }
+  rootNode.subloopEnd.pendingReadout ??= updateReadout(rootNode.subloopEnd);
 };

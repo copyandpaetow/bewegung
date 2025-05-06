@@ -1,10 +1,11 @@
-import {
-  getElementReadouts,
-  onlyElements,
-  resetHiddenElement,
-} from "./helper/element";
+import { resetHiddenElement, updateReadout } from "./helper/element";
 import { MO_OPTIONS } from "./helper/observer";
-import { Context, createNodeLoop, TreeNode } from "./helper/tree-node";
+import {
+  Context,
+  createNodeLoop,
+  TreeNode,
+  updateLoop,
+} from "./helper/tree-node";
 import {
   calculateKeyframes,
   getAppearingKeyframes,
@@ -17,7 +18,8 @@ export class Bewegung extends HTMLElement {
   options = {
     disabled: false,
   };
-  context: Context = {
+  #context: Context = {
+    head: null,
     treeNodes: new Map<HTMLElement, TreeNode>(),
     animationOptions: {
       duration: 400,
@@ -55,8 +57,11 @@ export class Bewegung extends HTMLElement {
   - we need to be able to incorporate potential previous animations 
   => if we animate from A => B and while thats happening we have another change, we need to find the intermediary Step from using the scale and translates and the B readoout
 
+  - we need to be able to stop and recover
+
   !bugs
   - removing the child from the dom of an element that became hidden would not work currently (rare edgecase) as it gets mashed together with the other hidden nodes
+
 
   ?improvements
   - we could test, if use different animations for performant animations (layout) and another animation for the clip-path animations (border and image sizing) 
@@ -66,30 +71,18 @@ export class Bewegung extends HTMLElement {
 
    */
 
-  connectedCallback() {
-    requestAnimationFrame(() => {
-      const newNodes = createNodeLoop(this, this.context);
-      this.context.treeNodes = newNodes.treeNodes;
-
-      this.updateLoop(newNodes.startNode);
-
-      console.log(this.context);
+  async connectedCallback() {
+    try {
+      await createNodeLoop(this, this.#context);
+      if (this.#context.head) {
+        await updateLoop(this.#context.head);
+      } else {
+        console.warn("no element was found");
+      }
       this.setMO();
-    });
-  }
-
-  updateLoop(rootNode: TreeNode) {
-    let current = rootNode;
-
-    while (current !== rootNode.subloopEnd) {
-      this.updateReadout(current);
-      current = current.next;
+    } catch (error) {
+      console.warn("there was an issue setting up the node structure");
     }
-    this.updateReadout(rootNode.subloopEnd);
-  }
-
-  updateReadout(node: TreeNode) {
-    node.pendingReadout ??= getElementReadouts(node.element);
   }
 
   setAnimation(node: TreeNode, keyframes: Keyframe[]) {
@@ -105,8 +98,8 @@ export class Bewegung extends HTMLElement {
       return false;
     }
 
-    this.updateReadout(node);
-    this.updateReadout(node.parent);
+    node.pendingReadout ??= updateReadout(node);
+    node.parent.pendingReadout ??= updateReadout(node.parent);
 
     const keyframes = calculateKeyframes(node);
 
@@ -142,9 +135,17 @@ export class Bewegung extends HTMLElement {
     let nextNode = firstUnchangedParent.next;
 
     while (nextNode !== loopStop) {
-      nextNode = this.hasChanged(nextNode)
-        ? nextNode.next
-        : nextNode.subloopEnd.next;
+      if (this.hasChanged(nextNode)) {
+        nextNode.hasChanged = true;
+        nextNode = nextNode.next;
+      } else {
+        //TODO: this might be handlable during the setup
+        //* if we reach the root node, it will point to itself to create an infinite loop
+        if (nextNode === nextNode.subloopEnd.next) {
+          break;
+        }
+        nextNode = nextNode.subloopEnd.next;
+      }
     }
   }
 
@@ -153,7 +154,9 @@ export class Bewegung extends HTMLElement {
     beforeAnimation: VoidFunction,
     afterAnimation: VoidFunction
   ) {
-    this.updateReadout(removedTreeNode.parent);
+    removedTreeNode.parent.pendingReadout ??= updateReadout(
+      removedTreeNode.parent
+    );
     Object.assign(
       removedTreeNode.element.style,
       resetHiddenElement(
@@ -191,16 +194,16 @@ export class Bewegung extends HTMLElement {
     if (this.options.disabled) {
       return;
     }
-    this.MO ??= new MutationObserver((entries) => {
+
+    this.MO ??= new MutationObserver(async (entries) => {
       this.stopMO();
 
-      const newNodes = createNodeLoop(this, this.context);
-      this.context.treeNodes = newNodes.treeNodes;
+      const nodeChanges = await createNodeLoop(this, this.#context, 50);
 
       entries.forEach((entry) => {
-        if (newNodes.treeNodes.has(entry.target as HTMLElement)) {
+        if (this.#context.treeNodes.has(entry.target as HTMLElement)) {
           this.walkNodeLoop(
-            newNodes.treeNodes.get(entry.target as HTMLElement)!
+            this.#context.treeNodes.get(entry.target as HTMLElement)!
           );
         }
       });
@@ -211,7 +214,7 @@ export class Bewegung extends HTMLElement {
         )
       );
 
-      newNodes.removedNodes.forEach((removedNode) => {
+      nodeChanges.removedNodes.forEach((removedNode) => {
         this.walkNodeLoop(removedNode.parent);
 
         if (removedElements.has(removedNode.element)) {
@@ -225,7 +228,8 @@ export class Bewegung extends HTMLElement {
           return;
         }
 
-        this.updateReadout(removedNode);
+        //TODO: there could be other cases here
+        removedNode.pendingReadout ??= updateReadout(removedNode);
         if (removedNode.pendingReadout?.display === "none") {
           this.handleRemove(
             removedNode,
@@ -239,8 +243,8 @@ export class Bewegung extends HTMLElement {
         }
       });
 
-      newNodes.addedNodes.forEach((addedNode) => {
-        this.updateReadout(addedNode);
+      nodeChanges.addedNodes.forEach(async (addedNode) => {
+        await updateLoop(addedNode, 50);
         this.setAnimation(
           addedNode,
           getAppearingKeyframes(addedNode.pendingReadout!)

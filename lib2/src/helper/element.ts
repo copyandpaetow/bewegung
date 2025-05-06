@@ -1,4 +1,5 @@
 import { getDifferences } from "../keyframes";
+import { TreeNode } from "./tree-node";
 
 export type ValueOf<T> = T[keyof T];
 
@@ -36,15 +37,11 @@ export const VISIBILITY = {
   VISIBLE: 1,
 } as const;
 
-export const onlyElements = (
-  node: Node | Element | HTMLElement | null
-): node is HTMLElement => node?.nodeType === Node.ELEMENT_NODE;
+export const updateReadout = (node: TreeNode): Readout => {
+  const { left, top, width, height } = node.element.getBoundingClientRect();
+  const style = window.getComputedStyle(node.element);
 
-export const getElementReadouts = (element: HTMLElement): Readout => {
-  const { left, top, width, height } = element.getBoundingClientRect();
-  const style = window.getComputedStyle(element);
-
-  const readout: Readout = {
+  return {
     borderWidth: [
       parseFloat(style.borderLeftWidth || "0"),
       parseFloat(style.borderTopWidth || "0"),
@@ -58,10 +55,8 @@ export const getElementReadouts = (element: HTMLElement): Readout => {
     transformOrigin: (style.transformOrigin || "0 0")
       .split(" ")
       .map(parseFloat) as [number, number],
-    cssText: element.style.cssText,
+    cssText: node.element.style.cssText,
   };
-
-  return readout;
 };
 
 export const resetHiddenElement = (
