@@ -5,7 +5,9 @@ import CodeBlock from "../components/CodeBlock.astro";
 ---
 
 <script>
-  import "../../../lib2/src/web-component";
+  import {Bewegung} from  "../../../lib/src/web-component";
+
+  Bewegung.register()
 
   const list = document.getElementById("js-list") as HTMLElement;
   const buttonGridColum = document.getElementById(
@@ -27,11 +29,9 @@ import CodeBlock from "../components/CodeBlock.astro";
     "js-add-element"
   ) as HTMLElement;
   const buttonClear = document.getElementById("js-clear") as HTMLElement;
-  const buttonSequence = document.getElementById("js-sequence") as HTMLElement;
-  const buttonScroll = document.getElementById("js-scroll") as HTMLElement;
+  const buttonSequence = document.getElementById("js-flex-to-grid") as HTMLElement;
   const buttonTest = document.getElementById("js-test") as HTMLElement;
 
-  let animationPromise = Promise.resolve();
 
   const getRandomChild = () => {
     return list.children[
@@ -63,51 +63,19 @@ import CodeBlock from "../components/CodeBlock.astro";
 
   buttonTest.onclick = () => {
     getRandomChild().style.aspectRatio = "0.5";
-
-    // for (const element of list.children) {
-    //   element.style.cssText = "";
-    // }
-
-    // animationPromise = animationPromise.then(() => {
-    //   const anim = bewegung(() => (list.children[3].style.aspectRatio = "2"), {
-    //     duration: 400,
-    //     root: "bewegung-boundary",
-    //   });
-    //   return anim.play();
-    // });
   };
 
   buttonGridColum.onclick = () => {
-    // animationPromise = animationPromise.then(() => {
-    //   const anim = bewegung(removeGridArea, 400);
-    //   return anim.play();
-    // });
-
     list.children[0].before(list.children[list.children.length - 1]);
-
-    //removeGridArea();
   };
 
   buttonGridToFlex.onclick = () => {
-    // animationPromise = animationPromise.then(() => {
-    //   const anim = bewegung(toFlex, 400);
-    //   return anim.play();
-    // });
     toFlex();
   };
 
   buttonDisplayNone.onclick = () => {
-    // (
-    //   list.children[Math.floor(Math.random() * 3)] as HTMLElement
-    // ).style.display = "none";
     getRandomChild().style.display = "none";
-    // animationPromise = animationPromise.then(() => {
-    //   const anim = bewegung(() => {
-    //     (list.querySelector("li:first-of-type") as HTMLElement).style.display =
-    //       "none";
-    //   }, 400);
-    //   return anim.play();
-    // });
+
   };
 
   buttonDisplayRestore.onclick = () => {
@@ -119,52 +87,18 @@ import CodeBlock from "../components/CodeBlock.astro";
   };
 
   buttonRemoveElement.onclick = () => {
-    // animationPromise = animationPromise.then(() => {
-    //   const anim = bewegung(removeFirstImage, 400);
-    //   return anim.play();
-    // });
     removeFirstImage();
   };
 
   buttonAddElement.onclick = () => {
-    // animationPromise = animationPromise.then(() => {
-    //   const anim = bewegung(cloneElement, 400);
-    //   return anim.play();
-    // });
     cloneElement();
   };
 
   buttonSequence.onclick = () => {
-    // animationPromise = animationPromise.then(() => {
-    //   const anim = bewegung([removeGridArea, toFlex], {
-    //     defaultOptions: { duration: 1000 },
-    //   });
-    //   return anim.play();
-    // });
     removeGridArea();
   };
 
-  buttonScroll.onclick = () => {
-    // animationPromise = animationPromise.then(() => {
-    //   buttonScroll.closest("section")!.style.minHeight = "250vh";
-    //   const anim = bewegung([removeGridArea, cloneElement], {
-    //     defaultOptions: { duration: 1000 },
-    //   });
-    //   const offset = window.innerHeight / 2;
-    //   const scrollHeight =
-    //     document.querySelector("aside")!.parentElement!.scrollHeight - offset;
-    //   const scrollFn = () => {
-    //     const scroll = document.documentElement.scrollTop / scrollHeight;
-    //     if (scroll >= 1) {
-    //       anim.seek(scroll, true);
-    //       document.removeEventListener("scroll", scrollFn);
-    //       return;
-    //     }
-    //     anim.seek(scroll);
-    //   };
-    //   document.addEventListener("scroll", scrollFn, { passive: true });
-    // });
-  };
+
 
   buttonClear.onclick = () => {
     window.location.reload();
@@ -197,8 +131,11 @@ import CodeBlock from "../components/CodeBlock.astro";
         </li>
       </ul>
 
-      <h2>Examples</h2>
-      <h3>single</h3>
+      <header>
+        <h2>Examples</h2>
+        <button id="js-clear">clear changes</button>
+      </header>
+      <h3>changes</h3>
       <ul class="list">
         <li>
           <button id="js-test">test</button>
@@ -207,7 +144,10 @@ import CodeBlock from "../components/CodeBlock.astro";
           <button id="js-grid-colums">switch elements</button>
         </li>
         <li>
-          <button id="js-grid-to-flex">grid to flexbox</button>
+          <button id="js-grid-to-flex">grid to flex</button>
+        </li>
+        <li>
+          <button id="js-flex-to-grid">flex to grid</button>
         </li>
         <li>
           <button id="js-display-none">hide</button>
@@ -215,23 +155,17 @@ import CodeBlock from "../components/CodeBlock.astro";
         <li>
           <button id="js-display-restore">show</button>
         </li>
+
+      </ul>
+      <h3>additions / deletions</h3>
+      <ul class="list">
+ 
+    
         <li>
           <button id="js-remove-element">element removal</button>
         </li>
         <li>
           <button id="js-add-element">element addition</button>
-        </li>
-        <li>
-          <button id="js-clear">clear changes</button>
-        </li>
-      </ul>
-      <h3>other</h3>
-      <ul class="list">
-        <li>
-          <button id="js-scroll">scroll</button>
-        </li>
-        <li>
-          <button id="js-sequence">sequence</button>
         </li>
       </ul>
     </div>
@@ -296,54 +230,23 @@ import CodeBlock from "../components/CodeBlock.astro";
         </div>
       </div>
     </section>
-    <section id="documentation" class="flow">
+    <section id="documentation" class="flow start">
       <h2>Documentation</h2>
       <h3>Installation</h3>
-      <p>install via npm/yarn/pnpm etc</p>
-      <CodeBlock>npm install bewegung</CodeBlock>
-
-      <h3>The simple things: play, pause, reverse</h3>
+      <p>install via npm/yarn/pnpm etc and import it</p>
       <CodeBlock>
-        <br />import &#123; bewegung &#125; from "bewegung";
-        <br />const animation = bewegung(yourCustomDomChangeFunction, 400)
-        &#125;);
-        <br />bewegung.play();
-        <br />bewegung.pause();
-        <br />bewegung.resume();
-      </CodeBlock>
+        npm install bewegung
+        <br />import &#123; Bewegung &#125; from "bewegung";
+        <br />//registers the web-component unter the name "bewegung-boundary";
+        <br />Bewegung.register() 
 
-      <h3>bring your own progress: seek</h3>
-      <p>
-        you can precisely controll the animation via seek. This can be use to
-        make the animation based on scroll or a load progress for example.
-      </p>
-      <CodeBlock>
-        <br />import &#123; bewegung &#125; from "bewegung";
-        <br />const animation = bewegung(yourCustomDomChangeFunction, 400)
-        &#125;);
-        <br />yourOnScrollListener((progress)=&#62; &#123;
-        <br /> if(progress &#62= 1) animation.seek(progress, true)
-        <br />animation.seek(progress)
-        <br />&#125;)
       </CodeBlock>
-      <p>
-        there is the option to pass in a second parameter to indicate that the
-        animation is finish and can be clean up
+      
+      <p> from there you can use it as a web-component. It will animate all the changes it can detect within
       </p>
 
-      <h3>enough of this: cancel, finish</h3>
-      <p>
-        these to behave very similar, both clean up the animation remains.
-        finish will reapply the dom change though
-      </p>
-      <h3>reactivity escape hatch: forceUpdate</h3>
-      <p>
-        Reacting to dom changes is difficult while animating. Most animations
-        dont need this but if your animation is not like other animations, you
-        can create a custom solution for this your self for now.
-      </p>
     </section>
-    <section id="caveats" class="flow">
+    <section id="caveats" class="flow start">
       <h2>Caveats</h2>
       <p>
         this is not a production ready piece of software and still in early

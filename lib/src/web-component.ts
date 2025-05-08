@@ -21,6 +21,12 @@ export type Context = {
 const EMPTY_ROOT_PREFIX = "";
 
 export class Bewegung extends HTMLElement {
+	static register(tagName = this.tagName) {
+		customElements.define(tagName, this);
+	}
+
+	static tagName = "bewegung-boundary";
+
 	MO: MutationObserver | null = null;
 
 	options = {
@@ -236,5 +242,3 @@ export class Bewegung extends HTMLElement {
 		this.MO.observe(this, MO_OPTIONS);
 	}
 }
-
-customElements.define("bewegung-boundary", Bewegung);
