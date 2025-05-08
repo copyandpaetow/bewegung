@@ -1,57 +1,60 @@
-import { resetHiddenElement, updateReadout } from "./helper/element";
-import { MO_OPTIONS } from "./helper/observer";
-import {
-  Context,
-  createNodeLoop,
-  TreeNode,
-  updateLoop,
-} from "./helper/tree-node";
-import {
-  calculateKeyframes,
-  getAppearingKeyframes,
-  getDisappearingKeyframes,
-} from "./keyframes";
+import { updateReadout } from "./element/readout";
+import { resetHiddenElement } from "./element/reset-hidden";
+import { getAppearingKeyframes } from "./keyframes/appearing";
+import { getDisappearingKeyframes } from "./keyframes/disappearing";
+import { MO_OPTIONS } from "./observer/intersection";
+import { setAnimation } from "./tree-nodes/animation";
+import { hasChanged } from "./tree-nodes/has-changed";
+import { createNodeLoop, updateLoop } from "./tree-nodes/loop";
+import { TreeNode } from "./tree-nodes/node";
+
+export type Context = {
+	head: TreeNode | null;
+	treeNodes: Map<HTMLElement, TreeNode>;
+	animationOptions: KeyframeEffectOptions;
+};
 
 export class Bewegung extends HTMLElement {
-  MO: MutationObserver | null = null;
+	MO: MutationObserver | null = null;
 
-  options = {
-    disabled: false,
-  };
-  #context: Context = {
-    head: null,
-    treeNodes: new Map<HTMLElement, TreeNode>(),
-    animationOptions: {
-      duration: 400,
-    },
-  };
+	options = {
+		disabled: false,
+	};
+	#context: Context = {
+		head: null,
+		treeNodes: new Map<HTMLElement, TreeNode>(),
+		animationOptions: {
+			duration: 400,
+		},
+	};
 
-  constructor() {
-    super();
-    this.style.contain = "layout";
-    if (this.hasAttribute("disabled")) {
-      this.options.disabled = true;
-    }
-  }
+	constructor() {
+		super();
+		this.style.contain = "layout";
+		if (this.hasAttribute("disabled")) {
+			this.options.disabled = true;
+		}
+	}
 
-  async disconnectedCallback() {
-    await Promise.resolve();
-    if (!this.isConnected) {
-      //cleanup whole tree
-    }
-  }
+	async disconnectedCallback() {
+		await Promise.resolve();
+		if (!this.isConnected) {
+			//cleanup whole tree
+		}
+	}
 
-  /*
+	/*
   todo:
 
-  - we need to exclude the children of nested bewegung web-components when adding elements in general
+  - we need to capture the animation option from the elements
   - images and border-radii need dedicated calc
   - we need to add RO and IO for better detection
-  - we need to capture the animation option from the elements
+
   - on the web-component itself we need to listen for resizes 
   => pause all running animations 
   => disconnect all observers
   => after the resizing is done, we treat it as like with additional animations. We calculate the previous position from the animation, re-read all elements and create new animatiosn
+  - we need to exclude the children of nested bewegung web-components when adding elements in general
 
   - we need to double check the z-index and maybe put it into animations as it otherwise lead to visual order glitches
   - we need to be able to incorporate potential previous animations 
@@ -71,196 +74,157 @@ export class Bewegung extends HTMLElement {
 
    */
 
-  async connectedCallback() {
-    try {
-      await createNodeLoop(this, this.#context);
-      if (this.#context.head) {
-        await updateLoop(this.#context.head);
-      } else {
-        console.warn("no element was found");
-      }
-      this.setMO();
-    } catch (error) {
-      console.warn("there was an issue setting up the node structure");
-    }
-  }
+	async connectedCallback() {
+		try {
+			await createNodeLoop(this, this.#context);
+			if (this.#context.head) {
+				await updateLoop(this.#context.head);
+			} else {
+				console.warn("no element was found");
+			}
+			this.setMO();
+		} catch (error) {
+			console.warn("there was an issue setting up the node structure");
+		}
+	}
 
-  setAnimation(node: TreeNode, keyframes: Keyframe[]) {
-    (node.animation.effect as KeyframeEffect).setKeyframes(keyframes);
-    queueMicrotask(() => {
-      node.animation.play();
-      //node.animation.pause();
-    });
-  }
+	walkNodeLoop(node: TreeNode) {
+		let firstUnchangedParent = node;
 
-  hasChanged(node: TreeNode): Boolean {
-    if (node.hasChanged || node.element === this) {
-      return false;
-    }
+		while (hasChanged(firstUnchangedParent)) {
+			firstUnchangedParent = firstUnchangedParent.parent;
+		}
+		const loopStop =
+			firstUnchangedParent === firstUnchangedParent.subloopEnd
+				? firstUnchangedParent
+				: firstUnchangedParent.subloopEnd.next;
 
-    node.pendingReadout ??= updateReadout(node);
-    node.parent.pendingReadout ??= updateReadout(node.parent);
+		let nextNode = firstUnchangedParent.next;
 
-    const keyframes = calculateKeyframes(node);
+		while (nextNode !== loopStop) {
+			if (hasChanged(nextNode)) {
+				nextNode.hasChanged = true;
+				nextNode = nextNode.next;
+			} else {
+				//TODO: this might be handlable during the setup
+				//* if we reach the root node, it will point to itself to create an infinite loop
+				if (nextNode === nextNode.subloopEnd.next) {
+					break;
+				}
+				nextNode = nextNode.subloopEnd.next;
+			}
+		}
+	}
 
-    if (keyframes.at(0)?.transform !== keyframes.at(-1)?.transform) {
-      this.setAnimation(node, keyframes);
+	handleRemove(
+		removedTreeNode: TreeNode,
+		beforeAnimation: VoidFunction,
+		afterAnimation: VoidFunction
+	) {
+		removedTreeNode.parent.pendingReadout ??= updateReadout(
+			removedTreeNode.parent
+		);
+		Object.assign(
+			removedTreeNode.element.style,
+			resetHiddenElement(
+				removedTreeNode.readout!,
+				removedTreeNode.parent.pendingReadout!,
+				removedTreeNode.parent.readout!
+			)
+		);
+		removedTreeNode.parent.element.style.willChange = "transform";
+		beforeAnimation();
 
-      return true;
-    }
+		setAnimation(removedTreeNode, getDisappearingKeyframes(removedTreeNode));
 
-    if (
-      node.parent.readout?.dimensions[2] !==
-        node.parent.pendingReadout?.dimensions[2] ||
-      node.parent.readout?.dimensions[3] !==
-        node.parent.pendingReadout?.dimensions[3]
-    ) {
-      return true;
-    }
+		removedTreeNode.animation.addEventListener(
+			"finish",
+			() => {
+				this.stopMO();
+				afterAnimation();
+				removedTreeNode.parent.element.style.willChange = "";
+				this.setMO();
+			},
+			{ once: true }
+		);
+	}
 
-    return false;
-  }
+	stopMO() {
+		this.MO?.disconnect();
+		this.MO = null;
+	}
 
-  walkNodeLoop(node: TreeNode) {
-    let firstUnchangedParent = node;
+	setMO() {
+		if (this.options.disabled) {
+			return;
+		}
 
-    while (this.hasChanged(firstUnchangedParent)) {
-      firstUnchangedParent = firstUnchangedParent.parent;
-    }
-    const loopStop =
-      firstUnchangedParent === firstUnchangedParent.subloopEnd
-        ? firstUnchangedParent
-        : firstUnchangedParent.subloopEnd.next;
+		this.MO ??= new MutationObserver(async (entries) => {
+			this.stopMO();
 
-    let nextNode = firstUnchangedParent.next;
+			const nodeChanges = await createNodeLoop(this, this.#context, 50);
 
-    while (nextNode !== loopStop) {
-      if (this.hasChanged(nextNode)) {
-        nextNode.hasChanged = true;
-        nextNode = nextNode.next;
-      } else {
-        //TODO: this might be handlable during the setup
-        //* if we reach the root node, it will point to itself to create an infinite loop
-        if (nextNode === nextNode.subloopEnd.next) {
-          break;
-        }
-        nextNode = nextNode.subloopEnd.next;
-      }
-    }
-  }
+			entries.forEach((entry) => {
+				if (this.#context.treeNodes.has(entry.target as HTMLElement)) {
+					this.walkNodeLoop(
+						this.#context.treeNodes.get(entry.target as HTMLElement)!
+					);
+				}
+			});
 
-  handleRemove(
-    removedTreeNode: TreeNode,
-    beforeAnimation: VoidFunction,
-    afterAnimation: VoidFunction
-  ) {
-    removedTreeNode.parent.pendingReadout ??= updateReadout(
-      removedTreeNode.parent
-    );
-    Object.assign(
-      removedTreeNode.element.style,
-      resetHiddenElement(
-        removedTreeNode.readout!,
-        removedTreeNode.parent.pendingReadout!,
-        removedTreeNode.parent.readout!
-      )
-    );
-    removedTreeNode.parent.element.style.willChange = "transform";
-    beforeAnimation();
+			const removedElements = new Map(
+				entries.flatMap((entry) =>
+					[...entry.removedNodes].map((element) => [element, entry])
+				)
+			);
 
-    this.setAnimation(
-      removedTreeNode,
-      getDisappearingKeyframes(removedTreeNode)
-    );
+			nodeChanges.removedNodes.forEach((removedNode) => {
+				this.walkNodeLoop(removedNode.parent);
 
-    removedTreeNode.animation.addEventListener(
-      "finish",
-      () => {
-        this.stopMO();
-        afterAnimation();
-        removedTreeNode.parent.element.style.willChange = "";
-        this.setMO();
-      },
-      { once: true }
-    );
-  }
+				if (removedElements.has(removedNode.element)) {
+					const entry = removedElements.get(removedNode.element)!;
+					this.handleRemove(
+						removedNode,
+						() =>
+							entry.target.insertBefore(removedNode.element, entry.nextSibling),
+						() => removedNode.element.remove()
+					);
+					return;
+				}
 
-  stopMO() {
-    this.MO?.disconnect();
-    this.MO = null;
-  }
+				//TODO: there could be other cases here
+				removedNode.pendingReadout ??= updateReadout(removedNode);
+				if (removedNode.pendingReadout?.display === "none") {
+					this.handleRemove(
+						removedNode,
+						() =>
+							(removedNode.element.style.display =
+								removedNode.readout!.display),
+						() =>
+							(removedNode.element.style.cssText =
+								removedNode.pendingReadout!.cssText)
+					);
+				}
+			});
 
-  setMO() {
-    if (this.options.disabled) {
-      return;
-    }
+			nodeChanges.addedNodes.forEach(async (addedNode) => {
+				await updateLoop(addedNode, 50);
+				setAnimation(
+					addedNode,
+					getAppearingKeyframes(addedNode.pendingReadout!)
+				);
+				this.walkNodeLoop(addedNode.parent);
+			});
 
-    this.MO ??= new MutationObserver(async (entries) => {
-      this.stopMO();
+			//we wait until the next rendering frame to listen again, this way the IO and RO will also not trigger it
+			//if something happens before, nothing happens when the observer is recalled
+			requestAnimationFrame(() => {
+				this.setMO();
+			});
+		});
 
-      const nodeChanges = await createNodeLoop(this, this.#context, 50);
-
-      entries.forEach((entry) => {
-        if (this.#context.treeNodes.has(entry.target as HTMLElement)) {
-          this.walkNodeLoop(
-            this.#context.treeNodes.get(entry.target as HTMLElement)!
-          );
-        }
-      });
-
-      const removedElements = new Map(
-        entries.flatMap((entry) =>
-          [...entry.removedNodes].map((element) => [element, entry])
-        )
-      );
-
-      nodeChanges.removedNodes.forEach((removedNode) => {
-        this.walkNodeLoop(removedNode.parent);
-
-        if (removedElements.has(removedNode.element)) {
-          const entry = removedElements.get(removedNode.element)!;
-          this.handleRemove(
-            removedNode,
-            () =>
-              entry.target.insertBefore(removedNode.element, entry.nextSibling),
-            () => removedNode.element.remove()
-          );
-          return;
-        }
-
-        //TODO: there could be other cases here
-        removedNode.pendingReadout ??= updateReadout(removedNode);
-        if (removedNode.pendingReadout?.display === "none") {
-          this.handleRemove(
-            removedNode,
-            () =>
-              (removedNode.element.style.display =
-                removedNode.readout!.display),
-            () =>
-              (removedNode.element.style.cssText =
-                removedNode.pendingReadout!.cssText)
-          );
-        }
-      });
-
-      nodeChanges.addedNodes.forEach(async (addedNode) => {
-        await updateLoop(addedNode, 50);
-        this.setAnimation(
-          addedNode,
-          getAppearingKeyframes(addedNode.pendingReadout!)
-        );
-        this.walkNodeLoop(addedNode.parent);
-      });
-
-      //we wait until the next rendering frame to listen again, this way the IO and RO will also not trigger it
-      //if something happens before, nothing happens when the observer is recalled
-      requestAnimationFrame(() => {
-        this.setMO();
-      });
-    });
-
-    this.MO.observe(this, MO_OPTIONS);
-  }
+		this.MO.observe(this, MO_OPTIONS);
+	}
 }
 
 customElements.define("bewegung-boundary", Bewegung);
