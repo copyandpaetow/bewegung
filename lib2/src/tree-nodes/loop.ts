@@ -12,23 +12,20 @@ export type NodeChanges = {
 export const createNodeLoop = async (
 	root: HTMLElement,
 	context: Context,
-	timeChunkSize = 5
+	timeChunkSize = 10
 ) => {
-	const nodeIterator = document.createNodeIterator(
-		root,
-		NodeFilter.SHOW_ELEMENT,
-		{
-			acceptNode(node) {
-				return isVisible(node as HTMLElement)
-					? NodeFilter.FILTER_ACCEPT
-					: NodeFilter.FILTER_REJECT;
-			},
-		}
-	);
+	const treeWalker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
+		acceptNode(node) {
+			const parent = node.parentElement!;
+			if (parent !== root && parent.tagName === root.tagName) {
+				return NodeFilter.FILTER_REJECT;
+			}
 
-	if (!nodeIterator.nextNode()) {
-		throw Error("no visible element to record");
-	}
+			return isVisible(node as HTMLElement)
+				? NodeFilter.FILTER_ACCEPT
+				: NodeFilter.FILTER_SKIP;
+		},
+	});
 
 	const nodeChanges = {
 		addedNodes: new Map<HTMLElement, TreeNode>(),
@@ -36,7 +33,7 @@ export const createNodeLoop = async (
 	};
 	context.treeNodes.clear();
 	context.head = createNode(
-		nodeIterator.referenceNode as HTMLElement,
+		treeWalker.currentNode as HTMLElement,
 		fake,
 		context,
 		nodeChanges
@@ -48,8 +45,8 @@ export const createNodeLoop = async (
 	let previousNode = context.head;
 	let time = performance.now();
 
-	while (nodeIterator.nextNode()) {
-		const currentElement = nodeIterator.referenceNode as HTMLElement;
+	while (treeWalker.nextNode()) {
+		const currentElement = treeWalker.currentNode as HTMLElement;
 
 		while (!parentStack.at(-1)?.element?.contains(currentElement)) {
 			const lastStack = parentStack.pop();

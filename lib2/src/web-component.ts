@@ -70,6 +70,8 @@ export class Bewegung extends HTMLElement {
 
   - we need to be able to stop and recover
 
+  - the class could have play/pause methods and a manual/automatic mode
+
   !bugs
   - removing the child from the dom of an element that became hidden would not work currently (rare edgecase) as it gets mashed together with the other hidden nodes
 
@@ -92,7 +94,7 @@ export class Bewegung extends HTMLElement {
 			}
 			this.setMO();
 		} catch (error) {
-			console.warn("there was an issue setting up the node structure");
+			console.warn("there was an issue setting up the node structure", error);
 		}
 	}
 
