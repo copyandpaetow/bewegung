@@ -1,3 +1,7 @@
+import {
+	defaultAnimationOptions,
+	getOptionsFromElement,
+} from "./element/animation-options";
 import { updateReadout } from "./element/readout";
 import { resetHiddenElement } from "./element/reset-hidden";
 import { getAppearingKeyframes } from "./keyframes/appearing";
@@ -14,6 +18,8 @@ export type Context = {
 	animationOptions: KeyframeEffectOptions;
 };
 
+const EMPTY_ROOT_PREFIX = "";
+
 export class Bewegung extends HTMLElement {
 	MO: MutationObserver | null = null;
 
@@ -23,9 +29,7 @@ export class Bewegung extends HTMLElement {
 	#context: Context = {
 		head: null,
 		treeNodes: new Map<HTMLElement, TreeNode>(),
-		animationOptions: {
-			duration: 400,
-		},
+		animationOptions: defaultAnimationOptions,
 	};
 
 	constructor() {
@@ -34,6 +38,11 @@ export class Bewegung extends HTMLElement {
 		if (this.hasAttribute("disabled")) {
 			this.options.disabled = true;
 		}
+		this.#context.animationOptions = getOptionsFromElement(
+			this,
+			defaultAnimationOptions,
+			EMPTY_ROOT_PREFIX
+		);
 	}
 
 	async disconnectedCallback() {
@@ -46,7 +55,6 @@ export class Bewegung extends HTMLElement {
 	/*
   todo:
 
-  - we need to capture the animation option from the elements
   - images and border-radii need dedicated calc
   - we need to add RO and IO for better detection
 

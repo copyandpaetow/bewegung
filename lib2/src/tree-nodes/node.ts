@@ -1,3 +1,4 @@
+import { getOptionsFromElement } from "../element/animation-options";
 import { Readout } from "../element/readout";
 import { Context } from "../web-component";
 import { NodeChanges } from "./loop";
@@ -31,7 +32,11 @@ export const createNode = (
 		next: fake,
 		subloopEnd: fake,
 		animation: new Animation(
-			new KeyframeEffect(element, null, context.animationOptions)
+			new KeyframeEffect(
+				element,
+				null,
+				getOptionsFromElement(element, context.animationOptions)
+			)
 		),
 		hasChanged: false,
 	};
