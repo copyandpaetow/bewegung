@@ -28,6 +28,7 @@ export class Bewegung extends HTMLElement {
 	static tagName = "bewegung-boundary";
 
 	MO: MutationObserver | null = null;
+	RO: ResizeObserver | null = null;
 
 	options = {
 		disabled: false,
@@ -55,6 +56,8 @@ export class Bewegung extends HTMLElement {
 		await Promise.resolve();
 		if (!this.isConnected) {
 			//cleanup whole tree
+			this.stopMO();
+			this.stopRO();
 		}
 	}
 
@@ -63,12 +66,6 @@ export class Bewegung extends HTMLElement {
 
   - images and border-radii need dedicated calc
   - we need to add RO and IO for better detection
-
-  - on the web-component itself we need to listen for resizes 
-  => pause all running animations 
-  => disconnect all observers
-  => after the resizing is done, we treat it as like with additional animations. We calculate the previous position from the animation, re-read all elements and create new animatiosn
-  - we need to exclude the children of nested bewegung web-components when adding elements in general
 
   - we need to double check the z-index and maybe put it into animations as it otherwise lead to visual order glitches
   - we need to be able to incorporate potential previous animations 
@@ -80,7 +77,7 @@ export class Bewegung extends HTMLElement {
 
   !bugs
   - removing the child from the dom of an element that became hidden would not work currently (rare edgecase) as it gets mashed together with the other hidden nodes
-
+	- if the boundary is still in viewport but children can scroll freely, the calculations is off. We need to catch the scroll amount and add/substract that from the children
 
   ?improvements
   - we could test, if use different animations for performant animations (layout) and another animation for the clip-path animations (border and image sizing) 
@@ -99,9 +96,35 @@ export class Bewegung extends HTMLElement {
 				console.warn("no element was found");
 			}
 			this.setMO();
+			this.setRO();
 		} catch (error) {
 			console.warn("there was an issue setting up the node structure", error);
 		}
+	}
+
+	setRO() {
+		if (this.RO) {
+			return;
+		}
+		let skipInitial = true;
+		let debounce = -1;
+
+		this.RO = new ResizeObserver(() => {
+			if (skipInitial) {
+				skipInitial = false;
+				return;
+			}
+			this.stopMO();
+			clearTimeout(debounce);
+			debounce = setTimeout(() => {
+				this.connectedCallback();
+			}, 1000);
+		});
+		this.RO.observe(this);
+	}
+	stopRO() {
+		this.RO?.disconnect();
+		this.RO = null;
 	}
 
 	walkNodeLoop(node: TreeNode) {
@@ -110,6 +133,7 @@ export class Bewegung extends HTMLElement {
 		while (hasChanged(firstUnchangedParent)) {
 			firstUnchangedParent = firstUnchangedParent.parent;
 		}
+
 		const loopStop =
 			firstUnchangedParent === firstUnchangedParent.subloopEnd
 				? firstUnchangedParent
@@ -171,11 +195,11 @@ export class Bewegung extends HTMLElement {
 	}
 
 	setMO() {
-		if (this.options.disabled) {
+		if (this.options.disabled || this.MO) {
 			return;
 		}
 
-		this.MO ??= new MutationObserver(async (entries) => {
+		this.MO = new MutationObserver(async (entries) => {
 			this.stopMO();
 
 			const nodeChanges = await createNodeLoop(this, this.#context, 50);
