@@ -27,10 +27,10 @@ export class Bewegung extends HTMLElement {
 
 	static tagName = "bewegung-boundary";
 
-	MO: MutationObserver | null = null;
-	RO: ResizeObserver | null = null;
+	#MO: MutationObserver | null = null;
+	#RO: ResizeObserver | null = null;
 
-	options = {
+	#options = {
 		disabled: false,
 	};
 	#context: Context = {
@@ -43,7 +43,7 @@ export class Bewegung extends HTMLElement {
 		super();
 		this.style.contain = "layout";
 		if (this.hasAttribute("disabled")) {
-			this.options.disabled = true;
+			this.#options.disabled = true;
 		}
 		this.#context.animationOptions = getOptionsFromElement(
 			this,
@@ -56,8 +56,8 @@ export class Bewegung extends HTMLElement {
 		await Promise.resolve();
 		if (!this.isConnected) {
 			//cleanup whole tree
-			this.stopMO();
-			this.stopRO();
+			this.#stopMO();
+			this.#stopRO();
 		}
 	}
 
@@ -95,39 +95,39 @@ export class Bewegung extends HTMLElement {
 			} else {
 				console.warn("no element was found");
 			}
-			this.setMO();
-			this.setRO();
+			this.#setMO();
+			this.#setRO();
 		} catch (error) {
 			console.warn("there was an issue setting up the node structure", error);
 		}
 	}
 
-	setRO() {
-		if (this.RO) {
+	#setRO() {
+		if (this.#RO) {
 			return;
 		}
 		let skipInitial = true;
 		let debounce = -1;
 
-		this.RO = new ResizeObserver(() => {
+		this.#RO = new ResizeObserver(() => {
 			if (skipInitial) {
 				skipInitial = false;
 				return;
 			}
-			this.stopMO();
+			this.#stopMO();
 			clearTimeout(debounce);
 			debounce = setTimeout(() => {
 				this.connectedCallback();
 			}, 1000);
 		});
-		this.RO.observe(this);
+		this.#RO.observe(this);
 	}
-	stopRO() {
-		this.RO?.disconnect();
-		this.RO = null;
+	#stopRO() {
+		this.#RO?.disconnect();
+		this.#RO = null;
 	}
 
-	walkNodeLoop(node: TreeNode) {
+	#walkNodeLoop(node: TreeNode) {
 		let firstUnchangedParent = node;
 
 		while (hasChanged(firstUnchangedParent)) {
@@ -156,7 +156,7 @@ export class Bewegung extends HTMLElement {
 		}
 	}
 
-	handleRemove(
+	#handleRemove(
 		removedTreeNode: TreeNode,
 		beforeAnimation: VoidFunction,
 		afterAnimation: VoidFunction
@@ -180,33 +180,33 @@ export class Bewegung extends HTMLElement {
 		removedTreeNode.animation.addEventListener(
 			"finish",
 			() => {
-				this.stopMO();
+				this.#stopMO();
 				afterAnimation();
 				removedTreeNode.parent.element.style.willChange = "";
-				this.setMO();
+				this.#setMO();
 			},
 			{ once: true }
 		);
 	}
 
-	stopMO() {
-		this.MO?.disconnect();
-		this.MO = null;
+	#stopMO() {
+		this.#MO?.disconnect();
+		this.#MO = null;
 	}
 
-	setMO() {
-		if (this.options.disabled || this.MO) {
+	#setMO() {
+		if (this.#options.disabled || this.#MO) {
 			return;
 		}
 
-		this.MO = new MutationObserver(async (entries) => {
-			this.stopMO();
+		this.#MO = new MutationObserver(async (entries) => {
+			this.#stopMO();
 
 			const nodeChanges = await createNodeLoop(this, this.#context, 50);
 
 			entries.forEach((entry) => {
 				if (this.#context.treeNodes.has(entry.target as HTMLElement)) {
-					this.walkNodeLoop(
+					this.#walkNodeLoop(
 						this.#context.treeNodes.get(entry.target as HTMLElement)!
 					);
 				}
@@ -219,11 +219,11 @@ export class Bewegung extends HTMLElement {
 			);
 
 			nodeChanges.removedNodes.forEach((removedNode) => {
-				this.walkNodeLoop(removedNode.parent);
+				this.#walkNodeLoop(removedNode.parent);
 
 				if (removedElements.has(removedNode.element)) {
 					const entry = removedElements.get(removedNode.element)!;
-					this.handleRemove(
+					this.#handleRemove(
 						removedNode,
 						() =>
 							entry.target.insertBefore(removedNode.element, entry.nextSibling),
@@ -235,7 +235,7 @@ export class Bewegung extends HTMLElement {
 				//TODO: there could be other cases here
 				removedNode.pendingReadout ??= updateReadout(removedNode);
 				if (removedNode.pendingReadout?.display === "none") {
-					this.handleRemove(
+					this.#handleRemove(
 						removedNode,
 						() =>
 							(removedNode.element.style.display =
@@ -253,16 +253,16 @@ export class Bewegung extends HTMLElement {
 					addedNode,
 					getAppearingKeyframes(addedNode.pendingReadout!)
 				);
-				this.walkNodeLoop(addedNode.parent);
+				this.#walkNodeLoop(addedNode.parent);
 			});
 
 			//we wait until the next rendering frame to listen again, this way the IO and RO will also not trigger it
 			//if something happens before, nothing happens when the observer is recalled
 			requestAnimationFrame(() => {
-				this.setMO();
+				this.#setMO();
 			});
 		});
 
-		this.MO.observe(this, MO_OPTIONS);
+		this.#MO.observe(this, MO_OPTIONS);
 	}
 }
