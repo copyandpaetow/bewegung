@@ -1,18 +1,19 @@
 *,
 ::after,
 ::before {
-	box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 html:focus-visible {
-	scroll-behavior: smooth;
+  scroll-behavior: smooth;
 }
 
 body {
-	min-height: 100vh;
-	font-family: Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif;
-	line-height: 1.5;
-	margin: 0;
+  min-height: 100vh;
+  font-family: Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans",
+    Arial, sans-serif;
+  line-height: 1.5;
+  margin: 0;
 }
 
 h1,
@@ -29,9 +30,9 @@ dd,
 ul,
 ol,
 dialog {
-	margin: 0;
-	padding: 0;
-	max-width: 80ch;
+  margin: 0;
+  padding: 0;
+  max-width: 80ch;
 }
 
 a,
@@ -41,40 +42,40 @@ button,
 input,
 label,
 code {
-	font: inherit;
-	color: currentColor;
+  font: inherit;
+  color: currentColor;
 }
 
 a {
-	text-decoration: underline;
-	cursor: pointer;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 ul,
 ol {
-	list-style: none;
+  list-style: none;
 }
 
 input:focus,
 button:focus {
-	outline: 2px solid blue;
-	outline-offset: var(--space-70);
+  outline: 2px solid blue;
+  outline-offset: var(--space-70);
 }
 
 input:focus-visible {
-	outline: 2px solid transparent;
-	border-color: blue;
+  outline: 2px solid transparent;
+  border-color: blue;
 }
 
 button:focus:not(:focus-visible) {
-	outline: none;
+  outline: none;
 }
 
 button:focus-visible {
-	outline: 2px solid transparent;
-	box-shadow: 0 0 0 2px #fff, 0 0 0 4px blue;
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px blue;
 }
 img {
-	max-width: 100%;
-	display: block;
+  max-width: 100%;
+  display: block;
 }

@@ -1,68 +1,73 @@
 ---
 export interface Props {
-	headline: string;
-	copy: string;
-	imgSrc: string;
-	imgAlt: string;
-	class?: string;
+  headline: string;
+  copy: string;
+  imgSrc: string;
+  imgAlt: string;
+  class?: string;
 }
 
 const { copy, headline, imgSrc, imgAlt, class: className = "" } = Astro.props;
 ---
 
 <li class={`${className} js-list`}>
-	<img src={imgSrc} alt={imgAlt} />
+  <picture>
+    <img src={imgSrc} alt={imgAlt} />
+  </picture>
 
-	<h3>
-		{headline}
-	</h3>
-	<p>
-		{copy}
-	</p>
+  <h3>
+    {headline}
+  </h3>
+  <p>
+    {copy}
+  </p>
 </li>
 
-<style lang="scss">
-	li {
-		background-color: var(--color-card);
-		border-radius: var(--space-100);
-		display: grid;
-		grid-template-rows: 1fr max-content max-content;
-		overflow: hidden;
-		aspect-ratio: 1;
-		width: clamp(var(--space-600), 20vw, var(--space-700));
-	}
+<style>
+  li {
+    background-color: var(--color-card);
+    border-radius: var(--space-100);
+    display: grid;
+    grid-template-rows: 1fr max-content max-content;
+    overflow: hidden;
+    aspect-ratio: 1;
+    width: clamp(var(--space-600), 20vw, var(--space-700));
+  }
 
-	li > *:not(img, dialog) {
-		margin-block-start: 0.15em;
-		margin-inline-start: 1rem;
-	}
+  li > *:not(picture, dialog) {
+    margin-block-start: 0.15em;
+    margin-inline-start: 1rem;
+  }
 
-	img {
-		grid-area: 1 / 1 / 4 / 2;
-		object-fit: cover;
-		height: 100%;
-		width: 100%;
-	}
+  picture {
+    grid-area: 1 / 1 / 4 / 2;
+  }
 
-	h3 {
-		grid-area: 2 / 1 / 3 / 2;
-	}
+  img {
+    object-fit: cover;
+    height: 100%;
+    width: 100%;
+  }
 
-	p {
-		grid-area: 3 / 1 / 4 / 2;
-		padding-block-end: 1rem;
-	}
+  h3 {
+    grid-area: 2 / 1 / 3 / 2;
+  }
 
-	dialog {
-		position: fixed;
-		width: 50vw;
-		height: 50vh;
-		border: none;
-		top: 25%;
-	}
+  p {
+    grid-area: 3 / 1 / 4 / 2;
+    padding-block-end: 1rem;
+  }
 
-	dialog > button {
-		position: absolute;
-		left: 100%;
-	}
+  dialog {
+    position: fixed;
+    width: 50vw;
+    height: 50vh;
+    border: none;
+    top: 25%;
+  }
+
+  dialog > button {
+    position: absolute;
+    left: 100%;
+  }
 </style>
